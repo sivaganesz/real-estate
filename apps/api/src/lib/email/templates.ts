@@ -35,6 +35,32 @@ If you didn't ask for this, you can ignore this email.`;
   return { subject, html, text };
 }
 
+export function inviteEmail(input: {
+  companyName: string;
+  name: string;
+  invitedBy: string | null;
+  roleLabel: string;
+  acceptUrl: string;
+  expiresHours: number;
+}): RenderedEmail {
+  const subject = `You're invited to the admin portal | ${input.companyName}`;
+  const who = input.invitedBy ? `${input.invitedBy} has invited you` : "You've been invited";
+  const html = renderEmailLayout({
+    companyName: input.companyName,
+    title: "You're invited",
+    bodyHtml: `<p>Hi ${escapeHtml(input.name)},</p>
+<p>${escapeHtml(who)} to the ${escapeHtml(input.companyName)} admin portal as <strong>${escapeHtml(input.roleLabel)}</strong>.</p>
+<p>Set your password to activate your account. This link expires in ${input.expiresHours} hours.</p>
+${button(input.acceptUrl, 'Set password and sign in')}`,
+  });
+  const text = `Hi ${input.name},
+
+${who} to the ${input.companyName} admin portal as ${input.roleLabel}.
+Set your password to activate your account (link expires in ${input.expiresHours} hours):
+${input.acceptUrl}`;
+  return { subject, html, text };
+}
+
 export function passwordChangedEmail(input: { companyName: string; name: string }): RenderedEmail {
   const subject = `Your password was changed | ${input.companyName}`;
   const html = renderEmailLayout({

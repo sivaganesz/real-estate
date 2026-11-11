@@ -414,8 +414,8 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 ### Phase 1
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/accept-invite` |
-| Users | `GET /admin/users`, `POST /admin/users` (invite), `GET /admin/users/:id`, `PATCH /admin/users/:id`, `POST /admin/users/:id/resend-invite`, `/deactivate`, `/reactivate`, `/send-password-reset`, `/unlock`, `GET /admin/roles` (read-only matrix) |
+| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `GET /auth/invite?token=` (invite details), `POST /auth/accept-invite` (activates and signs in) |
+| Users | `GET /admin/users`, `GET /admin/users/stats` (status counts), `POST /admin/users` (invite), `GET /admin/users/:id`, `PATCH /admin/users/:id`, `POST /admin/users/:id/resend-invite`, `/deactivate`, `/reactivate`, `/send-password-reset`, `/unlock`, `GET /admin/roles` (read-only matrix) |
 | Profile | `GET /admin/profile`, `PATCH /admin/profile`, `POST /admin/profile/change-password` |
 | Settings | `GET /admin/settings/company`, `PUT /admin/settings/company`, `POST /admin/settings/company/logo` (multipart) |
 | System | `GET /health` |

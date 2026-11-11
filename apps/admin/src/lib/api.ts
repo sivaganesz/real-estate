@@ -1,4 +1,4 @@
-import type { SessionResponse } from '@real-estate/shared';
+import type { PageMeta, SessionResponse } from '@real-estate/shared';
 
 /**
  * API client for the admin portal.
@@ -59,6 +59,8 @@ interface RequestOptions {
   body?: unknown;
   /** Send the access token and refresh it when expired. Default true. */
   auth?: boolean;
+  /** Return the whole { data, meta } envelope instead of just `data` (list endpoints). */
+  envelope?: boolean;
 }
 
 async function send(
@@ -78,7 +80,7 @@ async function send(
   });
 }
 
-async function parse<T>(res: Response): Promise<T> {
+async function parse<T>(res: Response, envelope = false): Promise<T> {
   if (res.status === 204) return undefined as T;
   const payload = (await res.json().catch(() => null)) as {
     data?: T;
@@ -94,7 +96,7 @@ async function parse<T>(res: Response): Promise<T> {
       error?.requestId,
     );
   }
-  return payload?.data as T;
+  return (envelope ? payload : payload?.data) as T;
 }
 
 /**
@@ -125,14 +127,26 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (res.status === 401 && auth) {
     const session = await refreshSession();
-    if (session) return parse<T>(await send(path, options));
+    if (session) return parse<T>(await send(path, options), options.envelope);
     sessionExpiredHandler?.();
   }
-  return parse<T>(res);
+  return parse<T>(res, options.envelope);
+}
+
+export interface ListResult<T> {
+  items: T[];
+  meta: PageMeta;
 }
 
 export const api = {
   get: <T>(path: string) => apiRequest<T>(path),
+  /** List endpoints: returns the rows and the pagination meta. */
+  list: async <T>(path: string): Promise<ListResult<T>> => {
+    const { data, meta } = await apiRequest<{ data: T[]; meta: PageMeta }>(path, {
+      envelope: true,
+    });
+    return { items: data, meta };
+  },
   post: <T>(path: string, body?: unknown, opts: { auth?: boolean } = {}) =>
     apiRequest<T>(path, { method: 'POST', body, ...opts }),
   put: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PUT', body }),

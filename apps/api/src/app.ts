@@ -15,6 +15,8 @@ import { securityMiddleware } from './middleware/security';
 import { createAuthRouter } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
+import { createUsersRouter } from './modules/users/users.routes';
+import { UsersService } from './modules/users/users.service';
 
 /** Everything the app needs from outside; passed in so tests can swap providers. */
 export interface AppDeps {
@@ -28,7 +30,9 @@ export interface AppDeps {
 function createApiRouter(deps: AppDeps): express.Router {
   const router = express.Router();
   const auth = new AuthService(deps);
-  router.use('/auth', createAuthRouter({ env: deps.env, auth }));
+  const users = new UsersService({ ...deps, auth });
+  router.use('/auth', createAuthRouter({ env: deps.env, auth, users }));
+  router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }
 

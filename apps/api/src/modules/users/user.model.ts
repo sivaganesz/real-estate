@@ -1,11 +1,8 @@
-import { ROLES } from '@real-estate/shared';
+import { ROLES, USER_STATUSES } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import type { InferSchemaType } from 'mongoose';
-import { auditPlugin } from '../../db/auditPlugin';
+import { auditFields } from '../../db/auditPlugin';
 import { idField } from '../../db/ids';
-
-export const USER_STATUSES = ['invited', 'active', 'inactive'] as const;
-export type UserStatus = (typeof USER_STATUSES)[number];
 
 /** Staff users (TRD §7.1). */
 const userSchema = new Schema(
@@ -20,11 +17,11 @@ const userSchema = new Schema(
     lastLoginAt: { type: Date },
     failedLoginCount: { type: Number, default: 0 },
     lockedUntil: { type: Date },
+    ...auditFields,
   },
   { timestamps: true },
 );
 
-userSchema.plugin(auditPlugin);
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1, status: 1 });
 

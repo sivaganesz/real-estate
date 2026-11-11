@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import type { RouteObject } from 'react-router';
 import { HomeRedirect, PublicOnly, RequireAuth, RequirePermission } from '@/auth/guards';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
@@ -29,6 +30,7 @@ export const routes: RouteObject[] = [
     ),
   },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/accept-invite', element: <AcceptInvitePage /> },
   {
     path: '/',
     element: (
@@ -42,7 +44,15 @@ export const routes: RouteObject[] = [
         path: 'users',
         element: (
           <RequirePermission permission="users:manage">
-            <UsersPage />
+            <UsersPage tab="users" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'users/roles',
+        element: (
+          <RequirePermission permission="users:manage">
+            <UsersPage tab="roles" />
           </RequirePermission>
         ),
       },

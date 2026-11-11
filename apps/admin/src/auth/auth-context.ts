@@ -1,4 +1,4 @@
-import type { AuthUser, Permission } from '@real-estate/shared';
+import type { AuthUser, Permission, SessionResponse } from '@real-estate/shared';
 import { createContext, useContext } from 'react';
 
 export type SignOutReason = 'idle' | 'expired' | null;
@@ -9,6 +9,8 @@ export interface AuthContextValue {
   /** Why the user was signed out automatically (shown on the login page). */
   signOutReason: SignOutReason;
   login: (email: string, password: string) => Promise<AuthUser>;
+  /** Start a session from a response that already signed the user in (accepted invite). */
+  startSession: (session: SessionResponse) => AuthUser;
   logout: (reason?: SignOutReason) => Promise<void>;
   can: (permission: Permission) => boolean;
 }

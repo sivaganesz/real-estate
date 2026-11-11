@@ -13,6 +13,12 @@ export const ROLE_LABELS: Record<Role, string> = {
   sales_agent: 'Sales Agent',
 };
 
+export const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  super_admin: 'Owner / IT. Everything, including managing users.',
+  admin: "Office staff. Settings, properties and appointments. Can't manage users.",
+  sales_agent: 'Field staff who host visits. Views properties, manages own appointments.',
+};
+
 export const PERMISSIONS = [
   'users:manage',
   'settings:edit',

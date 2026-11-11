@@ -110,6 +110,12 @@ export class AuthService {
       );
     }
 
+    return this.signIn(user, client);
+  }
+
+  /** Starts a new session for an already-verified user (login, accepted invite). */
+  async signIn(user: UserLike, client: ClientInfo): Promise<Session> {
+    const now = new Date();
     await UserModel.updateOne(
       { _id: user._id },
       { $set: { lastLoginAt: now, failedLoginCount: 0, lockedUntil: null } },
@@ -255,7 +261,18 @@ export class AuthService {
   async forgotPassword(email: string): Promise<void> {
     const user = await UserModel.findOne({ email }).lean();
     if (!user || user.status !== 'active') return;
+    await this.sendPasswordResetEmail(user);
+  }
 
+  /**
+   * Creates a 1-hour reset link (replacing any earlier one) and emails it.
+   * Returns false if the email provider failed. Used by forgot-password and by admins.
+   */
+  async sendPasswordResetEmail(user: {
+    _id: string;
+    name: string;
+    email: string;
+  }): Promise<boolean> {
     await AuthTokenModel.updateMany(
       { userId: user._id, type: 'password_reset', usedAt: null },
       { $set: { usedAt: new Date() } },
@@ -276,7 +293,8 @@ export class AuthService {
       resetUrl,
       expiresMinutes: PASSWORD_RESET_TTL_MINUTES,
     });
-    await trySendEmail(this.email, { to: user.email, ...message }, this.logger);
+    const result = await trySendEmail(this.email, { to: user.email, ...message }, this.logger);
+    return result.sent;
   }
 
   async resetPassword(rawToken: string, password: string): Promise<void> {

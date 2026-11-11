@@ -50,6 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => onSessionExpired(null);
   }, [endSession]);
 
+  const startSession = useCallback((session: SessionResponse) => {
+    tokenStore.set(session.accessToken);
+    setUser(session.user);
+    setSignOutReason(null);
+    setStatus('authenticated');
+    return session.user;
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const session = await api.post<SessionResponse>(
       '/auth/login',
@@ -102,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, signOutReason, login, logout, can }),
-    [status, user, signOutReason, login, logout, can],
+    () => ({ status, user, signOutReason, login, startSession, logout, can }),
+    [status, user, signOutReason, login, startSession, logout, can],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

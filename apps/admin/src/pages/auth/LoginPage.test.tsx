@@ -23,6 +23,7 @@ function renderLogin(auth: Partial<AuthContextValue> = {}) {
     user: null,
     signOutReason: null,
     login: vi.fn(),
+    startSession: vi.fn(),
     logout: vi.fn(),
     can: () => false,
     ...auth,

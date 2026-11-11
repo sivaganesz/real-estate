@@ -1,13 +1,11 @@
-import type { Schema } from 'mongoose';
 import { refField } from './ids';
 
 /**
- * Adds `createdBy` / `updatedBy` (user ids) to a schema. Combine with
- * `{ timestamps: true }` for `createdAt` / `updatedAt` (TRD §5.5).
+ * `createdBy` / `updatedBy` (user ids). Spread into a schema definition
+ * (`{ ...auditFields }`) so TypeScript infers them; combine with `{ timestamps: true }`
+ * for `createdAt` / `updatedAt` (TRD §5.5).
  */
-export function auditPlugin(schema: Schema): void {
-  schema.add({
-    createdBy: refField('User'),
-    updatedBy: refField('User'),
-  });
-}
+export const auditFields = {
+  createdBy: refField('User'),
+  updatedBy: refField('User'),
+} as const;

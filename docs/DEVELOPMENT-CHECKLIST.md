@@ -119,7 +119,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Forgot password: reset link emailed through the email module
 - [x] Reset password: validate the token, set a new password, revoke all sessions
 - [x] Lock the account after repeated failed logins; unlock after a set time
-- [ ] Unlock by Super Admin (comes with the Users module in 1.5)
+- [x] Unlock by Super Admin
 - [x] Session timeout after 30 minutes of inactivity: enforced by the server on refresh
 - [x] Session timeout in the admin UI (signs out after 30 minutes idle, message on the login page)
 
@@ -132,24 +132,24 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Admin UI hides menus the user can't use, and shows a 403 page for blocked routes
 
 ### 1.5 Users & Roles module
-- [ ] **API**
-  - [ ] List users with search, role and status filters, and pagination
-  - [ ] Invite user: name, email, phone and role; send the invite email (Resend) with an expiring link
-  - [ ] Resend invite
-  - [ ] Accept invite: set password and activate
-  - [ ] Edit user: name, phone, role
-  - [ ] Deactivate and reactivate (never hard-delete)
-  - [ ] Admin-triggered password reset email
-  - [ ] Unlock a locked account
-  - [ ] Safety rules: users can't deactivate or demote themselves, and there must always be one active Super Admin
-  - [ ] Read-only roles and permission matrix endpoint
-- [ ] **UI**
-  - [ ] Users list: table, search, filters, status chips, last login
-  - [ ] Invite user drawer, with validation
-  - [ ] Edit user drawer, with deactivate, reactivate, reset password and unlock actions
-  - [ ] Accept-invite page (set password)
-  - [ ] Read-only role permission table
-  - [ ] Confirmation dialogs for destructive actions
+- [x] **API**
+  - [x] List users with search, role and status filters, and pagination
+  - [x] Invite user: name, email, phone and role; send the invite email (Resend) with an expiring link
+  - [x] Resend invite
+  - [x] Accept invite: set password and activate
+  - [x] Edit user: name, phone, role
+  - [x] Deactivate and reactivate (never hard-delete)
+  - [x] Admin-triggered password reset email
+  - [x] Unlock a locked account
+  - [x] Safety rules: users can't deactivate or demote themselves, and there must always be one active Super Admin
+  - [x] Read-only roles and permission matrix endpoint
+- [x] **UI**
+  - [x] Users list: table, search, filters, status chips, last login
+  - [x] Invite user drawer, with validation
+  - [x] Edit user drawer, with deactivate, reactivate, reset password and unlock actions
+  - [x] Accept-invite page (set password)
+  - [x] Read-only role permission table
+  - [x] Confirmation dialogs for destructive actions
 
 ### 1.6 My Profile
 - [ ] API: view and update own name and phone; change password (requires the current password; sends a "password changed" email)
@@ -177,16 +177,18 @@ The AI agent reads property data only through our MCP tools. Property locations 
   - [x] Content area (mobile: slide-in menu)
 - [x] Protected routes and role-based menus
 - [x] Login, Forgot password and Reset password pages (connected to the API)
-- [ ] Accept invite page (comes with the Users module in 1.5)
+- [x] Accept invite page (signs the user in after setting a password)
 - [ ] Shared UI components:
   - [x] Button, input
-  - [ ] Select, textarea, checkbox (added with the forms that need them)
+  - [x] Select
+  - [ ] Textarea, checkbox (added with the forms that need them)
   - [x] Form field with error message, password field with show/hide, password rules checklist
-  - [ ] Data table (sort, paginate, empty state, loading state)
-  - [ ] Drawer and modal
+  - [x] Data table (paginate, empty, loading and error states)
+  - [x] Drawer (sheet) and modal
   - [x] Toast notifications
-  - [ ] Confirmation dialog
-  - [ ] Tabs and navbar, status chip, file upload with preview
+  - [x] Confirmation dialog
+  - [x] Tabs, status chip
+  - [ ] Settings navbar, file upload with preview (with Company info in 1.7)
 - [x] Form handling with shared Zod schemas (same validation as the API)
 - [x] Error pages: 403 (no permission), 404, generic error
 - [x] Responsive layout (usable on tablet and mobile)
