@@ -24,7 +24,7 @@ export function PasswordRules({ password, confirm }: { password: string; confirm
           key={rule.label}
           className={cn(
             'flex items-center gap-2',
-            rule.ok ? 'text-emerald-700' : 'text-muted-foreground',
+            rule.ok ? 'text-emerald-700 dark:text-success' : 'text-muted-foreground',
           )}
         >
           {rule.ok ? <CircleCheckIcon className="size-4" /> : <CircleIcon className="size-4" />}

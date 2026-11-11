@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AuthContext } from '@/auth/auth-context';
 import type { AuthContextValue } from '@/auth/auth-context';
 import { ApiError } from '@/lib/api';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 import { LoginPage } from './LoginPage';
 
 const admin: AuthUser = {
@@ -36,9 +37,11 @@ function renderLogin(auth: Partial<AuthContextValue> = {}) {
     { initialEntries: ['/login'] },
   );
   render(
-    <AuthContext.Provider value={value}>
-      <RouterProvider router={router} />
-    </AuthContext.Provider>,
+    <ThemeProvider>
+      <AuthContext.Provider value={value}>
+        <RouterProvider router={router} />
+      </AuthContext.Provider>
+    </ThemeProvider>,
   );
   return value;
 }

@@ -21,7 +21,7 @@ export function RolePicker({
           key={role}
           className={cn(
             'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
-            value === role ? 'border-primary bg-muted' : 'hover:bg-muted/50',
+            value === role ? 'border-primary bg-muted dark:bg-primary/10' : 'hover:bg-muted/50',
             disabled && 'cursor-not-allowed opacity-60',
           )}
         >

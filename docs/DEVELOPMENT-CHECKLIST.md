@@ -192,6 +192,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Form handling with shared Zod schemas (same validation as the API)
 - [x] Error pages: 403 (no permission), 404, generic error
 - [x] Responsive layout (usable on tablet and mobile)
+- [x] Light and dark themes (Light / Dark / System switcher, remembered per browser; dark palette with orange accent)
 
 ### 1.9 Phase 1 testing and demo
 - [ ] Unit tests: password rules, token handling, permission checks

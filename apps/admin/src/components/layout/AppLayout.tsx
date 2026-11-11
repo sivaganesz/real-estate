@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { BrandMark } from './BrandMark';
 
 interface NavItem {
@@ -59,7 +60,9 @@ const COMING_NEXT = [
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
     'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-    isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+    isActive
+      ? 'bg-primary text-primary-foreground dark:bg-sidebar-accent dark:text-sidebar-accent-foreground'
+      : 'text-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground',
   );
 
 function initials(name: string): string {
@@ -121,7 +124,7 @@ function Sidebar({ onNavigate, onSignOut }: { onNavigate: () => void; onSignOut:
         <button
           type="button"
           onClick={onSignOut}
-          className="flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium hover:bg-muted"
+          className="flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium hover:bg-muted dark:text-muted-foreground dark:hover:text-foreground"
         >
           <LogOutIcon className="size-4" />
           Sign out
@@ -141,9 +144,9 @@ export function AppLayout() {
   const signOut = () => void logout();
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen bg-muted/30 dark:bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r bg-background lg:block">
+      <aside className="hidden w-64 shrink-0 border-r bg-background lg:block dark:border-sidebar-border dark:bg-sidebar">
         <div className="sticky top-0 h-screen overflow-y-auto">
           <Sidebar onNavigate={() => undefined} onSignOut={signOut} />
         </div>
@@ -155,10 +158,10 @@ export function AppLayout() {
           <button
             type="button"
             aria-label="Close menu"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 dark:bg-black/60"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-background shadow-xl">
+          <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-background shadow-xl dark:bg-sidebar">
             <Button
               variant="ghost"
               size="icon"
@@ -184,12 +187,13 @@ export function AppLayout() {
           >
             <MenuIcon />
           </Button>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
                   <Button variant="outline" className="h-9 gap-2 pl-1.5">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-semibold dark:rounded-md dark:bg-primary/15 dark:text-primary">
                       {initials(user.name)}
                     </span>
                     <span className="hidden text-sm sm:inline">
