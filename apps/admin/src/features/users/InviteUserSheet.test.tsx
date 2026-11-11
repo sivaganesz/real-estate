@@ -29,7 +29,8 @@ function renderSheet() {
 async function fillForm(email = 'priya@company.com') {
   await userEvent.type(screen.getByLabelText('Full name *'), 'Priya Kumar');
   await userEvent.type(screen.getByLabelText('Email *'), email);
-  await userEvent.type(screen.getByLabelText('Phone'), '98765 43210');
+  // Spaces and letters are ignored by the phone field; only digits are kept.
+  await userEvent.type(screen.getByLabelText('Phone'), '98765 abc43210');
   await userEvent.click(screen.getByRole('radio', { name: /Sales Agent/ }));
 }
 

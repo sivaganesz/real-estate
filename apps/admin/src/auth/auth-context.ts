@@ -11,6 +11,8 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthUser>;
   /** Start a session from a response that already signed the user in (accepted invite). */
   startSession: (session: SessionResponse) => AuthUser;
+  /** Update the signed-in user after editing their own profile (name, phone). */
+  updateUser: (changes: Partial<Pick<AuthUser, 'name' | 'phone'>>) => void;
   logout: (reason?: SignOutReason) => Promise<void>;
   can: (permission: Permission) => boolean;
 }

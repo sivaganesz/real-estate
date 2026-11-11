@@ -152,7 +152,7 @@ describe('users', () => {
       const res = await api().post('/users', {
         name: 'Priya Kumar',
         email: 'Priya@Company.com',
-        phone: '98765 43210',
+        phone: '9876543210',
         role: 'sales_agent',
       });
       expect(res.status).toBe(201);

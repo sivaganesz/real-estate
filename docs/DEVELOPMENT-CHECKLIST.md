@@ -152,8 +152,8 @@ The AI agent reads property data only through our MCP tools. Property locations 
   - [x] Confirmation dialogs for destructive actions
 
 ### 1.6 My Profile
-- [ ] API: view and update own name and phone; change password (requires the current password; sends a "password changed" email)
-- [ ] UI: profile page reached from the top-bar user menu
+- [x] API: view and update own name and phone; change password (requires the current password; signs out other devices, keeps this one signed in; sends a "password changed" email)
+- [x] UI: profile page reached from the top-bar user menu
 
 ### 1.7 Settings → Company info
 - [ ] **API**

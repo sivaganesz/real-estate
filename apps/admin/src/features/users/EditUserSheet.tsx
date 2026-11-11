@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { formatPhone, ROLE_LABELS, ROLES, updateUserBodySchema } from '@real-estate/shared';
+import { nationalNumber, ROLE_LABELS, ROLES, updateUserBodySchema } from '@real-estate/shared';
 import type { User } from '@real-estate/shared';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useAuth } from '@/auth/auth-context';
 import { FormField } from '@/components/forms/FormField';
+import { PhoneInput } from '@/components/forms/PhoneInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -50,7 +51,7 @@ const editFormSchema = updateUserBodySchema.extend({
 });
 
 function formValues(user: User) {
-  return { name: user.name, phone: user.phone ? formatPhone(user.phone) : '', role: user.role };
+  return { name: user.name, phone: nationalNumber(user.phone), role: user.role };
 }
 
 /**
@@ -146,9 +147,8 @@ export function EditUserSheet({
               <Input id="edit-email" value={user.email} readOnly disabled />
             </FormField>
             <FormField id="edit-phone" label="Phone" error={errors.phone?.message}>
-              <Input
+              <PhoneInput
                 id="edit-phone"
-                type="tel"
                 aria-invalid={!!errors.phone}
                 {...form.register('phone')}
               />

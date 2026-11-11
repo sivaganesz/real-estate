@@ -5,6 +5,7 @@ import { Loader2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { FormField } from '@/components/forms/FormField';
+import { PhoneInput } from '@/components/forms/PhoneInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,12 +102,10 @@ export function InviteUserSheet({
             id="invite-phone"
             label="Phone"
             error={errors.phone?.message}
-            hint="Optional. Indian numbers can be typed without +91."
+            hint="Optional. 10-digit mobile number."
           >
-            <Input
+            <PhoneInput
               id="invite-phone"
-              type="tel"
-              placeholder="98765 43210"
               aria-invalid={!!errors.phone}
               {...form.register('phone')}
             />

@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { emailSchema, paginationQuerySchema, passwordSchema, phoneSchema } from './common';
 
 describe('passwordSchema', () => {
-  it('accepts a password with 10+ characters, a letter and a number', () => {
+  it('accepts a password with 6+ characters, a letter and a number', () => {
+    expect(passwordSchema.safeParse('abc123').success).toBe(true);
     expect(passwordSchema.safeParse('secretpass1').success).toBe(true);
   });
 
   it('rejects short passwords and passwords without a letter or a number', () => {
-    expect(passwordSchema.safeParse('short1').success).toBe(false);
+    expect(passwordSchema.safeParse('abc12').success).toBe(false);
     expect(passwordSchema.safeParse('onlyletters').success).toBe(false);
-    expect(passwordSchema.safeParse('1234567890').success).toBe(false);
+    expect(passwordSchema.safeParse('123456').success).toBe(false);
   });
 });
 
@@ -24,11 +25,18 @@ describe('emailSchema', () => {
 });
 
 describe('phoneSchema', () => {
-  it('normalises to E.164', () => {
-    expect(phoneSchema.parse('98765 43210')).toBe('+919876543210');
+  it('normalises 10 digits (or +91 and digits) to E.164', () => {
+    expect(phoneSchema.parse('9876543210')).toBe('+919876543210');
+    expect(phoneSchema.parse('+919876543210')).toBe('+919876543210');
   });
 
-  it('rejects invalid phone numbers', () => {
+  it('rejects letters, spaces and symbols', () => {
+    expect(phoneSchema.safeParse('98765abcde').success).toBe(false);
+    expect(phoneSchema.safeParse('98765 43210').success).toBe(false);
+    expect(phoneSchema.safeParse('98765-43210').success).toBe(false);
+  });
+
+  it('rejects numbers that are too short', () => {
     expect(phoneSchema.safeParse('123').success).toBe(false);
   });
 });

@@ -15,6 +15,8 @@ import { securityMiddleware } from './middleware/security';
 import { createAuthRouter } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
+import { createProfileRouter } from './modules/profile/profile.routes';
+import { ProfileService } from './modules/profile/profile.service';
 import { createUsersRouter } from './modules/users/users.routes';
 import { UsersService } from './modules/users/users.service';
 
@@ -32,6 +34,8 @@ function createApiRouter(deps: AppDeps): express.Router {
   const auth = new AuthService(deps);
   const users = new UsersService({ ...deps, auth });
   router.use('/auth', createAuthRouter({ env: deps.env, auth, users }));
+  const profile = new ProfileService({ ...deps, auth });
+  router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }

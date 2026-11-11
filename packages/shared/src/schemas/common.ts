@@ -14,8 +14,8 @@ export const emailSchema = z
   .pipe(z.email('Enter a valid email address'))
   .meta({ example: 'name@company.com' });
 
-/** Password rules (PRD ADM-AUTH): at least 10 characters with a letter and a number. */
-export const PASSWORD_MIN_LENGTH = 10;
+/** Password rules (PRD ADM-AUTH): at least 6 characters with a letter and a number. */
+export const PASSWORD_MIN_LENGTH = 6;
 export const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
@@ -23,19 +23,24 @@ export const passwordSchema = z
   .regex(/[A-Za-z]/, 'Password must contain a letter')
   .regex(/\d/, 'Password must contain a number');
 
-/** Phone number: accepts common formats, outputs E.164 (+91XXXXXXXXXX). */
+/**
+ * Phone number: digits only (an optional leading "+" for the country code). Letters,
+ * spaces and other symbols are rejected. A 10-digit number is treated as Indian.
+ * Output: E.164 (+91XXXXXXXXXX).
+ */
 export const phoneSchema = z
   .string()
   .trim()
+  .regex(/^\+?\d+$/, 'Phone number can only contain digits')
   .transform((value, ctx) => {
     const normalized = normalizePhone(value);
     if (!normalized) {
-      ctx.addIssue({ code: 'custom', message: 'Enter a valid phone number' });
+      ctx.addIssue({ code: 'custom', message: 'Enter a valid 10-digit mobile number' });
       return z.NEVER;
     }
     return normalized;
   })
-  .meta({ example: '+919876543210' });
+  .meta({ example: '9876543210' });
 
 /** Standard list query: ?page=1&limit=20&sort=-createdAt */
 export const paginationQuerySchema = z.object({

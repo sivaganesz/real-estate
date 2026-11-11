@@ -8,7 +8,7 @@ import {
   sessionResponseSchema,
 } from '@real-estate/shared';
 import { Router } from 'express';
-import type { CookieOptions, Request, Response } from 'express';
+import type { Request } from 'express';
 import { z } from 'zod';
 import type { Env } from '../../config/env';
 import { ErrorResponseSchema, registry } from '../../docs/openapi';
@@ -16,9 +16,10 @@ import { sendData } from '../../lib/http';
 import { authenticate, requireCsrfHeader } from '../../middleware/auth';
 import { authRateLimiter, passwordResetRateLimiter } from '../../middleware/rateLimit';
 import { endpoint } from '../../middleware/validate';
-import { CSRF_HEADER, REFRESH_COOKIE_NAME, REFRESH_COOKIE_PATH } from './auth.constants';
+import { CSRF_HEADER, REFRESH_COOKIE_NAME } from './auth.constants';
 import type { UsersService } from '../users/users.service';
-import type { AuthService, Session } from './auth.service';
+import type { AuthService } from './auth.service';
+import { clientInfo, createSessionResponder } from './session-response';
 
 // ------------------------------------------------------------------ OpenAPI
 
@@ -134,10 +135,6 @@ registry.registerPath({
 
 // ------------------------------------------------------------------ Routes
 
-function clientInfo(req: Request) {
-  return { ip: req.ip, userAgent: req.get('user-agent') };
-}
-
 export function createAuthRouter(deps: {
   env: Env;
   auth: AuthService;
@@ -146,24 +143,7 @@ export function createAuthRouter(deps: {
   const { env, auth, users } = deps;
   const router = Router();
 
-  const cookieOptions: CookieOptions = {
-    httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: REFRESH_COOKIE_PATH,
-  };
-
-  function sendSession(res: Response, session: Session) {
-    res.cookie(REFRESH_COOKIE_NAME, session.refreshToken, {
-      ...cookieOptions,
-      expires: session.refreshExpiresAt,
-    });
-    sendData(res, {
-      accessToken: session.accessToken,
-      expiresIn: session.expiresIn,
-      user: session.user,
-    });
-  }
+  const { sendSession, clearSession } = createSessionResponder(env);
 
   const readRefreshCookie = (req: Request): string | undefined => {
     const value: unknown = req.cookies?.[REFRESH_COOKIE_NAME];
@@ -182,14 +162,14 @@ export function createAuthRouter(deps: {
     try {
       sendSession(res, await auth.refresh(readRefreshCookie(req), clientInfo(req)));
     } catch (err) {
-      res.clearCookie(REFRESH_COOKIE_NAME, cookieOptions);
+      clearSession(res);
       throw err;
     }
   });
 
   router.post('/logout', requireCsrfHeader, async (req, res) => {
     await auth.logout(readRefreshCookie(req));
-    res.clearCookie(REFRESH_COOKIE_NAME, cookieOptions);
+    clearSession(res);
     res.status(204).end();
   });
 

@@ -232,7 +232,7 @@ A module never reads another module's Mongoose model directly; it calls that mod
 - Cookie-based endpoints (`/auth/refresh`, `/auth/logout`) require an `X-Requested-With` header as a CSRF guard.
 - `POST /auth/logout` revokes the current refresh token.
 - `GET /auth/me` returns the user and their permission list.
-- Passwords are hashed with argon2id. Minimum length is 10 characters.
+- Passwords are hashed with argon2id. Minimum length is 6 characters, with at least one letter and one number (lockout and rate limits protect against guessing).
 - After 5 failed logins the account locks for 15 minutes; a Super Admin can unlock it earlier.
 - The admin UI signs the user out after 30 minutes of inactivity (the server enforces the same limit on refresh).
 - Every authenticated request re-reads the user, so deactivation or a role change takes effect immediately.

@@ -146,7 +146,12 @@ registry.registerPath({
 export function createUsersRouter(deps: { users: UsersService; auth: AuthService }): Router {
   const { users, auth } = deps;
   const router = Router();
-  router.use(authenticate(auth.accessTokens), requirePermission('users:manage'));
+  // Only the users and roles paths are Super Admin only; other /admin routers mount separately.
+  router.use(
+    ['/users', '/roles'],
+    authenticate(auth.accessTokens),
+    requirePermission('users:manage'),
+  );
 
   router.get(
     '/users',

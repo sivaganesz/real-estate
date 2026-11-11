@@ -17,3 +17,10 @@ export function formatPhone(e164: string): string {
   const parsed = parsePhoneNumberFromString(e164);
   return parsed ? parsed.formatInternational() : e164;
 }
+
+/** The number without the country code, for editing in a "+91" field: "+919876543210" → "9876543210". */
+export function nationalNumber(e164: string | null | undefined): string {
+  if (!e164) return '';
+  const parsed = parsePhoneNumberFromString(e164);
+  return parsed ? String(parsed.nationalNumber) : e164.replace(/\D/g, '');
+}
