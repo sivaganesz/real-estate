@@ -2,13 +2,15 @@ import { ROLES } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import type { InferSchemaType } from 'mongoose';
 import { auditPlugin } from '../../db/auditPlugin';
+import { idField } from '../../db/ids';
 
 export const USER_STATUSES = ['invited', 'active', 'inactive'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
-/** Staff users (TRD §7.1). Auth fields are used from Phase 1 step 1.3 onwards. */
+/** Staff users (TRD §7.1). */
 const userSchema = new Schema(
   {
+    _id: idField,
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, trim: true },

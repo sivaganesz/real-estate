@@ -1,4 +1,5 @@
 import { model, Schema } from 'mongoose';
+import { idField, refField } from '../../db/ids';
 
 /**
  * One document per settings key (TRD §7.4): "company" in Phase 1, "visitSlots" in Phase 3.
@@ -6,9 +7,10 @@ import { model, Schema } from 'mongoose';
  */
 const settingsSchema = new Schema(
   {
+    _id: idField,
     key: { type: String, required: true },
     value: { type: Schema.Types.Mixed, required: true },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: refField('User'),
   },
   { timestamps: true, minimize: false },
 );

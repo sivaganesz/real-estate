@@ -6,6 +6,7 @@ import type { EmailMessage, EmailProvider } from './types';
 
 export * from './types';
 export * from './layout';
+export * from './templates';
 export { ConsoleEmailProvider } from './console';
 export { ResendEmailProvider } from './resend';
 

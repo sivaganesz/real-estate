@@ -1,4 +1,3 @@
-import type { Types } from 'mongoose';
 import type { ChangeEntity } from './changeLog.model';
 import { ChangeLogModel } from './changeLog.model';
 
@@ -20,9 +19,9 @@ export function diffFields(
 }
 
 interface RecordChangeInput {
-  actorId?: Types.ObjectId | string;
+  actorId?: string;
   entity: ChangeEntity;
-  entityId: Types.ObjectId | string;
+  entityId: string;
   action: string;
   changes?: FieldChanges;
 }

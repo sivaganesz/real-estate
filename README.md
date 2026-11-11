@@ -43,7 +43,8 @@ docs/         PRD, TRD, checklist, wireframes
 # 1. Install dependencies
 pnpm install
 
-# 2. Start MongoDB locally
+# 2. Start MongoDB locally (Docker, host port 27018, so it never clashes with an
+#    installed MongoDB on the default port 27017)
 pnpm db:up
 
 # 3. Create the API environment file, then fill in the JWT secrets and SEED_SUPERADMIN_* values

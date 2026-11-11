@@ -5,7 +5,7 @@ services:
     container_name: real-estate-mongo
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - '27018:27017' # host port 27018 avoids clashing with a locally installed MongoDB
     volumes:
       - mongo-data:/data/db
     healthcheck:

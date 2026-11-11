@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import { normalizePhone } from '../phone';
 
-/** MongoDB ObjectId as a 24-character hex string. */
-export const objectIdSchema = z
-  .string()
-  .regex(/^[a-f\d]{24}$/i, 'Invalid id')
-  .meta({ description: 'MongoDB ObjectId', example: '665f1c2b9d3e4a0012ab34cd' });
+/** Record id: a UUID (v7, time-ordered) stored as a string. */
+export const idSchema = z
+  .uuid('Invalid id')
+  .meta({ description: 'Record id (UUID)', example: '0192f3a4-7b1c-7e2d-9a3f-1c2b3d4e5f60' });
 
 /** Email, trimmed and lower-cased. */
 export const emailSchema = z

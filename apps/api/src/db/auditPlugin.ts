@@ -1,4 +1,5 @@
-import { Schema } from 'mongoose';
+import type { Schema } from 'mongoose';
+import { refField } from './ids';
 
 /**
  * Adds `createdBy` / `updatedBy` (user ids) to a schema. Combine with
@@ -6,7 +7,7 @@ import { Schema } from 'mongoose';
  */
 export function auditPlugin(schema: Schema): void {
   schema.add({
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: refField('User'),
+    updatedBy: refField('User'),
   });
 }

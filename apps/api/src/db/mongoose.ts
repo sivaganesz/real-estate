@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import type { Logger } from '../lib/logger';
 
-// Reject unknown query fields and wrap query filters so user input can't inject operators.
+// Reject unknown query fields. Operator injection is blocked earlier: request bodies are
+// stripped of "$" keys (middleware/sanitize.ts) and every input is validated with Zod.
 mongoose.set('strictQuery', true);
-mongoose.set('sanitizeFilter', true);
 
 export type DatabaseStatus = 'connected' | 'connecting' | 'disconnected';
 

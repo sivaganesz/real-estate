@@ -2,8 +2,8 @@ import type { RequestHandler } from 'express';
 
 /**
  * Removes object keys that start with "$" or contain "." from the request body, so input
- * can't inject MongoDB operators (e.g. { "email": { "$ne": null } }). Query strings are
- * validated with Zod and Mongoose's `sanitizeFilter` is enabled as a second layer.
+ * can't inject MongoDB operators (e.g. { "email": { "$ne": null } }). Params and query strings
+ * are validated with Zod before they reach a database query.
  */
 export function stripMongoOperators(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripMongoOperators);

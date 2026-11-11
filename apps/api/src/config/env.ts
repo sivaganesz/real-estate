@@ -13,7 +13,6 @@ const envSchema = z
     MONGODB_URI: z.string().min(1, 'is required'),
 
     JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 characters'),
-    JWT_REFRESH_SECRET: z.string().min(32, 'must be at least 32 characters'),
 
     ADMIN_ORIGIN: z.url('must be a URL'),
     WEB_ORIGIN: z.url('must be a URL').optional(),

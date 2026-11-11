@@ -90,7 +90,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
   - [x] Helmet
   - [x] CORS for the admin and website origins
   - [x] Request body size limits
-  - [ ] Rate limiting (in-memory) on auth routes (limiters ready; applied to the auth routes in 1.3)
+  - [x] Rate limiting (in-memory) on auth routes (login and reset 10/min, forgot password 5/hour per IP)
 - [x] Pagination, sorting and filtering helpers
 - [x] Audit fields (`createdBy`, `updatedBy`, timestamps) and a simple `changeLogs` collection for important changes
 - [x] **Storage module** (`lib/storage`):
@@ -110,23 +110,26 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Seed script: first Super Admin, default company info
 
 ### 1.3 Authentication
-- [ ] `users` model: name, email (unique), phone, role, status (invited / active / inactive), password hash, last login, failed attempts, locked until
-- [ ] Password hashing (argon2id)
-- [ ] Login: issues an access token, plus a refresh token stored as an httpOnly cookie
-- [ ] Token refresh with rotation, and logout (revokes the refresh token)
-- [ ] `GET /auth/me` (current user and permissions)
-- [ ] `authTokens` model for invite and reset links (hashed, single-use, expiring)
-- [ ] Forgot password: reset link emailed through the email module
-- [ ] Reset password: validate the token, set a new password, revoke all sessions
-- [ ] Lock the account after repeated failed logins; unlock after a set time or by Super Admin
-- [ ] Session timeout after inactivity (admin UI)
+- [x] `users` model (UUID v7 ids): name, email (unique), phone, role, status (invited / active / inactive), password hash, last login, failed attempts, locked until
+- [x] Password hashing (argon2id)
+- [x] Login: issues an access token, plus a refresh token stored as an httpOnly cookie
+- [x] Token refresh with rotation and reuse detection, and logout (revokes the refresh token)
+- [x] `GET /auth/me` (current user and permissions)
+- [x] `authTokens` model for invite and reset links (hashed, single-use, expiring)
+- [x] Forgot password: reset link emailed through the email module
+- [x] Reset password: validate the token, set a new password, revoke all sessions
+- [x] Lock the account after repeated failed logins; unlock after a set time
+- [ ] Unlock by Super Admin (comes with the Users module in 1.5)
+- [x] Session timeout after 30 minutes of inactivity: enforced by the server on refresh
+- [ ] Session timeout in the admin UI (sign-out screen, comes with 1.8)
 
 ### 1.4 Roles and permissions
-- [ ] Three fixed roles defined in code: Super Admin, Admin, Sales Agent
-- [ ] Permission strings per module (e.g. `users:manage`, `settings:edit`, `properties:write`)
-- [ ] Middleware that checks permissions on every protected route
+- [x] Three fixed roles defined in code: Super Admin, Admin, Sales Agent
+- [x] Permission strings per module (e.g. `users:manage`, `settings:edit`, `properties:write`)
+- [x] Middleware that checks permissions on protected routes (`authenticate` + `requirePermission`)
 - [ ] "Own data only" rule for Sales Agents (used for appointments in Phase 3)
-- [ ] Permission list exposed to the UI, which hides menus and buttons the user can't use
+- [x] Permission list exposed to the UI through `/auth/me`
+- [ ] Admin UI hides menus and buttons the user can't use (comes with 1.8)
 
 ### 1.5 Users & Roles module
 - [ ] **API**

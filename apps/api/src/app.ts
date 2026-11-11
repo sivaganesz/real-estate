@@ -1,4 +1,5 @@
 import path from 'node:path';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import type { Express } from 'express';
 import type { Env } from './config/env';
@@ -11,6 +12,8 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { sanitizeBody } from './middleware/sanitize';
 import { securityMiddleware } from './middleware/security';
+import { createAuthRouter } from './modules/auth/auth.routes';
+import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
 
 /** Everything the app needs from outside; passed in so tests can swap providers. */
@@ -21,9 +24,12 @@ export interface AppDeps {
   email: EmailProvider;
 }
 
-/** Routes under /api/v1. Modules (auth, users, settings, …) are added here from step 1.3. */
-function createApiRouter(_deps: AppDeps): express.Router {
-  return express.Router();
+/** Routes under /api/v1. Each module mounts its own router here. */
+function createApiRouter(deps: AppDeps): express.Router {
+  const router = express.Router();
+  const auth = new AuthService(deps);
+  router.use('/auth', createAuthRouter({ env: deps.env, auth }));
+  return router;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -36,6 +42,7 @@ export function createApp(deps: AppDeps): Express {
 
   app.use(requestLogger(logger));
   app.use(securityMiddleware(env));
+  app.use(cookieParser());
   app.use(sanitizeBody);
 
   // Public uploaded files (logo, property media). The imports folder is never served.

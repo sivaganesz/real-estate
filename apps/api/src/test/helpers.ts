@@ -14,7 +14,6 @@ export const TEST_ENV_VARS = {
   NODE_ENV: 'test',
   MONGODB_URI: 'mongodb://127.0.0.1:27017/real_estate_test',
   JWT_ACCESS_SECRET: 'test-access-secret-test-access-secret-0001',
-  JWT_REFRESH_SECRET: 'test-refresh-secret-test-refresh-secret-01',
   ADMIN_ORIGIN: 'http://localhost:5173',
   APP_BASE_URL: 'http://localhost:5173',
   EMAIL_PROVIDER: 'console',

@@ -58,7 +58,11 @@ function basicAuth(credentials: string): RequestHandler {
     if (given && safeEqual(given, expected)) return next();
     res.set('WWW-Authenticate', 'Basic realm="API docs"');
     res.status(401).json({
-      error: { code: 'UNAUTHENTICATED', message: 'API docs require a login', requestId: String(req.id ?? '') },
+      error: {
+        code: 'UNAUTHENTICATED',
+        message: 'API docs require a login',
+        requestId: String(req.id ?? ''),
+      },
     });
   };
 }
@@ -77,5 +81,10 @@ export function mountApiDocs(app: Express, env: Env): void {
   app.get('/api/openapi.json', ...guard, (_req, res) => {
     res.json(document);
   });
-  app.use('/api/docs', ...guard, swaggerUi.serve, swaggerUi.setup(document, { customSiteTitle: `${APP_NAME} docs` }));
+  app.use(
+    '/api/docs',
+    ...guard,
+    swaggerUi.serve,
+    swaggerUi.setup(document, { customSiteTitle: `${APP_NAME} docs` }),
+  );
 }
