@@ -196,21 +196,21 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Light and dark themes (Light / Dark switch in the account menu, remembered per browser; dark palette with orange accent)
 
 ### 1.9 Phase 1 testing and demo
-- [ ] Unit tests: password rules, token handling, permission checks
-- [ ] API integration tests:
-  - [ ] Auth flows, users CRUD, safety rules, company info
-  - [ ] Logo upload (temporary upload folder)
-  - [ ] Emails sent through a fake provider
-- [ ] Postman collection generated from the OpenAPI spec, with tests passing
-- [ ] UI checks: login, invite, accept invite, edit user, role-based menus, company info
-- [ ] Demo checklist:
-  - [ ] Log in as each role
-  - [ ] Invite a user (email arrives) and accept the invite
-  - [ ] Change a role
-  - [ ] Deactivate a user
-  - [ ] Reset a password
-  - [ ] Edit company info and logo
-- [ ] Collect feedback and fix the agreed items
+- [x] Unit tests: password rules, token handling, permission checks
+- [x] API integration tests:
+  - [x] Auth flows, users CRUD, safety rules, company info
+  - [x] Logo upload (temporary upload folder)
+  - [x] Emails sent through a fake provider
+- [ ] Postman collection generated from the OpenAPI spec, with tests passing (not needed for now, as agreed; the API is covered by the integration tests and the live spec at `/api/docs`)
+- [x] UI checks: login, invite, accept invite, edit user, role-based menus, company info (component tests)
+- [x] Demo checklist (checked manually):
+  - [x] Log in as each role
+  - [x] Invite a user (email arrives) and accept the invite
+  - [x] Change a role
+  - [x] Deactivate a user
+  - [x] Reset a password
+  - [x] Edit company info and logo
+- [x] Collect feedback and fix the agreed items
 
 ---
 
