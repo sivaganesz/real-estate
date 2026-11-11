@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 1 Wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1f1f1f; --muted:#555; --line:#c4c4c4; --line2:#e0e0e0; --soft:#f4f4f4; --ph:#ececec; --ph-line:#8a8a8a;
+    --dark:#2b2b2b; --bg:#f7f7f7; --card:#fff; --note:#fffbe6; --note-line:#b8a24a; --danger:#8a1f1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+  a{color:var(--ink)}
+  [hidden]{display:none !important}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  /* primitives */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;border:1.5px solid #555;border-radius:6px;background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .btn.pri{background:var(--dark);border-color:var(--dark);color:#fff}
+  .btn.sm{min-height:30px;padding:0 10px;font-size:12px}
+  .btn.danger{border-color:var(--danger);color:var(--danger)}
+  .btn.danger.pri{background:var(--danger);color:#fff}
+  .btn.link{border:0;background:none;padding:0;min-height:0;text-decoration:underline}
+  .in,.sel,textarea.in{display:block;width:100%;min-height:36px;padding:0 10px;border:1.5px solid #9a9a9a;border-radius:6px;background:#fff;font:inherit;font-size:13px;color:var(--ink)}
+  textarea.in{padding:8px 10px;min-height:80px;resize:vertical}
+  .in[readonly]{background:var(--soft);color:#444}
+  .lbl{display:block;font-size:12px;font-weight:600;color:#333;margin-bottom:4px}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .err{font-size:12px;color:var(--danger);margin-top:4px;font-weight:600}
+  .field{display:flex;flex-direction:column}
+  .card{border:1.5px solid var(--line);border-radius:8px;background:var(--card);padding:16px}
+  .ph{background:var(--ph);border:1.5px dashed var(--ph-line);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#444;font-size:12px;font-weight:600;text-align:center;padding:4px}
+  .chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border:1px solid #777;border-radius:999px;font-size:11px;font-weight:600;background:var(--soft);white-space:nowrap}
+  .chip.dk{background:var(--dark);border-color:var(--dark);color:#fff}
+  .chip.out{background:#fff;border-style:dashed}
+  .chip.warn{background:var(--note);border-color:var(--note-line);color:#4a3f00}
+  .chip.bad{background:#fff;border-color:var(--danger);color:var(--danger)}
+  .ico{display:inline-block;width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;flex:none}
+  .muted{color:var(--muted);font-size:12px}
+  .h1{margin:0;font-size:22px;font-weight:700}
+  .h2{margin:0;font-size:17px;font-weight:700}
+  .sub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+  .sec{margin:0;font-size:14px;font-weight:700}
+  .note{border:1.5px dashed var(--note-line);background:var(--note);border-radius:6px;padding:8px 10px;font-size:12px;color:#4a3f00}
+  .ok{border:1.5px solid #6b8f6b;background:#f1f7f1;border-radius:6px;padding:10px 12px;font-size:13px}
+  .tblwrap{overflow-x:auto}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#444;padding:10px 12px;border-bottom:1.5px solid #9a9a9a;background:var(--soft);white-space:nowrap}
+  .tbl td{padding:10px 12px;border-bottom:1px solid #ddd;vertical-align:middle}
+  .check{display:inline-flex;width:18px;height:18px;border:1.5px solid #555;border-radius:4px;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .check.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+  .tog{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+
+  /* layout helpers */
+  .row{display:flex;flex-wrap:wrap;gap:16px}
+  .between{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  @media (max-width:760px){.grid-2,.grid-3{grid-template-columns:1fr}}
+  .pagehead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+  /* tabs + navbar */
+  .tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);overflow-x:auto}
+  .tabs a{font-size:13px;font-weight:600;padding:10px 12px;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+  .tabs a.on{color:var(--ink);border-bottom-color:var(--dark)}
+  .setnav{display:flex;gap:4px;padding:6px;background:#fff;border:1.5px solid var(--line);border-radius:8px;overflow-x:auto}
+  .setnav a,.setnav > span{display:flex;align-items:center;gap:6px;flex:none;min-height:38px;padding:0 16px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap}
+  .setnav a.on{background:var(--dark);color:#fff}
+  .setnav > span{color:#9a9a9a;cursor:not-allowed}
+  .seg{display:inline-flex;border:1.5px solid #555;border-radius:6px;overflow:hidden}
+  .seg button{border:0;border-right:1.5px solid #555;background:#fff;font:inherit;font-size:12px;font-weight:600;padding:0 10px;min-height:30px;cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg .on{background:var(--dark);color:#fff}
+
+  /* app shell */
+  .app{min-height:100vh;display:flex;flex-wrap:wrap}
+  .side{flex:1 1 220px;background:#fff;border-right:1.5px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 12px}
+  .navgrp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 12px 4px}
+  .side .nav{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 12px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500}
+  .side a.nav.on{background:var(--dark);color:#fff}
+  .side .nav.soon{color:#9a9a9a;justify-content:space-between}
+  .side .nav.soon .chip{height:18px;font-size:10px;color:#777;background:#fff;border-style:dashed}
+  .content{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 24px;background:#fff;border-bottom:1.5px solid var(--line)}
+  main{padding:24px;display:flex;flex-direction:column;gap:20px}
+  main>section{display:flex;flex-direction:column;gap:20px}
+
+  /* auth screens */
+  .auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .auth .card{width:100%;max-width:420px;padding:28px}
+  .auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .rules{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:12px}
+  .rules li::before{content:"○ ";font-weight:700}
+  .rules li.done::before{content:"✓ "}
+  .rules li.done{color:#2f5f2f}
+
+  /* overlays: drawer + modal */
+  .overlay{position:fixed;inset:0;background:rgba(20,20,20,.38);display:flex;justify-content:flex-end;z-index:30}
+  .overlay.center{align-items:center;justify-content:center;padding:16px}
+  .drawer{width:min(460px,100%);height:100%;overflow:auto;background:#fff;border-left:1.5px solid var(--line);padding:20px;display:flex;flex-direction:column;gap:16px}
+  .modal{width:min(440px,100%);background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .rolecard{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+  .rolecard.on{border-color:var(--dark);background:var(--soft)}
+  .rolecard input{margin-top:3px}
+
+  /* wireframe helper box */
+  .wftools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1.5px dashed var(--note-line);background:var(--note);border-radius:8px;padding:6px 10px;font-size:12px}
+  .wftools a{font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     PHASE 1 WIREFRAMES — Settings & User Management
+     Screens: login · forgot-password · reset-password · accept-invite ·
+              users (+ invite / edit drawers, deactivate dialog) · roles ·
+              profile · settings-company · no-access
+     Use "Preview as" (bottom-right) to see menus per role.
+     ===================================================================== -->
+
+<!-- 01 · LOGIN ========================================================= -->
+<div class="auth" data-screen="login" data-auth hidden>
+  <div class="card">
+    <div class="auth-brand"><div class="ph" style="width:44px;height:44px;font-size:10px">LOGO</div><div><div style="font-weight:700">[Company] Realty</div><div class="muted">Admin Portal</div></div></div>
+    <h1 class="h1" style="font-size:20px">Sign in</h1>
+    <p class="sub">Use your staff email and password</p>
+    <form class="stack" style="margin-top:18px" onsubmit="location.hash='users';return false;">
+      <div class="field"><label class="lbl" for="lg-email">Email</label><input id="lg-email" class="in" type="email" placeholder="name@company.com"></div>
+      <div class="field"><label class="lbl" for="lg-pass">Password</label>
+        <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="lg-pass" class="in" type="password" placeholder="••••••••••"><button type="button" class="btn sm">Show</button></div></div>
+      <div class="between"><span></span><a href="#forgot-password" style="font-size:13px">Forgot password?</a></div>
+      <button class="btn pri" type="submit" style="width:100%">Sign in</button>
+      <div class="note"><b>Error states:</b> "Email or password is incorrect" (doesn't say which). After 5 failed attempts: "Account locked for 15 minutes. Try again later or ask your Super Admin to unlock it."</div>
+    </form>
+  </div>
+</div>
+
+<!-- 02 · FORGOT PASSWORD =============================================== -->
+<div class="auth" data-screen="forgot-password" data-auth hidden>
+  <div class="card">
+    <div class="auth-brand"><div class="ph" style="width:44px;height:44px;font-size:10px">LOGO</div><div><div style="font-weight:700">[Company] Realty</div><div class="muted">Admin Portal</div></div></div>
+    <h1 class="h1" style="font-size:20px">Forgot password</h1>
+    <p class="sub">Enter your email and we'll send you a link to reset your password.</p>
+    <div class="stack" style="margin-top:18px">
+      <div class="field"><label class="lbl" for="fp-email">Email</label><input id="fp-email" class="in" type="email" value="agent.a@company.com"></div>
+      <button class="btn pri" style="width:100%">Send reset link</button>
+      <div class="ok"><b>Check your email.</b> If an account exists for this address, we've sent a reset link. It expires in 1 hour.<div class="muted" style="margin-top:4px">(shown after clicking "Send reset link")</div></div>
+      <a href="#login" style="font-size:13px;text-align:center">← Back to sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- 03 · RESET PASSWORD ================================================ -->
+<div class="auth" data-screen="reset-password" data-auth hidden>
+  <div class="card">
+    <div class="auth-brand"><div class="ph" style="width:44px;height:44px;font-size:10px">LOGO</div><div><div style="font-weight:700">[Company] Realty</div><div class="muted">Admin Portal</div></div></div>
+    <h1 class="h1" style="font-size:20px">Set a new password</h1>
+    <p class="sub">For agent.a@company.com</p>
+    <div class="stack" style="margin-top:18px">
+      <div class="field"><label class="lbl" for="rp-new">New password</label><input id="rp-new" class="in" type="password" value="••••••••••••"></div>
+      <div class="field"><label class="lbl" for="rp-conf">Confirm new password</label><input id="rp-conf" class="in" type="password" value="••••••••••••"></div>
+      <ul class="rules"><li class="done">At least 10 characters</li><li class="done">Contains a letter and a number</li><li class="done">Both passwords match</li></ul>
+      <button class="btn pri" style="width:100%" onclick="location.hash='login'">Save new password</button>
+      <div class="note">After saving, you're signed out everywhere and taken to Sign in. <b>Expired link:</b> "This link has expired. Request a new one." → Forgot password.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 · ACCEPT INVITE ================================================= -->
+<div class="auth" data-screen="accept-invite" data-auth hidden>
+  <div class="card">
+    <div class="auth-brand"><div class="ph" style="width:44px;height:44px;font-size:10px">LOGO</div><div><div style="font-weight:700">[Company] Realty</div><div class="muted">Admin Portal</div></div></div>
+    <h1 class="h1" style="font-size:20px">Welcome, Agent B</h1>
+    <p class="sub">Owner name invited you to join as <b>Sales Agent</b>. Set a password to activate your account.</p>
+    <div class="stack" style="margin-top:18px">
+      <div class="field"><label class="lbl" for="ai-email">Email</label><input id="ai-email" class="in" value="agent.b@company.com" readonly></div>
+      <div class="field"><label class="lbl" for="ai-new">Password</label><input id="ai-new" class="in" type="password" placeholder="At least 10 characters"></div>
+      <div class="field"><label class="lbl" for="ai-conf">Confirm password</label><input id="ai-conf" class="in" type="password"></div>
+      <ul class="rules"><li>At least 10 characters</li><li>Contains a letter and a number</li><li>Both passwords match</li></ul>
+      <button class="btn pri" style="width:100%" onclick="location.hash='profile'">Activate account</button>
+      <div class="note"><b>Expired link (after 72 hours):</b> "This invite has expired. Ask your administrator to send a new one."</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL ========================================================== -->
+<div class="app" id="app">
+  <nav class="side" aria-label="Main">
+    <div class="brand"><div class="ph" style="width:36px;height:36px;font-size:10px">LOGO</div><div><div style="font-weight:700;font-size:14px">[Company] Realty</div><div class="muted">Admin Portal</div></div></div>
+
+    <div class="navgrp" data-roles="super_admin admin">Administration</div>
+    <a class="nav" href="#users" data-nav="users" data-roles="super_admin"><span class="ico" aria-hidden="true"></span>Users &amp; Roles</a>
+    <a class="nav" href="#settings-company" data-nav="settings" data-roles="super_admin admin"><span class="ico" aria-hidden="true"></span>Settings</a>
+
+    <div class="navgrp">Coming next</div>
+    <span class="nav soon"><span>Properties</span><span class="chip">Phase 2</span></span>
+    <span class="nav soon"><span>Bulk Import</span><span class="chip">Phase 2</span></span>
+    <span class="nav soon"><span>Appointments</span><span class="chip">Phase 3</span></span>
+    <span class="nav soon"><span>Leads</span><span class="chip">Phase 3</span></span>
+    <span class="nav soon"><span>Conversations</span><span class="chip">Phase 3</span></span>
+    <span class="nav soon"><span>Call Logs</span><span class="chip">Phase 3</span></span>
+
+    <div style="margin-top:auto;padding-top:16px">
+      <a class="nav" href="#profile" data-nav="profile"><span class="ico" aria-hidden="true"></span>My Profile</a>
+      <a class="nav" href="#login"><span class="ico" aria-hidden="true"></span>Sign out</a>
+    </div>
+  </nav>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="wftools" aria-label="Wireframe tools"><b>Wireframe · preview as</b>
+        <div class="seg" role="group" aria-label="Preview as role" id="rolebar"><button class="on" data-role="super_admin">Super Admin</button><button data-role="admin">Admin</button><button data-role="sales_agent">Sales Agent</button></div>
+        <span>Auth screens: <a href="#login">Login</a> · <a href="#forgot-password">Forgot</a> · <a href="#reset-password">Reset</a> · <a href="#accept-invite">Accept invite</a></span>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <a class="btn" href="#profile"><span class="ph" style="width:24px;height:24px;border-radius:999px;font-size:9px;padding:0">ON</span><span id="who">Owner name · Super Admin</span> ▾</a>
+      </div>
+    </header>
+
+    <main>
+
+<!-- 05 · USERS ========================================================= -->
+<section data-screen="users" data-nav="users" data-roles="super_admin" hidden>
+  <div class="pagehead">
+    <div><h1 class="h1">Users &amp; Roles</h1><p class="sub">Staff accounts and what each role can do</p></div>
+    <div class="actions"><a class="btn pri" href="#users-invite">+ Invite user</a></div>
+  </div>
+  <div class="tabs"><a class="on" href="#users">Users</a><a href="#roles">Roles &amp; permissions</a></div>
+
+  <div class="card stack">
+    <div class="filters">
+      <label style="flex:1 1 240px"><span class="sr">Search users</span><input class="in" placeholder="Search name, email or phone…"></label>
+      <label><span class="sr">Role</span><select class="sel"><option>All roles</option><option>Super Admin</option><option>Admin</option><option>Sales Agent</option></select></label>
+      <label><span class="sr">Status</span><select class="sel"><option>All statuses</option><option>Active</option><option>Invited</option><option>Locked</option><option>Inactive</option></select></label>
+    </div>
+    <div class="filters"><span class="chip">4 active</span><span class="chip out">1 invited</span><span class="chip bad">1 locked</span><span class="chip">1 inactive</span></div>
+    <div class="tblwrap"><table class="tbl" style="min-width:820px">
+      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>Owner name</b> <span class="chip out">You</span><div class="muted">owner@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip dk">Super Admin</span></td><td>Active</td><td class="muted">Today, 9:12 am</td><td><a class="btn sm" href="#users-edit">Edit</a></td></tr>
+        <tr><td><b>Admin User</b><div class="muted">admin@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip">Admin</span></td><td>Active</td><td class="muted">Today, 10:40 am</td><td><a class="btn sm" href="#users-edit">Edit</a></td></tr>
+        <tr><td><b>Agent A</b><div class="muted">agent.a@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip">Sales Agent</span></td><td>Active</td><td class="muted">Yesterday</td><td><a class="btn sm" href="#users-edit">Edit</a></td></tr>
+        <tr><td><b>Agent B</b><div class="muted">agent.b@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip">Sales Agent</span></td><td><span class="chip out">Invited</span><div class="muted">expires in 2 days</div></td><td class="muted">—</td><td><div class="actions"><button class="btn sm">Resend invite</button><a class="btn sm" href="#users-edit">Edit</a></div></td></tr>
+        <tr><td><b>Agent C</b><div class="muted">agent.c@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip">Sales Agent</span></td><td><span class="chip bad">Locked</span><div class="muted">5 failed logins</div></td><td class="muted">3 days ago</td><td><div class="actions"><button class="btn sm">Unlock</button><a class="btn sm" href="#users-edit">Edit</a></div></td></tr>
+        <tr><td><b>Former Staff</b><div class="muted">former@company.com</div></td><td>+91 9XXXX XXXXX</td><td><span class="chip">Admin</span></td><td><span class="chip">Inactive</span></td><td class="muted">2 months ago</td><td><div class="actions"><button class="btn sm">Reactivate</button><a class="btn sm" href="#users-edit">Edit</a></div></td></tr>
+      </tbody></table></div>
+    <div class="between"><span class="muted">Showing 1–6 of 6</span><div class="actions"><button class="btn sm">‹ Prev</button><button class="btn sm">Next ›</button></div></div>
+  </div>
+  <div class="note"><b>Rules:</b> users are never deleted (deactivate instead, so history is kept). You can't deactivate or change your own role. There must always be at least one active Super Admin.</div>
+</section>
+
+<!-- 06 · ROLES & PERMISSIONS (read-only) =============================== -->
+<section data-screen="roles" data-nav="users" data-roles="super_admin" hidden>
+  <div class="pagehead">
+    <div><h1 class="h1">Users &amp; Roles</h1><p class="sub">Staff accounts and what each role can do</p></div>
+    <div class="actions"><a class="btn pri" href="#users-invite">+ Invite user</a></div>
+  </div>
+  <div class="tabs"><a href="#users">Users</a><a class="on" href="#roles">Roles &amp; permissions</a></div>
+  <div class="card stack">
+    <div class="between"><h2 class="sec">What each role can do</h2><span class="chip out">Read-only · roles are fixed</span></div>
+    <div class="tblwrap"><table class="tbl" style="min-width:640px">
+      <thead><tr><th>Module</th><th>Super Admin</th><th>Admin</th><th>Sales Agent</th></tr></thead>
+      <tbody>
+        <tr><td>Users &amp; Roles</td><td><span class="check on">✓</span></td><td><span class="check"></span></td><td><span class="check"></span></td></tr>
+        <tr><td>Settings</td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td><td><span class="check"></span></td></tr>
+        <tr><td>My Profile</td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td></tr>
+        <tr><td class="muted">Properties: view <span class="chip out">Phase 2</span></td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td></tr>
+        <tr><td class="muted">Properties: add / edit / publish, Bulk Import <span class="chip out">Phase 2</span></td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td><td><span class="check"></span></td></tr>
+        <tr><td class="muted">Appointments <span class="chip out">Phase 3</span></td><td>All</td><td>All</td><td>Own only</td></tr>
+        <tr><td class="muted">Leads, Conversations, Call Logs <span class="chip out">Phase 3</span></td><td><span class="check on">✓</span></td><td><span class="check on">✓</span></td><td>View</td></tr>
+      </tbody></table></div>
+    <div class="grid-3">
+      <div class="card"><b>Super Admin</b><p class="muted" style="margin:6px 0 0">Owner / IT. Everything, including managing users.</p></div>
+      <div class="card"><b>Admin</b><p class="muted" style="margin:6px 0 0">Office staff. Settings, properties and appointments. Can't manage users.</p></div>
+      <div class="card"><b>Sales Agent</b><p class="muted" style="margin:6px 0 0">Field staff who host visits. Views properties, manages own appointments.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 · MY PROFILE ==================================================== -->
+<section data-screen="profile" data-nav="profile" hidden>
+  <div class="pagehead"><div><h1 class="h1">My Profile</h1><p class="sub">Your account details and password</p></div></div>
+  <div class="row" style="align-items:flex-start">
+    <div class="card stack" style="flex:1 1 360px;min-width:0">
+      <h2 class="sec">Personal details</h2>
+      <div class="field"><label class="lbl" for="pr-name">Full name *</label><input id="pr-name" class="in" value="Owner name"></div>
+      <div class="field"><label class="lbl" for="pr-email">Email</label><input id="pr-email" class="in" value="owner@company.com" readonly><span class="hint">Used to sign in. Ask a Super Admin to change it.</span></div>
+      <div class="field"><label class="lbl" for="pr-phone">Phone</label><input id="pr-phone" class="in" value="+91 9XXXX XXXXX"></div>
+      <div class="field"><span class="lbl">Role</span><div><span class="chip dk" id="pr-role">Super Admin</span></div></div>
+      <div class="actions" style="justify-content:flex-end"><button class="btn pri">Save details</button></div>
+    </div>
+    <div class="card stack" style="flex:1 1 360px;min-width:0">
+      <h2 class="sec">Change password</h2>
+      <div class="field"><label class="lbl" for="pr-cur">Current password *</label><input id="pr-cur" class="in" type="password"></div>
+      <div class="field"><label class="lbl" for="pr-new">New password *</label><input id="pr-new" class="in" type="password"></div>
+      <div class="field"><label class="lbl" for="pr-conf">Confirm new password *</label><input id="pr-conf" class="in" type="password"></div>
+      <ul class="rules"><li>At least 10 characters</li><li>Contains a letter and a number</li><li>Both passwords match</li></ul>
+      <div class="note">After changing your password, other devices are signed out and you get a confirmation email.</div>
+      <div class="actions" style="justify-content:flex-end"><button class="btn pri">Update password</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 · SETTINGS → COMPANY INFO ======================================= -->
+<section data-screen="settings-company" data-nav="settings" data-roles="super_admin admin" hidden>
+  <div class="pagehead"><div><h1 class="h1">Settings</h1><p class="sub">Business details used across the admin portal, emails and (later) the website and AI agent</p></div></div>
+  <nav class="setnav" aria-label="Settings">
+    <a class="on" href="#settings-company" aria-current="page">Company info</a>
+    <span title="Available in Phase 2">Property types &amp; amenities <span class="chip out">Phase 2</span></span>
+    <span title="Available in Phase 3">Visit slots <span class="chip out">Phase 3</span></span>
+  </nav>
+
+  <div class="between">
+    <div><h2 class="h2">Company info</h2><p class="sub">Last updated by Admin User · 10 Nov 2026, 4:12 pm</p></div>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn pri">Save changes</button></div>
+  </div>
+
+  <div class="card stack">
+    <h3 class="sec">Brand</h3>
+    <div class="row" style="align-items:flex-start">
+      <div class="stack" style="flex:0 0 auto;align-items:center">
+        <div class="ph" style="width:120px;height:120px">LOGO<br>preview</div>
+        <div class="actions"><button class="btn sm">Upload</button><button class="btn sm">Remove</button></div>
+        <span class="muted">PNG, JPG or WebP · max 10 MB</span>
+      </div>
+      <div class="stack" style="flex:1 1 320px;min-width:0">
+        <div class="field"><label class="lbl" for="ci-name">Company name *</label><input id="ci-name" class="in" value="[Company] Realty"></div>
+        <div class="field"><label class="lbl" for="ci-desc">Short description</label><textarea id="ci-desc" class="in" placeholder="2–3 lines about the company (used in emails and, later, the website footer)"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h3 class="sec">Contact details</h3>
+    <div class="row" style="align-items:flex-start">
+      <div class="grid-2" style="flex:2 1 380px">
+        <div class="field" style="grid-column:1/-1"><label class="lbl" for="ci-addr">Office address *</label><textarea id="ci-addr" class="in" style="min-height:64px">No. 12, GST Road, Tambaram, Chennai 600045</textarea></div>
+        <div class="field"><label class="lbl" for="ci-ph1">Primary phone *</label><input id="ci-ph1" class="in" value="+91 44 XXXX XXXX"></div>
+        <div class="field"><label class="lbl" for="ci-ph2">Alternate phone</label><input id="ci-ph2" class="in"></div>
+        <div class="field"><label class="lbl" for="ci-wa">WhatsApp number <span class="muted">(display only)</span></label><input id="ci-wa" class="in" value="+91 9XXXX XXXXX"></div>
+        <div class="field"><label class="lbl" for="ci-mail">Public email *</label><input id="ci-mail" class="in" value="info@company.com"></div>
+        <div class="field" style="grid-column:1/-1"><label class="lbl" for="ci-notify">Send enquiry notifications to</label><input id="ci-notify" class="in" value="sales@company.com, owner@company.com"><span class="hint">Comma-separated emails</span></div>
+      </div>
+      <div class="stack" style="flex:1 1 220px">
+        <span class="lbl">Office map pin <span class="muted">(optional)</span></span>
+        <div class="ph" style="height:170px">MAP<br>click to place the office pin</div>
+        <div class="grid-2"><input class="in" placeholder="Latitude" aria-label="Latitude"><input class="in" placeholder="Longitude" aria-label="Longitude"></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- 09 · NO ACCESS ===================================================== -->
+<section data-screen="no-access" hidden>
+  <div class="card stack" style="max-width:520px;margin:40px auto;text-align:center;align-items:center">
+    <div class="ph" style="width:64px;height:64px">403</div>
+    <h1 class="h1" style="font-size:20px">You don't have access to this page</h1>
+    <p class="sub">Your role doesn't include this module. Ask a Super Admin if you need access.</p>
+    <a class="btn pri" href="#profile">Go to My Profile</a>
+  </div>
+</section>
+
+    </main>
+  </div>
+</div>
+
+<!-- OVERLAY · INVITE USER DRAWER ======================================= -->
+<div class="overlay" data-overlay="users-invite" data-base="users" hidden>
+  <aside class="drawer" aria-label="Invite user">
+    <div class="between"><h2 class="h2">Invite user</h2><a class="btn sm" href="#users">✕ Close</a></div>
+    <div class="field"><label class="lbl" for="iv-name">Full name *</label><input id="iv-name" class="in" placeholder="e.g. Priya Kumar"></div>
+    <div class="field"><label class="lbl" for="iv-email">Email *</label><input id="iv-email" class="in" type="email" value="agent.a@company.com"><span class="err">A user with this email already exists.</span></div>
+    <div class="field"><label class="lbl" for="iv-phone">Phone</label><input id="iv-phone" class="in" placeholder="+91 9XXXX XXXXX"></div>
+    <div class="field"><span class="lbl">Role *</span>
+      <div class="stack" style="gap:8px">
+        <label class="rolecard"><input type="radio" name="iv-role"><span><b>Super Admin</b><div class="muted">Everything, including managing users</div></span></label>
+        <label class="rolecard"><input type="radio" name="iv-role"><span><b>Admin</b><div class="muted">Settings, properties and appointments. Can't manage users</div></span></label>
+        <label class="rolecard on"><input type="radio" name="iv-role" checked><span><b>Sales Agent</b><div class="muted">Views properties; manages own appointments</div></span></label>
+      </div></div>
+    <div class="note">We'll email an invite link to this address. The link is valid for <b>72 hours</b>. Until it's accepted, the user shows as <b>Invited</b>.</div>
+    <div class="actions" style="justify-content:flex-end;margin-top:auto"><a class="btn" href="#users">Cancel</a><button class="btn pri">Send invite</button></div>
+  </aside>
+</div>
+
+<!-- OVERLAY · EDIT USER DRAWER ========================================= -->
+<div class="overlay" data-overlay="users-edit" data-base="users" hidden>
+  <aside class="drawer" aria-label="Edit user">
+    <div class="between"><div><h2 class="h2">Agent A</h2><div class="muted">agent.a@company.com</div></div><a class="btn sm" href="#users">✕ Close</a></div>
+    <div class="filters"><span class="chip">Sales Agent</span><span class="chip">Active</span><span class="muted">Last login: yesterday, 6:05 pm</span></div>
+
+    <div class="stack">
+      <h3 class="sec">Details</h3>
+      <div class="field"><label class="lbl" for="ed-name">Full name *</label><input id="ed-name" class="in" value="Agent A"></div>
+      <div class="field"><label class="lbl" for="ed-email">Email</label><input id="ed-email" class="in" value="agent.a@company.com" readonly><span class="hint">Sign-in email can't be changed. Invite a new user instead.</span></div>
+      <div class="field"><label class="lbl" for="ed-phone">Phone</label><input id="ed-phone" class="in" value="+91 9XXXX XXXXX"></div>
+      <div class="field"><label class="lbl" for="ed-role">Role *</label><select id="ed-role" class="sel"><option>Sales Agent</option><option>Admin</option><option>Super Admin</option></select></div>
+    </div>
+
+    <div class="stack" style="border-top:1.5px solid var(--line2);padding-top:14px">
+      <h3 class="sec">Account</h3>
+      <div class="between"><span>Send a password reset email</span><button class="btn sm">Send reset link</button></div>
+      <div class="between"><span>Unlock account <span class="muted">(only when locked)</span></span><button class="btn sm" disabled style="opacity:.5">Unlock</button></div>
+      <div class="between"><span>Deactivate this user</span><a class="btn sm danger" href="#users-deactivate">Deactivate</a></div>
+      <div class="muted">Invited by Owner name on 02 Nov 2026 · Activated 03 Nov 2026</div>
+    </div>
+    <div class="note">On your own account, Role and Deactivate are disabled.</div>
+    <div class="actions" style="justify-content:flex-end;margin-top:auto"><a class="btn" href="#users">Cancel</a><button class="btn pri">Save changes</button></div>
+  </aside>
+</div>
+
+<!-- OVERLAY · DEACTIVATE CONFIRMATION ================================== -->
+<div class="overlay center" data-overlay="users-deactivate" data-base="users" hidden>
+  <div class="modal" role="dialog" aria-label="Deactivate user">
+    <h2 class="h2">Deactivate Agent A?</h2>
+    <p class="sub" style="margin:0">They'll be signed out right away and won't be able to sign in. Their history is kept, and you can reactivate them at any time.</p>
+    <div class="actions" style="justify-content:flex-end"><a class="btn" href="#users-edit">Cancel</a><a class="btn danger pri" href="#users">Deactivate</a></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var LABEL = { super_admin: 'Super Admin', admin: 'Admin', sales_agent: 'Sales Agent' };
+    var HOME = { super_admin: 'users', admin: 'settings-company', sales_agent: 'profile' };
+    var role = 'super_admin';
+    var app = document.getElementById('app');
+    var screens = document.querySelectorAll('[data-screen]');
+    var overlays = document.querySelectorAll('[data-overlay]');
+    var navs = document.querySelectorAll('.side [data-roles], .side a.nav[data-nav]');
+
+    function allowed(el) {
+      var r = el && el.getAttribute('data-roles');
+      return !r || r.split(' ').indexOf(role) > -1;
+    }
+    function find(sel) { return document.querySelector(sel); }
+
+    function show() {
+      var id = (location.hash || '#' + HOME[role]).slice(1);
+      var overlay = find('[data-overlay="' + id + '"]');
+      var base = find('[data-screen="' + (overlay ? overlay.getAttribute('data-base') : id) + '"]');
+      if (!base) { base = find('[data-screen="' + HOME[role] + '"]'); overlay = null; }
+      var isAuth = base.hasAttribute('data-auth');
+      if (!isAuth && !allowed(base)) { base = find('[data-screen="no-access"]'); overlay = null; }
+
+      app.hidden = isAuth;
+      screens.forEach(function (s) { s.hidden = s !== base; });
+      overlays.forEach(function (o) { o.hidden = o !== overlay; });
+
+      var activeNav = base.getAttribute('data-nav') || '';
+      navs.forEach(function (el) {
+        el.hidden = !allowed(el);
+        if (el.matches('a.nav')) {
+          var on = el.getAttribute('data-nav') === activeNav;
+          el.classList.toggle('on', on);
+          if (on) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
+        }
+      });
+      document.getElementById('who').textContent = 'Owner name · ' + LABEL[role];
+      document.getElementById('pr-role').textContent = LABEL[role];
+      if (!overlay) window.scrollTo(0, 0);
+    }
+
+    document.getElementById('rolebar').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-role]');
+      if (!b) return;
+      role = b.getAttribute('data-role');
+      this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      if (location.hash === '#' + HOME[role]) show(); else location.hash = HOME[role];
+    });
+
+    document.querySelectorAll('.rolecard input').forEach(function (r) {
+      r.addEventListener('change', function () {
+        document.querySelectorAll('.rolecard').forEach(function (c) { c.classList.toggle('on', c.querySelector('input').checked); });
+      });
+    });
+
+    window.addEventListener('hashchange', show);
+    show();
+  })();
+</script>
+</body>
+</html>

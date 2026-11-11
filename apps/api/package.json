@@ -1,0 +1,13 @@
+{
+  "name": "@real-estate/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Express API + MCP server (filled in during Phase 1 step 1.2)",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@real-estate/shared": "workspace:*"
+  }
+}

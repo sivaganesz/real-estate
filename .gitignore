@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# builds and caches
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# environment files (keep the examples)
+.env
+.env.*
+!.env.example
+
+# local file storage (uploaded logos, property media, import files)
+apps/api/uploads/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
