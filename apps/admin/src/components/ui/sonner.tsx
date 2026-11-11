@@ -10,10 +10,10 @@ import { useTheme } from '@/theme/theme-context';
 
 // Toast notifications (shadcn "sonner"), following the app theme.
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   return (
     <Sonner
-      theme={resolvedTheme}
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

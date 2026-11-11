@@ -1,5 +1,5 @@
 import type { User } from '@real-estate/shared';
-import { UserPlusIcon } from 'lucide-react';
+import { UserPlusIcon, UsersIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { PageHeader } from '@/components/PageHeader';
@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EditUserSheet } from '@/features/users/EditUserSheet';
 import { InviteUserSheet } from '@/features/users/InviteUserSheet';
 import { RolesMatrix } from '@/features/users/RolesMatrix';
-import { UsersTable } from '@/features/users/UsersTable';
+import { UsersList } from '@/features/users/UsersList';
 
 /** Users & Roles (Super Admin only). `tab` comes from the route: /users or /users/roles. */
 export function UsersPage({ tab }: { tab: 'users' | 'roles' }) {
@@ -21,6 +21,7 @@ export function UsersPage({ tab }: { tab: 'users' | 'roles' }) {
       <PageHeader
         title="Users & Roles"
         description="Staff accounts and what each role can do"
+        icon={UsersIcon}
         actions={
           <Button onClick={() => setInviteOpen(true)}>
             <UserPlusIcon /> Invite user
@@ -41,8 +42,8 @@ export function UsersPage({ tab }: { tab: 'users' | 'roles' }) {
 
       {tab === 'users' ? (
         <>
-          <UsersTable onEdit={setEditing} />
-          <p className="mt-4 rounded-lg border border-dashed bg-background p-3 text-xs text-muted-foreground">
+          <UsersList onEdit={setEditing} />
+          <p className="mt-5 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
             Users are never deleted. Deactivate them instead, so their history is kept. You
             can&apos;t deactivate or change your own role, and there is always at least one active
             Super Admin.

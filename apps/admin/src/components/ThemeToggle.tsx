@@ -1,48 +1,36 @@
-import { CheckIcon, MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
+import { MoonIcon, SunIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { useTheme } from '@/theme/theme-context';
-import type { ThemePreference } from '@/theme/theme-context';
 
-const OPTIONS: { value: ThemePreference; label: string; icon: typeof SunIcon }[] = [
-  { value: 'light', label: 'Light', icon: SunIcon },
-  { value: 'dark', label: 'Dark', icon: MoonIcon },
-  { value: 'system', label: 'System', icon: MonitorIcon },
-];
-
-/** Light / Dark / System switcher (top bar and sign-in screens). */
-export function ThemeToggle() {
-  const { theme, resolvedTheme, setTheme } = useTheme();
-  const Icon = resolvedTheme === 'dark' ? MoonIcon : SunIcon;
+/** One-click light / dark switch. Shows the icon of the mode you'd switch to. */
+export function ThemeToggle({
+  className,
+  side = 'top',
+}: {
+  className?: string;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+}) {
+  const { theme, toggleTheme } = useTheme();
+  const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <Tooltip>
+      <TooltipTrigger
         render={
-          <Button variant="outline" size="icon" aria-label="Change theme" title="Theme">
-            <Icon />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={label}
+            onClick={toggleTheme}
+            className={cn('shrink-0', className)}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-40">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Theme</DropdownMenuLabel>
-          {OPTIONS.map(({ value, label, icon: OptionIcon }) => (
-            <DropdownMenuItem key={value} onClick={() => setTheme(value)}>
-              <OptionIcon />
-              <span className="flex-1">{label}</span>
-              {theme === value && <CheckIcon className="text-primary" aria-label="Selected" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <TooltipContent side={side}>{label}</TooltipContent>
+    </Tooltip>
   );
 }

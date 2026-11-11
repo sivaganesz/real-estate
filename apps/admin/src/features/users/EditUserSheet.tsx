@@ -8,18 +8,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useAuth } from '@/auth/auth-context';
 import { FormField } from '@/components/forms/FormField';
+import { UserAvatar } from '@/components/UserAvatar';
 import { PhoneInput } from '@/components/forms/PhoneInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -39,8 +30,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { errorMessage } from '@/lib/errors';
-import { formatDate, formatLastSeen } from '@/lib/format';
-import { useDeactivateUser, useUpdateUser, useUser } from './api';
+import { formatDate } from '@/lib/format';
+import { useUpdateUser, useUser } from './api';
+import { DeactivateUserDialog } from './DeactivateUserDialog';
 import { RoleBadge, StatusCell } from './UserBadges';
 import { useUserActions } from './useUserActions';
 
@@ -71,7 +63,6 @@ export function EditUserSheet({
   const { data: user } = useUser(userId, initialUser);
   const isSelf = user?.id === me?.id;
   const update = useUpdateUser();
-  const deactivate = useDeactivateUser();
   const actions = useUserActions();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -102,30 +93,23 @@ export function EditUserSheet({
     }
   });
 
-  const onDeactivate = () =>
-    deactivate.mutate(user.id, {
-      onSuccess: () => {
-        toast.success(`${user.name} has been deactivated`);
-        setConfirmOpen(false);
-        onClose();
-      },
-      onError: (err) => {
-        toast.error(errorMessage(err));
-        setConfirmOpen(false);
-      },
-    });
-
   return (
     <>
       <Sheet open onOpenChange={(open) => !open && onClose()}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{user.name}</SheetTitle>
-            <SheetDescription>{user.email}</SheetDescription>
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
-              <RoleBadge role={user.role} />
+          <SheetHeader className="border-b pb-4">
+            <div className="flex items-center gap-3 pr-8">
+              <UserAvatar name={user.name} size="lg" />
+              <div className="min-w-0">
+                <SheetTitle className="flex flex-wrap items-center gap-2">
+                  <span className="truncate">{user.name}</span>
+                  <RoleBadge role={user.role} />
+                </SheetTitle>
+                <SheetDescription className="truncate">{user.email}</SheetDescription>
+              </div>
+            </div>
+            <div className="pt-2">
               <StatusCell user={user} />
-              <span>Last login: {formatLastSeen(user.lastLoginAt)}</span>
             </div>
           </SheetHeader>
 
@@ -275,28 +259,12 @@ export function EditUserSheet({
         </SheetContent>
       </Sheet>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate {user.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              They&apos;ll be signed out right away and won&apos;t be able to sign in. Their history
-              is kept, and you can reactivate them at any time.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deactivate.isPending}
-              onClick={onDeactivate}
-            >
-              {deactivate.isPending && <Loader2Icon className="animate-spin" />}
-              Deactivate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeactivateUserDialog
+        user={user}
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onDeactivated={onClose}
+      />
     </>
   );
 }

@@ -54,7 +54,8 @@ export async function buildTestApp(envOverrides: Record<string, string> = {}) {
 
 /** Starts an in-memory MongoDB and connects Mongoose to it. */
 export async function startTestDatabase() {
-  const server = await MongoMemoryServer.create();
+  // The default 10 s start limit is too tight when every package's tests run at once.
+  const server = await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
   await mongoose.connect(server.getUri(), { dbName: 'real_estate_test' });
   return {
     clear: async () => {

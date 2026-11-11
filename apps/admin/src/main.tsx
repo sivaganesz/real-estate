@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router/dom';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { ApiError } from '@/lib/api';
 import { router } from '@/router';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -26,9 +27,11 @@ createRoot(root).render(
   <StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
+        <TooltipProvider delay={300}>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </TooltipProvider>
         <Toaster position="top-right" richColors />
       </QueryClientProvider>
     </ThemeProvider>

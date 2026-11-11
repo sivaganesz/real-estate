@@ -1,30 +1,27 @@
 import { act, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { THEME_STORAGE_KEY, useTheme } from './theme-context';
 import { ThemeProvider } from './ThemeProvider';
 
 function Probe() {
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   return (
     <div>
       <span data-testid="theme">{theme}</span>
-      <span data-testid="resolved">{resolvedTheme}</span>
       <button onClick={() => setTheme('dark')}>dark</button>
       <button onClick={() => setTheme('light')}>light</button>
-      <button onClick={() => setTheme('system')}>system</button>
     </div>
   );
 }
 
-function mockSystemDark(dark: boolean) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn().mockImplementation((query: string) => ({
-      matches: dark && query.includes('dark'),
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })),
+function renderWithProvider(ui: React.ReactNode) {
+  return render(
+    <ThemeProvider>
+      <TooltipProvider>{ui}</TooltipProvider>
+    </ThemeProvider>,
   );
 }
 
@@ -32,28 +29,16 @@ describe('ThemeProvider', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.classList.remove('dark');
-    mockSystemDark(false);
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
   });
 
   it('defaults to light', () => {
-    render(
-      <ThemeProvider>
-        <Probe />
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('resolved')).toHaveTextContent('light');
+    renderWithProvider(<Probe />);
+    expect(screen.getByTestId('theme')).toHaveTextContent('light');
     expect(document.documentElement).not.toHaveClass('dark');
   });
 
   it('switches to dark, sets the class and remembers the choice', () => {
-    render(
-      <ThemeProvider>
-        <Probe />
-      </ThemeProvider>,
-    );
+    renderWithProvider(<Probe />);
     act(() => screen.getByText('dark').click());
     expect(document.documentElement).toHaveClass('dark');
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
@@ -62,26 +47,22 @@ describe('ThemeProvider', () => {
     expect(document.documentElement).not.toHaveClass('dark');
   });
 
-  it('restores the saved theme on load', () => {
+  it('restores a saved dark theme, and treats an old "system" value as light', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'dark');
-    render(
-      <ThemeProvider>
-        <Probe />
-      </ThemeProvider>,
-    );
+    const { unmount } = renderWithProvider(<Probe />);
     expect(screen.getByTestId('theme')).toHaveTextContent('dark');
-    expect(document.documentElement).toHaveClass('dark');
+    unmount();
+
+    localStorage.setItem(THEME_STORAGE_KEY, 'system');
+    renderWithProvider(<Probe />);
+    expect(screen.getByTestId('theme')).toHaveTextContent('light');
   });
 
-  it('"system" follows the operating system setting', () => {
-    mockSystemDark(true);
-    render(
-      <ThemeProvider>
-        <Probe />
-      </ThemeProvider>,
-    );
-    act(() => screen.getByText('system').click());
-    expect(screen.getByTestId('resolved')).toHaveTextContent('dark');
+  it('the toggle button switches between light and dark', async () => {
+    renderWithProvider(<ThemeToggle />);
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
     expect(document.documentElement).toHaveClass('dark');
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
+    expect(document.documentElement).not.toHaveClass('dark');
   });
 });

@@ -9,11 +9,7 @@
       // Apply the saved theme before the first paint so dark mode never flashes white.
       (function () {
         try {
-          var saved = localStorage.getItem('re-admin-theme');
-          var dark =
-            saved === 'dark' ||
-            (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (dark) {
+          if (localStorage.getItem('re-admin-theme') === 'dark') {
             document.documentElement.classList.add('dark');
             document.documentElement.style.colorScheme = 'dark';
           }

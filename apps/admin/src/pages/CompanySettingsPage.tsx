@@ -1,3 +1,4 @@
+import { SettingsIcon } from 'lucide-react';
 import { ComingSoon } from '@/components/ComingSoon';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -6,6 +7,7 @@ export function CompanySettingsPage() {
     <>
       <PageHeader
         title="Settings"
+        icon={SettingsIcon}
         description="Business details used across the admin portal, emails and (later) the website and AI agent"
       />
       <ComingSoon

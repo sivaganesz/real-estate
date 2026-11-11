@@ -1,48 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { THEME_STORAGE_KEY, ThemeContext } from './theme-context';
-import type { ResolvedTheme, ThemeContextValue, ThemePreference } from './theme-context';
+import type { Theme, ThemeContextValue } from './theme-context';
 
-const DARK_QUERY = '(prefers-color-scheme: dark)';
-
-function readStoredTheme(): ThemePreference {
+/** Light is the default; anything other than a saved "dark" (e.g. an old "system") means light. */
+function readStoredTheme(): Theme {
   try {
-    const value = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return value === 'light' || value === 'dark' || value === 'system' ? value : 'light';
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light';
   } catch {
     return 'light'; // storage blocked (private mode, policies)
   }
 }
 
-function systemTheme(): ResolvedTheme {
-  return window.matchMedia?.(DARK_QUERY).matches ? 'dark' : 'light';
-}
-
 /**
- * Light / dark / system theme. The choice is remembered per browser; light is the default.
- * The `dark` class on <html> switches the CSS variables in index.css.
+ * Light / dark theme, remembered per browser. The `dark` class on <html> switches the CSS
+ * variables in index.css.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>(readStoredTheme);
-  const [system, setSystem] = useState<ResolvedTheme>(systemTheme);
-  const resolvedTheme: ResolvedTheme = theme === 'system' ? system : theme;
-
-  // Follow OS changes while "system" is selected.
-  useEffect(() => {
-    const media = window.matchMedia?.(DARK_QUERY);
-    if (!media) return;
-    const onChange = () => setSystem(media.matches ? 'dark' : 'light');
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', resolvedTheme === 'dark');
-    root.style.colorScheme = resolvedTheme;
-  }, [resolvedTheme]);
+    root.classList.toggle('dark', theme === 'dark');
+    root.style.colorScheme = theme;
+  }, [theme]);
 
-  const setTheme = useCallback((next: ThemePreference) => {
+  const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, next);
@@ -51,9 +34,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const toggleTheme = useCallback(
+    () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+    [theme, setTheme],
+  );
+
   const value = useMemo<ThemeContextValue>(
-    () => ({ theme, resolvedTheme, setTheme }),
-    [theme, resolvedTheme, setTheme],
+    () => ({ theme, setTheme, toggleTheme }),
+    [theme, setTheme, toggleTheme],
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -42,6 +42,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomeRedirect /> },
       {
         path: 'users',
+        handle: { breadcrumbs: [{ label: 'Users & Roles', to: '/users' }, { label: 'Users' }] },
         element: (
           <RequirePermission permission="users:manage">
             <UsersPage tab="users" />
@@ -50,6 +51,9 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'users/roles',
+        handle: {
+          breadcrumbs: [{ label: 'Users & Roles', to: '/users' }, { label: 'Roles & permissions' }],
+        },
         element: (
           <RequirePermission permission="users:manage">
             <UsersPage tab="roles" />
@@ -59,14 +63,21 @@ export const routes: RouteObject[] = [
       { path: 'settings', element: <Navigate to="/settings/company" replace /> },
       {
         path: 'settings/company',
+        handle: {
+          breadcrumbs: [{ label: 'Settings', to: '/settings' }, { label: 'Company info' }],
+        },
         element: (
           <RequirePermission permission="settings:edit">
             <CompanySettingsPage />
           </RequirePermission>
         ),
       },
-      { path: 'profile', element: <ProfilePage /> },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        path: 'profile',
+        handle: { breadcrumbs: [{ label: 'Account' }, { label: 'My Profile' }] },
+        element: <ProfilePage />,
+      },
+      { path: '*', handle: { breadcrumbs: [{ label: 'Not found' }] }, element: <NotFoundPage /> },
     ],
   },
 ];

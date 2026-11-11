@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { nationalNumber, passwordSchema, updateProfileBodySchema } from '@real-estate/shared';
 import type { Profile } from '@real-estate/shared';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, UserRoundIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -225,7 +225,11 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="My Profile" description="Your account details and password" />
+      <PageHeader
+        title="My Profile"
+        description="Your account details and password"
+        icon={UserRoundIcon}
+      />
       {profile.isPending && (
         <div className="grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-96" />

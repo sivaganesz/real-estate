@@ -1,44 +1,37 @@
 import type { Permission } from '@real-estate/shared';
-import { ROLE_LABELS } from '@real-estate/shared';
 import {
   CalendarDaysIcon,
-  ChevronDownIcon,
   ContactIcon,
   HouseIcon,
-  LogOutIcon,
   MenuIcon,
   MessagesSquareIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   PhoneCallIcon,
   SettingsIcon,
   UploadIcon,
-  UserRoundIcon,
   UsersIcon,
   XIcon,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '@/auth/auth-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { BrandMark } from './BrandMark';
+import { Breadcrumbs } from './Breadcrumbs';
+import { UserMenu } from './UserMenu';
+
+type Icon = ComponentType<{ className?: string }>;
 
 interface NavItem {
   to: string;
   label: string;
-  icon: ComponentType<{ className?: string }>;
-  permission: Permission;
+  icon: Icon;
+  permission?: Permission;
 }
 
 /** Phase 1 modules (shown only to roles that can use them). */
@@ -48,7 +41,7 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 /** Later phases, shown greyed out so the team can see what's coming. */
-const COMING_NEXT = [
+const COMING_NEXT: { label: string; icon: Icon; phase: string }[] = [
   { label: 'Properties', icon: HouseIcon, phase: 'Phase 2' },
   { label: 'Bulk Import', icon: UploadIcon, phase: 'Phase 2' },
   { label: 'Appointments', icon: CalendarDaysIcon, phase: 'Phase 3' },
@@ -57,98 +50,146 @@ const COMING_NEXT = [
   { label: 'Call Logs', icon: PhoneCallIcon, phase: 'Phase 3' },
 ];
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-    isActive
-      ? 'bg-primary text-primary-foreground dark:bg-sidebar-accent dark:text-sidebar-accent-foreground'
-      : 'text-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground',
-  );
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join('');
+const COLLAPSE_KEY = 're-admin-sidebar-collapsed';
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
-function Sidebar({ onNavigate, onSignOut }: { onNavigate: () => void; onSignOut: () => void }) {
-  const { can } = useAuth();
-  const adminItems = ADMIN_NAV.filter((item) => can(item.permission));
+/** Shows a tooltip with the label only when the sidebar is collapsed. */
+function WithTip({
+  show,
+  label,
+  children,
+}: {
+  show: boolean;
+  label: string;
+  children: React.ReactElement;
+}) {
+  if (!show) return children;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={children} />
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function GroupLabel({ collapsed, children }: { collapsed: boolean; children: string }) {
+  if (collapsed) return <div className="mx-3 my-2 h-px bg-border" aria-hidden />;
+  return (
+    <div className="px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase">
+      {children}
+    </div>
+  );
+}
+
+function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
+  const { user, can } = useAuth();
+  if (!user) return null;
+  const adminItems = ADMIN_NAV.filter((item) => !item.permission || can(item.permission));
+
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      'group flex h-9 items-center gap-3 rounded-lg text-sm font-medium transition-colors',
+      collapsed ? 'justify-center px-0' : 'px-3',
+      isActive
+        ? 'bg-primary text-primary-foreground shadow-xs dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-none'
+        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+    );
+
+  const renderLinks = (items: NavItem[]) =>
+    items.map(({ to, label, icon: ItemIcon }) => (
+      <WithTip key={to} show={collapsed} label={label}>
+        <NavLink
+          to={to}
+          className={linkClass}
+          onClick={onNavigate}
+          aria-label={collapsed ? label : undefined}
+        >
+          <ItemIcon className="size-4 shrink-0" />
+          {!collapsed && <span className="truncate">{label}</span>}
+        </NavLink>
+      </WithTip>
+    ));
 
   return (
-    <nav aria-label="Main" className="flex h-full flex-col gap-1 p-3">
-      <div className="px-2 pt-1 pb-4">
-        <BrandMark />
+    <nav aria-label="Main" className="flex h-full flex-col gap-0.5 p-3">
+      <div className={cn('flex h-11 items-center', collapsed ? 'justify-center' : 'px-1')}>
+        <BrandMark compact={collapsed} />
       </div>
 
       {adminItems.length > 0 && (
         <>
-          <div className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Administration
-          </div>
-          {adminItems.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={navLinkClass} onClick={onNavigate}>
-              <Icon className="size-4" />
-              {label}
-            </NavLink>
-          ))}
+          <GroupLabel collapsed={collapsed}>Administration</GroupLabel>
+          {renderLinks(adminItems)}
         </>
       )}
 
-      <div className="px-3 pt-4 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        Coming next
-      </div>
-      {COMING_NEXT.map(({ label, icon: Icon, phase }) => (
-        <div
-          key={label}
-          className="flex h-9 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground/70"
-          aria-disabled="true"
-          title={`Available in ${phase}`}
-        >
-          <Icon className="size-4" />
-          <span className="flex-1">{label}</span>
-          <Badge variant="outline" className="border-dashed text-[10px] font-normal">
-            {phase}
-          </Badge>
-        </div>
+      <GroupLabel collapsed={collapsed}>Coming next</GroupLabel>
+      {COMING_NEXT.map(({ label, icon: ItemIcon, phase }) => (
+        <WithTip key={label} show={collapsed} label={`${label} · ${phase}`}>
+          <div
+            className={cn(
+              'flex h-9 items-center gap-3 rounded-lg text-sm text-muted-foreground/55',
+              collapsed ? 'justify-center' : 'px-3',
+            )}
+            aria-disabled="true"
+            aria-label={collapsed ? `${label}, available in ${phase}` : undefined}
+            title={collapsed ? undefined : `Available in ${phase}`}
+          >
+            <ItemIcon className="size-4 shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 truncate">{label}</span>
+                <Badge
+                  variant="outline"
+                  className="border-dashed text-[10px] font-normal text-muted-foreground/70"
+                >
+                  {phase}
+                </Badge>
+              </>
+            )}
+          </div>
+        </WithTip>
       ))}
-
-      <div className="mt-auto flex flex-col gap-1 pt-4">
-        <NavLink to="/profile" className={navLinkClass} onClick={onNavigate}>
-          <UserRoundIcon className="size-4" />
-          My Profile
-        </NavLink>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium hover:bg-muted dark:text-muted-foreground dark:hover:text-foreground"
-        >
-          <LogOutIcon className="size-4" />
-          Sign out
-        </button>
-      </div>
     </nav>
   );
 }
 
-/** Signed-in layout: sidebar + top bar (Phase 1 wireframe). */
+/** Signed-in layout: collapsible sidebar + top bar with breadcrumbs. */
 export function AppLayout() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
 
   if (!user) return null;
-  const signOut = () => void logout();
+  const toggleCollapsed = () => {
+    setCollapsed((value) => {
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, value ? '0' : '1');
+      } catch {
+        // Not remembered; still works for this visit.
+      }
+      return !value;
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-muted/30 dark:bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r bg-background lg:block dark:border-sidebar-border dark:bg-sidebar">
-        <div className="sticky top-0 h-screen overflow-y-auto">
-          <Sidebar onNavigate={() => undefined} onSignOut={signOut} />
+      <aside
+        className={cn(
+          'hidden shrink-0 border-r bg-background transition-[width] duration-200 lg:block dark:border-sidebar-border dark:bg-sidebar',
+          collapsed ? 'w-[68px]' : 'w-64',
+        )}
+      >
+        <div className="sticky top-0 h-screen overflow-y-auto overflow-x-hidden">
+          <Sidebar collapsed={collapsed} onNavigate={() => undefined} />
         </div>
       </aside>
 
@@ -158,26 +199,26 @@ export function AppLayout() {
           <button
             type="button"
             aria-label="Close menu"
-            className="absolute inset-0 bg-black/40 dark:bg-black/60"
+            className="absolute inset-0 bg-black/40 animate-in fade-in-0 dark:bg-black/60"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-background shadow-xl dark:bg-sidebar">
+          <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-background shadow-xl animate-in slide-in-from-left duration-200 dark:bg-sidebar">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-3 right-3"
+              className="absolute top-3 right-3 z-10"
               aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
             >
               <XIcon />
             </Button>
-            <Sidebar onNavigate={() => setMobileOpen(false)} onSignOut={signOut} />
+            <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
           </aside>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur-sm lg:px-6 dark:border-sidebar-border">
           <Button
             variant="ghost"
             size="icon"
@@ -187,43 +228,38 @@ export function AppLayout() {
           >
             <MenuIcon />
           </Button>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline" className="h-9 gap-2 pl-1.5">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-semibold dark:rounded-md dark:bg-primary/15 dark:text-primary">
-                      {initials(user.name)}
-                    </span>
-                    <span className="hidden text-sm sm:inline">
-                      {user.name} · {ROLE_LABELS[user.role]}
-                    </span>
-                    <ChevronDownIcon className="size-4 text-muted-foreground" />
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>
-                    <div className="font-medium text-foreground">{user.name}</div>
-                    <div className="text-xs font-normal text-muted-foreground">{user.email}</div>
-                  </DropdownMenuLabel>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <UserRoundIcon /> My Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={signOut}>
-                  <LogOutIcon /> Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden lg:inline-flex"
+                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  onClick={toggleCollapsed}
+                >
+                  {collapsed ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
+                </Button>
+              }
+            />
+            <TooltipContent side="bottom">
+              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            </TooltipContent>
+          </Tooltip>
+          <div className="mx-1 hidden h-5 w-px bg-border lg:block" aria-hidden />
+          <Breadcrumbs />
+          <div className="ml-auto flex items-center">
+            <UserMenu />
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
-          <Outlet />
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+          <div
+            key={location.pathname}
+            className="mx-auto w-full max-w-6xl animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
+          >
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
