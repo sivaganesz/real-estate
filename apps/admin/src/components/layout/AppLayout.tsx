@@ -5,8 +5,6 @@ import {
   HouseIcon,
   MenuIcon,
   MessagesSquareIcon,
-  PanelLeftCloseIcon,
-  PanelLeftOpenIcon,
   PhoneCallIcon,
   SettingsIcon,
   UploadIcon,
@@ -20,6 +18,7 @@ import { useAuth } from '@/auth/auth-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useCompanySettings } from '@/features/settings/api';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './BrandMark';
 import { Breadcrumbs } from './Breadcrumbs';
@@ -87,8 +86,18 @@ function GroupLabel({ collapsed, children }: { collapsed: boolean; children: str
   );
 }
 
-function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
+function Sidebar({
+  collapsed,
+  onNavigate,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onNavigate: () => void;
+  /** Desktop only: the logo doubles as the collapse/expand button. */
+  onToggle?: () => void;
+}) {
   const { user, can } = useAuth();
+  const { data: company } = useCompanySettings();
   if (!user) return null;
   const adminItems = ADMIN_NAV.filter((item) => !item.permission || can(item.permission));
 
@@ -119,7 +128,12 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: ()
   return (
     <nav aria-label="Main" className="flex h-full flex-col gap-0.5 p-3">
       <div className={cn('flex h-11 items-center', collapsed ? 'justify-center' : 'px-1')}>
-        <BrandMark compact={collapsed} />
+        <BrandMark
+          compact={collapsed}
+          onToggle={onToggle}
+          name={company?.isConfigured ? company.name : null}
+          logoUrl={company?.logoUrl}
+        />
       </div>
 
       {adminItems.length > 0 && (
@@ -189,7 +203,7 @@ export function AppLayout() {
         )}
       >
         <div className="sticky top-0 h-screen overflow-y-auto overflow-x-hidden">
-          <Sidebar collapsed={collapsed} onNavigate={() => undefined} />
+          <Sidebar collapsed={collapsed} onNavigate={() => undefined} onToggle={toggleCollapsed} />
         </div>
       </aside>
 
@@ -228,25 +242,6 @@ export function AppLayout() {
           >
             <MenuIcon />
           </Button>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hidden lg:inline-flex"
-                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                  onClick={toggleCollapsed}
-                >
-                  {collapsed ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
-                </Button>
-              }
-            />
-            <TooltipContent side="bottom">
-              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            </TooltipContent>
-          </Tooltip>
-          <div className="mx-1 hidden h-5 w-px bg-border lg:block" aria-hidden />
           <Breadcrumbs />
           <div className="ml-auto flex items-center">
             <UserMenu />

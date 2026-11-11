@@ -1,13 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { nationalNumber, passwordSchema, updateProfileBodySchema } from '@real-estate/shared';
 import type { Profile } from '@real-estate/shared';
-import { Loader2Icon, UserRoundIcon } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useAuth } from '@/auth/auth-context';
-import { PageHeader } from '@/components/PageHeader';
 import { FormField } from '@/components/forms/FormField';
 import { PhoneInput } from '@/components/forms/PhoneInput';
 import { PasswordInput } from '@/components/forms/PasswordInput';
@@ -220,16 +219,12 @@ function PasswordCard() {
   );
 }
 
+/** My Profile. No page title: the breadcrumbs and account menu already say where you are. */
 export function ProfilePage() {
   const profile = useProfile();
 
   return (
     <>
-      <PageHeader
-        title="My Profile"
-        description="Your account details and password"
-        icon={UserRoundIcon}
-      />
       {profile.isPending && (
         <div className="grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-96" />

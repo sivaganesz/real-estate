@@ -17,6 +17,8 @@ import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
 import { createProfileRouter } from './modules/profile/profile.routes';
 import { ProfileService } from './modules/profile/profile.service';
+import { CompanySettingsService } from './modules/settings/company.service';
+import { createSettingsRouter } from './modules/settings/settings.routes';
 import { createUsersRouter } from './modules/users/users.routes';
 import { UsersService } from './modules/users/users.service';
 
@@ -36,6 +38,8 @@ function createApiRouter(deps: AppDeps): express.Router {
   router.use('/auth', createAuthRouter({ env: deps.env, auth, users }));
   const profile = new ProfileService({ ...deps, auth });
   router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
+  const company = new CompanySettingsService(deps);
+  router.use('/admin/settings', createSettingsRouter({ auth, company }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }

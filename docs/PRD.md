@@ -217,7 +217,7 @@ Priority: **M** = Must, **S** = Should, **C** = Could.
 #### 6.4 Settings → Company info
 | ID | Requirement | Priority |
 |---|---|---|
-| ADM-SET-01 | Company info: logo, company name, short description, office address (optional map pin), phones, WhatsApp number (display only), public email, enquiry notification emails | M |
+| ADM-SET-01 | Company info: logo, company name, short description, office address (optional map pin), one phone number, one email | M |
 | ADM-SET-02 | Settings page uses a top navbar. Tabs are added per phase: Company info (Phase 1), Property types & amenities (Phase 2), Visit slots (Phase 3) | M |
 
 ### Phase 2

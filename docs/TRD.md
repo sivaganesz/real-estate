@@ -292,7 +292,7 @@ One document per key.
 ```ts
 { key: 'company', value: {
     logoPath?, name, shortDescription?, address, officeLocation?: { lat, lng },
-    phones: { primary, alternate? }, whatsappNumber?, publicEmail, enquiryEmails: string[] },
+    phone, email },
   updatedBy, updatedAt }
 
 { key: 'visitSlots', value: {                      // Phase 3

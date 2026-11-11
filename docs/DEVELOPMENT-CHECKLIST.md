@@ -156,17 +156,17 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] UI: profile page reached from the top-bar user menu
 
 ### 1.7 Settings → Company info
-- [ ] **API**
-  - [ ] `settings` document (`key: 'company'`):
-    - [ ] Logo, company name, short description
-    - [ ] Office address (optional office map pin)
-    - [ ] Phones, WhatsApp number (display only)
-    - [ ] Public email, enquiry notification emails
-  - [ ] Logo upload through the storage module (`uploads/company/logo/`), replacing the old file
-  - [ ] Change log entry on update
-- [ ] **UI**
-  - [ ] Settings page with the top navbar (only Company info in this phase)
-  - [ ] Company info form: logo upload with preview, contact details, save, "last updated by"
+- [x] **API**
+  - [x] `settings` document (`key: 'company'`):
+    - [x] Logo, company name, short description
+    - [x] Office address (optional office map pin)
+    - [x] One phone number and one email (alternate phone, WhatsApp number and enquiry notification emails removed, as agreed)
+  - [x] Logo upload through the storage module (`uploads/company/logo/`), replacing the old file (PNG/JPG/WebP up to 2 MB, checked by file content; remove logo too)
+  - [x] Change log entry on update
+- [x] **UI**
+  - [x] Settings page with the top navbar (only Company info in this phase; later tabs shown greyed out)
+  - [x] Company info form: logo upload with preview, contact details, save, "last updated by"
+  - [x] Sidebar shows the company logo and name
 
 ### 1.8 Admin UI foundation (`apps/admin`)
 - [x] Vite + React + TypeScript project with routing (React Router, Tailwind, shadcn/ui on Base UI)
@@ -181,18 +181,19 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [ ] Shared UI components:
   - [x] Button, input
   - [x] Select
-  - [ ] Textarea, checkbox (added with the forms that need them)
+  - [x] Textarea (Company info)
+  - [ ] Checkbox (added with the forms that need it)
   - [x] Form field with error message, password field with show/hide, password rules checklist
   - [x] Data table (paginate, empty, loading and error states)
   - [x] Drawer (sheet) and modal
   - [x] Toast notifications
   - [x] Confirmation dialog
   - [x] Tabs, status chip
-  - [ ] Settings navbar, file upload with preview (with Company info in 1.7)
+  - [x] Settings navbar, file upload with preview (with Company info in 1.7)
 - [x] Form handling with shared Zod schemas (same validation as the API)
 - [x] Error pages: 403 (no permission), 404, generic error
 - [x] Responsive layout (usable on tablet and mobile)
-- [x] Light and dark themes (Light / Dark / System switcher, remembered per browser; dark palette with orange accent)
+- [x] Light and dark themes (Light / Dark switch in the account menu, remembered per browser; dark palette with orange accent)
 
 ### 1.9 Phase 1 testing and demo
 - [ ] Unit tests: password rules, token handling, permission checks

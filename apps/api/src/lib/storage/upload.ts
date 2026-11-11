@@ -46,11 +46,14 @@ export function isAllowedFile(kind: UploadKind, fileName: string, mimeType: stri
  * Accepts one file in memory (`req.file`), checking type and size. The calling module
  * then saves it through the storage provider.
  */
-export function singleFileUpload(kind: UploadKind, fieldName = 'file'): RequestHandler {
+export function singleFileUpload(
+  kind: UploadKind,
+  { fieldName = 'file', maxBytes }: { fieldName?: string; maxBytes?: number } = {},
+): RequestHandler {
   const rule = UPLOAD_RULES[kind];
   return multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: rule.maxBytes, files: 1 },
+    limits: { fileSize: Math.min(maxBytes ?? rule.maxBytes, rule.maxBytes), files: 1 },
     fileFilter: (_req, file, callback) => {
       if (isAllowedFile(kind, file.originalname, file.mimetype)) return callback(null, true);
       callback(
@@ -58,4 +61,26 @@ export function singleFileUpload(kind: UploadKind, fieldName = 'file'): RequestH
       );
     },
   }).single(fieldName);
+}
+
+/**
+ * Image type from the file's first bytes (not its name or the browser's claim), so a renamed
+ * file can't pass as an image. Returns the extension to save with, or null.
+ */
+export function detectImageType(data: Buffer): 'png' | 'jpg' | 'webp' | null {
+  if (
+    data.length >= 8 &&
+    data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  ) {
+    return 'png';
+  }
+  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'jpg';
+  if (
+    data.length >= 12 &&
+    data.subarray(0, 4).toString('latin1') === 'RIFF' &&
+    data.subarray(8, 12).toString('latin1') === 'WEBP'
+  ) {
+    return 'webp';
+  }
+  return null;
 }

@@ -54,7 +54,7 @@ describe('with a database', () => {
       expect(await seedCompanySettings()).toBe('created');
       expect(await seedCompanySettings()).toBe('exists');
       const doc = await SettingsModel.findOne({ key: 'company' }).lean();
-      expect(doc?.value).toMatchObject({ name: 'Your Company Name', enquiryEmails: [] });
+      expect(doc?.value).toMatchObject({ name: 'Your Company Name', phone: '', email: '' });
     });
   });
 
