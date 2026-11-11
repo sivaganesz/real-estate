@@ -64,50 +64,50 @@ The AI agent reads property data only through our MCP tools. Property locations 
   - [x] ESLint and Prettier
   - [x] Editor settings
 - [x] Set up the shared package for code used by both API and UI:
-  - [ ] Zod schemas (added with each module, starting in 1.2)
+  - [x] Zod schemas: common ones (id, email, password, phone, pagination); module schemas added with each module
   - [x] Shared types and constants
   - [x] Roles and permissions list
   - [x] Formatting helpers: INR price, area units
-  - [ ] Phone helper (added in 1.2 with the users module)
+  - [x] Phone helper (normalise to +91 E.164, display format)
 - [x] Docker Compose for local MongoDB
 - [x] Environment variable template (`.env.example`)
-- [ ] Startup validation of environment variables (with the API in 1.2)
+- [x] Startup validation of environment variables
 - [x] README with setup and run instructions
 - [x] CI pipeline: install → lint → type check → test → build
 
 ### 1.2 Backend foundation (`apps/api`)
-- [ ] Express app skeleton:
-  - [ ] Module folder layout (model, schema, service, controller, routes, tests)
-  - [ ] Config loader
-  - [ ] `GET /health`
-- [ ] MongoDB connection (Mongoose), with index sync on start-up
-- [ ] Standard response format `{ data, meta }` and error format `{ error: { code, message, details, requestId } }`
-- [ ] Central error handler, plus a 404 handler
-- [ ] Request validation with Zod
-- [ ] OpenAPI generation from Zod schemas; Swagger UI at `/api/docs`
-- [ ] Logging with request IDs (phone numbers and tokens masked)
-- [ ] Security middleware:
-  - [ ] Helmet
-  - [ ] CORS for the admin and website origins
-  - [ ] Request body size limits
-  - [ ] Rate limiting (in-memory) on auth routes
-- [ ] Pagination, sorting and filtering helpers
-- [ ] Audit fields (`createdBy`, `updatedBy`, timestamps) and a simple `changeLogs` collection for important changes
-- [ ] **Storage module** (`lib/storage`):
-  - [ ] `StorageProvider` interface and `LocalStorageProvider`
-  - [ ] `uploads/` root from `UPLOAD_DIR`; folders by purpose (`company/logo`, `properties/<code>/images`, `properties/<code>/documents`, `imports/<batchId>`)
-  - [ ] Generated file names; MIME, extension and size whitelist (multer)
-  - [ ] Store relative paths in MongoDB; build URLs with `publicUrl()`
-  - [ ] Serve public folders under `/uploads` (static, with cache headers); keep `imports/` private
-  - [ ] `uploads/` git-ignored
-- [ ] **Email module** (`lib/email`):
-  - [ ] `EmailProvider` interface
-  - [ ] `ResendProvider` (`RESEND_API_KEY`, `EMAIL_FROM`)
-  - [ ] `ConsoleProvider` for local development
-  - [ ] Provider chosen by `EMAIL_PROVIDER`
-  - [ ] Email templates in code
-  - [ ] Send failures are logged and reported to the admin (no background retries)
-- [ ] Seed script: first Super Admin, default company info
+- [x] Express app skeleton:
+  - [x] Module folder layout (model, schema, service, controller, routes, tests)
+  - [x] Config loader
+  - [x] `GET /health`
+- [x] MongoDB connection (Mongoose), with index sync on start-up
+- [x] Standard response format `{ data, meta }` and error format `{ error: { code, message, details, requestId } }`
+- [x] Central error handler, plus a 404 handler
+- [x] Request validation with Zod
+- [x] OpenAPI generation from Zod schemas; Swagger UI at `/api/docs`
+- [x] Logging with request IDs (phone numbers and tokens masked)
+- [x] Security middleware:
+  - [x] Helmet
+  - [x] CORS for the admin and website origins
+  - [x] Request body size limits
+  - [ ] Rate limiting (in-memory) on auth routes (limiters ready; applied to the auth routes in 1.3)
+- [x] Pagination, sorting and filtering helpers
+- [x] Audit fields (`createdBy`, `updatedBy`, timestamps) and a simple `changeLogs` collection for important changes
+- [x] **Storage module** (`lib/storage`):
+  - [x] `StorageProvider` interface and `LocalStorageProvider`
+  - [x] `uploads/` root from `UPLOAD_DIR`; folders by purpose (`company/logo`, `properties/<code>/images`, `properties/<code>/documents`, `imports/<batchId>`)
+  - [x] Generated file names; MIME, extension and size whitelist (multer)
+  - [x] Store relative paths in MongoDB; build URLs with `publicUrl()`
+  - [x] Serve public folders under `/uploads` (static, with cache headers); keep `imports/` private
+  - [x] `uploads/` git-ignored
+- [x] **Email module** (`lib/email`):
+  - [x] `EmailProvider` interface
+  - [x] `ResendProvider` (`RESEND_API_KEY`, `EMAIL_FROM`)
+  - [x] `ConsoleProvider` for local development
+  - [x] Provider chosen by `EMAIL_PROVIDER`
+  - [x] Email layout in code (invite / reset templates are added in 1.5 and 1.3)
+  - [x] Send failures are logged and reported to the admin (no background retries)
+- [x] Seed script: first Super Admin, default company info
 
 ### 1.3 Authentication
 - [ ] `users` model: name, email (unique), phone, role, status (invited / active / inactive), password hash, last login, failed attempts, locked until

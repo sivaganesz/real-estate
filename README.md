@@ -46,14 +46,23 @@ pnpm install
 # 2. Start MongoDB locally
 pnpm db:up
 
-# 3. Create the API environment file and fill in the secrets
+# 3. Create the API environment file, then fill in the JWT secrets and SEED_SUPERADMIN_* values
 cp apps/api/.env.example apps/api/.env
 
-# 4. Start the apps
+# 4. Create the first Super Admin and default company settings (safe to run again)
+pnpm --filter @real-estate/api seed
+
+# 5. Start the apps
+pnpm dev:api          # API on http://localhost:4000
 pnpm dev:admin        # admin portal on http://localhost:5173
 ```
 
-The API server is added in Phase 1 step 1.2.
+Once the API is running:
+
+- `http://localhost:4000/health`: API and database status
+- `http://localhost:4000/api/docs`: Swagger UI (the raw spec is at `/api/openapi.json`)
+
+In local development `EMAIL_PROVIDER=console` prints emails to the API log instead of sending them. Uploaded files are stored in `apps/api/uploads/` (git-ignored).
 
 ## Scripts (run from the repository root)
 
