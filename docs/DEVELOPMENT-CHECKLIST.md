@@ -121,7 +121,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Lock the account after repeated failed logins; unlock after a set time
 - [ ] Unlock by Super Admin (comes with the Users module in 1.5)
 - [x] Session timeout after 30 minutes of inactivity: enforced by the server on refresh
-- [ ] Session timeout in the admin UI (sign-out screen, comes with 1.8)
+- [x] Session timeout in the admin UI (signs out after 30 minutes idle, message on the login page)
 
 ### 1.4 Roles and permissions
 - [x] Three fixed roles defined in code: Super Admin, Admin, Sales Agent
@@ -129,7 +129,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 - [x] Middleware that checks permissions on protected routes (`authenticate` + `requirePermission`)
 - [ ] "Own data only" rule for Sales Agents (used for appointments in Phase 3)
 - [x] Permission list exposed to the UI through `/auth/me`
-- [ ] Admin UI hides menus and buttons the user can't use (comes with 1.8)
+- [x] Admin UI hides menus the user can't use, and shows a 403 page for blocked routes
 
 ### 1.5 Users & Roles module
 - [ ] **API**
@@ -169,24 +169,27 @@ The AI agent reads property data only through our MCP tools. Property locations 
   - [ ] Company info form: logo upload with preview, contact details, save, "last updated by"
 
 ### 1.8 Admin UI foundation (`apps/admin`)
-- [ ] Vite + React + TypeScript project with routing
-- [ ] API client with token refresh handling; data fetching and caching
-- [ ] Admin layout:
-  - [ ] Sidebar navigation grouped by module
-  - [ ] Top bar with the user menu
-  - [ ] Content area
-- [ ] Protected routes and role-based menus
-- [ ] Login, Forgot password, Reset password and Accept invite pages
+- [x] Vite + React + TypeScript project with routing (React Router, Tailwind, shadcn/ui on Base UI)
+- [x] API client with token refresh handling (access token in memory, refresh cookie, one shared refresh); TanStack Query for data fetching and caching
+- [x] Admin layout:
+  - [x] Sidebar navigation grouped by module (later phases shown greyed out)
+  - [x] Top bar with the user menu
+  - [x] Content area (mobile: slide-in menu)
+- [x] Protected routes and role-based menus
+- [x] Login, Forgot password and Reset password pages (connected to the API)
+- [ ] Accept invite page (comes with the Users module in 1.5)
 - [ ] Shared UI components:
-  - [ ] Button, input, select, textarea, checkbox
-  - [ ] Form field with error message
+  - [x] Button, input
+  - [ ] Select, textarea, checkbox (added with the forms that need them)
+  - [x] Form field with error message, password field with show/hide, password rules checklist
   - [ ] Data table (sort, paginate, empty state, loading state)
   - [ ] Drawer and modal
-  - [ ] Toast notifications, confirmation dialog
+  - [x] Toast notifications
+  - [ ] Confirmation dialog
   - [ ] Tabs and navbar, status chip, file upload with preview
-- [ ] Form handling with shared Zod schemas (same validation as the API)
-- [ ] Error pages: 403 (no permission), 404, generic error
-- [ ] Responsive layout (usable on tablet and mobile)
+- [x] Form handling with shared Zod schemas (same validation as the API)
+- [x] Error pages: 403 (no permission), 404, generic error
+- [x] Responsive layout (usable on tablet and mobile)
 
 ### 1.9 Phase 1 testing and demo
 - [ ] Unit tests: password rules, token handling, permission checks

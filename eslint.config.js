@@ -44,6 +44,11 @@ export default defineConfig(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  // shadcn/ui components export variant helpers next to components (generated code)
+  {
+    files: ['apps/admin/src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
   // Must stay last: turns off rules that conflict with Prettier
   prettier,
 );

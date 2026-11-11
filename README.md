@@ -58,6 +58,8 @@ pnpm dev:api          # API on http://localhost:4000
 pnpm dev:admin        # admin portal on http://localhost:5173
 ```
 
+Open the admin portal at `http://localhost:5173` and sign in with the `SEED_SUPERADMIN_*` email and password. In development the admin app proxies `/api` and `/uploads` to the API, so no extra configuration is needed (see `apps/admin/.env.example`).
+
 Once the API is running:
 
 - `http://localhost:4000/health`: API and database status
