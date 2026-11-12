@@ -292,6 +292,104 @@ describe('bulk import', () => {
     );
   });
 
+  it('updating a duplicate changes only the filled cells; empty cells keep the existing details', async () => {
+    const types: PropertyTypes = (
+      await as('admin', request(ctx.app).get('/api/v1/admin/property-types'))
+    ).body.data;
+    const amenity = types.categories[0]!.amenities.find((a) => a.name === 'Gated community')!.id;
+    const created = await as('admin', request(ctx.app).post('/api/v1/admin/properties')).send({
+      subcategoryId: villaId,
+      title: '3 BHK villa with garden',
+      purpose: 'sale',
+      price: { amount: 12_500_000, negotiable: true },
+      area: { value: 2100, unit: 'sqft' },
+      location: {
+        city: 'Chennai',
+        locality: 'Tambaram',
+        pincode: '600045',
+        address: 'No. 14, Gandhi Street',
+        landmark: 'Temple',
+        mapPin: { lat: 12.92, lng: 80.1 },
+      },
+      attributeValues: { bhk: '3 BHK', bathrooms: 3, facing: 'East', floors: 2 },
+      amenityIds: [amenity],
+    });
+    expect(created.status).toBe(201);
+
+    // The sheet row fills only the matching columns and a new price.
+    const file = await fill((await template()).body, [
+      {
+        'Property name': '3 BHK villa with garden',
+        Purpose: 'Sale',
+        'Price (₹)': 11_000_000,
+        City: 'Chennai',
+        'Area / locality': 'Tambaram',
+        Pincode: '600045',
+        Bathrooms: 4,
+      },
+    ]);
+    const batch: ImportBatchDetail = (await upload(file)).body.data;
+    expect(batch.rows[0]!.status).toBe('duplicate');
+    await as('admin', request(ctx.app).post(`${BASE}/${batch.id}/commit`)).send({
+      importAs: 'draft',
+      duplicates: 'update',
+    });
+
+    const after = (await PropertyModel.findOne({ code: 'RE-VIL-000001' }).lean())!;
+    expect(after.price).toMatchObject({ amount: 11_000_000, negotiable: true }); // changed / kept
+    expect(after.area).toMatchObject({ value: 2100, unit: 'sqft' });
+    expect(after.location).toMatchObject({
+      address: 'No. 14, Gandhi Street',
+      landmark: 'Temple',
+      mapPin: { lat: 12.92, lng: 80.1 },
+    });
+    expect(after.attributeValues).toEqual({
+      bhk: '3 BHK',
+      bathrooms: 4,
+      facing: 'East',
+      floors: 2,
+    });
+    expect(after.amenityIds).toEqual([amenity]);
+  });
+
+  it('an updated Sold property stays Sold, even when importing as Published', async () => {
+    const created = await as('admin', request(ctx.app).post('/api/v1/admin/properties')).send({
+      subcategoryId: villaId,
+      title: 'Sold villa',
+      purpose: 'sale',
+      price: { amount: 9_000_000 },
+      area: { value: 1800, unit: 'sqft' },
+      location: { city: 'Chennai', locality: 'Velachery', pincode: '600042' },
+      attributeValues: { bhk: '3 BHK' },
+    });
+    expect(created.status).toBe(201);
+    await PropertyModel.updateOne({ _id: created.body.data.id }, { $set: { status: 'sold' } });
+
+    const file = await fill((await template()).body, [
+      {
+        'Property name': 'Sold villa',
+        Purpose: 'Sale',
+        'Price (₹)': 9_500_000,
+        City: 'Chennai',
+        'Area / locality': 'Velachery',
+        Pincode: '600042',
+      },
+    ]);
+    const batch: ImportBatchDetail = (await upload(file)).body.data;
+    expect(batch.rows[0]!.status).toBe('duplicate');
+    const done: ImportBatchDetail = (
+      await as('admin', request(ctx.app).post(`${BASE}/${batch.id}/commit`)).send({
+        importAs: 'published',
+        duplicates: 'update',
+      })
+    ).body.data;
+    expect(done.result).toMatchObject({ updated: 1, savedAsDraft: 0 });
+
+    const after = (await PropertyModel.findById(created.body.data.id).lean())!;
+    expect(after.status).toBe('sold');
+    expect(after.price?.amount).toBe(9_500_000);
+  });
+
   it('gives an error report with the rows to fix and an Errors column', async () => {
     const file = await fill((await template()).body, [
       VALID,

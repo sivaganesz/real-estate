@@ -318,7 +318,7 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
   - [x] Upload .xlsx: saved to `uploads/imports/` (not public); columns matched by name; each row checked like Add property, with messages naming the column
   - [x] Duplicates within the file and against existing properties (subcategory + locality + pincode + plot number or name)
   - [x] Review results stored on the import batch: valid / invalid / duplicate counts and row-level errors
-  - [x] Import valid rows as Draft or Published (rows not ready to publish stay Draft, with the reason); skip or update duplicates; runs once per file; each row keeps its outcome
+  - [x] Import valid rows as Draft or Published (rows not ready to publish stay Draft, with the reason); skip or update duplicates (an update changes only the filled cells; Published applies to new rows and drafts, a Sold, Booked or Unpublished status is kept); runs once per file; each row keeps its outcome
   - [x] Error report: the rows to fix with an "Errors" column, through an authenticated download
   - [x] Photos from an "Image URLs" column (public https only, private networks refused, size and time limits), downloaded during the import
   - [ ] Photos as a ZIP file (later, if needed)

@@ -270,14 +270,20 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
                 />
                 Skip them
               </label>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-start gap-2 text-sm">
                 <input
                   type="radio"
                   name="duplicates"
                   checked={duplicates === 'update'}
                   onChange={() => setDuplicates('update')}
+                  className="mt-1"
                 />
-                Update the existing properties ({updatable})
+                <span>
+                  Update the existing properties ({updatable}){' '}
+                  <span className="text-muted-foreground">
+                    (only the filled cells change; a Sold, Booked or Unpublished status is kept)
+                  </span>
+                </span>
               </label>
             </fieldset>
           </div>

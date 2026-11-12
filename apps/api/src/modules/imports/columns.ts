@@ -369,6 +369,8 @@ const splitList = (v: CellValue) =>
 export interface ParsedRow {
   body: CreatePropertyBody;
   imageUrls: string[];
+  /** Column keys that had a value in this row (used when updating an existing property). */
+  filled: string[];
   errors: string[];
 }
 
@@ -474,7 +476,12 @@ export function parseRow(
     amenityIds,
     isFeatured: asYesNo(get('featured'), header('featured'), errors) ?? false,
   };
-  return { body, imageUrls: imageUrls.slice(0, IMPORT_MAX_IMAGES_PER_ROW), errors };
+  return {
+    body,
+    imageUrls: imageUrls.slice(0, IMPORT_MAX_IMAGES_PER_ROW),
+    filled: [...cells.keys()],
+    errors,
+  };
 }
 
 /** Turns an API error path into the spreadsheet column name for row messages. */

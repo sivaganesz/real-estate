@@ -20,6 +20,8 @@ const rowSchema = new Schema(
     /** The checked create-property body, used when importing. */
     body: { type: Schema.Types.Mixed, required: true },
     imageUrls: { type: [String], default: [] },
+    /** Columns filled in this row: an update changes only these. */
+    filled: { type: [String], default: [] },
     outcome: { type: String, default: null },
   },
   { _id: false },
@@ -57,6 +59,7 @@ export interface ImportRowDoc {
   duplicateOf: { id: string | null; code: string | null; row: number | null } | null;
   body: CreatePropertyBody;
   imageUrls: string[];
+  filled: string[];
   outcome: string | null;
 }
 

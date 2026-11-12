@@ -7,6 +7,7 @@ import type {
   ImportBatchDetail,
   ImportResult,
   PageMeta,
+  UpdateProperty,
 } from '@real-estate/shared';
 import { AppError, conflict, notFound } from '../../lib/errors';
 import { pageMeta, pageSkip } from '../../lib/http';
@@ -139,6 +140,7 @@ export class ImportsService {
         duplicateOf: null,
         body: parsed.body,
         imageUrls: parsed.imageUrls,
+        filled: parsed.filled,
         outcome: null,
       });
     }
@@ -202,15 +204,17 @@ export class ImportsService {
         continue;
       }
       try {
-        const body = createPropertyBodySchema.parse(r.body);
         const property = updateId
-          ? await this.properties.update(actorId, updateId, body)
-          : await this.properties.create(actorId, body);
+          ? await this.properties.update(actorId, updateId, await this.updateFromSheet(updateId, r))
+          : await this.properties.create(actorId, createPropertyBodySchema.parse(r.body));
         const notes: string[] = [];
         const photos = await this.addPhotos(actorId, property.id, r.imageUrls, notes);
         result.imagesAdded += photos.added;
         result.imagesFailed += photos.failed;
-        if (options.importAs === 'published' && property.status !== 'published') {
+        // "Import as Published" publishes new properties and drafts. Any other status of an
+        // updated property is kept: a Sold, Booked or Unpublished property must not go back
+        // on the market because of a sheet.
+        if (options.importAs === 'published' && property.status === 'draft') {
           try {
             await this.properties.changeStatus(actorId, property.id, 'published');
           } catch (err) {
@@ -339,6 +343,58 @@ export class ImportsService {
   }
 
   // ---------------------------------------------------------------- helpers
+
+  /**
+   * "Update the existing property": only the cells filled in the sheet change it. Empty
+   * cells keep what the property already has (they never clear it).
+   */
+  private async updateFromSheet(id: string, row: ImportRowDoc): Promise<UpdateProperty> {
+    const existing = await this.properties.get(id);
+    const filled = new Set(row.filled ?? []);
+    const has = (...keys: string[]) => keys.some((k) => filled.has(k));
+    const b = createPropertyBodySchema.parse(row.body);
+    const update: UpdateProperty = {};
+    if (has('title')) update.title = b.title;
+    if (has('purpose')) update.purpose = b.purpose;
+    if (has('price', 'priceBasis', 'negotiable', 'onRequest')) {
+      update.price = {
+        amount: has('price') ? b.price.amount : existing.price.amount,
+        basis: has('priceBasis') ? b.price.basis : existing.price.basis,
+        negotiable: has('negotiable') ? b.price.negotiable : existing.price.negotiable,
+        onRequest: has('onRequest') ? b.price.onRequest : existing.price.onRequest,
+      };
+    }
+    if (has('deposit', 'lockIn') && b.rental) {
+      update.rental = {
+        securityDeposit: has('deposit')
+          ? b.rental.securityDeposit
+          : (existing.rental?.securityDeposit ?? null),
+        lockInMonths: has('lockIn')
+          ? b.rental.lockInMonths
+          : (existing.rental?.lockInMonths ?? null),
+      };
+    }
+    if (has('area') && b.area) {
+      update.area = {
+        value: b.area.value,
+        unit: has('areaUnit') ? b.area.unit : (existing.area?.unit ?? b.area.unit),
+      };
+    }
+    const locationKeys = ['city', 'locality', 'pincode', 'state', 'address', 'landmark'] as const;
+    if (has(...locationKeys, 'lat', 'lng')) {
+      const location = { ...existing.location };
+      for (const k of locationKeys) if (has(k)) location[k] = b.location[k];
+      if (has('lat') && has('lng')) location.mapPin = b.location.mapPin;
+      update.location = location;
+    }
+    const attributeValues = Object.fromEntries(
+      Object.entries(b.attributeValues).filter(([key]) => has(`attr:${key}`)),
+    );
+    if (Object.keys(attributeValues).length > 0) update.attributeValues = attributeValues;
+    if (has('amenities')) update.amenityIds = b.amenityIds;
+    if (has('featured')) update.isFeatured = b.isFeatured;
+    return update;
+  }
 
   /** Within the file (later rows) and against existing, not archived properties. */
   private async markDuplicates(subcategoryId: string, rows: ImportRowDoc[]) {
