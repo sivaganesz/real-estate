@@ -1,10 +1,11 @@
 /**
  * Seed script: `pnpm --filter @real-estate/api seed`
  * Reads SEED_SUPERADMIN_NAME / SEED_SUPERADMIN_EMAIL / SEED_SUPERADMIN_PASSWORD from
- * apps/api/.env, creates the first Super Admin and the default company settings.
+ * apps/api/.env, creates the first Super Admin, the default company settings and the starting property types.
  */
 import { loadEnv } from '../config/env';
 import { createLogger } from '../lib/logger';
+import { ensureStartingPropertyTypes } from '../modules/propertyTypes/propertyTypes.defaults';
 import { connectDatabase, disconnectDatabase } from './mongoose';
 import { seedCompanySettings, seedSuperAdmin, superAdminSeedSchema } from './seed';
 
@@ -37,6 +38,12 @@ async function main(): Promise<void> {
       company === 'created'
         ? 'Default company settings created'
         : 'Company settings already exist, skipped',
+    );
+    const types = await ensureStartingPropertyTypes();
+    logger.info(
+      types === 'created'
+        ? 'Starting property types created'
+        : 'Property types already exist, skipped',
     );
   } finally {
     await disconnectDatabase();

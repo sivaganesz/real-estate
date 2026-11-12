@@ -38,7 +38,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 
 ### 0.2 Wireframes (approve before building each phase)
 - [x] Phase 1 wireframes ([phase-1.html](./wireframes/phase-1.html)): Login, Forgot/Reset password, Accept invite, Users & Roles, Invite/Edit user, My Profile, Settings → Company info
-- [ ] Phase 2 wireframes: Property list, Add/Edit property (group-based fields), Bulk import, Settings → Property types & amenities
+- [x] Phase 2 wireframes: Property list, Add/Edit property (category → subcategory attributes), Bulk import, Settings → Property types & amenities
 - [ ] Phase 3 wireframes: Leads, Lead detail, Appointments calendar, Conversations, Call logs, Settings → Visit slots, Dashboard
 - [ ] Public website wireframes: Home, Listing, Property details, Contact
 
@@ -217,34 +217,37 @@ The AI agent reads property data only through our MCP tools. Property locations 
 ## Phase 2: Inventory Management
 
 ### 2.1 Settings → Property types & amenities
-- [ ] **API**
-  - [ ] `fieldDefinitions` model (field library shared by groups):
-    - [ ] Label, key, type (number, text, dropdown, multi-select, yes/no, date)
-    - [ ] Unit, options
-    - [ ] Visibility (public or internal)
-  - [ ] `propertyGroups` model:
-    - [ ] Name, category (Residential / Commercial / Other)
-    - [ ] Allowed purposes (Sale / Rent / Lease)
-    - [ ] Code prefix, icon, active, order
-    - [ ] Fields with order, required, website filter, show on card, hidden
-  - [ ] Group CRUD; add a new or existing field to a group; reorder, hide and edit fields
-  - [ ] Rules:
-    - [ ] A field used by properties can't be deleted (only hidden)
-    - [ ] A field's key is locked once used
-    - [ ] A group's code prefix is locked after its first property
-  - [ ] "Fields added during property creation" list for admin review
-  - [ ] `amenities` model and CRUD: name, icon, applicable groups, active
-  - [ ] Seed the starting groups and fields (Residential Plot, Villa / House, Apartment / Flat, Commercial Plot, Commercial Space, Warehouse, Agricultural Land, Industrial Land) and the starting amenities
-- [ ] **UI**
-  - [ ] Settings navbar gains the "Property types & amenities" tab
-  - [ ] "Groups & fields" sub-tab:
-    - [ ] Group list by category
-    - [ ] Group details form
-    - [ ] Fields table
-    - [ ] Add-field drawer: use an existing field, or create a new one
-    - [ ] Live form preview
-    - [ ] Review banner for newly added fields
-  - [ ] "Amenities" sub-tab: table plus add/edit panel
+Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House) → attributes. **Residential first**; Commercial and Other are "set up later" and follow once Residential is complete.
+
+**Categories & attributes (Residential)**
+- [x] **API**
+  - [x] Attribute library (`propertyAttributes`): name, key (made from the name, never changes), value type (text, long text, number, yes/no, dropdown, multi-select, date), unit, options, search filter
+  - [x] `propertyCategories`: Residential active, Commercial and Other inactive; common attributes per category
+  - [x] `propertySubcategories`: name, code prefix, allowed purposes (Sale / Rent / Lease), active, order, own attributes
+  - [x] Core attributes on every property, required and locked: property name, purpose, price, area, location
+  - [x] Add a new or existing attribute to common or a subcategory; edit (name, type, options apply everywhere it is used; "required" per place); delete from one place
+  - [x] Add / edit / delete subcategories (delete only without properties)
+  - [x] Rules:
+    - [x] No duplicate attribute names; an attribute is either common or in a subcategory, never both
+    - [x] Code prefix is 3 letters, unique, and locked once the subcategory has properties
+    - [x] An attribute's value type is locked once properties have values for it
+    - [x] Deleting an attribute keeps the values properties already have
+    - [x] Commercial and Other can't be changed until they're set up
+  - [x] Starting Residential setup created on first start (Plot 7, Villa / House 8, Apartment / Flat 11 attributes; common: facing, ownership type, description); never re-adds what an admin deleted
+  - [x] Every change recorded in the change log
+  - [ ] Hook the property rules to real property counts (with 2.2)
+- [x] **UI**
+  - [x] Settings navbar: "Property types & amenities" tab
+  - [x] "Categories & attributes" sub-tab: category cards, subcategory cards, common attributes (locked core rows), the selected subcategory's attributes
+  - [x] Add / edit attribute drawer: "add to" place, value type, unit, options, required, search filter; offers to reuse an existing attribute with the same name
+  - [x] Add / edit subcategory drawer (name, code prefix, purposes, active, delete)
+  - [x] Delete confirmation
+- [x] Tests: API (rules and permissions), shared schemas, page (add, reuse, edit, delete, add subcategory)
+
+**Later in 2.1**
+- [ ] "Attributes added during property creation" review ("New" tag), once the property form exists (2.4)
+- [ ] "Amenities" sub-tab: `amenities` model and CRUD (name, icon, applicable subcategories, active), starting amenities, table plus add/edit panel
+- [ ] Commercial and Other: subcategories and attributes, after Residential is signed off
 
 ### 2.2 Properties: data and API
 - [ ] `properties` model:

@@ -15,7 +15,7 @@
 - Email goes through a swappable module (Resend).
 - Plivo and WhatsApp are deferred.
 - There is no locations master and no radius search.
-- Property types are now "groups" with fields.
+- Property types are category → subcategory → attributes (Residential first; Commercial and Other later).
 
 ---
 
@@ -57,7 +57,7 @@ This document describes **how** the platform is built: architecture, stack, repo
  │  /mcp  (MCP server for the AI agent, JSON-RPC)                      │
  │  /uploads/*  (static files from local storage)                      │
  │                                                                     │
- │  modules: auth · users · settings · propertyGroups · amenities ·    │
+ │  modules: auth · users · settings · propertyTypes · amenities ·    │
  │           properties · imports · appointments · mcp · perfox        │
  │  lib:     storage (local disk) · email (Resend) · logger            │
  └──────┬───────────────────────┬──────────────────────┬───────────────┘
@@ -131,7 +131,7 @@ real-estate/
 │   │   │       ├── auth/             # Phase 1
 │   │   │       ├── users/            # Phase 1
 │   │   │       ├── settings/         # Phase 1 (company), Phase 3 (visit slots)
-│   │   │       ├── propertyGroups/   # Phase 2 (groups + field library)
+│   │   │       ├── propertyTypes/    # Phase 2 (categories, subcategories, attributes)
 │   │   │       ├── amenities/        # Phase 2
 │   │   │       ├── properties/       # Phase 2 (incl. media)
 │   │   │       ├── imports/          # Phase 2
@@ -304,32 +304,43 @@ One document per key.
 ### 7.5 `changeLogs` (Phase 1)
 Simple record of important changes. There is no screen for it in Phase 1; property history is shown on the property page.
 ```ts
-{ actorId, entity: 'user'|'settings'|'property'|'propertyGroup'|'appointment', entityId,
+{ actorId, entity: 'user'|'settings'|'property'|'propertyType'|'appointment', entityId,
   action: 'created'|'updated'|'status_changed'|'archived'|'role_changed'|..., changes?: { field: [before, after] }, at }
 ```
 Indexes: `{ entity: 1, entityId: 1, at: -1 }`.
 
-### 7.6 `fieldDefinitions` (Phase 2): a field library shared by groups
+### 7.6 `propertyAttributes` (Phase 2): an attribute library shared by categories and subcategories
 ```ts
-{ key: 'facing' (unique, locked once used), label: 'Facing',
-  type: 'number'|'text'|'dropdown'|'multi_select'|'yes_no'|'date',
-  unit?: 'ft'|'sq.ft'|'slots'|..., options?: string[],
-  visibility: 'public'|'internal',             // internal fields never reach the website or the AI
-  createdBy, createdFrom?: { propertyId } }    // set when added during property creation
+{ key: 'road_width' (unique; made from the first name, never changes), label: 'Road width',
+  labelKey: 'road width' (unique, lower-cased: no two attributes with the same name),
+  type: 'text'|'long_text'|'number'|'yes_no'|'dropdown'|'multi_select'|'date',
+  unit: 'ft'|'sq.ft'|'slots'|… | null (numbers only), options: string[] (dropdown / multi-select only),
+  searchFilter: boolean,                        // buyers and the AI agent can search by it
+  createdBy, updatedBy }
 ```
+Name, type, unit, options and search filter are the same everywhere the attribute is used (so "BHK" filters villas and apartments alike). The type is locked once properties have values for it.
 
-### 7.7 `propertyGroups` (Phase 2)
+### 7.7 `propertyCategories` and `propertySubcategories` (Phase 2)
 ```ts
-{ name: 'Villa / House', category: 'residential'|'commercial'|'other',
-  purposes: ('sale'|'rent'|'lease')[], codePrefix: 'VIL' (locked after first property),
-  icon?, isActive, order,
-  fields: [{ fieldId, order, required, websiteFilter, showOnCard, hidden }] }
+// propertyCategories: one per category; the common attributes appear for every subcategory
+{ key: 'residential'|'commercial'|'other', name, isActive, order,
+  attributes: [{ attributeId, required }] }       // array order = form order
+
+// propertySubcategories
+{ categoryKey, name: 'Villa / House', nameKey (unique per category),
+  codePrefix: 'VIL' (unique, 3 letters, locked once it has properties),
+  purposes: ('sale'|'rent'|'lease')[], isActive, order,
+  attributes: [{ attributeId, required }], createdBy, updatedBy }
 ```
-Seed groups: Residential Plot, Villa / House, Apartment / Flat, Commercial Plot, Commercial Space, Warehouse, Agricultural Land, Industrial Land, each with their starting fields.
+- **Core attributes** are columns of every property (title, purpose, price, area, location), always required, shown as locked rows; they are not in these collections.
+- An attribute is either common or in a subcategory of the same category, never both.
+- Removing an attribute from a place keeps the values properties already have; the library entry is deleted once nothing uses it.
+- Starting setup (created at first start and by the seed script, never re-applied): Residential with Residential Plot (PLT), Villa / House (VIL), Apartment / Flat (APT) and their attributes; Commercial and Other inactive ("set up later").
+- Rules that depend on properties (prefix lock, delete subcategory, type lock) go through a `PropertyUsage` interface; Phase 2.2 plugs in the real counts.
 
 ### 7.8 `amenities` (Phase 2)
 ```ts
-{ name, icon?, groupIds: string[], isActive, order }
+{ name, icon?, subcategoryIds: string[], isActive, order }
 ```
 
 ### 7.9 `properties` (Phase 2)
@@ -423,7 +434,7 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 ### Phase 2
 | Area | Endpoints |
 |---|---|
-| Groups & fields | `GET/POST /admin/property-groups`, `GET/PATCH /admin/property-groups/:id`, `POST /admin/property-groups/:id/fields` (add new or existing field), `PATCH /admin/property-groups/:id/fields/:fieldId`, `PUT /admin/property-groups/:id/fields/order`, `GET /admin/fields` (library search), `GET /admin/fields/recent` (added during property creation) |
+| Categories & attributes | `GET /admin/property-types` (whole setup), `GET /admin/property-types/attributes?q=` (find existing attributes), `POST /admin/property-types/subcategories`, `PATCH/DELETE /admin/property-types/subcategories/:id`, `POST /admin/property-types/categories/:key/attributes` and `POST /admin/property-types/subcategories/:id/attributes` (new or existing attribute), `PATCH/DELETE …/attributes/:attributeId`. Every change returns the whole setup. |
 | Amenities | `GET/POST /admin/amenities`, `PATCH /admin/amenities/:id` |
 | Properties | `GET/POST /admin/properties`, `GET/PATCH /admin/properties/:id`, `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `POST /admin/properties/:id/change-group`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
 | Media | `POST /admin/properties/:id/media` (multipart upload), `PATCH /admin/properties/:id/media/order`, `PATCH /admin/properties/:id/media/:mediaId` (cover, caption), `DELETE /admin/properties/:id/media/:mediaId` |

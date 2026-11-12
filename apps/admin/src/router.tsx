@@ -10,6 +10,7 @@ import { CompanySettingsPage } from '@/pages/CompanySettingsPage';
 import { ErrorPage } from '@/pages/ErrorPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { PropertyTypesPage } from '@/pages/PropertyTypesPage';
 import { UsersPage } from '@/pages/UsersPage';
 
 export const routes: RouteObject[] = [
@@ -69,6 +70,20 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="settings:edit">
             <CompanySettingsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'settings/property-types',
+        handle: {
+          breadcrumbs: [
+            { label: 'Settings', to: '/settings' },
+            { label: 'Property types & amenities' },
+          ],
+        },
+        element: (
+          <RequirePermission permission="settings:edit">
+            <PropertyTypesPage />
           </RequirePermission>
         ),
       },

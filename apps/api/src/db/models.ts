@@ -7,3 +7,4 @@ import '../modules/settings/settings.model';
 import '../modules/changeLogs/changeLog.model';
 import '../modules/auth/refreshToken.model';
 import '../modules/auth/authToken.model';
+import '../modules/propertyTypes/propertyTypes.model';

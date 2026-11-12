@@ -15,6 +15,9 @@ import { securityMiddleware } from './middleware/security';
 import { createAuthRouter } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
+import { createPropertyTypesRouter } from './modules/propertyTypes/propertyTypes.routes';
+import { PropertyTypesService } from './modules/propertyTypes/propertyTypes.service';
+import { noPropertiesYet } from './modules/propertyTypes/propertyUsage';
 import { createProfileRouter } from './modules/profile/profile.routes';
 import { ProfileService } from './modules/profile/profile.service';
 import { CompanySettingsService } from './modules/settings/company.service';
@@ -40,6 +43,8 @@ function createApiRouter(deps: AppDeps): express.Router {
   router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
   const company = new CompanySettingsService(deps);
   router.use('/admin/settings', createSettingsRouter({ auth, company }));
+  const propertyTypes = new PropertyTypesService({ usage: noPropertiesYet });
+  router.use('/admin/property-types', createPropertyTypesRouter({ auth, propertyTypes }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }

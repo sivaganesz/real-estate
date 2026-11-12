@@ -5,6 +5,7 @@ import { connectDatabase, disconnectDatabase, syncDatabaseIndexes } from './db/m
 import { createEmailProvider } from './lib/email';
 import { createLogger } from './lib/logger';
 import { LocalStorageProvider } from './lib/storage';
+import { ensureStartingPropertyTypes } from './modules/propertyTypes/propertyTypes.defaults';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -16,6 +17,9 @@ async function main(): Promise<void> {
 
   await connectDatabase(env.MONGODB_URI, logger);
   await syncDatabaseIndexes(logger);
+  if ((await ensureStartingPropertyTypes()) === 'created') {
+    logger.info('Starting property types created (Residential plot, villa, apartment)');
+  }
 
   const server = app.listen(env.PORT, () => {
     logger.info(

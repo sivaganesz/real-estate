@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { nationalNumber, updateCompanySettingsBodySchema } from '@real-estate/shared';
 import type { CompanySettings } from '@real-estate/shared';
 import { Loader2Icon, MapPinIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ClipboardEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import { LogoUploader } from '@/features/settings/LogoUploader';
 import { SettingsNav } from '@/features/settings/SettingsNav';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
+import { useSettled } from '@/lib/useSettled';
 
 /** A map-pin coordinate typed as text: empty, or a number within ±limit. */
 const coordinate = (limit: number) =>
@@ -60,16 +61,6 @@ const toFormValues = (s: CompanySettings): FormInput => ({
   phone: nationalNumber(s.phone),
   email: s.email ?? '',
 });
-
-/** The value after it has stopped changing for `ms` (so the map doesn't reload on every key). */
-function useSettled<T>(value: T, ms = 600): T {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), ms);
-    return () => clearTimeout(timer);
-  }, [value, ms]);
-  return settled;
-}
 
 /** Map preview of the office pin (OpenStreetMap embed), or a hint when there is no pin. */
 function MapPreview({ lat, lng }: { lat: number; lng: number } | { lat?: never; lng?: never }) {
