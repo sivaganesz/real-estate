@@ -14,6 +14,8 @@ import { sanitizeBody } from './middleware/sanitize';
 import { securityMiddleware } from './middleware/security';
 import { createAuthRouter } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
+import { createGeoRouter } from './modules/geo/geo.routes';
+import { GeocodingService } from './modules/geo/geo.service';
 import { healthRouter } from './modules/health/health.routes';
 import { createPropertyTypesRouter } from './modules/propertyTypes/propertyTypes.routes';
 import { PropertyTypesService } from './modules/propertyTypes/propertyTypes.service';
@@ -55,6 +57,8 @@ function createApiRouter(deps: AppDeps): express.Router {
     logger: deps.logger,
   });
   router.use('/admin/properties', createPropertiesRouter({ auth, properties, media }));
+  const geo = new GeocodingService({ env: deps.env, logger: deps.logger });
+  router.use('/admin/geo', createGeoRouter({ auth, geo }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }

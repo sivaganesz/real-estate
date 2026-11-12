@@ -10,3 +10,4 @@ export * from './schemas/profile';
 export * from './schemas/settings';
 export * from './schemas/propertyTypes';
 export * from './schemas/properties';
+export * from './schemas/geo';

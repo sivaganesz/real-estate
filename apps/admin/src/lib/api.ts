@@ -133,6 +133,45 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return parse<T>(res, options.envelope);
 }
 
+/**
+ * Multipart upload that reports progress (0–1). Uses XMLHttpRequest because fetch can't
+ * report upload progress. Like other requests, it refreshes an expired session once.
+ */
+export async function uploadWithProgress<T>(
+  path: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  const attempt = () =>
+    new Promise<Response>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${BASE_URL}${API_PREFIX}${path}`);
+      xhr.withCredentials = true;
+      xhr.setRequestHeader('x-requested-with', 'XMLHttpRequest');
+      if (accessToken) xhr.setRequestHeader('authorization', `Bearer ${accessToken}`);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+      };
+      xhr.onload = () =>
+        resolve(
+          new Response(xhr.status === 204 ? null : xhr.responseText, {
+            status: xhr.status,
+            headers: { 'content-type': 'application/json' },
+          }),
+        );
+      xhr.onerror = () => reject(new TypeError('Network error'));
+      xhr.send(form);
+    });
+
+  let res = await attempt();
+  if (res.status === 401) {
+    const session = await refreshSession();
+    if (session) res = await attempt();
+    else sessionExpiredHandler?.();
+  }
+  return parse<T>(res);
+}
+
 export interface ListResult<T> {
   items: T[];
   meta: PageMeta;

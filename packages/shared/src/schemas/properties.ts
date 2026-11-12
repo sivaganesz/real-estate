@@ -217,6 +217,8 @@ export const propertySchema = z.object({
   /** Keys with a value that the current subcategory doesn't show (kept after a subcategory change). */
   hiddenAttributeKeys: z.array(z.string()),
   extraAttributes: z.array(extraAttributeSchema),
+  /** Optional attributes taken off this property's form ("remove from this property only"). */
+  removedAttributeKeys: z.array(z.string()),
   amenityIds: z.array(idSchema),
   /** In display order; the cover photo is marked. */
   media: z.array(propertyMediaSchema),
@@ -288,6 +290,8 @@ const propertyFields = {
   /** Values for the subcategory's and category's attributes; null or "" clears one. */
   attributeValues: z.record(z.string(), attributeValueSchema.nullable()),
   extraAttributes: z.array(extraAttributeSchema).max(30, 'Up to 30 extra attributes'),
+  /** Optional attributes removed from this property's form; their values are cleared. */
+  removedAttributeKeys: z.array(z.string().max(80)).max(100),
   amenityIds: z.array(idSchema).max(100),
   isFeatured: z.boolean(),
 };
@@ -317,6 +321,7 @@ export const createPropertyBodySchema = z.object({
   }),
   attributeValues: propertyFields.attributeValues.default({}),
   extraAttributes: propertyFields.extraAttributes.default([]),
+  removedAttributeKeys: propertyFields.removedAttributeKeys.default([]),
   amenityIds: propertyFields.amenityIds.default([]),
   isFeatured: propertyFields.isFeatured.default(false),
 });

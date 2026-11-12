@@ -291,23 +291,26 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
 - [x] Tests: sizes and formats, type and size checks, cover, reorder, delete, publish with a real photo
 
 ### 2.3 Properties: UI
-- [ ] Property list:
-  - [ ] Table with cover image, code, title, group, purpose, city/area, price, status, featured, updated date
-  - [ ] Search and filter bar, saved filter in the URL
-  - [ ] Row actions and bulk actions
-- [ ] Add/Edit property form:
-  - [ ] Basic info, with the property group select (category fills in automatically)
-  - [ ] Price and area, with unit conversion and INR formatting (₹45 L / ₹1.25 Cr)
-  - [ ] Location fields (state, city, area, pincode, address, landmark), with suggestions; optional map pin
-  - [ ] Group details section built from the selected group's fields
-  - [ ] Extra fields on this property; "+ Add a field that isn't listed" with the add-to-group choice
-  - [ ] Photos, videos and documents, with upload progress, drag to reorder and set cover
-  - [ ] Amenities checklist (filtered by group)
-  - [ ] Legal details
-  - [ ] Status and visibility side panel; save draft, publish
-- [ ] Property detail/preview view
-- [ ] Change history view
-- [ ] Unsaved-changes warning; field-level validation messages
+- [x] Sidebar: "Inventory → Properties" for every role that can view properties; Admins and Sales Agents now land on Properties after sign-in
+- [x] Property list:
+  - [x] Table with cover photo, name, code, subcategory, purpose, city / area / pincode, price, area, status, featured star, updated date
+  - [x] Status tabs with counts; search (code, name, area, pincode), subcategory, purpose, city (suggestions), price range, sort, featured; all kept in the URL
+  - [x] Row menu: view, edit, duplicate as draft, change status / restore; bulk "Change status…" with a reason for each property that couldn't change
+  - [x] Sales Agents: list and details only (no selection, add or edit)
+- [x] Add / Edit property form (wireframe layout):
+  - [x] Property type: category cards (Residential; others "set up later") and subcategory cards; "Change subcategory…" when editing, with a warning about details that will be hidden
+  - [x] Common details: property name, purpose (only those the subcategory allows), price with ₹ preview, negotiable, price on request, rent / lease deposit and lock-in, area with unit and sq.ft equivalent, the category's common attributes
+  - [x] Location: city, locality and pincode with suggestions from existing properties
+  - [x] "Full address, landmark & map pin" opens and closes (closed, it summarises what was entered; "Clear" empties it): state, landmark, full address and an interactive OpenStreetMap map that finds the typed city / area / pincode; click to drop the pin, drag to adjust; latitude, longitude and the nearest address are shown; "Fill empty fields from pin"
+  - [x] Subcategory details built from its attributes (text, number, yes / no, dropdown, multi-select, date); ✕ removes an optional attribute from this property only, with "Restore"
+  - [x] "+ Add attribute": only this property, or all properties of the subcategory (added in Settings; offers to reuse an existing one)
+  - [x] Photos, floor plans, brochures, documents and videos: drop or pick, upload progress, cover, reorder, delete (after the first save)
+  - [x] Amenities as tap-to-select chips (only those offered for the subcategory)
+  - [x] Side panel: status, featured, "Ready to publish" checklist from the API; Save draft, Save changes, Save & publish
+- [x] Property detail: photos, price, key facts, description, details, rent details, amenities, status, location with map, documents and videos; Change status, Duplicate, Edit
+- [x] Change history tab: who, when and what changed, in words
+- [x] Unsaved-changes warning (leaving the page or closing the tab); field errors from the form and from the API shown next to the field
+- [x] Tests: list (counts, bulk change, Sales Agent view), Add property (validation, values sent, API field errors); browser walkthrough of add → photos → publish → detail → history → list → bulk
 
 ### 2.4 Bulk Import (Excel)
 - [ ] **API** (all processing inside the request, no background jobs; at most 2,000 rows / 10 MB)

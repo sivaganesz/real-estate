@@ -33,7 +33,12 @@ interface NavItem {
   permission?: Permission;
 }
 
-/** Phase 1 modules (shown only to roles that can use them). */
+/** Inventory (Phase 2). */
+const INVENTORY_NAV: NavItem[] = [
+  { to: '/properties', label: 'Properties', icon: HouseIcon, permission: 'properties:read' },
+];
+
+/** Administration (shown only to roles that can use them). */
 const ADMIN_NAV: NavItem[] = [
   { to: '/users', label: 'Users & Roles', icon: UsersIcon, permission: 'users:manage' },
   { to: '/settings', label: 'Settings', icon: SettingsIcon, permission: 'settings:edit' },
@@ -41,7 +46,6 @@ const ADMIN_NAV: NavItem[] = [
 
 /** Later phases, shown greyed out so the team can see what's coming. */
 const COMING_NEXT: { label: string; icon: Icon; phase: string }[] = [
-  { label: 'Properties', icon: HouseIcon, phase: 'Phase 2' },
   { label: 'Bulk Import', icon: UploadIcon, phase: 'Phase 2' },
   { label: 'Appointments', icon: CalendarDaysIcon, phase: 'Phase 3' },
   { label: 'Leads', icon: ContactIcon, phase: 'Phase 3' },
@@ -99,6 +103,7 @@ function Sidebar({
   const { user, can } = useAuth();
   const { data: company } = useCompanySettings();
   if (!user) return null;
+  const inventoryItems = INVENTORY_NAV.filter((item) => !item.permission || can(item.permission));
   const adminItems = ADMIN_NAV.filter((item) => !item.permission || can(item.permission));
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -135,6 +140,13 @@ function Sidebar({
           logoUrl={company?.logoUrl}
         />
       </div>
+
+      {inventoryItems.length > 0 && (
+        <>
+          <GroupLabel collapsed={collapsed}>Inventory</GroupLabel>
+          {renderLinks(inventoryItems)}
+        </>
+      )}
 
       {adminItems.length > 0 && (
         <>

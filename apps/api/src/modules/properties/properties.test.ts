@@ -453,6 +453,29 @@ describe('properties API', () => {
     expect(typeChange.body.error.code).toBe('TYPE_LOCKED');
   });
 
+  it('removes optional attributes from one property only; required ones stay', async () => {
+    const id = (await villa({ attributeValues: { floors: 2, bhk: '3 BHK' } })).body.data.id;
+    const res = await patch(id, { removedAttributeKeys: ['floors', 'floors', 'not_a_key'] });
+    expect(res.body.data.removedAttributeKeys).toEqual(['floors']);
+    expect(res.body.data.attributeValues).toEqual({ bhk: '3 BHK' }); // value cleared
+
+    const bhk = sub('Villa / House').attributes.find((a) => a.key === 'bhk')!;
+    await as(
+      'admin',
+      request(ctx.app).patch(
+        `${TYPES}/subcategories/${sub('Villa / House').id}/attributes/${bhk.id}`,
+      ),
+    ).send({ required: true });
+    const required = await patch(id, { removedAttributeKeys: ['bhk'] });
+    expect(required.body.error.details[0].message).toBe(
+      "BHK is required for Villa / House, so it can't be removed",
+    );
+    // Restoring = leaving it out of the list.
+    expect((await patch(id, { removedAttributeKeys: [] })).body.data.removedAttributeKeys).toEqual(
+      [],
+    );
+  });
+
   it("can't add properties to an inactive subcategory", async () => {
     await as(
       'admin',

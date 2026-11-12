@@ -49,15 +49,33 @@ function fakeApi(url: string) {
       ? { data: { total: 0, active: 0, invited: 0, locked: 0, inactive: 0 } }
       : url.includes('/admin/users')
         ? { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } }
-        : url.includes('/admin/profile')
+        : url.includes('/admin/properties/status-counts')
           ? {
               data: {
-                ...userFor('sales_agent'),
-                lastLoginAt: null,
-                createdAt: '2026-11-01T00:00:00.000Z',
+                all: 0,
+                draft: 0,
+                published: 0,
+                unpublished: 0,
+                booked: 0,
+                sold: 0,
+                rented: 0,
+                leased: 0,
+                archived: 0,
               },
             }
-          : { data: null };
+          : url.includes('/admin/properties')
+            ? { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } }
+            : url.includes('/admin/property-types')
+              ? { data: { coreAttributes: [], categories: [] } }
+              : url.includes('/admin/profile')
+                ? {
+                    data: {
+                      ...userFor('sales_agent'),
+                      lastLoginAt: null,
+                      createdAt: '2026-11-01T00:00:00.000Z',
+                    },
+                  }
+                : { data: null };
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: { 'content-type': 'application/json' },
@@ -110,9 +128,9 @@ describe('role-based menus and pages', () => {
   });
 
   it.each([
-    ['super_admin', '/users', ['Users & Roles', 'Settings']],
-    ['admin', '/settings/company', ['Settings']],
-    ['sales_agent', '/profile', []],
+    ['super_admin', '/users', ['Properties', 'Users & Roles', 'Settings']],
+    ['admin', '/properties', ['Properties', 'Settings']],
+    ['sales_agent', '/properties', ['Properties']],
   ] as const)('%s: "/" opens %s and the sidebar shows %j', async (role, home, links) => {
     const router = renderAs(role, '/');
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(home));

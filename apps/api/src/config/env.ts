@@ -24,6 +24,14 @@ const envSchema = z
     RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM: z.string().min(3).default('Real Estate <no-reply@example.com>'),
 
+    /** Address search for the property map (OpenStreetMap Nominatim by default). */
+    GEOCODER_URL: z.url('must be a URL').default('https://nominatim.openstreetmap.org'),
+    /** Limits address search to one country (ISO code), e.g. "in". */
+    GEOCODER_COUNTRY: z
+      .string()
+      .regex(/^[a-z]{2}(,[a-z]{2})*$/, 'must be country codes like in')
+      .default('in'),
+
     SWAGGER_BASIC_AUTH: z
       .string()
       .regex(/^[^:]+:.+$/, 'must be in the format user:password')

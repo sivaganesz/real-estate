@@ -103,6 +103,8 @@ const propertySchema = new Schema(
       ],
       default: [],
     },
+    /** Optional attributes removed from this property's form. */
+    removedAttributeKeys: { type: [String], default: [] },
     amenityIds: { type: [String], default: [] },
     media: { type: [mediaSchema], default: [] },
     status: { type: String, required: true, enum: PROPERTY_STATUSES, default: 'draft' },
@@ -158,6 +160,7 @@ export interface PropertyDoc {
   };
   attributeValues: Record<string, AttributeValue>;
   extraAttributes: ExtraAttribute[];
+  removedAttributeKeys: string[];
   amenityIds: string[];
   media: MediaDoc[];
   status: PropertyStatus;

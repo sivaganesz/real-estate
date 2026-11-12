@@ -35,6 +35,7 @@ import {
   checkAmenities,
   checkExtraAttributes,
   checkPurpose,
+  checkRemovedAttributes,
   mergeAttributeValues,
   publishIssues,
 } from './propertyRules';
@@ -58,6 +59,7 @@ function snapshot(
     | 'isFeatured'
     | 'amenityIds'
     | 'extraAttributes'
+    | 'removedAttributeKeys'
     | 'attributeValues'
   >,
 ) {
@@ -72,6 +74,7 @@ function snapshot(
     isFeatured: p.isFeatured,
     amenityIds: p.amenityIds,
     extraAttributes: p.extraAttributes,
+    removedAttributeKeys: p.removedAttributeKeys ?? [],
   };
   for (const [key, value] of Object.entries(p.attributeValues ?? {}))
     flat[`attributes.${key}`] = value;
@@ -248,6 +251,7 @@ export class PropertiesService {
       location: input.location,
       attributeValues: values.attributeValues,
       extraAttributes: values.extraAttributes,
+      removedAttributeKeys: values.removedAttributeKeys,
       amenityIds: values.amenityIds,
       status: 'draft',
       isFeatured: input.isFeatured,
@@ -284,6 +288,7 @@ export class PropertiesService {
         purpose,
         attributeValues: input.attributeValues ?? {},
         extraAttributes: input.extraAttributes ?? before.extraAttributes,
+        removedAttributeKeys: input.removedAttributeKeys ?? before.removedAttributeKeys ?? [],
         // After a subcategory change, amenities it doesn't offer are dropped.
         amenityIds:
           input.amenityIds ??
@@ -308,6 +313,7 @@ export class PropertiesService {
       location: input.location ?? before.location,
       attributeValues: values.attributeValues,
       extraAttributes: values.extraAttributes,
+      removedAttributeKeys: values.removedAttributeKeys,
       amenityIds: values.amenityIds,
       isFeatured: input.isFeatured ?? before.isFeatured,
     };
@@ -341,6 +347,7 @@ export class PropertiesService {
           location: next.location,
           attributeValues: next.attributeValues,
           extraAttributes: next.extraAttributes,
+          removedAttributeKeys: next.removedAttributeKeys,
           amenityIds: next.amenityIds,
           isFeatured: next.isFeatured,
           updatedBy: actorId,
@@ -444,6 +451,7 @@ export class PropertiesService {
       location: source.location,
       attributeValues: source.attributeValues,
       extraAttributes: source.extraAttributes,
+      removedAttributeKeys: source.removedAttributeKeys ?? [],
       amenityIds: source.amenityIds,
       media: [],
       status: 'draft',
@@ -487,20 +495,27 @@ export class PropertiesService {
   /** Checks purpose, attribute values, extra attributes and amenities together. */
   private checkInput(
     definition: FormDefinition,
-    input: Pick<CreateProperty, 'purpose' | 'attributeValues' | 'extraAttributes' | 'amenityIds'>,
+    input: Pick<
+      CreateProperty,
+      'purpose' | 'attributeValues' | 'extraAttributes' | 'amenityIds' | 'removedAttributeKeys'
+    >,
     storedValues: PropertyDoc['attributeValues'],
     tickedAmenities: string[],
   ) {
     const errors: ErrorDetail[] = [...checkPurpose(definition, input.purpose)];
+    const removed = checkRemovedAttributes(definition, input.removedAttributeKeys);
     const attributes = mergeAttributeValues(definition, storedValues, input.attributeValues);
     const extras = checkExtraAttributes(definition, input.extraAttributes);
     const amenities = checkAmenities(definition, input.amenityIds, tickedAmenities);
-    errors.push(...attributes.errors, ...extras.errors, ...amenities.errors);
+    errors.push(...removed.errors, ...attributes.errors, ...extras.errors, ...amenities.errors);
     if (errors.length > 0) throw validationError(errors);
+    // Removing an attribute from the property clears its value.
+    for (const key of removed.values) delete attributes.values[key];
     return {
       attributeValues: attributes.values,
       extraAttributes: extras.values,
       amenityIds: amenities.values,
+      removedAttributeKeys: removed.values,
     };
   }
 
@@ -524,6 +539,7 @@ export class PropertiesService {
       attributeValues: doc.attributeValues ?? {},
       hiddenAttributeKeys: Object.keys(doc.attributeValues ?? {}).filter((k) => !shown.has(k)),
       extraAttributes: doc.extraAttributes ?? [],
+      removedAttributeKeys: doc.removedAttributeKeys ?? [],
       amenityIds: doc.amenityIds ?? [],
       media: sortMedia(doc.media ?? []).map((m) => ({
         id: m._id,

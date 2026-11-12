@@ -449,7 +449,8 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 | Categories & attributes | `GET /admin/property-types` (whole setup), `GET /admin/property-types/attributes?q=` (find existing attributes), `POST /admin/property-types/subcategories`, `PATCH/DELETE /admin/property-types/subcategories/:id`, `POST /admin/property-types/categories/:key/attributes` and `POST /admin/property-types/subcategories/:id/attributes` (new or existing attribute), `PATCH/DELETE …/attributes/:attributeId`. Every change returns the whole setup. |
 | Amenities | Listed in `GET /admin/property-types` (per category). `POST /admin/property-types/categories/:key/amenities`, `PUT /admin/property-types/categories/:key/amenities/order`, `PATCH/DELETE /admin/property-types/amenities/:id`. Every change returns the whole setup. |
 | Properties | `GET/POST /admin/properties`, `GET /admin/properties/status-counts`, `GET/PATCH/DELETE /admin/properties/:id` (DELETE archives; PATCH with `subcategoryId` changes the subcategory), `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
-| Media | `POST /admin/properties/:id/media` (multipart upload), `PATCH /admin/properties/:id/media/order`, `PATCH /admin/properties/:id/media/:mediaId` (cover, caption), `DELETE /admin/properties/:id/media/:mediaId` |
+| Media | `POST /admin/properties/:id/media?kind=` (multipart upload), `PUT /admin/properties/:id/media/order`, `POST /admin/properties/:id/media/:mediaId/cover`, `DELETE /admin/properties/:id/media/:mediaId` |
+| Map | `GET /admin/geo/search?city=&locality=&pincode=&state=` (address → map position), `GET /admin/geo/reverse?lat=&lng=` (pin → nearest address). Proxied to OpenStreetMap Nominatim: one request at a time, at most one per second, cached for a day; only the typed address or pin is sent. |
 | Imports | `GET /admin/imports/templates/:groupId` (xlsx), `POST /admin/imports` (upload + validate), `GET /admin/imports`, `GET /admin/imports/:id`, `POST /admin/imports/:id/commit`, `GET /admin/imports/:id/error-report` |
 
 ### Phase 3
@@ -712,6 +713,7 @@ All processing happens **inside the request**, with no background jobs. Files ar
 - `UPLOAD_DIR`
 - `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM`
 - `SWAGGER_BASIC_AUTH`
+- `GEOCODER_URL` (default OpenStreetMap Nominatim), `GEOCODER_COUNTRY` (default `in`): address search for the property map
 - Phase 3: `PERFOX_API_BASE`, `PERFOX_API_KEY`, `MCP_BEARER_TOKEN`
 
 ---

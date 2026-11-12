@@ -28,6 +28,7 @@ export function useAuth(): AuthContextValue {
 /** Where each role lands after signing in (matches the Phase 1 wireframe). */
 export function homePathFor(user: AuthUser): string {
   if (user.permissions.includes('users:manage')) return '/users';
+  if (user.permissions.includes('properties:read')) return '/properties';
   if (user.permissions.includes('settings:edit')) return '/settings/company';
   return '/profile';
 }

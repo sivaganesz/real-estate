@@ -33,7 +33,7 @@ function renderLogin(auth: Partial<AuthContextValue> = {}) {
   const router = createMemoryRouter(
     [
       { path: '/login', element: <LoginPage /> },
-      { path: '/settings/company', element: <h1>Company settings</h1> },
+      { path: '/properties', element: <h1>Properties</h1> },
     ],
     { initialEntries: ['/login'] },
   );
@@ -64,7 +64,7 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(login).toHaveBeenCalledWith('admin@company.com', 'secret-pass-1');
-    expect(await screen.findByRole('heading', { name: 'Company settings' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Properties' })).toBeInTheDocument();
   });
 
   it('shows the API error message (e.g. account locked)', async () => {

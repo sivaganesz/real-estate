@@ -18,7 +18,7 @@ export function FormField({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid content-start gap-2">
       <div className="flex items-center justify-between">
         <Label htmlFor={id}>{label}</Label>
         {action}

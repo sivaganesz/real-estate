@@ -40,7 +40,7 @@ function renderAt(url: string) {
   const router = createMemoryRouter(
     [
       { path: '/accept-invite', element: <AcceptInvitePage /> },
-      { path: '/profile', element: <p>Profile home</p> },
+      { path: '/properties', element: <p>Properties home</p> },
       { path: '/login', element: <p>Sign in page</p> },
     ],
     { initialEntries: [url] },
@@ -111,7 +111,7 @@ describe('AcceptInvitePage', () => {
     await userEvent.type(screen.getByLabelText('Confirm password'), 'house123');
     await userEvent.click(screen.getByRole('button', { name: 'Activate account' }));
 
-    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/profile'));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/properties'));
     expect(startSession).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[1]!;
     expect(String(url)).toContain('/auth/accept-invite');

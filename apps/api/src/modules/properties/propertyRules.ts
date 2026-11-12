@@ -124,6 +124,32 @@ export function checkExtraAttributes(
   return { values, errors };
 }
 
+/**
+ * "Remove from this property only": optional attributes of the form. Required ones can't
+ * be removed. Keys the subcategory doesn't have (e.g. after a change) are dropped.
+ */
+export function checkRemovedAttributes(
+  definition: FormDefinition,
+  keys: string[],
+): { values: string[]; errors: ErrorDetail[] } {
+  const byKey = new Map(definition.attributes.map((a) => [a.attribute.key, a]));
+  const errors: ErrorDetail[] = [];
+  const values: string[] = [];
+  for (const key of new Set(keys)) {
+    const placed = byKey.get(key);
+    if (!placed) continue;
+    if (placed.required) {
+      errors.push({
+        path: 'body.removedAttributeKeys',
+        message: `${placed.attribute.label} is required for ${definition.subcategory.name}, so it can't be removed`,
+      });
+    } else {
+      values.push(key);
+    }
+  }
+  return { values, errors };
+}
+
 /** Amenities must be offered for the subcategory; inactive ones only if already ticked. */
 export function checkAmenities(
   definition: FormDefinition,

@@ -35,3 +35,19 @@ export function formatINRPerMonth(amount: number): string {
   if (!Number.isFinite(amount)) return '';
   return `₹${groupIndian(amount)}/month`;
 }
+
+/**
+ * A property's price as shown in lists and on the detail page:
+ * "₹1.25 Cr", "₹25,000/month", "₹4,500/sq.ft", "Price on request", or "Price not set".
+ */
+export function formatPrice(price: {
+  amount: number | null;
+  basis: 'total' | 'per_sqft' | 'per_month';
+  onRequest: boolean;
+}): string {
+  if (price.onRequest) return 'Price on request';
+  if (price.amount === null) return 'Price not set';
+  if (price.basis === 'per_month') return formatINRPerMonth(price.amount);
+  if (price.basis === 'per_sqft') return `₹${groupIndian(price.amount)}/sq.ft`;
+  return formatINR(price.amount);
+}

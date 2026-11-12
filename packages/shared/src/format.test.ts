@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatINR, formatINRPerMonth, groupIndian } from './format';
+import { formatINR, formatINRPerMonth, groupIndian, formatPrice } from './format';
 
 describe('formatINR', () => {
   it('formats crores', () => {
@@ -30,5 +30,19 @@ describe('groupIndian / formatINRPerMonth', () => {
 
   it('formats monthly rent', () => {
     expect(formatINRPerMonth(25_000)).toBe('₹25,000/month');
+  });
+});
+
+describe('formatPrice', () => {
+  it('shows each price basis and the special cases', () => {
+    expect(formatPrice({ amount: 12_500_000, basis: 'total', onRequest: false })).toBe('₹1.25 Cr');
+    expect(formatPrice({ amount: 25_000, basis: 'per_month', onRequest: false })).toBe(
+      '₹25,000/month',
+    );
+    expect(formatPrice({ amount: 4500, basis: 'per_sqft', onRequest: false })).toBe('₹4,500/sq.ft');
+    expect(formatPrice({ amount: 9_000_000, basis: 'total', onRequest: true })).toBe(
+      'Price on request',
+    );
+    expect(formatPrice({ amount: null, basis: 'total', onRequest: false })).toBe('Price not set');
   });
 });

@@ -10,6 +10,9 @@ import { CompanySettingsPage } from '@/pages/CompanySettingsPage';
 import { ErrorPage } from '@/pages/ErrorPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { PropertiesPage } from '@/pages/PropertiesPage';
+import { PropertyDetailPage } from '@/pages/PropertyDetailPage';
+import { PropertyFormPage } from '@/pages/PropertyFormPage';
 import { PropertyTypesPage } from '@/pages/PropertyTypesPage';
 import { UsersPage } from '@/pages/UsersPage';
 
@@ -41,6 +44,59 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <HomeRedirect /> },
+      {
+        path: 'properties',
+        handle: { breadcrumbs: [{ label: 'Properties' }] },
+        element: (
+          <RequirePermission permission="properties:read">
+            <PropertiesPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'properties/new',
+        handle: {
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Add property' }],
+        },
+        element: (
+          <RequirePermission permission="properties:write">
+            <PropertyFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'properties/:id',
+        handle: {
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Property' }],
+        },
+        element: (
+          <RequirePermission permission="properties:read">
+            <PropertyDetailPage tab="details" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'properties/:id/history',
+        handle: {
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Change history' }],
+        },
+        element: (
+          <RequirePermission permission="properties:read">
+            <PropertyDetailPage tab="history" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'properties/:id/edit',
+        handle: {
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Edit property' }],
+        },
+        element: (
+          <RequirePermission permission="properties:write">
+            <PropertyFormPage />
+          </RequirePermission>
+        ),
+      },
       {
         path: 'users',
         handle: { breadcrumbs: [{ label: 'Users & Roles', to: '/users' }, { label: 'Users' }] },
