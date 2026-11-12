@@ -84,3 +84,17 @@ export function detectImageType(data: Buffer): 'png' | 'jpg' | 'webp' | null {
   }
   return null;
 }
+
+export type DetectedFileType = 'png' | 'jpg' | 'webp' | 'pdf' | 'mp4' | 'webm';
+
+/** Like `detectImageType`, plus PDF and video (MP4 / WebM), from the file's first bytes. */
+export function detectFileType(data: Buffer): DetectedFileType | null {
+  const image = detectImageType(data);
+  if (image) return image;
+  if (data.length >= 5 && data.subarray(0, 5).toString('latin1') === '%PDF-') return 'pdf';
+  if (data.length >= 12 && data.subarray(4, 8).toString('latin1') === 'ftyp') return 'mp4';
+  if (data.length >= 4 && data.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) {
+    return 'webm';
+  }
+  return null;
+}

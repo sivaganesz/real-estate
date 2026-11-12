@@ -5,8 +5,8 @@
  * - an attribute's value type is locked once properties have values for it;
  * - an amenity ticked on properties can't be deleted (deactivate it instead).
  *
- * Properties arrive in Phase 2.2, which replaces `noPropertiesYet` with a version that
- * counts the `properties` collection.
+ * The app uses the version in modules/properties/propertyUsage.ts (counts the
+ * `properties` collection); tests can pass their own.
  */
 export interface PropertyUsage {
   /** Number of properties per subcategory id (missing ids = 0). */
@@ -16,9 +16,3 @@ export interface PropertyUsage {
   /** Number of properties per amenity id (missing ids = 0). */
   countByAmenity(amenityIds: string[]): Promise<Map<string, number>>;
 }
-
-export const noPropertiesYet: PropertyUsage = {
-  countBySubcategory: async () => new Map(),
-  isAttributeUsed: async () => false,
-  countByAmenity: async () => new Map(),
-};

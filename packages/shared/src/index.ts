@@ -9,3 +9,4 @@ export * from './schemas/users';
 export * from './schemas/profile';
 export * from './schemas/settings';
 export * from './schemas/propertyTypes';
+export * from './schemas/properties';

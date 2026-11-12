@@ -351,39 +351,46 @@ An amenity ticked on properties can't be deleted, only deactivated (properties k
 ### 7.9 `properties` (Phase 2)
 ```ts
 {
-  code: 'RE-VIL-000031',                        // unique, from counters
-  slug, title, description,
-  groupId, category,                            // category copied from the group
-  purpose: 'sale'|'rent'|'lease',
-  price: { amount, basis: 'total'|'per_sqft'|'per_month', negotiable, onRequest },
-  rental?: { monthlyRent, securityDeposit, maintenance, lockInMonths },
-  area: { value, unit: 'sqft'|'sqyd'|'sqm'|'cent'|'ground'|'acre'|'hectare', sqft },
+  code: 'RE-VIL-000031',                        // unique; from counters, per subcategory prefix; never changes
+  categoryKey, subcategoryId,                   // category copied from the subcategory
+  title,                                        // "Property name" (core attribute)
+  purpose: 'sale'|'rent'|'lease',               // must be allowed by the subcategory
+  price: { amount | null, basis: 'total'|'per_sqft'|'per_month', negotiable, onRequest },
+  rental: { securityDeposit, lockInMonths } | null,   // rent / lease only
+  area: { value, unit: 'sqft'|'sqyd'|'sqm'|'cent'|'ground'|'acre'|'hectare', sqft } | null,
   location: {                                   // entered by the admin, no master data
-    state, city, area, pincode, address, landmark?,
-    mapPin?: { lat, lng }                       // optional: website map + visit directions
+    state, city, locality, pincode, address, landmark,
+    mapPin: { lat, lng } | null                 // optional: website map + visit directions
   },
-  fieldValues: { [fieldKey]: unknown },         // validated against the group's fields
-  extraFields: [{ label, type, value }],        // "this property only"
-  hiddenFieldValues?: { [fieldKey]: unknown },  // kept when the group changes
-  amenityIds: string[],
+  attributeValues: { [attributeKey]: string | number | boolean | string[] },
+                                                // common + subcategory attributes (incl. description,
+                                                // RERA / approval where configured); values the current
+                                                // subcategory doesn't show are kept and reported as hidden
+  extraAttributes: [{ label, type: 'text'|'long_text'|'number'|'yes_no'|'date', value }],  // this property only
+  amenityIds: string[],                         // offered for the subcategory, in checklist order
   media: [{ _id, kind: 'image'|'video'|'floor_plan'|'brochure'|'document',
             path, thumbPath?, mediumPath?, originalName, mime, sizeBytes, order, isCover }],
-  legal: { reraNumber?, approvalType?, approvalNumber? },
+                                                // photos: path = 2000 px WebP, medium 1200 px, thumb 400 px
   status: 'draft'|'published'|'unpublished'|'booked'|'sold'|'rented'|'leased'|'archived',
-  isFeatured, publishedAt?, statusChangedAt,
+  isFeatured, publishedAt | null, statusChangedAt,
   createdBy, updatedBy
 }
 ```
 Indexes:
-- `{ code: 1 } unique`, `{ slug: 1 } unique`
-- `{ status: 1, groupId: 1, 'location.city': 1, 'price.amount': 1 }`
-- `{ 'location.area': 1 }`, `{ 'location.pincode': 1 }`
-- `{ status: 1, purpose: 1, 'area.sqft': 1 }`
-- Text index on `title`, `description`, `location.area`, `location.city`, `code`
+- `{ code: 1 } unique`
+- `{ status: 1, subcategoryId: 1, 'location.city': 1, 'price.amount': 1 }`
+- `{ 'location.locality': 1 }`, `{ 'location.pincode': 1 }`, `{ amenityIds: 1 }`, `{ updatedAt: -1 }`
+
+**Rules:**
+- Saving a Draft needs only the subcategory, the property name and the purpose; values are checked against the subcategory's attributes (types, options, unknown keys).
+- **Publishing** needs a price (or "price on request"), the area, city, locality and pincode, every attribute marked Required for the subcategory, and at least one photo. A published property must stay complete while it is published.
+- Status changes follow PRD §5.4; the closing status must match the purpose (Sale → Sold, Rent → Rented, Lease → Leased). Archived properties can't be edited until restored as a Draft.
+- Changing the subcategory keeps the code; values outside the new subcategory are kept but hidden, and amenities it doesn't offer are dropped.
+- Every change is recorded in `changeLogs` (attribute values one by one, e.g. `attributes.bhk`).
 
 **Area conversion to sq.ft:** sqyd ×9 · sqm ×10.7639 · cent ×435.6 · ground ×2400 · acre ×43,560 · hectare ×107,639 (`packages/shared`).
 
-**Location matching (AI and admin search):** case-insensitive match of the search text against `location.area`, `location.city` and `location.pincode`. The admin form suggests existing values (distinct values from properties) to keep spellings consistent.
+**Location matching (AI and admin search):** case-insensitive match of the search text against `location.locality`, `location.city` and `location.pincode`. The admin form suggests existing values (distinct values from properties) to keep spellings consistent.
 
 ### 7.10 `counters` and `importBatches` (Phase 2)
 ```ts
@@ -441,7 +448,7 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 |---|---|
 | Categories & attributes | `GET /admin/property-types` (whole setup), `GET /admin/property-types/attributes?q=` (find existing attributes), `POST /admin/property-types/subcategories`, `PATCH/DELETE /admin/property-types/subcategories/:id`, `POST /admin/property-types/categories/:key/attributes` and `POST /admin/property-types/subcategories/:id/attributes` (new or existing attribute), `PATCH/DELETE …/attributes/:attributeId`. Every change returns the whole setup. |
 | Amenities | Listed in `GET /admin/property-types` (per category). `POST /admin/property-types/categories/:key/amenities`, `PUT /admin/property-types/categories/:key/amenities/order`, `PATCH/DELETE /admin/property-types/amenities/:id`. Every change returns the whole setup. |
-| Properties | `GET/POST /admin/properties`, `GET/PATCH /admin/properties/:id`, `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `POST /admin/properties/:id/change-group`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
+| Properties | `GET/POST /admin/properties`, `GET /admin/properties/status-counts`, `GET/PATCH/DELETE /admin/properties/:id` (DELETE archives; PATCH with `subcategoryId` changes the subcategory), `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
 | Media | `POST /admin/properties/:id/media` (multipart upload), `PATCH /admin/properties/:id/media/order`, `PATCH /admin/properties/:id/media/:mediaId` (cover, caption), `DELETE /admin/properties/:id/media/:mediaId` |
 | Imports | `GET /admin/imports/templates/:groupId` (xlsx), `POST /admin/imports` (upload + validate), `GET /admin/imports`, `GET /admin/imports/:id`, `POST /admin/imports/:id/commit`, `GET /admin/imports/:id/error-report` |
 
@@ -576,29 +583,31 @@ interface StorageProvider {
   absolutePath(path: string): string;    // for internal reads (imports, error reports)
 }
 ```
-`LocalStorageProvider` is the only implementation now. Another provider can be added later without changing business code.
+`LocalStorageProvider` is the only implementation now (development and testing). A Cloudinary provider will be added later, when the credentials are provided, without changing business code.
 
 **Folder layout** (root set by `UPLOAD_DIR`, default `apps/api/uploads`):
 ```
 uploads/
   company/logo/                              logo files
-  properties/<propertyCode>/images/          original + _thumb (400px) + _medium (1200px), WebP
-  properties/<propertyCode>/documents/       floor plans, brochures, legal PDFs
+  properties/<propertyCode>/images/          each photo: large (2000px) + medium (1200px) + thumb (400px), WebP
+  properties/<propertyCode>/videos/          MP4 / WebM
+  properties/<propertyCode>/documents/       PDF floor plans, brochures, documents
   imports/<batchId>/                         uploaded Excel file + error report (not public)
 ```
 
 **Rules:**
 - File names are generated (random ID + extension). The original name is kept only in the database.
 - MIME and extension whitelist:
-  - Images: jpg, png, webp
+  - Images: jpg, png, webp (checked from the file content, then re-encoded)
+  - Videos: mp4, webm
   - Documents: pdf
   - Imports: xlsx
-- Size limits: image 10 MB, PDF 20 MB, Excel 10 MB. Upload parsing with `multer`.
-- Images are resized with **sharp** during the upload request (no background job).
-- The database stores the **relative path**. The API returns URLs built with `publicUrl()`.
+- Size limits: image 10 MB, video 50 MB, PDF 20 MB, Excel 10 MB. Upload parsing with `multer` (one file per request).
+- Images are resized with **sharp** during the upload request (no background job); the camera rotation is applied and metadata (e.g. GPS location) is dropped.
+- The database stores the **relative path** (local storage). When Cloudinary is added, its full https URL goes into the same field; `publicUrl()` returns full URLs unchanged, so no other code changes. The API always returns URLs built with `publicUrl()`.
 - `express.static` serves `uploads/company` and `uploads/properties` under `/uploads`, with cache headers. `uploads/imports` is **not** public; downloads go through an authenticated endpoint.
 - Deleting media or archiving a property removes or keeps files according to the action (deleting media removes its files).
-- `uploads/` is git-ignored and must be included in server backups.
+- `uploads/` is git-ignored (`apps/api/uploads/` and a root `/uploads/`) and must be included in server backups.
 
 ---
 

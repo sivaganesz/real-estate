@@ -40,6 +40,14 @@ import type { PropertyUsage } from './propertyUsage';
 export type AttributeTarget =
   { kind: 'category'; key: CategoryKey } | { kind: 'subcategory'; id: string };
 
+/** Everything a property in one subcategory can hold (see `definitionFor`). */
+export interface FormDefinition {
+  category: CategoryDoc;
+  subcategory: SubcategoryDoc;
+  attributes: { attribute: AttributeDoc; required: boolean }[];
+  amenities: AmenityDoc[];
+}
+
 interface LoadedTarget {
   kind: AttributeTarget['kind'];
   id: string;
@@ -163,6 +171,40 @@ export class PropertyTypesService {
             propertyCount: amenityCounts.get(a._id) ?? 0,
           })),
       })),
+    };
+  }
+
+  /**
+   * What a property in this subcategory can hold: the category's common attributes, then the
+   * subcategory's own (in form order, with "required"), and the amenities offered for it.
+   */
+  async definitionFor(subcategoryId: string): Promise<FormDefinition> {
+    const subcategory = await this.findSubcategory(subcategoryId);
+    const category = await PropertyCategoryModel.findOne({
+      key: subcategory.categoryKey,
+    }).lean<CategoryDoc>();
+    if (!category) throw notFound('Category not found');
+    const placements = [...category.attributes, ...subcategory.attributes];
+    const [attributes, amenities] = await Promise.all([
+      PropertyAttributeModel.find({ _id: { $in: placements.map((p) => p.attributeId) } }).lean<
+        AttributeDoc[]
+      >(),
+      AmenityModel.find({
+        categoryKey: category.key,
+        $or: [{ appliesToAll: true }, { subcategoryIds: subcategory._id }],
+      })
+        .sort({ order: 1 })
+        .lean<AmenityDoc[]>(),
+    ]);
+    const byId = new Map(attributes.map((a) => [a._id, a]));
+    return {
+      category,
+      subcategory,
+      attributes: placements.flatMap((p) => {
+        const attribute = byId.get(p.attributeId);
+        return attribute ? [{ attribute, required: p.required ?? false }] : [];
+      }),
+      amenities,
     };
   }
 

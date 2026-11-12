@@ -8,3 +8,4 @@ import '../modules/changeLogs/changeLog.model';
 import '../modules/auth/refreshToken.model';
 import '../modules/auth/authToken.model';
 import '../modules/propertyTypes/propertyTypes.model';
+import '../modules/properties/property.model';

@@ -13,8 +13,10 @@ coverage/
 .env.*
 !.env.example
 
-# local file storage (uploaded logos, property media, import files)
+# local file storage (uploaded logos, property images and documents, import files):
+# never committed. The second line covers the API being started from the repository root.
 apps/api/uploads/
+/uploads/
 
 # logs
 *.log

@@ -10,7 +10,11 @@ export interface SaveOptions {
 }
 
 export interface SavedFile {
-  /** Relative path stored in MongoDB, e.g. "company/logo/3f9a…c1.png". */
+  /**
+   * What is stored in MongoDB. Local storage: a relative path, e.g.
+   * "company/logo/3f9a…c1.png". A cloud provider (Cloudinary, later) stores its full
+   * https URL in the same field.
+   */
   path: string;
   sizeBytes: number;
 }

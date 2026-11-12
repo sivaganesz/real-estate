@@ -261,29 +261,34 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
 - [ ] Commercial and Other: subcategories, attributes and amenities, after Residential is signed off
 
 ### 2.2 Properties: data and API
-- [ ] `properties` model:
-  - [ ] Property code (auto-generated per group, e.g. `RE-VIL-000031`), title, description, group, category, purpose
-  - [ ] Price (amount, basis, negotiable, on request); rent details for rent/lease
-  - [ ] Area (value, unit, auto-converted to sq.ft)
-  - [ ] Location fields entered by the admin: state, city, area/locality, pincode, address, landmark; optional map pin for directions
-  - [ ] Group field values; "this property only" extra fields
-  - [ ] Amenities, media (relative file paths), legal (RERA / approval numbers)
-  - [ ] Status: Draft, Published, Unpublished, Booked, Sold, Rented, Leased, Archived; featured flag
-- [ ] Counters for property codes
-- [ ] Indexes for search and filters: status, group, city, area, pincode, price, area, text search
-- [ ] Validation of group field values against the group's fields
-- [ ] API: create, get, update, archive, duplicate
-- [ ] API: list with search (code, title, location), filters (group, category, purpose, city, area, pincode, price range, status, featured), sorting and pagination
-- [ ] API: location suggestions (existing city / area / pincode values) for consistent spelling
-- [ ] API: status changes, with history; bulk status change for selected rows
-- [ ] API: add a field during creation, with "add to group" or "this property only"
-- [ ] API: change the group of an existing property (fields outside the new group are kept but hidden; returns a warning)
-- [ ] Change history per property (from `changeLogs`)
-- [ ] Media through the storage module:
-  - [ ] Multipart upload to `uploads/properties/<code>/images` or `/documents`
-  - [ ] Image resizing with sharp during upload (thumbnail and medium, WebP)
-  - [ ] Reorder, set cover, delete (removes the files)
-- [ ] Publish rules: required fields filled, at least one image
+**2.2a Data and API**
+- [x] `properties` model on category → subcategory → attributes:
+  - [x] Property code per subcategory prefix (`RE-VIL-000031`), from atomic counters; never changes
+  - [x] Property name, purpose (allowed by the subcategory), price (amount, basis, negotiable, on request), rent / lease details
+  - [x] Area (value, unit, auto-converted to sq.ft)
+  - [x] Location typed by the admin: state, city, area / locality, pincode, address, landmark; optional map pin
+  - [x] Attribute values (common + subcategory) checked against their types and options; "this property only" attributes
+  - [x] Amenities offered for the subcategory; media list (uploads in 2.2b)
+  - [x] Status: Draft, Published, Unpublished, Booked, Sold, Rented, Leased, Archived; featured flag
+- [x] Indexes for the list filters: status, subcategory, city, locality, pincode, price, amenities, updated date
+- [x] API: create (as Draft), get, edit (only what is sent), archive, duplicate (new Draft, no photos)
+- [x] API: list with search (code, name, city, locality, pincode), filters (category, subcategory, purpose, city, locality, pincode, price range, status, featured), sorting and pagination; status counts for the tabs
+- [x] API: location suggestions (existing values, most used first) for consistent spelling
+- [x] API: status changes with the lifecycle rules (closing status matches the purpose); bulk status change, with a reason for each failure
+- [x] API: change the subcategory (code kept; values outside it kept but hidden; amenities it doesn't offer dropped)
+- [x] Publish rules: price or "on request", area, city / locality / pincode, required attributes, at least one photo; a published property stays complete
+- [x] Change history per property (from `changeLogs`), with who and when
+- [x] Property-type rules switched on: prefix lock, subcategory and amenity delete blocks, attribute type lock
+- [x] Tests: value rules (unit) and the API (create, validation, permissions, edit and history, publish, statuses, bulk, list and filters, suggestions, duplicate)
+
+**2.2b Media**
+- [x] Storage: local server storage for now (`uploads/properties/<code>/images|videos|documents`) through the storage module; Cloudinary later, when credentials are provided
+- [x] Upload one file per request: photos (JPG / PNG / WebP, 10 MB), videos (MP4 / WebM, 50 MB), floor plans (image or PDF, 20 MB), brochures / documents (PDF, 20 MB); the real file type is checked from its content
+- [x] Photos resized with sharp during upload: large (2000 px), medium (1200 px) and thumbnail (400 px) WebP; camera rotation applied, location metadata dropped
+- [x] First photo becomes the cover; set cover, reorder, delete (removes all sizes; the next photo becomes the cover)
+- [x] A published property keeps at least one photo; archived properties are locked
+- [x] Property responses list the files with URLs; the list shows the cover thumbnail
+- [x] Tests: sizes and formats, type and size checks, cover, reorder, delete, publish with a real photo
 
 ### 2.3 Properties: UI
 - [ ] Property list:

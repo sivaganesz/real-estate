@@ -36,6 +36,13 @@ describe('LocalStorageProvider', () => {
     await expect(storage.delete(saved.path)).resolves.toBeUndefined();
   });
 
+  it('passes full https URLs (cloud storage, later) through unchanged', async () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/v1/properties/a.webp';
+    expect(storage.publicUrl(url)).toBe(url);
+    await expect(storage.delete(url)).resolves.toBeUndefined();
+    expect(() => storage.publicUrl('http://example.com/a.webp')).toThrow(); // only https
+  });
+
   it('rejects paths that escape the upload folder', async () => {
     expect(() => storage.absolutePath('../outside.txt')).toThrow();
     expect(() => storage.publicUrl('company/../../etc/passwd')).toThrow();

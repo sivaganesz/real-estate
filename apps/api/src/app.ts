@@ -17,7 +17,10 @@ import { AuthService } from './modules/auth/auth.service';
 import { healthRouter } from './modules/health/health.routes';
 import { createPropertyTypesRouter } from './modules/propertyTypes/propertyTypes.routes';
 import { PropertyTypesService } from './modules/propertyTypes/propertyTypes.service';
-import { noPropertiesYet } from './modules/propertyTypes/propertyUsage';
+import { PropertyMediaService } from './modules/properties/media.service';
+import { createPropertiesRouter } from './modules/properties/properties.routes';
+import { PropertiesService } from './modules/properties/properties.service';
+import { propertyUsage } from './modules/properties/propertyUsage';
 import { createProfileRouter } from './modules/profile/profile.routes';
 import { ProfileService } from './modules/profile/profile.service';
 import { CompanySettingsService } from './modules/settings/company.service';
@@ -43,8 +46,15 @@ function createApiRouter(deps: AppDeps): express.Router {
   router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
   const company = new CompanySettingsService(deps);
   router.use('/admin/settings', createSettingsRouter({ auth, company }));
-  const propertyTypes = new PropertyTypesService({ usage: noPropertiesYet });
+  const propertyTypes = new PropertyTypesService({ usage: propertyUsage });
   router.use('/admin/property-types', createPropertyTypesRouter({ auth, propertyTypes }));
+  const properties = new PropertiesService({ propertyTypes, storage: deps.storage });
+  const media = new PropertyMediaService({
+    properties,
+    storage: deps.storage,
+    logger: deps.logger,
+  });
+  router.use('/admin/properties', createPropertiesRouter({ auth, properties, media }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }
