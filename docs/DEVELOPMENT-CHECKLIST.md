@@ -313,28 +313,23 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
 - [x] Tests: list (counts, bulk change, Sales Agent view), Add property (validation, values sent, API field errors); browser walkthrough of add → photos → publish → detail → history → list → bulk
 
 ### 2.4 Bulk Import (Excel)
-- [ ] **API** (all processing inside the request, no background jobs; at most 2,000 rows / 10 MB)
-  - [ ] Download an Excel template per group:
-    - [ ] Common columns plus the group's fields
-    - [ ] Dropdowns for fixed values
-    - [ ] Instructions sheet and a sample row
-  - [ ] Upload .xlsx: save to `uploads/imports/<batchId>/` and validate each row:
-    - [ ] Required fields
-    - [ ] Types and allowed values
-    - [ ] Positive price and area
-    - [ ] Unit conversion
-  - [ ] Duplicate detection: within the file, and against existing properties
-  - [ ] Review results: valid / invalid / duplicate counts, plus row-level errors (stored on the import batch)
-  - [ ] Commit: import valid rows as Draft or Published; skip or update duplicates
-  - [ ] Error report (original rows plus an "Errors" column), downloaded through an authenticated endpoint
-  - [ ] Images: image URL column (downloaded during commit) or a ZIP of files named by property code
-  - [ ] Import history: who, when, file, results
-- [ ] **UI**
-  - [ ] Step 1: choose a group, download its template
-  - [ ] Step 2: upload the file, show progress
-  - [ ] Step 3: review screen with counts, error rows and duplicate choices
-  - [ ] Step 4: import options and confirm, then the result summary
-  - [ ] Import history table with error report links
+- [x] **API** (all processing inside the request, no background jobs; at most 2,000 rows / 10 MB)
+  - [x] Excel template per subcategory: core columns plus its attributes, amenities and image links; dropdowns for fixed values (hidden Lists sheet); an Instructions sheet with an example per column
+  - [x] Upload .xlsx: saved to `uploads/imports/` (not public); columns matched by name; each row checked like Add property, with messages naming the column
+  - [x] Duplicates within the file and against existing properties (subcategory + locality + pincode + plot number or name)
+  - [x] Review results stored on the import batch: valid / invalid / duplicate counts and row-level errors
+  - [x] Import valid rows as Draft or Published (rows not ready to publish stay Draft, with the reason); skip or update duplicates; runs once per file; each row keeps its outcome
+  - [x] Error report: the rows to fix with an "Errors" column, through an authenticated download
+  - [x] Photos from an "Image URLs" column (public https only, private networks refused, size and time limits), downloaded during the import
+  - [ ] Photos as a ZIP file (later, if needed)
+  - [x] Import history: who, when, file, results
+- [x] **UI** (`/imports`, sidebar "Inventory → Bulk Import" for roles with imports:run; "Bulk import" button on the property list)
+  - [x] Step 1: choose a subcategory, download its template
+  - [x] Step 2: upload the file (drop or pick), with progress
+  - [x] Step 3: review counts, rows by status (invalid / duplicates / valid), unknown columns, error report
+  - [x] Step 4: import options and confirm, then the result summary and a link to the properties
+  - [x] Import history table with error report links; each import can be reopened
+- [x] Tests: template, checking, duplicates, import as Draft / Published, update duplicates, error report, wrong files, permissions, photo links (API); safe download rules (unit); review and import (UI); browser walkthrough template → fill → upload → review → error report → import → list → history
 
 ### 2.5 Phase 2 testing and demo
 - [ ] Unit tests: area conversion, price formatting, property code generation, dynamic field validation, Excel row validation

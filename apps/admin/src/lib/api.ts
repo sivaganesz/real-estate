@@ -172,6 +172,30 @@ export async function uploadWithProgress<T>(
   return parse<T>(res);
 }
 
+/**
+ * Downloads a file from an authenticated endpoint (e.g. an Excel template) and saves it in
+ * the browser with the name the API gives (or `fallbackName`).
+ */
+export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  let res = await send(path, {});
+  if (res.status === 401) {
+    const session = await refreshSession();
+    if (session) res = await send(path, {});
+    else sessionExpiredHandler?.();
+  }
+  if (!res.ok) await parse(res); // throws ApiError with the API's message
+  const disposition = res.headers.get('content-disposition') ?? '';
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export interface ListResult<T> {
   items: T[];
   meta: PageMeta;

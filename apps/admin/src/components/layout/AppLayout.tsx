@@ -36,6 +36,7 @@ interface NavItem {
 /** Inventory (Phase 2). */
 const INVENTORY_NAV: NavItem[] = [
   { to: '/properties', label: 'Properties', icon: HouseIcon, permission: 'properties:read' },
+  { to: '/imports', label: 'Bulk Import', icon: UploadIcon, permission: 'imports:run' },
 ];
 
 /** Administration (shown only to roles that can use them). */
@@ -46,7 +47,6 @@ const ADMIN_NAV: NavItem[] = [
 
 /** Later phases, shown greyed out so the team can see what's coming. */
 const COMING_NEXT: { label: string; icon: Icon; phase: string }[] = [
-  { label: 'Bulk Import', icon: UploadIcon, phase: 'Phase 2' },
   { label: 'Appointments', icon: CalendarDaysIcon, phase: 'Phase 3' },
   { label: 'Leads', icon: ContactIcon, phase: 'Phase 3' },
   { label: 'Conversations', icon: MessagesSquareIcon, phase: 'Phase 3' },

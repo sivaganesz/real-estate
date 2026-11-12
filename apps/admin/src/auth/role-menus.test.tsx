@@ -128,8 +128,8 @@ describe('role-based menus and pages', () => {
   });
 
   it.each([
-    ['super_admin', '/users', ['Properties', 'Users & Roles', 'Settings']],
-    ['admin', '/properties', ['Properties', 'Settings']],
+    ['super_admin', '/users', ['Properties', 'Bulk Import', 'Users & Roles', 'Settings']],
+    ['admin', '/properties', ['Properties', 'Bulk Import', 'Settings']],
     ['sales_agent', '/properties', ['Properties']],
   ] as const)('%s: "/" opens %s and the sidebar shows %j', async (role, home, links) => {
     const router = renderAs(role, '/');

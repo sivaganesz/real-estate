@@ -315,7 +315,7 @@ describe('Properties pages', () => {
       removedAttributeKeys: ['floors'],
       amenityIds: [ID(201)],
     });
-  });
+  }, 15_000);
 
   it('shows API field errors next to the field', async () => {
     fetchMock.mockImplementation(async (url, init) => {

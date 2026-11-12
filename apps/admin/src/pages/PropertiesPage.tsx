@@ -18,6 +18,7 @@ import {
   SearchIcon,
   SearchXIcon,
   StarIcon,
+  UploadIcon,
   XIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -222,9 +223,19 @@ export function PropertiesPage() {
             ))}
           </TabsList>
         </Tabs>
+        {can('imports:run') && (
+          <Button
+            variant="outline"
+            className="ml-auto h-9"
+            nativeButton={false}
+            render={<Link to="/imports" />}
+          >
+            <UploadIcon /> Bulk import
+          </Button>
+        )}
         {canWrite && (
           <Button
-            className="ml-auto h-9"
+            className={can('imports:run') ? 'h-9' : 'ml-auto h-9'}
             nativeButton={false}
             render={<Link to="/properties/new" />}
           >

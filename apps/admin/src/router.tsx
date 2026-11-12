@@ -8,6 +8,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { CompanySettingsPage } from '@/pages/CompanySettingsPage';
 import { ErrorPage } from '@/pages/ErrorPage';
+import { ImportPage } from '@/pages/ImportPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { PropertiesPage } from '@/pages/PropertiesPage';
@@ -44,6 +45,33 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <HomeRedirect /> },
+      {
+        path: 'imports',
+        handle: { breadcrumbs: [{ label: 'Bulk Import' }] },
+        element: (
+          <RequirePermission permission="imports:run">
+            <ImportPage tab="new" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'imports/history',
+        handle: { breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'History' }] },
+        element: (
+          <RequirePermission permission="imports:run">
+            <ImportPage tab="history" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'imports/:id',
+        handle: { breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'Import' }] },
+        element: (
+          <RequirePermission permission="imports:run">
+            <ImportPage tab="batch" />
+          </RequirePermission>
+        ),
+      },
       {
         path: 'properties',
         handle: { breadcrumbs: [{ label: 'Properties' }] },

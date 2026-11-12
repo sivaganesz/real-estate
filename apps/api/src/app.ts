@@ -16,6 +16,8 @@ import { createAuthRouter } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
 import { createGeoRouter } from './modules/geo/geo.routes';
 import { GeocodingService } from './modules/geo/geo.service';
+import { createImportsRouter } from './modules/imports/imports.routes';
+import { ImportsService } from './modules/imports/imports.service';
 import { healthRouter } from './modules/health/health.routes';
 import { createPropertyTypesRouter } from './modules/propertyTypes/propertyTypes.routes';
 import { PropertyTypesService } from './modules/propertyTypes/propertyTypes.service';
@@ -57,6 +59,8 @@ function createApiRouter(deps: AppDeps): express.Router {
     logger: deps.logger,
   });
   router.use('/admin/properties', createPropertiesRouter({ auth, properties, media }));
+  const imports = new ImportsService({ ...deps, propertyTypes, properties, media });
+  router.use('/admin/imports', createImportsRouter({ auth, imports }));
   const geo = new GeocodingService({ env: deps.env, logger: deps.logger });
   router.use('/admin/geo', createGeoRouter({ auth, geo }));
   router.use('/admin', createUsersRouter({ users, auth }));

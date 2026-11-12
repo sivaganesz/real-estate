@@ -233,6 +233,23 @@ export class PropertiesService {
 
   // ---------------------------------------------------------------- write
 
+  /**
+   * The problems `create` would report for this input, without saving anything (used by
+   * bulk import to check every row first). Empty = it can be saved.
+   */
+  async problemsForNew(input: CreateProperty, definition?: FormDefinition): Promise<ErrorDetail[]> {
+    try {
+      const def = definition ?? (await this.propertyTypes.definitionFor(input.subcategoryId));
+      this.assertCanList(def);
+      this.checkInput(def, input, {}, []);
+      return [];
+    } catch (err) {
+      if (err instanceof AppError)
+        return err.details?.length ? err.details : [{ path: '', message: err.message }];
+      throw err;
+    }
+  }
+
   async create(actorId: string, input: CreateProperty): Promise<Property> {
     const definition = await this.propertyTypes.definitionFor(input.subcategoryId);
     this.assertCanList(definition);

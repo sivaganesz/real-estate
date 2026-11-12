@@ -395,12 +395,13 @@ Indexes:
 ### 7.10 `counters` and `importBatches` (Phase 2)
 ```ts
 counters:      { _id: 'property:VIL', seq }     // atomic $inc for property codes
-importBatches: { groupId, filePath, fileName, uploadedBy,
-  status: 'validated'|'imported'|'failed',
-  options?: { publishMode: 'draft'|'published', duplicateMode: 'skip'|'update' },
-  counts: { total, valid, invalid, duplicate, imported, updated, skipped },
-  rows: [{ rowNumber, status, errors: [{ column, message }], duplicateOfPropertyId?, propertyId? }],
-  errorReportPath?, createdAt }
+importBatches: { subcategoryId, subcategoryName, fileName, filePath (uploads/imports/…, never public),
+  status: 'checked'|'imported', unknownColumns: string[],
+  importAs?: 'draft'|'published', duplicates?: 'skip'|'update',
+  rows: [{ row, status: 'valid'|'invalid'|'duplicate', errors: string[],
+           duplicateOf?: { id?, code?, row? }, body (checked create-property body), imageUrls, outcome? }],
+  result?: { created, updated, skipped, failed, savedAsDraft, imagesAdded, imagesFailed },
+  createdBy, importedBy?, importedAt?, createdAt }
 ```
 Rows are embedded. At up to 2,000 rows per file, the batch document stays well under MongoDB's 16 MB limit.
 
@@ -451,7 +452,7 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 | Properties | `GET/POST /admin/properties`, `GET /admin/properties/status-counts`, `GET/PATCH/DELETE /admin/properties/:id` (DELETE archives; PATCH with `subcategoryId` changes the subcategory), `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
 | Media | `POST /admin/properties/:id/media?kind=` (multipart upload), `PUT /admin/properties/:id/media/order`, `POST /admin/properties/:id/media/:mediaId/cover`, `DELETE /admin/properties/:id/media/:mediaId` |
 | Map | `GET /admin/geo/search?city=&locality=&pincode=&state=` (address → map position), `GET /admin/geo/reverse?lat=&lng=` (pin → nearest address). Proxied to OpenStreetMap Nominatim: one request at a time, at most one per second, cached for a day; only the typed address or pin is sent. |
-| Imports | `GET /admin/imports/templates/:groupId` (xlsx), `POST /admin/imports` (upload + validate), `GET /admin/imports`, `GET /admin/imports/:id`, `POST /admin/imports/:id/commit`, `GET /admin/imports/:id/error-report` |
+| Imports | `GET /admin/imports/template?subcategoryId=` (xlsx), `POST /admin/imports?subcategoryId=` (upload + check every row), `GET /admin/imports` (history), `GET /admin/imports/:id`, `POST /admin/imports/:id/commit`, `GET /admin/imports/:id/error-report` (xlsx). All need `imports:run`. |
 
 ### Phase 3
 | Area | Endpoints |
@@ -632,22 +633,19 @@ interface EmailProvider {
 
 ## 13. Bulk import design (Phase 2)
 
-All processing happens **inside the request**, with no background jobs. Files are limited to 2,000 rows.
+All processing happens **inside the request**, with no background jobs. Files are limited to 2,000 rows and 10 MB.
 
-1. **Template** (`GET /admin/imports/templates/:groupId`): ExcelJS builds:
-   - The `Properties` sheet: common columns + the group's fields (required ones marked `*`).
-   - Dropdowns for fixed values (purpose, unit, dropdown fields) through a hidden `Lists` sheet.
-   - An `Instructions` sheet and a sample row.
-   - A hidden cell holding the group ID and template version.
-2. **Upload + validate** (`POST /admin/imports`, multipart): save the file to `uploads/imports/<batchId>/`, then for each row:
-   - Normalise (trim, numbers, units, phone).
-   - Validate with the Zod schema built from the group's fields.
-   - Check for duplicates by `code`, or by `group + area + pincode + area.sqft + (plot number or title)`, within the file and against the database.
-   - Store the per-row result in `importBatches.rows` and return the summary.
-3. **Review** (admin UI): counts plus error rows.
-4. **Commit** (`POST /admin/imports/:id/commit` with `{ publishMode, duplicateMode }`): `insertMany` in chunks of 100, codes from `counters`, update or skip duplicates, write `changeLogs`.
-5. **Images:** an `imageUrls` column (downloaded and saved through the storage module during commit), or a ZIP upload with files named `<code>_<n>.jpg`.
-6. **Error report:** the original rows plus an `Errors` column, saved in `uploads/imports/<batchId>/` and downloaded through an authenticated endpoint.
+1. **Template** (`GET /admin/imports/template?subcategoryId=`): ExcelJS builds, from the subcategory's form definition:
+   - The `Properties` sheet: core columns (property name, purpose, price, price basis, negotiable, price on request, deposit, lock-in, area, unit, city, locality, pincode, state, address, landmark, latitude, longitude), then the common and subcategory attributes, then amenities, featured and image URLs. Required ones are marked `*`; each header has a note.
+   - Dropdowns for fixed values (purpose, units, Yes / No, dropdown attributes) through a very hidden `Lists` sheet.
+   - An `Instructions` sheet: what each column takes, whether it is needed to import or to publish, and an example.
+2. **Upload + check** (`POST /admin/imports?subcategoryId=`, multipart): columns are matched by name (unknown ones are listed and ignored); each row is turned into a create-property body and checked exactly like Add property (schema, purpose, attribute types and options, amenities). Messages name the column, e.g. "Pincode: Enter a valid 6-digit pincode".
+   - **Duplicates**: same subcategory, area / locality and pincode, and the same plot number (or property name), within the file (later rows) and against existing, not archived properties.
+   - The file is saved under `uploads/imports/` and the per-row results in `importBatches.rows`. Nothing is imported yet.
+3. **Review** (admin UI): counts, rows by status, error report.
+4. **Import** (`POST /admin/imports/:id/commit` with `{ importAs, duplicates }`): runs once per batch. Valid rows are created (codes from `counters`); duplicates of existing properties are skipped or updated; duplicates within the file are skipped. Each row keeps its outcome. Rows asked to be Published but not ready (e.g. no photo) stay Draft, with the reason.
+5. **Photos:** the `Image URLs` column (up to 5 https links per row) is downloaded during the import through the storage module, like an upload (resized to WebP; the first becomes the cover). Links must be public https: private-network hosts are refused (checked again after each redirect), with a 10 s timeout and the 10 MB photo limit. A ZIP of photos is not supported yet.
+6. **Error report** (`GET /admin/imports/:id/error-report`): the rows that need attention, with `Errors` and `Row` columns added in front, so they can be fixed and uploaded again.
 
 ---
 
