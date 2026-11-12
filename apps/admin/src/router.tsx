@@ -83,7 +83,22 @@ export const routes: RouteObject[] = [
         },
         element: (
           <RequirePermission permission="settings:edit">
-            <PropertyTypesPage />
+            <PropertyTypesPage tab="attributes" />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'settings/property-types/amenities',
+        handle: {
+          breadcrumbs: [
+            { label: 'Settings', to: '/settings' },
+            { label: 'Property types & amenities', to: '/settings/property-types' },
+            { label: 'Amenities' },
+          ],
+        },
+        element: (
+          <RequirePermission permission="settings:edit">
+            <PropertyTypesPage tab="amenities" />
           </RequirePermission>
         ),
       },

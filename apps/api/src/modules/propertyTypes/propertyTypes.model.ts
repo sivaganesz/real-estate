@@ -1,4 +1,4 @@
-import { ATTRIBUTE_TYPES, CATEGORY_KEYS, PURPOSES } from '@real-estate/shared';
+import { AMENITY_ICONS, ATTRIBUTE_TYPES, CATEGORY_KEYS, PURPOSES } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
 import { idField, refField } from '../../db/ids';
@@ -44,6 +44,8 @@ const categorySchema = new Schema(
     order: { type: Number, default: 0 },
     /** Common attributes: shown for every subcategory in this category. */
     attributes: { type: [placementSchema], default: [] },
+    /** Set once the starting amenities were added, so deleted ones never come back. */
+    amenitiesSeededAt: { type: Date, default: null },
     updatedBy: refField('User'),
   },
   { timestamps: true },
@@ -69,9 +71,42 @@ const subcategorySchema = new Schema(
 subcategorySchema.index({ categoryKey: 1, nameKey: 1 }, { unique: true });
 subcategorySchema.index({ codePrefix: 1 }, { unique: true });
 
+/** Amenities offered as a checklist on the property form, per category. */
+const amenitySchema = new Schema(
+  {
+    _id: idField,
+    categoryKey: { type: String, required: true, enum: CATEGORY_KEYS },
+    name: { type: String, required: true },
+    /** Lower-cased name: unique within a category. */
+    nameKey: { type: String, required: true },
+    icon: { type: String, enum: [...AMENITY_ICONS, null], default: null },
+    appliesToAll: { type: Boolean, default: true },
+    subcategoryIds: { type: [String], default: [] },
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 },
+    ...auditFields,
+  },
+  { timestamps: true },
+);
+amenitySchema.index({ categoryKey: 1, nameKey: 1 }, { unique: true });
+amenitySchema.index({ categoryKey: 1, order: 1 });
+
 export const PropertyAttributeModel = model('PropertyAttribute', attributeSchema);
 export const PropertyCategoryModel = model('PropertyCategory', categorySchema);
 export const PropertySubcategoryModel = model('PropertySubcategory', subcategorySchema);
+export const AmenityModel = model('Amenity', amenitySchema);
+
+export interface AmenityDoc {
+  _id: string;
+  categoryKey: (typeof CATEGORY_KEYS)[number];
+  name: string;
+  nameKey: string;
+  icon: (typeof AMENITY_ICONS)[number] | null;
+  appliesToAll: boolean;
+  subcategoryIds: string[];
+  isActive: boolean;
+  order: number;
+}
 
 export interface Placement {
   attributeId: string;

@@ -1,6 +1,7 @@
-import type { AttributeType, CategoryKey, Purpose } from '@real-estate/shared';
+import type { AmenityIcon, AttributeType, CategoryKey, Purpose } from '@real-estate/shared';
 import { normalizeLabel } from '@real-estate/shared';
 import {
+  AmenityModel,
   PropertyAttributeModel,
   PropertyCategoryModel,
   PropertySubcategoryModel,
@@ -161,7 +162,10 @@ const SUBCATEGORIES: {
  * attributes an admin deleted are never added back.
  */
 export async function ensureStartingPropertyTypes(): Promise<'created' | 'exists'> {
-  if (await PropertyCategoryModel.exists({})) return 'exists';
+  if (await PropertyCategoryModel.exists({})) {
+    await ensureStartingAmenities();
+    return 'exists';
+  }
 
   const ids = new Map<string, string>();
   for (const attr of ATTRIBUTES) {
@@ -219,5 +223,65 @@ export async function ensureStartingPropertyTypes(): Promise<'created' | 'exists
       { upsert: true },
     );
   }
+  await ensureStartingAmenities();
+  return 'created';
+}
+
+/** Starting Residential amenities. `for`: subcategory code prefixes, or 'all'. */
+const AMENITIES: { name: string; icon: AmenityIcon; for: 'all' | string[] }[] = [
+  { name: 'Gated community', icon: 'fence', for: 'all' },
+  { name: '24×7 security', icon: 'shield-check', for: 'all' },
+  { name: 'CCTV surveillance', icon: 'cctv', for: 'all' },
+  { name: 'Park / Garden', icon: 'trees', for: 'all' },
+  { name: "Children's play area", icon: 'baby', for: 'all' },
+  { name: 'Street lights', icon: 'lightbulb', for: ['PLT'] },
+  { name: 'Tar roads', icon: 'route', for: ['PLT'] },
+  { name: 'Covered car parking', icon: 'car', for: ['VIL', 'APT'] },
+  { name: 'Power backup', icon: 'zap', for: ['VIL', 'APT'] },
+  { name: 'Rainwater harvesting', icon: 'cloud-rain', for: ['VIL', 'APT'] },
+  { name: 'Swimming pool', icon: 'waves', for: ['VIL', 'APT'] },
+  { name: 'Club house', icon: 'building-2', for: ['VIL', 'APT'] },
+  { name: 'Gym', icon: 'dumbbell', for: ['VIL', 'APT'] },
+  { name: 'Lift', icon: 'arrow-up-down', for: ['APT'] },
+];
+
+/**
+ * Adds the starting Residential amenities once (also to databases set up before amenities
+ * existed). A marker on the category makes sure deleted amenities never come back.
+ */
+export async function ensureStartingAmenities(): Promise<'created' | 'exists'> {
+  const residential = await PropertyCategoryModel.findOne({ key: 'residential' }).lean<{
+    amenitiesSeededAt?: Date | null;
+  }>();
+  if (!residential || residential.amenitiesSeededAt) return 'exists';
+
+  const subs = await PropertySubcategoryModel.find({ categoryKey: 'residential' })
+    .select('codePrefix')
+    .lean<{ _id: string; codePrefix: string }[]>();
+  const idOf = new Map(subs.map((s) => [s.codePrefix, s._id]));
+  for (const [order, a] of AMENITIES.entries()) {
+    const ids = a.for === 'all' ? [] : a.for.flatMap((p) => (idOf.has(p) ? [idOf.get(p)!] : []));
+    if (a.for !== 'all' && ids.length === 0) continue; // its subcategories were removed
+    await AmenityModel.updateOne(
+      { categoryKey: 'residential', nameKey: normalizeLabel(a.name) },
+      {
+        $setOnInsert: {
+          categoryKey: 'residential',
+          name: a.name,
+          nameKey: normalizeLabel(a.name),
+          icon: a.icon,
+          appliesToAll: a.for === 'all',
+          subcategoryIds: ids,
+          isActive: true,
+          order,
+        },
+      },
+      { upsert: true },
+    );
+  }
+  await PropertyCategoryModel.updateOne(
+    { key: 'residential' },
+    { $set: { amenitiesSeededAt: new Date() } },
+  );
   return 'created';
 }

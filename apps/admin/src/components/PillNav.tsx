@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router';
 import { cn } from '@/lib/utils';
 
-export type PillNavItem = { label: string; to: string } | { label: string; phase: string };
+/** `exact: false` keeps the tab active on its sub-pages too (e.g. /settings/property-types/amenities). */
+export type PillNavItem =
+  { label: string; to: string; exact?: boolean } | { label: string; phase: string };
 
 const TAB =
   'flex h-8 flex-none items-center gap-1.5 rounded-md px-4 text-sm font-semibold whitespace-nowrap';
@@ -21,7 +23,7 @@ export function PillNav({ label, items }: { label: string; items: PillNavItem[] 
           <NavLink
             key={item.label}
             to={item.to}
-            end
+            end={item.exact ?? true}
             className={({ isActive }) =>
               cn(
                 TAB,

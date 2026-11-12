@@ -2,8 +2,10 @@ import type {
   AddAttributeBody,
   AttributeMatch,
   CategoryKey,
+  CreateAmenityBody,
   CreateSubcategoryBody,
   PropertyTypes,
+  UpdateAmenityBody,
   UpdateAttributeBody,
   UpdateSubcategoryBody,
 } from '@real-estate/shared';
@@ -78,3 +80,47 @@ export const useRemoveAttribute = () =>
   useSave(({ target, id }: { target: AttributeTarget; id: string }) =>
     api.delete<PropertyTypes>(`${targetPath(target)}/${id}`),
   );
+
+export const useCreateAmenity = () =>
+  useSave(({ categoryKey, body }: { categoryKey: CategoryKey; body: CreateAmenityBody }) =>
+    api.post<PropertyTypes>(`${PATH}/categories/${categoryKey}/amenities`, body),
+  );
+
+export const useUpdateAmenity = () =>
+  useSave(({ id, body }: { id: string; body: UpdateAmenityBody }) =>
+    api.patch<PropertyTypes>(`${PATH}/amenities/${id}`, body),
+  );
+
+export const useDeleteAmenity = () =>
+  useSave((id: string) => api.delete<PropertyTypes>(`${PATH}/amenities/${id}`));
+
+/** Moves amenities on screen straight away, then saves; goes back if the save fails. */
+export function useReorderAmenities() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ categoryKey, ids }: { categoryKey: CategoryKey; ids: string[] }) =>
+      api.put<PropertyTypes>(`${PATH}/categories/${categoryKey}/amenities/order`, { ids }),
+    onMutate: async ({ categoryKey, ids }) => {
+      await queryClient.cancelQueries({ queryKey: propertyTypesKey });
+      const previous = queryClient.getQueryData<PropertyTypes>(propertyTypesKey);
+      if (previous) {
+        queryClient.setQueryData<PropertyTypes>(propertyTypesKey, {
+          ...previous,
+          categories: previous.categories.map((c) =>
+            c.key === categoryKey
+              ? {
+                  ...c,
+                  amenities: ids.flatMap((id) => c.amenities.filter((a) => a.id === id)),
+                }
+              : c,
+          ),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(propertyTypesKey, context.previous);
+    },
+    onSuccess: (data) => queryClient.setQueryData(propertyTypesKey, data),
+  });
+}

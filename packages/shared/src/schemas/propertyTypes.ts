@@ -98,6 +98,45 @@ export const subcategorySchema = z.object({
 });
 export type Subcategory = z.infer<typeof subcategorySchema>;
 
+/** Icons admins can pick for an amenity (lucide icon names; the admin app maps them). */
+export const AMENITY_ICONS = [
+  'shield-check',
+  'cctv',
+  'fence',
+  'car',
+  'zap',
+  'arrow-up-down',
+  'waves',
+  'dumbbell',
+  'baby',
+  'trees',
+  'building-2',
+  'cloud-rain',
+  'droplets',
+  'lightbulb',
+  'route',
+  'wifi',
+  'flame',
+  'sun',
+  'store',
+  'sparkles',
+] as const;
+export type AmenityIcon = (typeof AMENITY_ICONS)[number];
+
+export const amenitySchema = z.object({
+  id: idSchema,
+  name: z.string().meta({ example: 'Gated community' }),
+  icon: z.enum(AMENITY_ICONS).nullable(),
+  /** True: offered for every subcategory in the category, including ones added later. */
+  appliesToAll: z.boolean(),
+  /** When not for all: the subcategories it is offered for. */
+  subcategoryIds: z.array(idSchema),
+  isActive: z.boolean(),
+  /** Properties that have this amenity ticked. */
+  propertyCount: z.number().int(),
+});
+export type Amenity = z.infer<typeof amenitySchema>;
+
 export const categorySchema = z.object({
   key: z.enum(CATEGORY_KEYS),
   name: z.string().meta({ example: 'Residential' }),
@@ -105,6 +144,8 @@ export const categorySchema = z.object({
   isActive: z.boolean(),
   commonAttributes: z.array(placedAttributeSchema),
   subcategories: z.array(subcategorySchema),
+  /** In display order (the order of the checklist on the property form). */
+  amenities: z.array(amenitySchema),
 });
 export type Category = z.infer<typeof categorySchema>;
 
@@ -245,6 +286,55 @@ export type CreateSubcategory = z.output<typeof createSubcategoryBodySchema>;
 export const updateSubcategoryBodySchema = z.object(subcategoryFields).partial();
 export type UpdateSubcategoryBody = z.input<typeof updateSubcategoryBodySchema>;
 export type UpdateSubcategory = z.output<typeof updateSubcategoryBodySchema>;
+
+const amenityFields = {
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Name must be at least 2 characters')
+    .max(60, 'Name must be at most 60 characters'),
+  icon: z.enum(AMENITY_ICONS).nullable(),
+  appliesToAll: z.boolean(),
+  subcategoryIds: z.array(idSchema).max(100),
+  isActive: z.boolean(),
+};
+
+/** "For all subcategories" or at least one subcategory. */
+const amenityAppliesTo = {
+  message: 'Choose at least one subcategory, or "All"',
+  path: ['subcategoryIds'],
+};
+
+/** POST /admin/property-types/categories/:key/amenities */
+export const createAmenityBodySchema = z
+  .object({
+    ...amenityFields,
+    icon: amenityFields.icon.default(null),
+    appliesToAll: amenityFields.appliesToAll.default(true),
+    subcategoryIds: amenityFields.subcategoryIds.default([]),
+    isActive: amenityFields.isActive.default(true),
+  })
+  .refine((v) => v.appliesToAll || v.subcategoryIds.length > 0, amenityAppliesTo);
+export type CreateAmenityBody = z.input<typeof createAmenityBodySchema>;
+export type CreateAmenity = z.output<typeof createAmenityBodySchema>;
+
+/** PATCH /admin/property-types/amenities/:id */
+export const updateAmenityBodySchema = z
+  .object(amenityFields)
+  .partial()
+  .refine(
+    (v) =>
+      v.appliesToAll !== false || v.subcategoryIds === undefined || v.subcategoryIds.length > 0,
+    amenityAppliesTo,
+  );
+export type UpdateAmenityBody = z.input<typeof updateAmenityBodySchema>;
+export type UpdateAmenity = z.output<typeof updateAmenityBodySchema>;
+
+/** PUT /admin/property-types/categories/:key/amenities/order: every amenity id, in the new order. */
+export const reorderAmenitiesBodySchema = z.object({
+  ids: z.array(idSchema).min(1).max(500),
+});
+export type ReorderAmenitiesBody = z.infer<typeof reorderAmenitiesBodySchema>;
 
 /** "Road width (ft)" → "road_width". Used to make an attribute's key from its name. */
 export function attributeKeyFromLabel(label: string): string {

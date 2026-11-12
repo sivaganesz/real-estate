@@ -244,10 +244,21 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
   - [x] Delete confirmation
 - [x] Tests: API (rules and permissions), shared schemas, page (add, reuse, edit, delete, add subcategory)
 
-**Later in 2.1**
-- [ ] "Attributes added during property creation" review ("New" tag), once the property form exists (2.4)
-- [ ] "Amenities" sub-tab: `amenities` model and CRUD (name, icon, applicable subcategories, active), starting amenities, table plus add/edit panel
-- [ ] Commercial and Other: subcategories and attributes, after Residential is signed off
+**Amenities (Residential)**
+- [x] **API**
+  - [x] `amenities` model: name (unique per category), icon (fixed icon set), for all subcategories or chosen ones, active, order
+  - [x] Add, edit, reorder, delete (delete only when no property has it ticked; otherwise deactivate)
+  - [x] Deleting a subcategory takes it off amenities; Commercial and Other can't be changed yet
+  - [x] 14 starting Residential amenities, added once (also to existing databases) and never re-added after a delete
+- [x] **UI**
+  - [x] "Amenities" sub-tab (`/settings/property-types/amenities`): category cards, search, subcategory filter, table with order arrows, icon, "offered for", used by, Edit / Delete
+  - [x] Add / edit amenity drawer: name, icon picker, all or chosen subcategories, active
+- [x] Tests: API (rules, seed, permissions), page (filter, reorder, add, delete)
+
+**Sign-off and later in 2.1**
+- [x] Residential sign-off: starting attributes and amenities checked manually, working fine
+- [ ] "Attributes added during property creation" review ("New" tag), with the property form (2.3)
+- [ ] Commercial and Other: subcategories, attributes and amenities, after Residential is signed off
 
 ### 2.2 Properties: data and API
 - [ ] `properties` model:

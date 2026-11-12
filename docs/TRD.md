@@ -340,8 +340,13 @@ Name, type, unit, options and search filter are the same everywhere the attribut
 
 ### 7.8 `amenities` (Phase 2)
 ```ts
-{ name, icon?, subcategoryIds: string[], isActive, order }
+{ categoryKey, name, nameKey (unique per category), icon: 'shield-check'|'car'|… | null,
+  appliesToAll: boolean,                         // true: every subcategory, including new ones
+  subcategoryIds: string[],                      // when not for all
+  isActive, order,                               // order = checklist order on the property form
+  createdBy, updatedBy }
 ```
+An amenity ticked on properties can't be deleted, only deactivated (properties keep it). The 14 starting Residential amenities are added once, marked by `propertyCategories.amenitiesSeededAt`.
 
 ### 7.9 `properties` (Phase 2)
 ```ts
@@ -435,7 +440,7 @@ All paths are under `/api/v1`. Full schemas are in Swagger (`/api/docs`).
 | Area | Endpoints |
 |---|---|
 | Categories & attributes | `GET /admin/property-types` (whole setup), `GET /admin/property-types/attributes?q=` (find existing attributes), `POST /admin/property-types/subcategories`, `PATCH/DELETE /admin/property-types/subcategories/:id`, `POST /admin/property-types/categories/:key/attributes` and `POST /admin/property-types/subcategories/:id/attributes` (new or existing attribute), `PATCH/DELETE …/attributes/:attributeId`. Every change returns the whole setup. |
-| Amenities | `GET/POST /admin/amenities`, `PATCH /admin/amenities/:id` |
+| Amenities | Listed in `GET /admin/property-types` (per category). `POST /admin/property-types/categories/:key/amenities`, `PUT /admin/property-types/categories/:key/amenities/order`, `PATCH/DELETE /admin/property-types/amenities/:id`. Every change returns the whole setup. |
 | Properties | `GET/POST /admin/properties`, `GET/PATCH /admin/properties/:id`, `POST /admin/properties/:id/status`, `POST /admin/properties/bulk-status`, `POST /admin/properties/:id/duplicate`, `POST /admin/properties/:id/change-group`, `GET /admin/properties/:id/history`, `GET /admin/properties/location-suggestions?field=city&q=` |
 | Media | `POST /admin/properties/:id/media` (multipart upload), `PATCH /admin/properties/:id/media/order`, `PATCH /admin/properties/:id/media/:mediaId` (cover, caption), `DELETE /admin/properties/:id/media/:mediaId` |
 | Imports | `GET /admin/imports/templates/:groupId` (xlsx), `POST /admin/imports` (upload + validate), `GET /admin/imports`, `GET /admin/imports/:id`, `POST /admin/imports/:id/commit`, `GET /admin/imports/:id/error-report` |

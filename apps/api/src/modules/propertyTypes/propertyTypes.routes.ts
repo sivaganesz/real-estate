@@ -2,9 +2,12 @@ import {
   addAttributeBodySchema,
   attributeMatchSchema,
   CATEGORY_KEYS,
+  createAmenityBodySchema,
   createSubcategoryBodySchema,
   idSchema,
   propertyTypesSchema,
+  reorderAmenitiesBodySchema,
+  updateAmenityBodySchema,
   updateAttributeBodySchema,
   updateSubcategoryBodySchema,
 } from '@real-estate/shared';
@@ -119,6 +122,40 @@ for (const [scope, path, params] of [
   });
 }
 
+const amenityParams = z.object({ id: idSchema });
+registry.registerPath({
+  ...secured,
+  method: 'post',
+  path: `${BASE}/categories/{key}/amenities`,
+  summary: 'Add an amenity to a category (for all its subcategories or some)',
+  request: { params: categoryParams, body: { content: json(createAmenityBodySchema) } },
+  responses: { 201: setup, ...editErrors },
+});
+registry.registerPath({
+  ...secured,
+  method: 'put',
+  path: `${BASE}/categories/{key}/amenities/order`,
+  summary: 'Save the order of the amenity checklist (every amenity id, in order)',
+  request: { params: categoryParams, body: { content: json(reorderAmenitiesBodySchema) } },
+  responses: { 200: setup, ...editErrors },
+});
+registry.registerPath({
+  ...secured,
+  method: 'patch',
+  path: `${BASE}/amenities/{id}`,
+  summary: 'Edit an amenity (name, icon, subcategories, active)',
+  request: { params: amenityParams, body: { content: json(updateAmenityBodySchema) } },
+  responses: { 200: setup, ...editErrors },
+});
+registry.registerPath({
+  ...secured,
+  method: 'delete',
+  path: `${BASE}/amenities/{id}`,
+  summary: 'Delete an amenity that no property has ticked',
+  request: { params: amenityParams },
+  responses: { 200: setup, ...editErrors },
+});
+
 // ------------------------------------------------------------------ Routes
 
 export function createPropertyTypesRouter(deps: {
@@ -222,6 +259,45 @@ export function createPropertyTypesRouter(deps: {
       }),
     );
   }
+
+  // Amenities
+  router.post(
+    '/categories/:key/amenities',
+    canEdit,
+    endpoint(
+      { params: categoryParams, body: createAmenityBodySchema },
+      async ({ params, body }, req, res) => {
+        sendData(res, await service.createAmenity(req.user!.id, params.key, body), 201);
+      },
+    ),
+  );
+  router.put(
+    '/categories/:key/amenities/order',
+    canEdit,
+    endpoint(
+      { params: categoryParams, body: reorderAmenitiesBodySchema },
+      async ({ params, body }, req, res) => {
+        sendData(res, await service.reorderAmenities(req.user!.id, params.key, body.ids));
+      },
+    ),
+  );
+  router.patch(
+    '/amenities/:id',
+    canEdit,
+    endpoint(
+      { params: amenityParams, body: updateAmenityBodySchema },
+      async ({ params, body }, req, res) => {
+        sendData(res, await service.updateAmenity(req.user!.id, params.id, body));
+      },
+    ),
+  );
+  router.delete(
+    '/amenities/:id',
+    canEdit,
+    endpoint({ params: amenityParams }, async ({ params }, req, res) => {
+      sendData(res, await service.deleteAmenity(req.user!.id, params.id));
+    }),
+  );
 
   return router;
 }

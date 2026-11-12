@@ -5,7 +5,7 @@ import type { PillNavItem } from '@/components/PillNav';
 /** Settings tabs grow per phase (PRD ADM-SET-02); later ones are shown greyed out. */
 const TABS: PillNavItem[] = [
   { label: 'Company info', to: '/settings/company' },
-  { label: 'Property types & amenities', to: '/settings/property-types' },
+  { label: 'Property types & amenities', to: '/settings/property-types', exact: false },
   { label: 'Visit slots', phase: 'Phase 3' },
 ];
 

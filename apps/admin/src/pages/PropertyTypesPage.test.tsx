@@ -1,4 +1,4 @@
-import type { PlacedAttribute, PropertyTypes } from '@real-estate/shared';
+import type { Amenity, PlacedAttribute, PropertyTypes } from '@real-estate/shared';
 import { CORE_ATTRIBUTES } from '@real-estate/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '@/lib/api';
 import { PropertyTypesPage } from './PropertyTypesPage';
+import type { PropertyTypesTab } from './PropertyTypesPage';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
@@ -26,6 +27,17 @@ const attr = (n: number, label: string, extra: Partial<PlacedAttribute> = {}): P
 
 const bhk = (usedIn: string[]) =>
   attr(20, 'BHK', { type: 'dropdown', options: ['1 BHK', '2 BHK', '3 BHK'], usedIn });
+
+const amenity = (n: number, name: string, extra: Partial<Amenity> = {}): Amenity => ({
+  id: ID(n),
+  name,
+  icon: null,
+  appliesToAll: true,
+  subcategoryIds: [],
+  isActive: true,
+  propertyCount: 0,
+  ...extra,
+});
 
 const SETUP: PropertyTypes = {
   coreAttributes: CORE_ATTRIBUTES.map((a) => ({ ...a })),
@@ -62,6 +74,20 @@ const SETUP: PropertyTypes = {
           attributes: [bhk(['Apartment / Flat'])],
         },
       ],
+      amenities: [
+        amenity(201, 'Gated community', { icon: 'fence' }),
+        amenity(202, 'Street lights', {
+          icon: 'lightbulb',
+          appliesToAll: false,
+          subcategoryIds: [ID(101)],
+        }),
+        amenity(203, 'Club house', {
+          icon: 'building-2',
+          appliesToAll: false,
+          subcategoryIds: [ID(102)],
+          isActive: false,
+        }),
+      ],
     },
     {
       key: 'commercial',
@@ -69,6 +95,7 @@ const SETUP: PropertyTypes = {
       isActive: false,
       commonAttributes: [],
       subcategories: [],
+      amenities: [],
     },
   ],
 };
@@ -80,14 +107,14 @@ function json(status: number, body: unknown) {
   });
 }
 
-function renderPage(url = '/settings/property-types') {
+function renderPage(url = '/settings/property-types', tab: PropertyTypesTab = 'attributes') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[url]}>
-        <PropertyTypesPage />
+        <PropertyTypesPage tab={tab} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -275,5 +302,100 @@ describe('PropertyTypesPage', () => {
     });
     // The new subcategory is selected.
     expect(await screen.findByText('No attributes yet.', { exact: false })).toBeInTheDocument();
+  });
+});
+
+describe('PropertyTypesPage → Amenities', () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    tokenStore.set('token');
+  });
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.unstubAllGlobals();
+  });
+  const callsTo = (method: string) =>
+    fetchMock.mock.calls.filter(([, init]) => (init?.method ?? 'GET') === method);
+  const names = () =>
+    within(screen.getByRole('table', { name: 'Residential amenities' }))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => r.querySelector('td:nth-child(2) .font-medium')?.textContent);
+
+  it('lists the amenities with where they are offered, and filters by subcategory', async () => {
+    fetchMock.mockResolvedValue(json(200, { data: SETUP }));
+    renderPage('/settings/property-types/amenities', 'amenities');
+
+    const table = await screen.findByRole('table', { name: 'Residential amenities' });
+    expect(names()).toEqual(['Gated community', 'Street lights', 'Club house']);
+    expect(within(table).getByText('All Residential')).toBeInTheDocument();
+    expect(within(table).getByText('Residential Plot')).toBeInTheDocument();
+    expect(within(table).getByText('Inactive')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText('Filter by subcategory'));
+    await userEvent.click(await screen.findByRole('option', { name: 'Villa / House' }));
+    expect(names()).toEqual(['Gated community', 'Club house']);
+    expect(screen.getByRole('button', { name: 'Move Club house up' })).toBeDisabled();
+    expect(screen.getByText('Clear the search and filter to reorder.')).toBeInTheDocument();
+  });
+
+  it('moves an amenity at once and saves the new order', async () => {
+    let resolveSave: (r: Response) => void = () => {};
+    fetchMock.mockImplementation((_url, init) =>
+      init?.method === 'PUT'
+        ? new Promise<Response>((r) => (resolveSave = r))
+        : Promise.resolve(json(200, { data: SETUP })),
+    );
+    renderPage('/settings/property-types/amenities', 'amenities');
+    await userEvent.click(await screen.findByRole('button', { name: 'Move Gated community down' }));
+
+    expect(names()).toEqual(['Street lights', 'Gated community', 'Club house']); // before the save returns
+    const [url, init] = callsTo('PUT')[0]!;
+    expect(url).toBe('/api/v1/admin/property-types/categories/residential/amenities/order');
+    expect(JSON.parse(String(init!.body))).toEqual({ ids: [ID(202), ID(201), ID(203)] });
+    resolveSave(json(500, { error: { code: 'INTERNAL', message: 'boom' } }));
+    await vi.waitFor(() =>
+      expect(names()).toEqual(['Gated community', 'Street lights', 'Club house']),
+    );
+  });
+
+  it('adds an amenity for some subcategories', async () => {
+    fetchMock.mockImplementation(async (_url, init) =>
+      init?.method === 'POST' ? json(201, { data: SETUP }) : json(200, { data: SETUP }),
+    );
+    renderPage('/settings/property-types/amenities', 'amenities');
+    await userEvent.click(await screen.findByRole('button', { name: 'Add amenity' }));
+
+    await userEvent.type(screen.getByLabelText('Name *'), 'Home theatre');
+    await userEvent.click(screen.getByRole('radio', { name: 'Other' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: /All Residential subcategories/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add amenity' }));
+    expect(
+      await screen.findByText('Choose at least one subcategory, or "All"'),
+    ).toBeInTheDocument();
+    expect(callsTo('POST')).toHaveLength(0);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Villa / House' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add amenity' }));
+    const [url, init] = callsTo('POST')[0]!;
+    expect(url).toBe('/api/v1/admin/property-types/categories/residential/amenities');
+    expect(JSON.parse(String(init!.body))).toEqual({
+      name: 'Home theatre',
+      icon: 'sparkles',
+      appliesToAll: false,
+      subcategoryIds: [ID(102)],
+      isActive: true,
+    });
+  });
+
+  it('deletes an amenity after confirming', async () => {
+    fetchMock.mockResolvedValue(json(200, { data: SETUP }));
+    renderPage('/settings/property-types/amenities', 'amenities');
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete Street lights' }));
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
+    expect(callsTo('DELETE')[0]![0]).toBe(`/api/v1/admin/property-types/amenities/${ID(202)}`);
   });
 });

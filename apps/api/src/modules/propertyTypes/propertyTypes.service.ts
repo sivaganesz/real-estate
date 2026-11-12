@@ -7,19 +7,29 @@ import {
 } from '@real-estate/shared';
 import type {
   AddAttribute,
+  Amenity,
   AttributeMatch,
   CategoryKey,
+  CreateAmenity,
   CreateSubcategory,
   PlacedAttribute,
   PropertyTypes,
+  UpdateAmenity,
   UpdateAttribute,
   UpdateSubcategory,
 } from '@real-estate/shared';
 import { AppError, businessRule, conflict, notFound, validationError } from '../../lib/errors';
 import type { FieldChanges } from '../changeLogs/changeLog.service';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
-import type { AttributeDoc, CategoryDoc, Placement, SubcategoryDoc } from './propertyTypes.model';
+import type {
+  AmenityDoc,
+  AttributeDoc,
+  CategoryDoc,
+  Placement,
+  SubcategoryDoc,
+} from './propertyTypes.model';
 import {
+  AmenityModel,
   PropertyAttributeModel,
   PropertyCategoryModel,
   PropertySubcategoryModel,
@@ -40,6 +50,8 @@ interface LoadedTarget {
 }
 
 const DEFINITION_FIELDS = ['label', 'type', 'unit', 'options', 'searchFilter'] as const;
+
+const unique = (ids: string[]) => [...new Set(ids)];
 
 const isDuplicateKeyError = (err: unknown) =>
   typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 11000;
@@ -69,10 +81,12 @@ export class PropertyTypesService {
   // ---------------------------------------------------------------- read
 
   async getAll(): Promise<PropertyTypes> {
-    const [categories, subcategories] = await Promise.all([
+    const [categories, subcategories, amenities] = await Promise.all([
       PropertyCategoryModel.find().sort({ order: 1 }).lean<CategoryDoc[]>(),
       PropertySubcategoryModel.find().sort({ order: 1, createdAt: 1 }).lean<SubcategoryDoc[]>(),
+      AmenityModel.find().sort({ order: 1, createdAt: 1 }).lean<AmenityDoc[]>(),
     ]);
+    const amenityCounts = await this.usage.countByAmenity(amenities.map((a) => a._id));
     const attributeIds = [
       ...categories.flatMap((c) => c.attributes),
       ...subcategories.flatMap((s) => s.attributes),
@@ -137,6 +151,17 @@ export class PropertyTypesService {
               attributes: present(s._id, s.attributes),
             };
           }),
+        amenities: amenities
+          .filter((a) => a.categoryKey === c.key)
+          .map((a): Amenity => ({
+            id: a._id,
+            name: a.name,
+            icon: a.icon ?? null,
+            appliesToAll: a.appliesToAll,
+            subcategoryIds: a.subcategoryIds ?? [],
+            isActive: a.isActive,
+            propertyCount: amenityCounts.get(a._id) ?? 0,
+          })),
       })),
     };
   }
@@ -261,6 +286,7 @@ export class PropertyTypesService {
       );
     }
     await PropertySubcategoryModel.deleteOne({ _id: id });
+    await AmenityModel.updateMany({ subcategoryIds: id }, { $pull: { subcategoryIds: id } });
     for (const p of sub.attributes) await this.deleteIfUnused(p.attributeId);
     await recordChange({
       actorId,
@@ -457,7 +483,178 @@ export class PropertyTypesService {
     return this.getAll();
   }
 
+  // ---------------------------------------------------------------- amenities
+
+  async createAmenity(
+    actorId: string,
+    categoryKey: CategoryKey,
+    input: CreateAmenity,
+  ): Promise<PropertyTypes> {
+    await this.activeCategory(categoryKey);
+    const subcategoryIds = input.appliesToAll ? [] : unique(input.subcategoryIds);
+    await this.assertAmenityValid(categoryKey, input.name, subcategoryIds);
+    const last = await AmenityModel.findOne({ categoryKey }).sort({ order: -1 }).lean<AmenityDoc>();
+    let created;
+    try {
+      created = await AmenityModel.create({
+        categoryKey,
+        name: input.name,
+        nameKey: normalizeLabel(input.name),
+        icon: input.icon,
+        appliesToAll: input.appliesToAll,
+        subcategoryIds,
+        isActive: input.isActive,
+        order: (last?.order ?? -1) + 1,
+        createdBy: actorId,
+        updatedBy: actorId,
+      });
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw conflict(`There is already an amenity called "${input.name}".`, 'DUPLICATE_NAME');
+      }
+      throw err;
+    }
+    await recordChange({
+      actorId,
+      entity: 'propertyType',
+      entityId: created._id,
+      action: 'amenity_created',
+      changes: { name: [null, input.name] },
+    });
+    return this.getAll();
+  }
+
+  async updateAmenity(actorId: string, id: string, input: UpdateAmenity): Promise<PropertyTypes> {
+    const before = await this.findAmenity(id);
+    await this.activeCategory(before.categoryKey);
+    const appliesToAll = input.appliesToAll ?? before.appliesToAll;
+    const next = {
+      name: input.name ?? before.name,
+      icon: input.icon !== undefined ? input.icon : (before.icon ?? null),
+      appliesToAll,
+      subcategoryIds: appliesToAll ? [] : unique(input.subcategoryIds ?? before.subcategoryIds),
+      isActive: input.isActive ?? before.isActive,
+    };
+    if (!next.appliesToAll && next.subcategoryIds.length === 0) {
+      throw validationError([
+        { path: 'body.subcategoryIds', message: 'Choose at least one subcategory, or "All"' },
+      ]);
+    }
+    await this.assertAmenityValid(before.categoryKey, next.name, next.subcategoryIds, id);
+
+    const changes = diffFields(
+      { ...before, icon: before.icon ?? null } as unknown as Record<string, unknown>,
+      next as unknown as Record<string, unknown>,
+      ['name', 'icon', 'appliesToAll', 'subcategoryIds', 'isActive'],
+    );
+    if (Object.keys(changes).length === 0) return this.getAll();
+    try {
+      await AmenityModel.updateOne(
+        { _id: id },
+        { $set: { ...next, nameKey: normalizeLabel(next.name), updatedBy: actorId } },
+      );
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw conflict(`There is already an amenity called "${next.name}".`, 'DUPLICATE_NAME');
+      }
+      throw err;
+    }
+    await recordChange({
+      actorId,
+      entity: 'propertyType',
+      entityId: id,
+      action: 'amenity_updated',
+      changes,
+    });
+    return this.getAll();
+  }
+
+  /** Only an amenity no property has ticked can be deleted; otherwise deactivate it. */
+  async deleteAmenity(actorId: string, id: string): Promise<PropertyTypes> {
+    const amenity = await this.findAmenity(id);
+    await this.activeCategory(amenity.categoryKey);
+    const count = (await this.usage.countByAmenity([id])).get(id) ?? 0;
+    if (count > 0) {
+      throw businessRule(
+        `"${amenity.name}" is ticked on ${count} properties, so it can't be deleted. Deactivate it instead.`,
+      );
+    }
+    await AmenityModel.deleteOne({ _id: id });
+    await recordChange({
+      actorId,
+      entity: 'propertyType',
+      entityId: id,
+      action: 'amenity_deleted',
+      changes: { name: [amenity.name, null] },
+    });
+    return this.getAll();
+  }
+
+  /** Saves the checklist order. `ids` must list every amenity of the category exactly once. */
+  async reorderAmenities(
+    actorId: string,
+    categoryKey: CategoryKey,
+    ids: string[],
+  ): Promise<PropertyTypes> {
+    await this.activeCategory(categoryKey);
+    const current = await AmenityModel.find({ categoryKey })
+      .select('_id')
+      .lean<{ _id: string }[]>();
+    const known = new Set(current.map((a) => a._id));
+    const complete =
+      ids.length === known.size &&
+      new Set(ids).size === ids.length &&
+      ids.every((x) => known.has(x));
+    if (!complete) {
+      throw conflict('The amenity list has changed. Reload the page and try again.', 'STALE_ORDER');
+    }
+    await AmenityModel.bulkWrite(
+      ids.map((_id, order) => ({
+        updateOne: { filter: { _id }, update: { $set: { order, updatedBy: actorId } } },
+      })),
+    );
+    await recordChange({
+      actorId,
+      entity: 'propertyType',
+      entityId: categoryKey,
+      action: 'amenities_reordered',
+    });
+    return this.getAll();
+  }
+
   // ---------------------------------------------------------------- helpers
+
+  private async findAmenity(id: string): Promise<AmenityDoc> {
+    const amenity = await AmenityModel.findById(id).lean<AmenityDoc>();
+    if (!amenity) throw notFound('Amenity not found');
+    return amenity;
+  }
+
+  /** Unique name in the category; the chosen subcategories must belong to it. */
+  private async assertAmenityValid(
+    categoryKey: CategoryKey,
+    name: string,
+    subcategoryIds: string[],
+    exceptId?: string,
+  ): Promise<void> {
+    const others = exceptId ? { _id: { $ne: exceptId } } : {};
+    if (await AmenityModel.exists({ categoryKey, nameKey: normalizeLabel(name), ...others })) {
+      throw conflict(`There is already an amenity called "${name}".`, 'DUPLICATE_NAME');
+    }
+    if (subcategoryIds.length === 0) return;
+    const found = await PropertySubcategoryModel.countDocuments({
+      _id: { $in: subcategoryIds },
+      categoryKey,
+    });
+    if (found !== subcategoryIds.length) {
+      throw validationError([
+        {
+          path: 'body.subcategoryIds',
+          message: 'Some subcategories no longer exist. Reload the page.',
+        },
+      ]);
+    }
+  }
 
   private async activeCategory(key: CategoryKey): Promise<CategoryDoc> {
     const category = await PropertyCategoryModel.findOne({ key }).lean<CategoryDoc>();

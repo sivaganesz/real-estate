@@ -444,6 +444,7 @@ describe('property type rules that depend on existing properties', () => {
       return new Map(ids.filter((id) => id === villa?._id).map((id) => [id, 12]));
     },
     isAttributeUsed: async (key) => key === 'bhk' || key === 'floors',
+    countByAmenity: async (ids) => new Map(ids.map((id) => [id, 3])),
   };
   const service = new PropertyTypesService({ usage: villaHas12 });
   const ACTOR = '0192f3a4-7b1c-7e2d-9a3f-1c2b3d4e5f60';
