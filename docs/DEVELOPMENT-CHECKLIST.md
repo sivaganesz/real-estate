@@ -217,7 +217,7 @@ The AI agent reads property data only through our MCP tools. Property locations 
 ## Phase 2: Inventory Management
 
 ### 2.1 Settings → Property types & amenities
-Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House) → attributes. **Residential first**, then Commercial; Other stays "set up later".
+Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House) → attributes. Built in order: Residential, then Commercial, then Other.
 
 **Categories & attributes (Residential)**
 - [x] **API**
@@ -232,7 +232,7 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
     - [x] Code prefix is 3 letters, unique, and locked once the subcategory has properties
     - [x] An attribute's value type is locked once properties have values for it
     - [x] Deleting an attribute keeps the values properties already have
-    - [x] A category can't be changed until it's set up (now only Other)
+    - [x] A category can't be changed until it's set up (all three are set up now)
   - [x] Starting Residential setup created on first start (Plot 7, Villa / House 8, Apartment / Flat 11 attributes; common: facing, ownership type, description); never re-adds what an admin deleted
   - [x] Every change recorded in the change log
   - [ ] Hook the property rules to real property counts (with 2.2)
@@ -248,7 +248,7 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
 - [x] **API**
   - [x] `amenities` model: name (unique per category), icon (fixed icon set), for all subcategories or chosen ones, active, order
   - [x] Add, edit, reorder, delete (delete only when no property has it ticked; otherwise deactivate)
-  - [x] Deleting a subcategory takes it off amenities; Other can't be changed yet
+  - [x] Deleting a subcategory takes it off amenities; a category that isn't set up can't be changed
   - [x] 14 starting Residential amenities, added once (also to existing databases) and never re-added after a delete
 - [x] **UI**
   - [x] "Amenities" sub-tab (`/settings/property-types/amenities`): category cards, search, subcategory filter, table with order arrows, icon, "offered for", used by, Edit / Delete
@@ -265,7 +265,12 @@ Category (Residential / Commercial / Other) → subcategory (e.g. Villa / House)
   - [x] Property form: changing the category clears the subcategory and amenities
   - [x] Tests: API (setup, upgrade of an older database, commercial property, commercial template) and browser E2E (settings, add, publish, import, list, detail)
   - [ ] Commercial sign-off by the client (attributes and amenities checked)
-- [ ] Other: subcategories, attributes and amenities, when the client asks
+- [x] **Other** (started 15 Nov 2026)
+  - [x] Starting setup: Agricultural land (AGR) and Industrial land (IND), Sale / Lease; common ownership type, description; 7 new attributes (survey number, water source, soil type, road access, electricity connection, fencing, water connection) plus shared ones (road width, plot dimensions, land use, approval type, power load, truck access)
+  - [x] 9 Other amenities (compound wall, security, tar roads, storage shed, farm house, drip irrigation, solar power, CCTV, street lights)
+  - [x] Applied once to existing databases, like Commercial
+  - [x] Tests: API (setup, agricultural property, "not set up" rule) and browser E2E (settings, add, publish, import, list)
+  - [ ] Other sign-off by the client (attributes and amenities checked)
 
 ### 2.2 Properties: data and API
 **2.2a Data and API**

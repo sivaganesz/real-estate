@@ -535,6 +535,50 @@ describe('properties API', () => {
     );
   });
 
+  it("adds Other properties (agricultural land) and blocks a category that isn't set up", async () => {
+    const farm = await create({
+      subcategoryId: sub('Agricultural land').id,
+      title: '5 acre coconut farm near Pollachi',
+      purpose: 'lease',
+      price: { amount: 60_000, basis: 'per_month' },
+      area: { value: 5, unit: 'acre' },
+      location: { city: 'Pollachi', locality: 'Kottur', pincode: '642114' },
+      attributeValues: {
+        water_source: ['borewell', 'Canal'],
+        soil_type: 'Red soil',
+        road_access: true,
+        survey_number: '112/3B',
+      },
+      amenityIds: [amenityId('Drip irrigation', 'other'), amenityId('Farm house', 'other')],
+    });
+    expect(farm.status).toBe(201);
+    expect(farm.body.data).toMatchObject({
+      code: 'RE-AGR-000001',
+      categoryKey: 'other',
+      area: { value: 5, unit: 'acre', sqft: 217_800 },
+      attributeValues: { water_source: ['Borewell', 'Canal'], soil_type: 'Red soil' },
+    });
+    const rent = await create({
+      subcategoryId: sub('Industrial land').id,
+      title: 'Industrial plot in SIPCOT',
+      purpose: 'rent',
+    });
+    expect(rent.body.error.details[0].message).toBe(
+      'Industrial land can be listed for: Sale, Lease',
+    );
+
+    await PropertyCategoryModel.updateOne({ key: 'other' }, { $set: { isActive: false } });
+    const blocked = await create({
+      subcategoryId: sub('Industrial land').id,
+      title: 'Industrial plot in SIPCOT',
+      purpose: 'sale',
+    });
+    expect(blocked.status).toBe(422);
+    expect(blocked.body.error.message).toBe(
+      "Other is set up later. Its properties can't be added yet.",
+    );
+  });
+
   it("can't add properties to an inactive subcategory", async () => {
     await as(
       'admin',

@@ -81,7 +81,7 @@ describe('settings → property types (categories & attributes)', () => {
     expect(data.categories.map((c) => [c.key, c.isActive])).toEqual([
       ['residential', true],
       ['commercial', true],
-      ['other', false],
+      ['other', true],
     ]);
     const res = residential(data);
     expect(labels(res.commonAttributes)).toEqual(['Facing', 'Ownership type', 'Description']);
@@ -138,6 +138,29 @@ describe('settings → property types (categories & attributes)', () => {
     const land = sub(data, 'Commercial land');
     expect(land.attributes.filter((a) => a.required).map((a) => a.key)).toEqual([
       'plot_dimensions',
+    ]);
+  });
+
+  it('starts with Other: agricultural and industrial land', async () => {
+    const data = await read();
+    const other = data.categories.find((c) => c.key === 'other')!;
+    expect(labels(other.commonAttributes)).toEqual(['Ownership type', 'Description']);
+    expect(
+      other.subcategories.map((s) => [s.name, s.codePrefix, s.purposes, s.attributes.length]),
+    ).toEqual([
+      ['Agricultural land', 'AGR', ['sale', 'lease'], 7],
+      ['Industrial land', 'IND', ['sale', 'lease'], 8],
+    ]);
+    const farm = sub(data, 'Agricultural land');
+    expect(farm.attributes.find((a) => a.key === 'water_source')).toMatchObject({
+      type: 'multi_select',
+      options: ['Borewell', 'Open well', 'Canal', 'River', 'Rain-fed'],
+    });
+    // Road width is one shared attribute across all three categories.
+    expect(farm.attributes.find((a) => a.key === 'road_width')!.usedIn).toEqual([
+      'Residential Plot',
+      'Commercial land',
+      'Industrial land',
     ]);
   });
 
@@ -487,7 +510,8 @@ describe('settings → property types (categories & attributes)', () => {
     expect(residential(del.body.data).subcategories).toHaveLength(3);
   });
 
-  it("Other is 'set up later': it can't be changed yet", async () => {
+  it("a category that isn't set up yet can't be changed", async () => {
+    await PropertyCategoryModel.updateOne({ key: 'other' }, { $set: { isActive: false } });
     const sub1 = await as('admin', request(ctx.app).post(`${BASE}/subcategories`)).send({
       categoryKey: 'other',
       name: 'Farm land',

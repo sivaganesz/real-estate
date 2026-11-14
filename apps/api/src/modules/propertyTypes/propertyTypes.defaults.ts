@@ -121,6 +121,26 @@ const ATTRIBUTES: StartingAttribute[] = [
   { key: 'loading_docks', label: 'Loading docks', type: 'number' },
   { key: 'truck_access', label: 'Truck access', type: 'yes_no', searchFilter: true },
   { key: 'power_load', label: 'Power load', type: 'number', unit: 'kVA' },
+  // Other (agricultural and industrial land)
+  { key: 'survey_number', label: 'Survey number', type: 'text' },
+  {
+    key: 'water_source',
+    label: 'Water source',
+    type: 'multi_select',
+    options: ['Borewell', 'Open well', 'Canal', 'River', 'Rain-fed'],
+    searchFilter: true,
+  },
+  {
+    key: 'soil_type',
+    label: 'Soil type',
+    type: 'dropdown',
+    options: ['Red soil', 'Black soil', 'Alluvial', 'Sandy', 'Clay', 'Loamy'],
+    searchFilter: true,
+  },
+  { key: 'road_access', label: 'Road access', type: 'yes_no', searchFilter: true },
+  { key: 'electricity_connection', label: 'Electricity connection', type: 'yes_no' },
+  { key: 'fencing', label: 'Fencing', type: 'yes_no' },
+  { key: 'water_connection', label: 'Water connection', type: 'yes_no' },
 ];
 
 /** An attribute placed in a category or subcategory: its key, or `{ key, required }`. */
@@ -147,7 +167,7 @@ interface StartingCategory {
   amenities: StartingAmenity[];
 }
 
-/** The categories in display order. Other is "set up later" (inactive, empty). */
+/** The categories in display order. A category without a starting setup stays inactive. */
 const CATEGORY_ORDER: { key: CategoryKey; name: string }[] = [
   { key: 'residential', name: 'Residential' },
   { key: 'commercial', name: 'Commercial' },
@@ -303,6 +323,52 @@ const SETUPS: Partial<Record<CategoryKey, StartingCategory>> = {
       { name: 'Compound wall', icon: 'fence', for: ['CLD', 'WHS'] },
     ],
   },
+  other: {
+    name: 'Other',
+    attributes: ['ownership_type', 'description'],
+    subcategories: [
+      {
+        name: 'Agricultural land',
+        codePrefix: 'AGR',
+        purposes: ['sale', 'lease'],
+        attributes: [
+          'survey_number',
+          'water_source',
+          'soil_type',
+          'road_access',
+          'road_width',
+          'electricity_connection',
+          'fencing',
+        ],
+      },
+      {
+        name: 'Industrial land',
+        codePrefix: 'IND',
+        purposes: ['sale', 'lease'],
+        attributes: [
+          'plot_dimensions',
+          'road_width',
+          'land_use',
+          'approval_type',
+          'power_load',
+          'water_connection',
+          'truck_access',
+          'survey_number',
+        ],
+      },
+    ],
+    amenities: [
+      { name: 'Compound wall', icon: 'fence', for: 'all' },
+      { name: '24×7 security', icon: 'shield-check', for: 'all' },
+      { name: 'Tar roads', icon: 'route', for: 'all' },
+      { name: 'Storage shed', icon: 'store', for: 'all' },
+      { name: 'Farm house', icon: 'building-2', for: ['AGR'] },
+      { name: 'Drip irrigation', icon: 'droplets', for: ['AGR'] },
+      { name: 'Solar power', icon: 'sun', for: ['AGR'] },
+      { name: 'CCTV surveillance', icon: 'cctv', for: ['IND'] },
+      { name: 'Street lights', icon: 'lightbulb', for: ['IND'] },
+    ],
+  },
 };
 
 const placeKey = (p: Place) => (typeof p === 'string' ? p : p.key);
@@ -397,7 +463,7 @@ async function ensureCategorySetup(key: CategoryKey): Promise<boolean> {
 
 /**
  * Creates the categories the first time, then sets up every category that has a starting
- * setup (Residential, Commercial) and their amenities. Runs at startup and from the seed
+ * setup (Residential, Commercial, Other) and their amenities. Runs at startup and from the seed
  * script. Each step runs once, so databases set up earlier get new categories (e.g.
  * Commercial) without anything an admin deleted coming back.
  */

@@ -111,7 +111,18 @@ describe('settings → property types → amenities', () => {
       appliesToAll: false,
       subcategoryIds: [office],
     });
-    expect(data.categories.find((c) => c.key === 'other')!.amenities).toEqual([]);
+    const other = data.categories.find((c) => c.key === 'other')!;
+    expect(other.amenities.map((a) => a.name)).toEqual([
+      'Compound wall',
+      '24×7 security',
+      'Tar roads',
+      'Storage shed',
+      'Farm house',
+      'Drip irrigation',
+      'Solar power',
+      'CCTV surveillance',
+      'Street lights',
+    ]);
   });
 
   it('adds the starting amenities only once, even to a database set up before amenities', async () => {
@@ -230,6 +241,7 @@ describe('settings → property types → amenities', () => {
     const after = await as('admin', request(ctx.app).delete(`${BASE}/subcategories/${farm}`));
     expect(amenity(after.body.data, 'Swimming pool').subcategoryIds).toEqual(pool.subcategoryIds);
 
+    await PropertyCategoryModel.updateOne({ key: 'other' }, { $set: { isActive: false } });
     const other = await as(
       'admin',
       request(ctx.app).post(`${BASE}/categories/other/amenities`),

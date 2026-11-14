@@ -15,7 +15,7 @@
 - Email goes through a swappable module (Resend).
 - Plivo and WhatsApp are deferred.
 - There is no locations master and no radius search.
-- Property types are category → subcategory → attributes (Residential and Commercial set up; Other later).
+- Property types are category → subcategory → attributes (Residential, Commercial and Other are all set up).
 
 ---
 
@@ -339,7 +339,8 @@ Name, type, unit, options and search filter are the same everywhere the attribut
 - Starting setup (applied at start and by the seed script, once per category, marked by `setupSeededAt`; databases created earlier get a newly added category the same way, and nothing an admin deleted comes back):
   - **Residential:** Residential Plot (PLT), Villa / House (VIL), Apartment / Flat (APT); common: facing, ownership type, description.
   - **Commercial:** Office space (OFC), Shop / Showroom (SHP), Commercial land (CLD, plot dimensions required), Warehouse / Godown (WHS); same common attributes. Shared attributes (e.g. carpet area, lift, approval type) are the same library entries as in Residential.
-  - **Other:** inactive ("set up later").
+  - **Other:** Agricultural land (AGR) and Industrial land (IND), Sale / Lease; common: ownership type, description.
+  - A category without a starting setup stays inactive ("set up later") and can't be changed or used.
   - A starting subcategory whose name or code prefix is already in use is skipped; an attribute with the same name as an admin-made one reuses it.
 - Rules that depend on properties (prefix lock, delete subcategory, type lock) go through a `PropertyUsage` interface; Phase 2.2 plugs in the real counts.
 
