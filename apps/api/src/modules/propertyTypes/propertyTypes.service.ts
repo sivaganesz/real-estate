@@ -89,11 +89,16 @@ export class PropertyTypesService {
   // ---------------------------------------------------------------- read
 
   async getAll(): Promise<PropertyTypes> {
-    const [categories, subcategories, amenities] = await Promise.all([
+    const [categories, unsorted, amenities] = await Promise.all([
       PropertyCategoryModel.find().sort({ order: 1 }).lean<CategoryDoc[]>(),
       PropertySubcategoryModel.find().sort({ order: 1, createdAt: 1 }).lean<SubcategoryDoc[]>(),
       AmenityModel.find().sort({ order: 1, createdAt: 1 }).lean<AmenityDoc[]>(),
     ]);
+    // Subcategory order counts within a category, so list category by category.
+    const categoryRank = new Map(categories.map((c, i) => [c.key, i]));
+    const subcategories = [...unsorted].sort(
+      (a, b) => (categoryRank.get(a.categoryKey) ?? 0) - (categoryRank.get(b.categoryKey) ?? 0),
+    );
     const amenityCounts = await this.usage.countByAmenity(amenities.map((a) => a._id));
     const attributeIds = [
       ...categories.flatMap((c) => c.attributes),
@@ -218,9 +223,13 @@ export class PropertyTypesService {
         .sort({ labelKey: 1 })
         .limit(8)
         .lean<AttributeDoc[]>(),
-      PropertyCategoryModel.find().lean<CategoryDoc[]>(),
-      PropertySubcategoryModel.find().lean<SubcategoryDoc[]>(),
+      PropertyCategoryModel.find().sort({ order: 1 }).lean<CategoryDoc[]>(),
+      PropertySubcategoryModel.find().sort({ order: 1, createdAt: 1 }).lean<SubcategoryDoc[]>(),
     ]);
+    const categoryRank = new Map(categories.map((c, i) => [c.key, i]));
+    subcategories.sort(
+      (a, b) => (categoryRank.get(a.categoryKey) ?? 0) - (categoryRank.get(b.categoryKey) ?? 0),
+    );
     const usedIn = (id: string) => [
       ...categories
         .filter((c) => c.attributes.some((p) => p.attributeId === id))
@@ -702,9 +711,7 @@ export class PropertyTypesService {
     const category = await PropertyCategoryModel.findOne({ key }).lean<CategoryDoc>();
     if (!category) throw notFound('Category not found');
     if (!category.isActive) {
-      throw businessRule(
-        `${category.name} is set up later. For now, only Residential can be changed.`,
-      );
+      throw businessRule(`${category.name} is set up later. It can't be changed yet.`);
     }
     return category;
   }

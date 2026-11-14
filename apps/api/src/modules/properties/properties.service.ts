@@ -499,7 +499,7 @@ export class PropertiesService {
   private assertCanList(definition: FormDefinition): void {
     if (!definition.category.isActive) {
       throw businessRule(
-        `${definition.category.name} is set up later. For now, only Residential properties can be added.`,
+        `${definition.category.name} is set up later. Its properties can't be added yet.`,
       );
     }
     if (!definition.subcategory.isActive) {

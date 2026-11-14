@@ -90,7 +90,28 @@ describe('settings → property types → amenities', () => {
     expect(amenity(data, 'Street lights').subcategoryIds).toEqual([
       subId(data, 'Residential Plot'),
     ]);
-    expect(data.categories.find((c) => c.key === 'commercial')!.amenities).toEqual([]);
+    const commercial = data.categories.find((c) => c.key === 'commercial')!;
+    expect(commercial.amenities.map((a) => a.name)).toEqual([
+      '24×7 security',
+      'CCTV surveillance',
+      'Power backup',
+      'Fire safety',
+      'Water supply',
+      'Lift',
+      'Visitor parking',
+      'Air conditioning',
+      'Cafeteria',
+      'Conference room',
+      'Loading bay',
+      'Compound wall',
+    ]);
+    const office = commercial.subcategories.find((s) => s.name === 'Office space')!.id;
+    expect(commercial.amenities.find((a) => a.name === 'Cafeteria')).toMatchObject({
+      icon: 'coffee',
+      appliesToAll: false,
+      subcategoryIds: [office],
+    });
+    expect(data.categories.find((c) => c.key === 'other')!.amenities).toEqual([]);
   });
 
   it('adds the starting amenities only once, even to a database set up before amenities', async () => {
@@ -209,11 +230,11 @@ describe('settings → property types → amenities', () => {
     const after = await as('admin', request(ctx.app).delete(`${BASE}/subcategories/${farm}`));
     expect(amenity(after.body.data, 'Swimming pool').subcategoryIds).toEqual(pool.subcategoryIds);
 
-    const commercial = await as(
+    const other = await as(
       'admin',
-      request(ctx.app).post(`${BASE}/categories/commercial/amenities`),
+      request(ctx.app).post(`${BASE}/categories/other/amenities`),
     ).send({ name: 'Loading bay' });
-    expect(commercial.status).toBe(422);
+    expect(other.status).toBe(422);
   });
 });
 

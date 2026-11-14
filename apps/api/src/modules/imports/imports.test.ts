@@ -156,6 +156,37 @@ describe('bulk import', () => {
     expect(wb.getWorksheet('Lists')!.state).toBe('veryHidden');
   });
 
+  it('gives Commercial templates with their own columns', async () => {
+    const types: PropertyTypes = (
+      await as('admin', request(ctx.app).get('/api/v1/admin/property-types'))
+    ).body.data;
+    const shopId = types.categories
+      .find((c) => c.key === 'commercial')!
+      .subcategories.find((s) => s.name === 'Shop / Showroom')!.id;
+    const res = await as('admin', request(ctx.app).get(`${BASE}/template?subcategoryId=${shopId}`))
+      .buffer(true)
+      .parse((r, cb) => {
+        const chunks: Buffer[] = [];
+        r.on('data', (c: Buffer) => chunks.push(c));
+        r.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toContain('shop-showroom-import-template.xlsx');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(res.body as ArrayBuffer);
+    const headers = (wb.getWorksheet('Properties')!.getRow(1).values as string[]).slice(1);
+    expect(headers).toEqual(
+      expect.arrayContaining([
+        'Facing',
+        'Frontage (ft)',
+        'Main road facing',
+        'Suitable for',
+        'Amenities',
+      ]),
+    );
+    expect(headers).not.toContain('BHK');
+  });
+
   it('checks every row: valid, invalid (with column names) and duplicates; nothing is saved yet', async () => {
     // An existing property that one row repeats
     await as('admin', request(ctx.app).post('/api/v1/admin/properties')).send({

@@ -251,6 +251,15 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
     }
   };
 
+  // Another category has other subcategories and amenities, so the subcategory is picked again.
+  const pickCategory = (key: Category['key']) => {
+    setCategoryKey(key);
+    if (layout && layout.category.key !== key) {
+      form.setValue('subcategoryId', '', { shouldDirty: true });
+      form.setValue('amenityIds', []);
+    }
+  };
+
   const showError = (err: unknown) => {
     if (err instanceof ApiError) {
       if (err.code === 'PUBLISH_BLOCKED') {
@@ -428,7 +437,7 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
                     }
                     selected={c.key === category?.key}
                     disabled={!c.isActive}
-                    onClick={property ? undefined : () => setCategoryKey(c.key)}
+                    onClick={property ? undefined : () => pickCategory(c.key)}
                   />
                 ))}
               </div>
@@ -452,7 +461,11 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-3" role="group" aria-label="Subcategory">
+                <div
+                  className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3"
+                  role="group"
+                  aria-label="Subcategory"
+                >
                   {category?.subcategories
                     .filter((s) => s.isActive)
                     .map((s) => (

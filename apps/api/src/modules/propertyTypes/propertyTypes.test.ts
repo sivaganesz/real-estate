@@ -7,6 +7,7 @@ import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 import { ensureStartingPropertyTypes } from './propertyTypes.defaults';
 import {
+  AmenityModel,
   PropertyAttributeModel,
   PropertyCategoryModel,
   PropertySubcategoryModel,
@@ -19,7 +20,7 @@ const BASE = '/api/v1/admin/property-types';
 
 const residential = (data: PropertyTypes) => data.categories.find((c) => c.key === 'residential')!;
 const sub = (data: PropertyTypes, name: string) =>
-  residential(data).subcategories.find((s) => s.name === name)!;
+  data.categories.flatMap((c) => c.subcategories).find((s) => s.name === name)!;
 const labels = (list: { label: string }[]) => list.map((a) => a.label);
 
 describe('settings → property types (categories & attributes)', () => {
@@ -79,7 +80,7 @@ describe('settings → property types (categories & attributes)', () => {
     ]);
     expect(data.categories.map((c) => [c.key, c.isActive])).toEqual([
       ['residential', true],
-      ['commercial', false],
+      ['commercial', true],
       ['other', false],
     ]);
     const res = residential(data);
@@ -100,6 +101,77 @@ describe('settings → property types (categories & attributes)', () => {
       usedIn: ['Apartment / Flat'],
     });
     expect(villa.prefixLocked).toBe(false);
+  });
+
+  it('starts with Commercial: 4 subcategories that reuse the shared attributes', async () => {
+    const data = await read();
+    const commercial = data.categories.find((c) => c.key === 'commercial')!;
+    expect(labels(commercial.commonAttributes)).toEqual([
+      'Facing',
+      'Ownership type',
+      'Description',
+    ]);
+    expect(
+      commercial.subcategories.map((s) => [s.name, s.codePrefix, s.purposes, s.attributes.length]),
+    ).toEqual([
+      ['Office space', 'OFC', ['sale', 'rent', 'lease'], 10],
+      ['Shop / Showroom', 'SHP', ['sale', 'rent', 'lease'], 8],
+      ['Commercial land', 'CLD', ['sale', 'lease'], 6],
+      ['Warehouse / Godown', 'WHS', ['sale', 'rent', 'lease'], 6],
+    ]);
+    // Shared attributes are the same records as in Residential (one name, one set of options).
+    const office = sub(data, 'Office space');
+    const carpet = office.attributes.find((a) => a.key === 'carpet_area')!;
+    expect(carpet.id).toBe(
+      sub(data, 'Apartment / Flat').attributes.find((a) => a.key === 'carpet_area')!.id,
+    );
+    expect(office.attributes.find((a) => a.key === 'office_fit_out')).toMatchObject({
+      type: 'dropdown',
+      options: ['Bare shell', 'Warm shell', 'Plug and play'],
+      searchFilter: true,
+    });
+    expect(
+      sub(data, 'Shop / Showroom').attributes.find((a) => a.key === 'suitable_for'),
+    ).toMatchObject({
+      type: 'multi_select',
+    });
+    const land = sub(data, 'Commercial land');
+    expect(land.attributes.filter((a) => a.required).map((a) => a.key)).toEqual([
+      'plot_dimensions',
+    ]);
+  });
+
+  it('a database set up before Commercial gets it once, without touching Residential', async () => {
+    // Simulate an older database: Commercial inactive and empty, no setup markers.
+    await PropertySubcategoryModel.deleteMany({ categoryKey: 'commercial' });
+    await PropertyCategoryModel.updateMany({}, { $set: { setupSeededAt: null } });
+    await PropertyCategoryModel.updateOne(
+      { key: 'commercial' },
+      { $set: { isActive: false, attributes: [], amenitiesSeededAt: null } },
+    );
+    await AmenityModel.deleteMany({ categoryKey: 'commercial' });
+    const plot = sub(await read(), 'Residential Plot');
+    const layout = plot.attributes.find((a) => a.key === 'layout_name')!;
+    await as(
+      'admin',
+      request(ctx.app).delete(`${BASE}/subcategories/${plot.id}/attributes/${layout.id}`),
+    );
+
+    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    const data = await read();
+    const commercial = data.categories.find((c) => c.key === 'commercial')!;
+    expect(commercial.isActive).toBe(true);
+    expect(commercial.subcategories).toHaveLength(4);
+    expect(commercial.amenities).toHaveLength(12);
+    expect(residential(data).subcategories).toHaveLength(3);
+    expect(labels(sub(data, 'Residential Plot').attributes)).not.toContain('Layout name');
+
+    // Runs once: a removed Commercial subcategory isn't added back.
+    const warehouse = sub(data, 'Warehouse / Godown');
+    await as('admin', request(ctx.app).delete(`${BASE}/subcategories/${warehouse.id}`));
+    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    const after = (await read()).categories.find((c) => c.key === 'commercial')!;
+    expect(after.subcategories.map((s) => s.name)).not.toContain('Warehouse / Godown');
   });
 
   it('the starting setup is created once and never re-adds what an admin removed', async () => {
@@ -205,7 +277,7 @@ describe('settings → property types (categories & attributes)', () => {
 
     const search = await as('admin', request(ctx.app).get(`${BASE}/attributes?q=LIF`));
     expect(search.body.data).toEqual([
-      { id: lift.id, label: 'Lift', type: 'yes_no', usedIn: ['Apartment / Flat'] },
+      { id: lift.id, label: 'Lift', type: 'yes_no', usedIn: ['Apartment / Flat', 'Office space'] },
     ]);
 
     const res = await as(
@@ -218,11 +290,11 @@ describe('settings → property types (categories & attributes)', () => {
     expect(res.status).toBe(201);
     expect(sub(res.body.data, 'Villa / House').attributes.at(-1)).toMatchObject({
       key: 'lift',
-      usedIn: ['Apartment / Flat'],
+      usedIn: ['Apartment / Flat', 'Office space'],
     });
     expect(
       sub(res.body.data, 'Apartment / Flat').attributes.find((a) => a.key === 'lift')!.usedIn,
-    ).toEqual(['Villa / House']);
+    ).toEqual(['Villa / House', 'Office space']);
   });
 
   it('editing the name or options changes it everywhere; "required" is per subcategory', async () => {
@@ -415,15 +487,15 @@ describe('settings → property types (categories & attributes)', () => {
     expect(residential(del.body.data).subcategories).toHaveLength(3);
   });
 
-  it("Commercial and Other are 'set up later': they can't be changed yet", async () => {
+  it("Other is 'set up later': it can't be changed yet", async () => {
     const sub1 = await as('admin', request(ctx.app).post(`${BASE}/subcategories`)).send({
-      categoryKey: 'commercial',
-      name: 'Shop',
-      codePrefix: 'SHP',
-      purposes: ['rent'],
+      categoryKey: 'other',
+      name: 'Farm land',
+      codePrefix: 'FRL',
+      purposes: ['sale'],
     });
     expect(sub1.status).toBe(422);
-    expect(sub1.body.error.message).toMatch(/Commercial is set up later/);
+    expect(sub1.body.error.message).toMatch(/Other is set up later/);
     const attr = await as(
       'admin',
       request(ctx.app).post(`${BASE}/categories/other/attributes`),

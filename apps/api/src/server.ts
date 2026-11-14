@@ -18,7 +18,7 @@ async function main(): Promise<void> {
   await connectDatabase(env.MONGODB_URI, logger);
   await syncDatabaseIndexes(logger);
   if ((await ensureStartingPropertyTypes()) === 'created') {
-    logger.info('Starting property types created (Residential plot, villa, apartment)');
+    logger.info('Starting property types created (Residential and Commercial)');
   }
 
   const server = app.listen(env.PORT, () => {

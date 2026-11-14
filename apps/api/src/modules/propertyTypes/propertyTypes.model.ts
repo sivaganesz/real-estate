@@ -44,6 +44,8 @@ const categorySchema = new Schema(
     order: { type: Number, default: 0 },
     /** Common attributes: shown for every subcategory in this category. */
     attributes: { type: [placementSchema], default: [] },
+    /** Set once the starting subcategories and attributes were added (and the category activated). */
+    setupSeededAt: { type: Date, default: null },
     /** Set once the starting amenities were added, so deleted ones never come back. */
     amenitiesSeededAt: { type: Date, default: null },
     updatedBy: refField('User'),

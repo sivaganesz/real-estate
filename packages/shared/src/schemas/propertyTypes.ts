@@ -120,6 +120,11 @@ export const AMENITY_ICONS = [
   'sun',
   'store',
   'sparkles',
+  'square-parking',
+  'snowflake',
+  'coffee',
+  'presentation',
+  'truck',
 ] as const;
 export type AmenityIcon = (typeof AMENITY_ICONS)[number];
 

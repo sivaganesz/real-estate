@@ -48,9 +48,10 @@ describe('properties API', () => {
 
   const as = (role: string, req: request.Test) =>
     req.set('authorization', `Bearer ${tokens[role]}`);
-  const sub = (name: string) => types.categories[0]!.subcategories.find((s) => s.name === name)!;
-  const amenityId = (name: string) =>
-    types.categories[0]!.amenities.find((a) => a.name === name)!.id;
+  const sub = (name: string) =>
+    types.categories.flatMap((c) => c.subcategories).find((s) => s.name === name)!;
+  const amenityId = (name: string, category = 'residential') =>
+    types.categories.find((c) => c.key === category)!.amenities.find((a) => a.name === name)!.id;
   const create = (body: object) => as('admin', request(ctx.app).post(BASE)).send(body);
   const patch = (id: string, body: object) =>
     as('admin', request(ctx.app).patch(`${BASE}/${id}`)).send(body);
@@ -473,6 +474,64 @@ describe('properties API', () => {
     // Restoring = leaving it out of the list.
     expect((await patch(id, { removedAttributeKeys: [] })).body.data.removedAttributeKeys).toEqual(
       [],
+    );
+  });
+
+  it('adds Commercial properties with their own codes, attributes and amenities', async () => {
+    const office = await create({
+      subcategoryId: sub('Office space').id,
+      title: 'Plug and play office near OMR',
+      purpose: 'rent',
+      price: { amount: 85_000, basis: 'per_month' },
+      rental: { securityDeposit: 510_000, lockInMonths: 36 },
+      area: { value: 1800, unit: 'sqft' },
+      location: { city: 'Chennai', locality: 'Thoraipakkam', pincode: '600097' },
+      attributeValues: {
+        office_fit_out: 'plug and play',
+        workstations: 24,
+        cabins: 3,
+        lift: true,
+        facing: 'North',
+      },
+      amenityIds: [amenityId('Cafeteria', 'commercial'), amenityId('Fire safety', 'commercial')],
+    });
+    expect(office.status).toBe(201);
+    expect(office.body.data).toMatchObject({
+      code: 'RE-OFC-000001',
+      categoryKey: 'commercial',
+      subcategoryName: 'Office space',
+      attributeValues: { office_fit_out: 'Plug and play', workstations: 24, cabins: 3, lift: true },
+    });
+
+    const shop = await create({
+      subcategoryId: sub('Shop / Showroom').id,
+      title: 'Ground floor showroom on main road',
+      purpose: 'sale',
+      attributeValues: { suitable_for: ['showroom', 'Retail'], main_road_facing: true },
+      // A Residential amenity and an office-only one aren't offered for shops.
+      amenityIds: [amenityId('Gated community'), amenityId('Cafeteria', 'commercial')],
+    });
+    expect(shop.status).toBe(400);
+    expect(shop.body.error.details.map((d: { path: string }) => d.path)).toContain(
+      'body.amenityIds',
+    );
+
+    const land = await create({
+      subcategoryId: sub('Commercial land').id,
+      title: 'Commercial land on NH bypass',
+      purpose: 'rent',
+    });
+    expect(land.body.error.details[0].message).toBe(
+      'Commercial land can be listed for: Sale, Lease',
+    );
+    const landSale = await create({
+      subcategoryId: sub('Commercial land').id,
+      title: 'Commercial land on NH bypass',
+      purpose: 'sale',
+    });
+    expect(landSale.body.data.code).toBe('RE-CLD-000001');
+    expect(landSale.body.data.publishIssues.map((i: { path: string }) => i.path)).toContain(
+      'attributeValues.plot_dimensions',
     );
   });
 

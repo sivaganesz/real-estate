@@ -15,7 +15,7 @@
 - Email goes through a swappable module (Resend).
 - Plivo and WhatsApp are deferred.
 - There is no locations master and no radius search.
-- Property types are category → subcategory → attributes (Residential first; Commercial and Other later).
+- Property types are category → subcategory → attributes (Residential and Commercial set up; Other later).
 
 ---
 
@@ -324,7 +324,8 @@ Name, type, unit, options and search filter are the same everywhere the attribut
 ```ts
 // propertyCategories: one per category; the common attributes appear for every subcategory
 { key: 'residential'|'commercial'|'other', name, isActive, order,
-  attributes: [{ attributeId, required }] }       // array order = form order
+  attributes: [{ attributeId, required }],         // array order = form order
+  setupSeededAt, amenitiesSeededAt }               // starting setup / amenities applied (once)
 
 // propertySubcategories
 { categoryKey, name: 'Villa / House', nameKey (unique per category),
@@ -335,7 +336,11 @@ Name, type, unit, options and search filter are the same everywhere the attribut
 - **Core attributes** are columns of every property (title, purpose, price, area, location), always required, shown as locked rows; they are not in these collections.
 - An attribute is either common or in a subcategory of the same category, never both.
 - Removing an attribute from a place keeps the values properties already have; the library entry is deleted once nothing uses it.
-- Starting setup (created at first start and by the seed script, never re-applied): Residential with Residential Plot (PLT), Villa / House (VIL), Apartment / Flat (APT) and their attributes; Commercial and Other inactive ("set up later").
+- Starting setup (applied at start and by the seed script, once per category, marked by `setupSeededAt`; databases created earlier get a newly added category the same way, and nothing an admin deleted comes back):
+  - **Residential:** Residential Plot (PLT), Villa / House (VIL), Apartment / Flat (APT); common: facing, ownership type, description.
+  - **Commercial:** Office space (OFC), Shop / Showroom (SHP), Commercial land (CLD, plot dimensions required), Warehouse / Godown (WHS); same common attributes. Shared attributes (e.g. carpet area, lift, approval type) are the same library entries as in Residential.
+  - **Other:** inactive ("set up later").
+  - A starting subcategory whose name or code prefix is already in use is skipped; an attribute with the same name as an admin-made one reuses it.
 - Rules that depend on properties (prefix lock, delete subcategory, type lock) go through a `PropertyUsage` interface; Phase 2.2 plugs in the real counts.
 
 ### 7.8 `amenities` (Phase 2)

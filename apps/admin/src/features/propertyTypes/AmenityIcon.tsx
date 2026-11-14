@@ -7,6 +7,11 @@ import {
   CctvIcon,
   CircleDashedIcon,
   CloudRainIcon,
+  CoffeeIcon,
+  PresentationIcon,
+  SnowflakeIcon,
+  SquareParkingIcon,
+  TruckIcon,
   DropletsIcon,
   DumbbellIcon,
   FenceIcon,
@@ -46,6 +51,11 @@ const ICONS: Record<AmenityIconName, LucideIcon> = {
   sun: SunIcon,
   store: StoreIcon,
   sparkles: SparklesIcon,
+  'square-parking': SquareParkingIcon,
+  snowflake: SnowflakeIcon,
+  coffee: CoffeeIcon,
+  presentation: PresentationIcon,
+  truck: TruckIcon,
 };
 
 /** The amenity's icon in a small tile; a dashed circle when it has none. */
