@@ -14,7 +14,7 @@ import {
 import { UserModel } from '../users/user.model';
 import { CounterModel, PropertyModel } from './property.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/properties';
 const TYPES = '/api/v1/admin/property-types';
 const MODELS = [

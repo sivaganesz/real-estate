@@ -14,63 +14,47 @@ export const emailSchema = z
   .pipe(z.email('Enter a valid email address'))
   .meta({ example: 'name@company.com' });
 
-/**
- * Words that make a password easy to guess when the rest is only digits or symbols,
- * e.g. "Password@123" or "admin12345" (TRD M4).
- */
-const COMMON_PASSWORD_WORDS = new Set([
-  'password',
-  'passw',
-  'pass',
-  'qwerty',
-  'qwertyuiop',
-  'asdf',
-  'asdfgh',
-  'zxcvbn',
-  'abc',
-  'abcd',
-  'abcdef',
-  'abcdefg',
-  'abcdefgh',
-  'welcome',
-  'admin',
-  'administrator',
-  'letmein',
-  'iloveyou',
-  'changeme',
-  'test',
-  'testing',
-  'user',
-  'login',
-  'secret',
-  'master',
-  'monkey',
-  'dragon',
-  'india',
-  'realestate',
-  'property',
-  'default',
-]);
-
-/** True when the password is a common word padded with digits or symbols. */
-export function isCommonPassword(password: string): boolean {
-  const letters = password.toLowerCase().replace(/[^a-z]/g, '');
-  return letters.length === 0 || COMMON_PASSWORD_WORDS.has(letters);
-}
+/** Minimum password length (decided 2026-11-16: basic rules only, no blocked words). */
+export const PASSWORD_MIN_LENGTH = 6;
 
 /**
- * Password rules for setting or changing a password (TRD M4): at least 10 characters,
- * a letter and a number, and not a common word padded with numbers. Sign-in accepts any
- * existing password, so older shorter passwords keep working until they are changed.
+ * The password rules, used both by the API check and by the live checklist on the
+ * password screens, so the two can never disagree. Any password meeting them is accepted,
+ * including ones like "Password@123".
  */
-export const PASSWORD_MIN_LENGTH = 10;
-export const passwordSchema = z
-  .string()
-  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-  .max(128, 'Password must be at most 128 characters')
-  .regex(/[A-Za-z]/, 'Password must contain a letter')
-  .regex(/\d/, 'Password must contain a number')
-  .refine((p) => !isCommonPassword(p), 'This password is too easy to guess. Choose another one');
+export const PASSWORD_RULES = [
+  {
+    label: `At least ${PASSWORD_MIN_LENGTH} characters`,
+    message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    test: (p: string) => p.length >= PASSWORD_MIN_LENGTH,
+  },
+  {
+    label: 'An uppercase letter',
+    message: 'Password must contain an uppercase letter',
+    test: (p: string) => /[A-Z]/.test(p),
+  },
+  {
+    label: 'A lowercase letter',
+    message: 'Password must contain a lowercase letter',
+    test: (p: string) => /[a-z]/.test(p),
+  },
+  {
+    label: 'A number',
+    message: 'Password must contain a number',
+    test: (p: string) => /\d/.test(p),
+  },
+  {
+    label: 'A special character (e.g. @ # $ !)',
+    message: 'Password must contain a special character',
+    test: (p: string) => /[^A-Za-z0-9\s]/.test(p),
+  },
+] as const;
+
+/** Setting or changing a password. Sign-in accepts any existing password. */
+export const passwordSchema = PASSWORD_RULES.reduce(
+  (schema, rule) => schema.refine(rule.test, rule.message),
+  z.string().max(128, 'Password must be at most 128 characters'),
+);
 
 /**
  * Phone number: digits only (an optional leading "+" for the country code). Letters,

@@ -12,7 +12,7 @@ import { getCompanyName } from './settings.service';
 const companyVersion = async () =>
   `"${(await SettingsModel.findOne({ key: 'company' }).lean<{ version?: number }>())?.version ?? 0}"`;
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/settings/company';
 
 /** Smallest valid PNG / JPEG / WebP headers (enough for the content check). */

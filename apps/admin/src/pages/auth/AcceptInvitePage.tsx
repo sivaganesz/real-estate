@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
+import { linkToken } from '@/lib/linkToken';
 
 const acceptFormSchema = z
   .object({ password: passwordSchema, confirmPassword: z.string() })
@@ -27,7 +28,7 @@ const acceptFormSchema = z
 
 export function AcceptInvitePage() {
   const [params] = useSearchParams();
-  const token = params.get('token') ?? '';
+  const token = linkToken(params);
   const navigate = useNavigate();
   const { startSession } = useAuth();
 

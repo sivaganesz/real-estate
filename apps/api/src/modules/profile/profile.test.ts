@@ -7,7 +7,7 @@ import { RefreshTokenModel } from '../auth/refreshToken.model';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 
 describe('profile', () => {
   let db: Awaited<ReturnType<typeof startTestDatabase>>;
@@ -100,7 +100,7 @@ describe('profile', () => {
       const res = await authed(request(ctx.app).post('/api/v1/admin/profile/change-password')).send(
         {
           currentPassword: 'wrong-password-1',
-          newPassword: 'brand-new-pass-7',
+          newPassword: 'Brand-new-pass-7',
         },
       );
       expect(res.status).toBe(400);
@@ -130,7 +130,7 @@ describe('profile', () => {
       const res = await authed(request(ctx.app).post('/api/v1/admin/profile/change-password')).send(
         {
           currentPassword: PASSWORD,
-          newPassword: 'brand-new-pass-7',
+          newPassword: 'Brand-new-pass-7',
         },
       );
       expect(res.status).toBe(200);
@@ -152,7 +152,7 @@ describe('profile', () => {
 
       const login = await request(ctx.app)
         .post('/api/v1/auth/login')
-        .send({ email: 'ravi@company.com', password: 'brand-new-pass-7' });
+        .send({ email: 'ravi@company.com', password: 'Brand-new-pass-7' });
       expect(login.status).toBe(200);
       expect(ctx.email.sent.at(-1)).toMatchObject({ to: 'ravi@company.com' });
       expect(ctx.email.sent.at(-1)!.subject).toMatch(/password was changed/);

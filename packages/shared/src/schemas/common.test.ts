@@ -2,20 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { emailSchema, paginationQuerySchema, passwordSchema, phoneSchema } from './common';
 
 describe('passwordSchema', () => {
-  it('accepts a password with 10+ characters, a letter and a number', () => {
-    expect(passwordSchema.safeParse('correct-horse-9').success).toBe(true);
-    expect(passwordSchema.safeParse('Madurai2026plot').success).toBe(true);
+  const ok = (p: string) => passwordSchema.safeParse(p).success;
+
+  it('accepts any password with 6+ characters, upper and lower case, a number and a special character', () => {
+    expect(ok('Password@123')).toBe(true);
+    expect(ok('Ab1@cd')).toBe(true);
+    expect(ok('Madurai#2026')).toBe(true);
   });
 
-  it('rejects short passwords and passwords without a letter or a number', () => {
-    expect(passwordSchema.safeParse('abc123def').success).toBe(false);
-    expect(passwordSchema.safeParse('onlyletterslong').success).toBe(false);
-    expect(passwordSchema.safeParse('1234567890').success).toBe(false);
-  });
-
-  it('rejects common words padded with numbers or symbols', () => {
-    for (const p of ['Password@123', 'admin12345', 'qwerty123456', 'Welcome@2026', 'abcd123456'])
-      expect(passwordSchema.safeParse(p).success, p).toBe(false);
+  it('names the rule that is missing', () => {
+    const message = (p: string) => passwordSchema.safeParse(p).error?.issues.map((i) => i.message);
+    expect(message('Ab1@c')).toContain('Password must be at least 6 characters');
+    expect(message('password@123')).toEqual(['Password must contain an uppercase letter']);
+    expect(message('PASSWORD@123')).toEqual(['Password must contain a lowercase letter']);
+    expect(message('Password@abc')).toEqual(['Password must contain a number']);
+    expect(message('Password123')).toEqual(['Password must contain a special character']);
   });
 });
 

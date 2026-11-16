@@ -11,7 +11,7 @@ import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from './user.model';
 import { UsersService } from './users.service';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 
 async function createUser(overrides: Record<string, unknown> = {}) {
   return UserModel.create({
@@ -182,7 +182,7 @@ describe('users', () => {
 
       const accepted = await request(ctx.app)
         .post('/api/v1/auth/accept-invite')
-        .send({ token: inviteToken, password: 'new-agent-pass-1' });
+        .send({ token: inviteToken, password: 'New-agent-pass-1' });
       expect(accepted.status).toBe(200);
       expect(accepted.body.data.user.email).toBe('priya@company.com');
       expect(accepted.body.data.accessToken).toEqual(expect.any(String));
@@ -193,7 +193,7 @@ describe('users', () => {
       // The link only works once.
       const again = await request(ctx.app)
         .post('/api/v1/auth/accept-invite')
-        .send({ token: inviteToken, password: 'new-agent-pass-1' });
+        .send({ token: inviteToken, password: 'New-agent-pass-1' });
       expect(again.status).toBe(400);
     });
 
@@ -266,7 +266,7 @@ describe('users', () => {
       );
       const res = await request(ctx.app)
         .post('/api/v1/auth/accept-invite')
-        .send({ token: inviteToken, password: 'new-agent-pass-1' });
+        .send({ token: inviteToken, password: 'New-agent-pass-1' });
       expect(res.status).toBe(400);
       expect(res.body.error.message).toMatch(/invalid or has expired/);
     });

@@ -231,7 +231,7 @@ packages/shared/src/
 ### 6.2 Auth hardening (H-track)
 
 - Invite and reset tokens move to POST bodies; request logs strip query strings (H3).
-- Minimum password length 10, with a common-password deny list (M4).
+- Password rules (owner decision, 2026-11-16): at least 6 characters, with an uppercase letter, a lowercase letter, a number and a special character. No blocked-word list. Defined once in `PASSWORD_RULES` (shared) for both the API and the on-screen checklist (M4).
 - **Refresh within the grace window** returns 409 `REFRESH_RACE` and does **not** clear the cookie (M3).
 - **Lockout** is per account **and** per IP, with progressive delay. `forgot-password` responds in constant time by queueing the email in a `setImmediate` after the response (L5).
 - **Production guard**: refuse to start if `EMAIL_PROVIDER!=resend`, if Swagger auth is not set, or if `TRUST_PROXY` is not configured (M5).
@@ -621,7 +621,7 @@ Every hard-coded Tailwind colour (`StatusBadge`, `BatchReview`, form issue icons
 | H-2 Tokens in POST bodies; logger logs `req.path` and redacts `authorization`, `cookie`, `token`, `password` | H3 |
 | H-3 Optimistic concurrency (ETag / If-Match) on properties and settings; atomic element updates for media, legal and nearby | H4, M1 |
 | H-4 Single-node replica set (docker-compose `--replSet rs0` + init) and `withTransaction` for multi-document writes; tests on a `MongoMemoryReplSet` | M2 |
-| H-5 Refresh-race response that keeps the cookie; password min 10 plus a deny list; per-IP lockout | M3, M4, L5 |
+| H-5 Refresh-race response that keeps the cookie; basic password rules (6+ characters, upper, lower, number, special); per-IP lockout | M3, M4, L5 |
 | H-6 Production config guards (email provider, Swagger auth, trust proxy, CORS origins explicit) | M5 |
 | H-7 Private documents with an authenticated download route | M6 |
 | H-8 Error handler: honour `res.headersSent`; keep 4xx status for known errors | L7 |

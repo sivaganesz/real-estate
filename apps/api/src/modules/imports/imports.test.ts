@@ -22,7 +22,7 @@ import { UserModel } from '../users/user.model';
 import { ImportBatchModel } from './importBatch.model';
 import { ImportsService } from './imports.service';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/imports';
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const MODELS = [

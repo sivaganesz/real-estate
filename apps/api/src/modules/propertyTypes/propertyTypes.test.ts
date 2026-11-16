@@ -15,7 +15,7 @@ import {
 import { PropertyTypesService } from './propertyTypes.service';
 import type { PropertyUsage } from './propertyUsage';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/property-types';
 
 const residential = (data: PropertyTypes) => data.categories.find((c) => c.key === 'residential')!;

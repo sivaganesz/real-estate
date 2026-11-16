@@ -7,7 +7,7 @@ import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 import { RoleModel } from './role.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const ADMIN = '/api/v1/admin';
 
 describe('role management (PRD §4.2)', () => {

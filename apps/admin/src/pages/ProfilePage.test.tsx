@@ -64,7 +64,7 @@ describe('ProfilePage', () => {
     expect(await screen.findByDisplayValue('Agent Ravi')).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText('Current password *'), 'old-pass-123');
-    await userEvent.type(screen.getByLabelText('New password *'), 'brand-new-pass-7');
+    await userEvent.type(screen.getByLabelText('New password *'), 'Brand-new-pass-7');
     await userEvent.type(screen.getByLabelText('Confirm new password *'), 'something-else-8');
     await userEvent.click(screen.getByRole('button', { name: 'Update password' }));
 
@@ -82,8 +82,8 @@ describe('ProfilePage', () => {
     await screen.findByDisplayValue('Agent Ravi');
 
     await userEvent.type(screen.getByLabelText('Current password *'), 'wrong-pass-123');
-    await userEvent.type(screen.getByLabelText('New password *'), 'brand-new-pass-7');
-    await userEvent.type(screen.getByLabelText('Confirm new password *'), 'brand-new-pass-7');
+    await userEvent.type(screen.getByLabelText('New password *'), 'Brand-new-pass-7');
+    await userEvent.type(screen.getByLabelText('Confirm new password *'), 'Brand-new-pass-7');
     await userEvent.click(screen.getByRole('button', { name: 'Update password' }));
 
     expect(await screen.findByText('Your current password is incorrect.')).toBeInTheDocument();

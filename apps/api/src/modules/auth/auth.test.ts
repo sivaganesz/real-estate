@@ -7,7 +7,7 @@ import { CSRF_HEADER, REFRESH_COOKIE_NAME } from './auth.constants';
 import { AuthTokenModel } from './authToken.model';
 import { RefreshTokenModel } from './refreshToken.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 async function createUser(overrides: Record<string, unknown> = {}) {
@@ -310,17 +310,17 @@ describe('auth', () => {
 
       const reset = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'brand-new-pass-7' });
+        .send({ token, password: 'Brand-new-pass-7' });
       expect(reset.status).toBe(200);
       expect(ctx.email.sent.at(-1)!.subject).toMatch(/password was changed/);
 
       expect(await RefreshTokenModel.countDocuments({ userId: user._id, revokedAt: null })).toBe(0);
       expect((await login(ctx.app)).status).toBe(401);
-      expect((await login(ctx.app, 'admin@company.com', 'brand-new-pass-7')).status).toBe(200);
+      expect((await login(ctx.app, 'admin@company.com', 'Brand-new-pass-7')).status).toBe(200);
 
       const again = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'another-pass-8' });
+        .send({ token, password: 'Another-pass-8' });
       expect(again.status).toBe(400);
     });
 
@@ -340,7 +340,7 @@ describe('auth', () => {
       await AuthTokenModel.updateMany({}, { expiresAt: new Date(Date.now() - 1000) });
       const expired = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'brand-new-pass-7' });
+        .send({ token, password: 'Brand-new-pass-7' });
       expect(expired.status).toBe(400);
       expect(expired.body.error.message).toMatch(/invalid or has expired/);
     });

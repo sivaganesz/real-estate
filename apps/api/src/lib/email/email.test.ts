@@ -31,6 +31,21 @@ describe('createEmailProvider', () => {
   });
 });
 
+describe('ConsoleEmailProvider', () => {
+  it('logs each link on its own, ending exactly at the token (no escaped newline after it)', async () => {
+    const logged: Record<string, unknown>[] = [];
+    const capture = { info: (obj: Record<string, unknown>) => logged.push(obj) };
+    const provider = new ConsoleEmailProvider(capture as unknown as typeof logger);
+    await provider.send({
+      to: 'a@b.com',
+      subject: 'Reset your password',
+      html: '<p>Hi</p>',
+      text: "Open this link:\nhttp://localhost:5173/reset-password?token=AbC_12-x\n\nIf you didn't ask, ignore it.",
+    });
+    expect(logged[0]!.links).toEqual(['http://localhost:5173/reset-password?token=AbC_12-x']);
+  });
+});
+
 describe('trySendEmail', () => {
   it('reports success', async () => {
     const result = await trySendEmail(new ConsoleEmailProvider(logger), message, logger);

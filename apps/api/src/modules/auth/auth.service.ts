@@ -319,35 +319,38 @@ export class AuthService {
     return result.sent;
   }
 
+  /**
+   * Sets a new password from a reset link. The link is used up only together with the
+   * password change: if anything fails, nothing is saved and the link still works.
+   */
   async resetPassword(rawToken: string, password: string): Promise<void> {
-    const now = new Date();
-    const token = await AuthTokenModel.findOneAndUpdate(
-      {
-        tokenHash: hashToken(rawToken),
-        type: 'password_reset',
-        usedAt: null,
-        expiresAt: { $gt: now },
-      },
-      { $set: { usedAt: now } },
-    );
-    if (!token) {
-      throw badRequest('This link is invalid or has expired. Please request a new one.');
-    }
-
-    const user = await UserModel.findOneAndUpdate(
-      { _id: token.userId },
-      {
-        $set: {
-          passwordHash: await hashPassword(password),
-          failedLoginCount: 0,
-          lockedUntil: null,
+    const invalid = () =>
+      badRequest('This link is invalid or has expired. Please request a new one.');
+    // Hash first (slow, and safe to repeat): the transaction may be retried.
+    const passwordHash = await hashPassword(password);
+    const user = await withTransaction(async () => {
+      const now = new Date();
+      const token = await AuthTokenModel.findOneAndUpdate(
+        {
+          tokenHash: hashToken(rawToken),
+          type: 'password_reset',
+          usedAt: null,
+          expiresAt: { $gt: now },
         },
-      },
-      { returnDocument: 'after' },
-    ).lean();
-    if (!user) throw badRequest('This link is invalid or has expired. Please request a new one.');
+        { $set: { usedAt: now } },
+      );
+      if (!token) throw invalid();
+      const updated = await UserModel.findOneAndUpdate(
+        { _id: token.userId },
+        { $set: { passwordHash, failedLoginCount: 0, lockedUntil: null } },
+        { returnDocument: 'after' },
+      ).lean();
+      if (!updated) throw invalid();
+      await this.revokeAllSessions(updated._id);
+      return updated;
+    });
 
-    await this.revokeAllSessions(user._id);
+    // The confirmation email goes out only after the change is saved.
     const companyName = await getCompanyName();
     await trySendEmail(
       this.email,

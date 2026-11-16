@@ -80,7 +80,7 @@
 - [x] H-2 Invite and reset tokens in POST bodies; logger logs the path only; redact `authorization`, `cookie`, `token` and `password`
 - [x] H-3 Optimistic concurrency (`versionPlugin`, `requireIfMatch`, 428 when missing) middleware (`ifMatch`), `version` in responses, 409 `VERSION_CONFLICT`; apply to properties and settings
 - [x] M1 Media reorder and set-cover via `arrayFilters` by `_id`; L1 atomic 60-file limit
-- [x] H-5 Refresh-race code without clearing the cookie (M3); password min 10 + common-word check (M4)
+- [x] H-5 Refresh-race code without clearing the cookie (M3); basic password rules: 6+ characters, upper, lower, number, special; no blocked words (M4, owner decision)
 - [ ] L5 Per-IP lockout and constant-time forgot-password
 - [x] H-6 Production guards: Resend required, https origins, `TRUST_PROXY`; Swagger already off without auth (M5)
 - [x] H-8 Error handler respects `headersSent` and keeps known 4xx codes (L7)

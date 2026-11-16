@@ -103,14 +103,14 @@ describe('AcceptInvitePage', () => {
     expect(screen.getByText('Sales Executive')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveValue('ravi@company.com');
 
-    await userEvent.type(screen.getByLabelText('Password'), 'house-key-123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'house-key-999');
+    await userEvent.type(screen.getByLabelText('Password'), 'House-key-123');
+    await userEvent.type(screen.getByLabelText('Confirm password'), 'House-key-999');
     await userEvent.click(screen.getByRole('button', { name: 'Activate account' }));
     expect(await screen.findByText('Passwords do not match')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     await userEvent.clear(screen.getByLabelText('Confirm password'));
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'house-key-123');
+    await userEvent.type(screen.getByLabelText('Confirm password'), 'House-key-123');
     await userEvent.click(screen.getByRole('button', { name: 'Activate account' }));
 
     await vi.waitFor(() => expect(router.state.location.pathname).toBe('/properties'));
@@ -119,7 +119,7 @@ describe('AcceptInvitePage', () => {
     expect(String(url)).toContain('/auth/accept-invite');
     expect(JSON.parse(String(init?.body))).toEqual({
       token: 'good-token',
-      password: 'house-key-123',
+      password: 'House-key-123',
     });
   });
 });
