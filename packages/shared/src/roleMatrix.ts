@@ -1,51 +1,77 @@
-import { ROLES, ROLE_PERMISSIONS } from './roles';
-import type { Role } from './roles';
+import type { Permission } from './roles';
 
-/** Cell in the read-only "what each role can do" table. */
+/** Cell in the "what each role can do" table. */
 export type RoleAccess = 'full' | 'none' | 'own' | 'view';
 
 export interface RoleMatrixRow {
   module: string;
-  /** Phase in which the module is delivered (1 = available now). */
-  phase: 1 | 2 | 3;
-  access: Record<Role, RoleAccess>;
+  /** Release that delivers the module (R0 = available now). */
+  release: string;
+  /** Access per role key. */
+  access: Record<string, RoleAccess>;
 }
 
-const has = (role: Role, permission: (typeof ROLE_PERMISSIONS)[Role][number]) =>
-  ROLE_PERMISSIONS[role].includes(permission);
+type Rule = (has: (p: Permission) => boolean) => RoleAccess;
 
-function row(
-  module: string,
-  phase: RoleMatrixRow['phase'],
-  cell: (role: Role) => RoleAccess,
-): RoleMatrixRow {
-  return {
-    module,
-    phase,
-    access: Object.fromEntries(ROLES.map((role) => [role, cell(role)])) as Record<Role, RoleAccess>,
-  };
-}
+const yes = (ok: boolean): RoleAccess => (ok ? 'full' : 'none');
+const scoped =
+  (all: Permission, own: Permission): Rule =>
+  (has) =>
+    has(all) ? 'full' : has(own) ? 'own' : 'none';
+
+/** The rows of PRD v2 §4.1, each derived from permissions. */
+const ROWS: { module: string; release: string; rule: Rule }[] = [
+  { module: 'Users & Roles', release: 'R0', rule: (has) => yes(has('users:manage')) },
+  { module: 'Settings', release: 'R0', rule: (has) => yes(has('settings:edit')) },
+  {
+    module: 'Settings → Sales rules',
+    release: 'R3',
+    rule: (has) => (has('rules:edit') ? 'full' : 'view'),
+  },
+  { module: 'Properties: view', release: 'R0', rule: (has) => yes(has('properties:read')) },
+  {
+    module: 'Properties: add, edit, status, legal, valuation',
+    release: 'R0',
+    rule: (has) => yes(has('properties:write')),
+  },
+  {
+    module: 'Properties: archive / restore',
+    release: 'R1',
+    rule: (has) => yes(has('properties:archive')),
+  },
+  { module: 'Properties: delete', release: 'R1', rule: (has) => yes(has('properties:delete')) },
+  { module: 'Bulk import', release: 'R0', rule: (has) => yes(has('imports:run')) },
+  {
+    module: 'Leads / customers',
+    release: 'R3',
+    rule: scoped('customers:read:all', 'customers:read:own'),
+  },
+  { module: 'Reassign leads', release: 'R3', rule: (has) => yes(has('customers:assign')) },
+  { module: 'HNI assessment', release: 'R8', rule: (has) => yes(has('hni:read')) },
+  {
+    module: 'Appointments',
+    release: 'R6',
+    rule: scoped('appointments:read:all', 'appointments:read:own'),
+  },
+  {
+    module: 'Dashboard & reports',
+    release: 'R7',
+    rule: scoped('reports:read:all', 'reports:read:own'),
+  },
+];
 
 /**
- * The permission table shown on Users & Roles → Roles & permissions (PRD §4.1),
- * derived from ROLE_PERMISSIONS so it can never drift from what the API enforces.
+ * The permission table on Users & Roles → Roles, one column per role (ROLE-08). Derived
+ * from each role's effective permissions, so it can never drift from what the API enforces.
  */
-export const ROLE_MATRIX: RoleMatrixRow[] = [
-  row('Users & Roles', 1, (r) => (has(r, 'users:manage') ? 'full' : 'none')),
-  row('Settings', 1, (r) => (has(r, 'settings:edit') ? 'full' : 'none')),
-  row('My Profile', 1, () => 'full'),
-  row('Properties: view', 2, (r) => (has(r, 'properties:read') ? 'full' : 'none')),
-  row('Properties: add / edit / publish, Bulk Import', 2, (r) =>
-    has(r, 'properties:write') && has(r, 'imports:run') ? 'full' : 'none',
-  ),
-  row('Appointments', 3, (r) =>
-    has(r, 'appointments:read:all') ? 'full' : has(r, 'appointments:read:own') ? 'own' : 'none',
-  ),
-  row('Leads, Conversations, Call Logs', 3, (r) =>
-    has(r, 'users:manage') || has(r, 'settings:edit')
-      ? 'full'
-      : has(r, 'leads:read')
-        ? 'view'
-        : 'none',
-  ),
-];
+export function buildRoleMatrix(
+  roles: readonly { key: string; permissions: readonly Permission[] }[],
+): RoleMatrixRow[] {
+  return ROWS.map(({ module, release, rule }) => ({
+    module,
+    release,
+    access: Object.fromEntries(
+      roles.map((role) => [role.key, rule((p) => role.permissions.includes(p))]),
+    ),
+  }));
+}

@@ -4,15 +4,25 @@ services:
     image: mongo:7
     container_name: real-estate-mongo
     restart: unless-stopped
+    # Single-node replica set: transactions need one (TRD H-4). Connect with
+    # mongodb://127.0.0.1:27018/real_estate?directConnection=true
+    command: ['--replSet', 'rs0', '--bind_ip_all']
     ports:
       - '27018:27017' # host port 27018 avoids clashing with a locally installed MongoDB
     volumes:
       - mongo-data:/data/db
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      # Initiates the replica set on first start, then reports whether this node is primary.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }; quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 5s
+      timeout: 10s
+      start_period: 10s
+      retries: 10
 
 volumes:
   mongo-data:

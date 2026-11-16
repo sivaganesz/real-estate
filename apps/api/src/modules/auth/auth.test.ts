@@ -71,7 +71,9 @@ describe('auth', () => {
         role: 'admin',
       });
       expect(res.body.data.user.permissions).toContain('settings:edit');
-      expect(res.body.data.user.permissions).not.toContain('users:manage');
+      // Admin is the top role (D4): it includes user and role management.
+      expect(res.body.data.user.permissions).toContain('roles:manage');
+      expect(res.body.data.user.roleName).toBe('Admin');
 
       const cookie = (res.headers['set-cookie'] as unknown as string[]).join(';');
       expect(cookie).toContain(`${REFRESH_COOKIE_NAME}=`);
@@ -143,13 +145,13 @@ describe('auth', () => {
 
   describe('me', () => {
     it('returns the signed-in user', async () => {
-      await createUser({ role: 'super_admin' });
+      await createUser({ role: 'admin' });
       const { body } = await login(ctx.app);
       const res = await request(ctx.app)
         .get('/api/v1/auth/me')
         .set('authorization', `Bearer ${body.data.accessToken}`);
       expect(res.status).toBe(200);
-      expect(res.body.data.role).toBe('super_admin');
+      expect(res.body.data.role).toBe('admin');
       expect(res.body.data.permissions).toContain('users:manage');
     });
 
@@ -188,6 +190,23 @@ describe('auth', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.accessToken).toEqual(expect.any(String));
       expect(refreshCookie(res)).not.toBe(first);
+    });
+
+    it('answers a two-tab refresh race with 409 and keeps the cookie (M3)', async () => {
+      await createUser();
+      const first = refreshCookie(await login(ctx.app));
+      await request(ctx.app)
+        .post('/api/v1/auth/refresh')
+        .set('cookie', first)
+        .set(CSRF_HEADER, '1');
+      // The second tab still sends the old cookie, within the grace window.
+      const race = await request(ctx.app)
+        .post('/api/v1/auth/refresh')
+        .set('cookie', first)
+        .set(CSRF_HEADER, '1');
+      expect(race.status).toBe(409);
+      expect(race.body.error.code).toBe('REFRESH_RACE');
+      expect(race.headers['set-cookie']).toBeUndefined();
     });
 
     it('revokes the whole session when an old refresh token is reused', async () => {

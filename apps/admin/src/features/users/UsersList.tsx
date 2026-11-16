@@ -45,7 +45,7 @@ function UserRow({
       <div className="min-w-0 flex-1 basis-56">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-semibold">{user.name}</span>
-          <RoleBadge role={user.role} />
+          <RoleBadge role={user.role} name={user.roleName} />
           {isSelf && (
             <Badge variant="outline" className="text-[10px]">
               You

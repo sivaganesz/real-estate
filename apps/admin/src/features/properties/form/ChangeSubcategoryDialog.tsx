@@ -55,7 +55,7 @@ export function ChangeSubcategoryDialog({
 
   const confirm = () =>
     update.mutate(
-      { id: property.id, body: { subcategoryId: target } },
+      { id: property.id, version: property.version, body: { subcategoryId: target } },
       {
         onSuccess: () => {
           toast.success(`Moved to ${next?.name}`);

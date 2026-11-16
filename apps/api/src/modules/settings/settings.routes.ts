@@ -7,6 +7,7 @@ import type { RequestHandler } from 'express';
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
+import { requireIfMatch } from '../../db/versionPlugin';
 import { ErrorResponseSchema, registry } from '../../docs/openapi';
 import { AppError } from '../../lib/errors';
 import { sendData } from '../../lib/http';
@@ -111,7 +112,7 @@ export function createSettingsRouter(deps: {
     '/company',
     canEdit,
     endpoint({ body: updateCompanySettingsBodySchema }, async ({ body }, req, res) => {
-      sendData(res, await company.update(req.user!.id, body));
+      sendData(res, await company.update(req.user!.id, body, requireIfMatch(req)));
     }),
   );
 

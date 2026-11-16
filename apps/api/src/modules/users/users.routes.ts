@@ -4,10 +4,6 @@ import {
   inviteUserBodySchema,
   listUsersQuerySchema,
   pageMetaSchema,
-  ROLE_DESCRIPTIONS,
-  ROLE_LABELS,
-  ROLE_MATRIX,
-  ROLES,
   updateUserBodySchema,
   userSchema,
   userStatsSchema,
@@ -33,24 +29,8 @@ const idParams = z.object({ id: idSchema });
 const secured = { security: [{ bearerAuth: [] }], tags: ['Users'] };
 const common = {
   401: err('Not signed in'),
-  403: err('Only Super Admins can manage users'),
+  403: err('Only Admins can manage users'),
 };
-
-const roleInfoSchema = z.object({
-  role: z.enum(ROLES),
-  label: z.string(),
-  description: z.string(),
-});
-const rolesResponseSchema = z.object({
-  roles: z.array(roleInfoSchema),
-  matrix: z.array(
-    z.object({
-      module: z.string(),
-      phase: z.number().int(),
-      access: z.record(z.enum(ROLES), z.enum(['full', 'none', 'own', 'view'])),
-    }),
-  ),
-});
 
 registry.registerPath({
   ...secured,
@@ -103,7 +83,8 @@ registry.registerPath({
   responses: {
     200: data(userSchema),
     404: err('User not found'),
-    422: err('Business rule, e.g. own role or last Super Admin'),
+    422: err('Business rule, e.g. own role or unknown role'),
+    409: err('LAST_ADMIN: there must always be one active Admin'),
     ...common,
   },
 });
@@ -132,26 +113,14 @@ for (const [action, summary, response] of [
     },
   });
 }
-registry.registerPath({
-  ...secured,
-  tags: ['Users'],
-  method: 'get',
-  path: '/api/v1/admin/roles',
-  summary: 'The three fixed roles and what each can do (read-only)',
-  responses: { 200: data(rolesResponseSchema), ...common },
-});
 
 // ------------------------------------------------------------------ Routes
 
 export function createUsersRouter(deps: { users: UsersService; auth: AuthService }): Router {
   const { users, auth } = deps;
   const router = Router();
-  // Only the users and roles paths are Super Admin only; other /admin routers mount separately.
-  router.use(
-    ['/users', '/roles'],
-    authenticate(auth.accessTokens),
-    requirePermission('users:manage'),
-  );
+  // Only the users paths are Admin only; other /admin routers mount separately.
+  router.use('/users', authenticate(auth.accessTokens), requirePermission('users:manage'));
 
   router.get(
     '/users',
@@ -204,17 +173,6 @@ export function createUsersRouter(deps: { users: UsersService; auth: AuthService
   action('reactivate', (actor, id) => users.reactivate(actor, id));
   action('send-password-reset', (actor, id) => users.sendPasswordReset(actor, id));
   action('unlock', (actor, id) => users.unlock(actor, id));
-
-  router.get('/roles', (_req, res) => {
-    sendData(res, {
-      roles: ROLES.map((role) => ({
-        role,
-        label: ROLE_LABELS[role],
-        description: ROLE_DESCRIPTIONS[role],
-      })),
-      matrix: ROLE_MATRIX,
-    });
-  });
 
   return router;
 }

@@ -20,6 +20,7 @@ import type {
 import { model, Schema } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
 import { idField } from '../../db/ids';
+import { versionPlugin } from '../../db/versionPlugin';
 
 /** Uploaded files (filled by the media endpoints in Phase 2.2b). Paths are relative to uploads/. */
 const mediaSchema = new Schema(
@@ -116,6 +117,7 @@ const propertySchema = new Schema(
   { timestamps: true, minimize: false },
 );
 
+propertySchema.plugin(versionPlugin);
 propertySchema.index({ code: 1 }, { unique: true });
 propertySchema.index({ status: 1, subcategoryId: 1, 'location.city': 1, 'price.amount': 1 });
 propertySchema.index({ 'location.locality': 1 });
@@ -167,6 +169,8 @@ export interface PropertyDoc {
   isFeatured: boolean;
   publishedAt: Date | null;
   statusChangedAt: Date;
+  /** Incremented on every write (versionPlugin); clients send it back in If-Match. */
+  version?: number;
   createdBy?: string | null;
   updatedBy?: string | null;
   createdAt: Date;

@@ -107,6 +107,7 @@ function CompanyForm({ settings }: { settings: CompanySettings }) {
     try {
       const saved = await update.mutateAsync({
         ...values,
+        version: settings.version,
         officeLocation: lat !== '' ? { lat: Number(lat), lng: Number(lng) } : null,
       });
       form.reset(toFormValues(saved));

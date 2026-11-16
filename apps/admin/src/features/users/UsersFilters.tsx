@@ -1,4 +1,3 @@
-import { ROLE_LABELS, ROLES } from '@real-estate/shared';
 import { SearchIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -10,16 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useRoleOptions } from './api';
 import { useUserFilters } from './useUserFilters';
-
-const ROLE_ITEMS = [
-  { value: 'all', label: 'All roles' },
-  ...ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] })),
-];
 
 /** Search box + role filter for the users list (top row of Users & Roles). */
 export function UsersFilters() {
   const filters = useUserFilters();
+  const roles = useRoleOptions();
+  const ROLE_ITEMS = [
+    { value: 'all', label: 'All roles' },
+    ...(roles.data ?? []).map((role) => ({ value: role.key, label: role.name })),
+  ];
   const [search, setSearch] = useState(filters.q);
 
   // Debounce typing in the search box.

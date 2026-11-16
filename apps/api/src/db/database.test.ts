@@ -33,7 +33,7 @@ describe('with a database', () => {
   describe('seed', () => {
     const admin = { name: 'Owner', email: 'Owner@Company.com', password: 'changeme123' };
 
-    it('creates the first Super Admin once, with a hashed password', async () => {
+    it('creates the first Admin once, with a hashed password', async () => {
       expect(await seedSuperAdmin({ ...admin, email: 'owner@company.com' })).toBe('created');
       expect(await seedSuperAdmin({ ...admin, email: 'other@company.com' })).toBe('exists');
 
@@ -42,7 +42,7 @@ describe('with a database', () => {
       const user = users[0]!;
       expect(user).toMatchObject({
         email: 'owner@company.com',
-        role: 'super_admin',
+        role: 'admin',
         status: 'active',
       });
       expect(user.passwordHash).not.toBe(admin.password);

@@ -1,12 +1,13 @@
-import { permissionsFor } from '@real-estate/shared';
-import type { AuthUser, Role } from '@real-estate/shared';
+import type { AuthUser } from '@real-estate/shared';
 import type { Env } from '../../config/env';
 import { newId } from '../../db/ids';
+import { withTransaction } from '../../db/transaction';
 import type { EmailProvider } from '../../lib/email';
 import { passwordChangedEmail, passwordResetEmail, trySendEmail } from '../../lib/email';
 import { AppError, badRequest, unauthenticated } from '../../lib/errors';
 import type { Logger } from '../../lib/logger';
 import { hashPassword, verifyPassword } from '../../lib/password';
+import { resolveRole } from '../roles/roleCache';
 import { getCompanyName } from '../settings/settings.service';
 import { UserModel } from '../users/user.model';
 import {
@@ -25,6 +26,10 @@ import { AccessTokens, hashToken, randomToken } from './tokens';
 const MINUTE = 60_000;
 const INVALID_CREDENTIALS = 'Email or password is incorrect';
 const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
+
+export const REFRESH_RACE = 'REFRESH_RACE';
+const refreshRace = () =>
+  new AppError(409, REFRESH_RACE, 'The session was just refreshed in another tab. Please retry.');
 
 export interface ClientInfo {
   ip?: string;
@@ -47,15 +52,20 @@ interface UserLike {
   role: string;
 }
 
-export function toAuthUser(user: UserLike): AuthUser {
-  const role = user.role as Role;
+/**
+ * The signed-in user with the permissions of their role, read through the role cache, so
+ * a role edit applies on the next request (ROLE-05). An unknown role gets no permissions.
+ */
+export async function toAuthUser(user: UserLike): Promise<AuthUser> {
+  const role = await resolveRole(user.role);
   return {
     id: user._id,
     name: user.name,
     email: user.email,
     phone: user.phone ?? null,
-    role,
-    permissions: [...permissionsFor(role)],
+    role: user.role,
+    roleName: role?.name ?? user.role,
+    permissions: role ? [...role.permissions] : [],
   };
 }
 
@@ -164,14 +174,14 @@ export class AuthService {
       userAgent: client.userAgent?.slice(0, 300),
       ip: client.ip,
     });
-    const accessToken = await this.accessTokens.sign(user._id, user.role as Role);
+    const accessToken = await this.accessTokens.sign(user._id);
     return {
       session: {
         accessToken,
         expiresIn: ACCESS_TOKEN_TTL_SECONDS,
         refreshToken,
         refreshExpiresAt,
-        user: toAuthUser(user),
+        user: await toAuthUser(user),
       },
       recordId: record._id,
     };
@@ -191,13 +201,22 @@ export class AuthService {
     if (token.revokedAt) {
       const withinGrace =
         now.getTime() - token.revokedAt.getTime() < REFRESH_REUSE_GRACE_SECONDS * 1000;
-      if (!withinGrace) {
-        await this.revokeFamily(token.familyId, now);
-        this.logger.warn(
-          { userId: token.userId, familyId: token.familyId },
-          'Refresh token reuse detected',
-        );
+      // Rotated a moment ago by another tab, whose new token is still active: not an attack
+      // and not a sign-out. Tell the client to retry with the new cookie, and keep it (M3).
+      // Tokens revoked by logout, deactivation or reuse detection never get here.
+      if (
+        withinGrace &&
+        token.replacedBy &&
+        (await RefreshTokenModel.exists({ _id: token.replacedBy, revokedAt: null }))
+      ) {
+        throw refreshRace();
       }
+      if (withinGrace) throw unauthenticated(SESSION_EXPIRED);
+      await this.revokeFamily(token.familyId, now);
+      this.logger.warn(
+        { userId: token.userId, familyId: token.familyId },
+        'Refresh token reuse detected',
+      );
       throw unauthenticated(SESSION_EXPIRED);
     }
 
@@ -216,19 +235,22 @@ export class AuthService {
       throw unauthenticated(SESSION_EXPIRED);
     }
 
-    // Revoke atomically so two concurrent refreshes can't both succeed.
-    const claimed = await RefreshTokenModel.findOneAndUpdate(
-      { _id: token._id, revokedAt: null },
-      { $set: { revokedAt: now } },
-    );
-    if (!claimed) throw unauthenticated(SESSION_EXPIRED);
+    // Claim, issue and link in one transaction: two concurrent refreshes can't both succeed,
+    // and no one ever sees the old token revoked without its replacement recorded.
+    return withTransaction(async () => {
+      const claimed = await RefreshTokenModel.findOneAndUpdate(
+        { _id: token._id, revokedAt: null },
+        { $set: { revokedAt: now } },
+      );
+      if (!claimed) throw refreshRace(); // a concurrent refresh claimed it first
 
-    const { session, recordId } = await this.startSession(user, client, {
-      familyId: token.familyId,
-      sessionStartedAt: token.sessionStartedAt,
+      const { session, recordId } = await this.startSession(user, client, {
+        familyId: token.familyId,
+        sessionStartedAt: token.sessionStartedAt,
+      });
+      await RefreshTokenModel.updateOne({ _id: token._id }, { $set: { replacedBy: recordId } });
+      return session;
     });
-    await RefreshTokenModel.updateOne({ _id: token._id }, { $set: { replacedBy: recordId } });
-    return session;
   }
 
   async logout(rawToken: string | undefined): Promise<void> {

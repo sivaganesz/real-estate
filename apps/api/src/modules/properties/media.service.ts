@@ -1,5 +1,6 @@
 import { MAX_MEDIA_PER_PROPERTY, MEDIA_RULES } from '@real-estate/shared';
 import type { MediaKind, Property } from '@real-estate/shared';
+import { withTransaction } from '../../db/transaction';
 import { AppError, businessRule, conflict, notFound } from '../../lib/errors';
 import type { Logger } from '../../lib/logger';
 import type { DetectedFileType, StorageProvider } from '../../lib/storage';
@@ -96,34 +97,44 @@ export class PropertyMediaService {
       order: Math.max(-1, ...(property.media ?? []).map((m) => m.order)) + 1,
       isCover: false,
     };
-    let mediaId: string;
     try {
-      const updated = await PropertyModel.findOneAndUpdate(
-        { _id: id, status: { $ne: 'archived' } },
-        { $push: { media }, $set: { updatedBy: actorId } },
-        { returnDocument: 'after' },
-      ).lean<PropertyDoc>();
-      if (!updated) throw businessRule("Archived properties can't be changed.");
-      mediaId = updated.media.at(-1)!._id;
+      await withTransaction(async () => {
+        // The limit is part of the update itself, so parallel uploads can't pass it (L1).
+        const updated = await PropertyModel.findOneAndUpdate(
+          {
+            _id: id,
+            status: { $ne: 'archived' },
+            [`media.${MAX_MEDIA_PER_PROPERTY - 1}`]: { $exists: false },
+          },
+          { $push: { media }, $set: { updatedBy: actorId } },
+          { returnDocument: 'after' },
+        ).lean<PropertyDoc>();
+        if (!updated) {
+          throw businessRule(
+            `This property is archived or already has ${MAX_MEDIA_PER_PROPERTY} files.`,
+          );
+        }
+        const mediaId = updated.media.at(-1)!._id;
+        // The first photo becomes the cover (atomic, so two uploads can't both be cover).
+        if (kind === 'image') {
+          await PropertyModel.updateOne(
+            { _id: id, media: { $not: { $elemMatch: { isCover: true } } } },
+            { $set: { 'media.$[m].isCover': true } },
+            { arrayFilters: [{ 'm._id': mediaId }] },
+          );
+        }
+        await recordChange({
+          actorId,
+          entity: 'property',
+          entityId: id,
+          action: 'media_added',
+          changes: { media: [null, `${rule.label}: ${media.originalName}`] },
+        });
+      });
     } catch (err) {
       await this.deleteFiles([saved.path, saved.thumbPath, saved.mediumPath]);
       throw err;
     }
-    // The first photo becomes the cover (atomic, so two uploads at once can't both be cover).
-    if (kind === 'image') {
-      await PropertyModel.updateOne(
-        { _id: id, media: { $not: { $elemMatch: { isCover: true } } } },
-        { $set: { 'media.$[m].isCover': true } },
-        { arrayFilters: [{ 'm._id': mediaId }] },
-      );
-    }
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: id,
-      action: 'media_added',
-      changes: { media: [null, `${rule.label}: ${media.originalName}`] },
-    });
     return this.properties.get(id);
   }
 
@@ -139,17 +150,25 @@ export class PropertyMediaService {
     if (!complete) {
       throw conflict('The file list has changed. Reload the page and try again.', 'STALE_ORDER');
     }
-    const position = new Map(ids.map((mediaId, i) => [mediaId, i]));
-    await PropertyModel.updateOne(
-      { _id: id },
-      {
-        $set: Object.fromEntries([
-          ...current.map((m, i) => [`media.${i}.order`, position.get(m._id)!]),
-          ['updatedBy', actorId],
-        ]),
-      },
-    );
-    await recordChange({ actorId, entity: 'property', entityId: id, action: 'media_reordered' });
+    // Addressed by file id (never by array position), and only if the property still has
+    // exactly these files: a list that changed since it was read fails instead of writing
+    // orders onto the wrong files (M1).
+    await withTransaction(async () => {
+      const written = await PropertyModel.updateOne(
+        { _id: id, media: { $size: ids.length }, 'media._id': { $all: ids } },
+        {
+          $set: {
+            ...Object.fromEntries(ids.map((_, i) => [`media.$[m${i}].order`, i])),
+            updatedBy: actorId,
+          },
+        },
+        { arrayFilters: ids.map((mediaId, i) => ({ [`m${i}._id`]: mediaId })) },
+      );
+      if (written.matchedCount === 0) {
+        throw conflict('The file list has changed. Reload the page and try again.', 'STALE_ORDER');
+      }
+      await recordChange({ actorId, entity: 'property', entityId: id, action: 'media_reordered' });
+    });
     return this.properties.get(id);
   }
 
@@ -159,21 +178,28 @@ export class PropertyMediaService {
     if (target.kind !== 'image') throw businessRule('Only a photo can be the cover.');
     if (target.isCover) return this.properties.get(id);
     const before = (property.media ?? []).find((m) => m.isCover);
-    await PropertyModel.updateOne(
-      { _id: id },
-      {
-        $set: Object.fromEntries([
-          ...(property.media ?? []).map((m, i) => [`media.${i}.isCover`, m._id === mediaId]),
-          ['updatedBy', actorId],
-        ]),
-      },
-    );
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: id,
-      action: 'cover_changed',
-      changes: { cover: [before?.originalName ?? null, target.originalName] },
+    await withTransaction(async () => {
+      // By file id (M1): the chosen photo becomes the only cover, whatever order the array
+      // has by now. Fails if the photo was removed in the meantime.
+      const written = await PropertyModel.updateOne(
+        { _id: id, media: { $elemMatch: { _id: mediaId, kind: 'image' } } },
+        {
+          $set: {
+            'media.$[target].isCover': true,
+            'media.$[other].isCover': false,
+            updatedBy: actorId,
+          },
+        },
+        { arrayFilters: [{ 'target._id': mediaId }, { 'other._id': { $ne: mediaId } }] },
+      );
+      if (written.matchedCount === 0) throw notFound('Photo not found');
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: 'cover_changed',
+        changes: { cover: [before?.originalName ?? null, target.originalName] },
+      });
     });
     return this.properties.get(id);
   }
@@ -188,28 +214,31 @@ export class PropertyMediaService {
         'A published property needs at least one photo. Add another first, or unpublish it.',
       );
     }
-    await PropertyModel.updateOne(
-      { _id: id },
-      { $pull: { media: { _id: mediaId } }, $set: { updatedBy: actorId } },
-    );
-    if (target.isCover) {
-      const next = sortMedia(photos.filter((m) => m._id !== mediaId))[0];
-      if (next) {
-        await PropertyModel.updateOne(
-          { _id: id },
-          { $set: { 'media.$[m].isCover': true } },
-          { arrayFilters: [{ 'm._id': next._id }] },
-        );
+    await withTransaction(async () => {
+      await PropertyModel.updateOne(
+        { _id: id },
+        { $pull: { media: { _id: mediaId } }, $set: { updatedBy: actorId } },
+      );
+      if (target.isCover) {
+        const next = sortMedia(photos.filter((m) => m._id !== mediaId))[0];
+        if (next) {
+          await PropertyModel.updateOne(
+            { _id: id },
+            { $set: { 'media.$[m].isCover': true } },
+            { arrayFilters: [{ 'm._id': next._id }] },
+          );
+        }
       }
-    }
-    await this.deleteFiles([target.path, target.thumbPath, target.mediumPath]);
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: id,
-      action: 'media_removed',
-      changes: { media: [`${MEDIA_RULES[target.kind].label}: ${target.originalName}`, null] },
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: 'media_removed',
+        changes: { media: [`${MEDIA_RULES[target.kind].label}: ${target.originalName}`, null] },
+      });
     });
+    // Files go only after the database no longer points at them.
+    await this.deleteFiles([target.path, target.thumbPath, target.mediumPath]);
     return this.properties.get(id);
   }
 

@@ -15,7 +15,8 @@ const me: AuthUser = {
   name: 'Agent Ravi',
   email: 'ravi@company.com',
   phone: null,
-  role: 'sales_agent',
+  role: 'sales_executive',
+  roleName: 'Sales Executive',
   permissions: [],
 };
 const profile = { ...me, lastLoginAt: null, createdAt: '2026-11-01T10:00:00.000Z' };

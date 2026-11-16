@@ -156,7 +156,7 @@ function RowMenu({
 
 /**
  * Properties list: status tabs with counts, search and filters (kept in the URL), and for
- * Admins bulk status changes. Sales Agents see the list and details only.
+ * Admins bulk status changes. Sales Executives see the list and details only.
  */
 export function PropertiesPage() {
   const { can } = useAuth();

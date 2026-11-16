@@ -1,17 +1,18 @@
-import { ROLE_LABELS } from '@real-estate/shared';
+import { ADMIN_ROLE } from '@real-estate/shared';
 import type {
   AuthUser,
   InviteInfo,
   ListUsersQuery,
   PageMeta,
-  Role,
+  RoleKey,
   User,
   UserStats,
 } from '@real-estate/shared';
 import type { Env } from '../../config/env';
+import { withTransaction } from '../../db/transaction';
 import type { EmailProvider } from '../../lib/email';
 import { inviteEmail, trySendEmail } from '../../lib/email';
-import { AppError, badRequest, businessRule, conflict, notFound } from '../../lib/errors';
+import { badRequest, businessRule, conflict, notFound } from '../../lib/errors';
 import { pageMeta, pageSkip, parseSort } from '../../lib/http';
 import type { Logger } from '../../lib/logger';
 import { hashPassword } from '../../lib/password';
@@ -20,6 +21,8 @@ import type { AuthService, ClientInfo, Session } from '../auth/auth.service';
 import { AuthTokenModel } from '../auth/authToken.model';
 import { hashToken, randomToken } from '../auth/tokens';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
+import { resolveRole } from '../roles/roleCache';
+import { assertAnotherActiveAdmin, assertRoleExists } from '../roles/roles.service';
 import { getCompanyName } from '../settings/settings.service';
 import type { UserDoc } from './user.model';
 import { UserModel } from './user.model';
@@ -37,14 +40,24 @@ function escapeRegex(value: string): string {
 
 const iso = (date: Date | null | undefined) => (date ? date.toISOString() : null);
 
-export function toUserDto(user: StoredUser, inviteExpiresAt: Date | null = null): User {
+/** Display name of a role key (the key itself if the role no longer exists). */
+export async function roleNameOf(key: string): Promise<string> {
+  return (await resolveRole(key))?.name ?? key;
+}
+
+export function toUserDto(
+  user: StoredUser,
+  roleName: string,
+  inviteExpiresAt: Date | null = null,
+): User {
   const lockedUntil = user.lockedUntil && user.lockedUntil > new Date() ? user.lockedUntil : null;
   return {
     id: user._id,
     name: user.name,
     email: user.email,
     phone: user.phone ?? null,
-    role: user.role as Role,
+    role: user.role,
+    roleName,
     status: user.status as User['status'],
     locked: Boolean(lockedUntil),
     lockedUntil: iso(lockedUntil),
@@ -101,8 +114,10 @@ export class UsersService {
     const invites = await this.inviteExpiryByUser(
       docs.filter((u) => u.status === 'invited').map((u) => u._id),
     );
+    const names = new Map<string, string>();
+    for (const key of new Set(docs.map((u) => u.role))) names.set(key, await roleNameOf(key));
     return {
-      items: docs.map((u) => toUserDto(u, invites.get(u._id) ?? null)),
+      items: docs.map((u) => toUserDto(u, names.get(u.role)!, invites.get(u._id) ?? null)),
       meta: pageMeta(total, query.page, query.limit),
     };
   }
@@ -121,7 +136,7 @@ export class UsersService {
   async get(id: string): Promise<User> {
     const user = await this.findOrThrow(id);
     const invites = await this.inviteExpiryByUser(user.status === 'invited' ? [user._id] : []);
-    return toUserDto(user, invites.get(user._id) ?? null);
+    return toUserDto(user, await roleNameOf(user.role), invites.get(user._id) ?? null);
   }
 
   private async findOrThrow(id: string): Promise<StoredUser> {
@@ -146,8 +161,9 @@ export class UsersService {
 
   async invite(
     actor: AuthUser,
-    input: { name: string; email: string; phone?: string; role: Role },
+    input: { name: string; email: string; phone?: string; role: RoleKey },
   ): Promise<{ user: User; emailSent: boolean }> {
+    await assertRoleExists(input.role);
     if (await UserModel.exists({ email: input.email })) {
       throw conflict('A user with this email already exists.', 'DUPLICATE');
     }
@@ -169,7 +185,7 @@ export class UsersService {
 
     const { emailSent, expiresAt } = await this.sendInvite(created._id, actor.name);
     const user = await this.findOrThrow(created._id);
-    return { user: toUserDto(user, expiresAt), emailSent };
+    return { user: toUserDto(user, await roleNameOf(user.role), expiresAt), emailSent };
   }
 
   async resendInvite(actor: AuthUser, id: string): Promise<{ user: User; emailSent: boolean }> {
@@ -183,7 +199,7 @@ export class UsersService {
       entityId: user._id,
       action: 'invite_resent',
     });
-    return { user: toUserDto(user, expiresAt), emailSent };
+    return { user: toUserDto(user, await roleNameOf(user.role), expiresAt), emailSent };
   }
 
   /** Replaces any open invite with a new 72-hour link and emails it. */
@@ -205,7 +221,7 @@ export class UsersService {
       companyName,
       name: user.name,
       invitedBy,
-      roleLabel: ROLE_LABELS[user.role as Role],
+      roleLabel: await roleNameOf(user.role),
       acceptUrl: `${this.env.APP_BASE_URL}/accept-invite?token=${encodeURIComponent(token)}`,
       expiresHours: INVITE_TTL_HOURS,
     });
@@ -233,7 +249,8 @@ export class UsersService {
     return {
       name: user.name,
       email: user.email,
-      role: user.role as Role,
+      role: user.role,
+      roleName: await roleNameOf(user.role),
       invitedBy: inviter?.name ?? null,
     };
   }
@@ -268,13 +285,13 @@ export class UsersService {
   async update(
     actor: AuthUser,
     id: string,
-    input: { name?: string; phone?: string | null; role?: Role },
+    input: { name?: string; phone?: string | null; role?: RoleKey },
   ): Promise<User> {
     const user = await this.findOrThrow(id);
-
-    if (input.role && input.role !== user.role) {
+    const roleChanges = input.role !== undefined && input.role !== user.role;
+    if (roleChanges) {
       if (user._id === actor.id) throw businessRule("You can't change your own role.");
-      if (user.role === 'super_admin') await this.assertNotLastSuperAdmin(user);
+      await assertRoleExists(input.role!);
     }
 
     const set: Record<string, unknown> = { updatedBy: actor.id };
@@ -284,23 +301,29 @@ export class UsersService {
     if (input.phone === null) unset.phone = 1;
     else if (input.phone !== undefined) set.phone = input.phone;
 
-    const updated = await UserModel.findOneAndUpdate(
-      { _id: id },
-      { $set: set, ...(Object.keys(unset).length > 0 && { $unset: unset }) },
-      { returnDocument: 'after' },
-    ).lean<StoredUser>();
-    if (!updated) throw notFound('User not found');
+    await withTransaction(async () => {
+      // Demoting an active Admin: only if another active Admin remains (ROLE-02).
+      if (roleChanges && user.role === ADMIN_ROLE && user.status === 'active') {
+        await assertAnotherActiveAdmin(user._id);
+      }
+      const updated = await UserModel.findOneAndUpdate(
+        { _id: id },
+        { $set: set, ...(Object.keys(unset).length > 0 && { $unset: unset }) },
+        { returnDocument: 'after' },
+      ).lean<StoredUser>();
+      if (!updated) throw notFound('User not found');
 
-    const changes = diffFields(user, updated, ['name', 'phone', 'role']);
-    if (Object.keys(changes).length > 0) {
-      await recordChange({
-        actorId: actor.id,
-        entity: 'user',
-        entityId: id,
-        action: changes.role ? 'role_changed' : 'updated',
-        changes,
-      });
-    }
+      const changes = diffFields(user, updated, ['name', 'phone', 'role']);
+      if (Object.keys(changes).length > 0) {
+        await recordChange({
+          actorId: actor.id,
+          entity: 'user',
+          entityId: id,
+          action: changes.role ? 'role_changed' : 'updated',
+          changes,
+        });
+      }
+    });
     return this.get(id);
   }
 
@@ -308,17 +331,24 @@ export class UsersService {
     const user = await this.findOrThrow(id);
     if (user._id === actor.id) throw businessRule("You can't deactivate your own account.");
     if (user.status === 'inactive') return this.get(id);
-    if (user.role === 'super_admin') await this.assertNotLastSuperAdmin(user);
 
-    await UserModel.updateOne({ _id: id }, { $set: { status: 'inactive', updatedBy: actor.id } });
-    await this.auth.revokeAllSessions(id);
-    await AuthTokenModel.updateMany({ userId: id, usedAt: null }, { $set: { usedAt: new Date() } });
-    await recordChange({
-      actorId: actor.id,
-      entity: 'user',
-      entityId: id,
-      action: 'deactivated',
-      changes: { status: [user.status, 'inactive'] },
+    await withTransaction(async () => {
+      if (user.role === ADMIN_ROLE && user.status === 'active') {
+        await assertAnotherActiveAdmin(user._id);
+      }
+      await UserModel.updateOne({ _id: id }, { $set: { status: 'inactive', updatedBy: actor.id } });
+      await this.auth.revokeAllSessions(id);
+      await AuthTokenModel.updateMany(
+        { userId: id, usedAt: null },
+        { $set: { usedAt: new Date() } },
+      );
+      await recordChange({
+        actorId: actor.id,
+        entity: 'user',
+        entityId: id,
+        action: 'deactivated',
+        changes: { status: [user.status, 'inactive'] },
+      });
     });
     return this.get(id);
   }
@@ -367,22 +397,5 @@ export class UsersService {
     );
     await recordChange({ actorId: actor.id, entity: 'user', entityId: id, action: 'unlocked' });
     return this.get(id);
-  }
-
-  /** There must always be at least one active Super Admin. */
-  private async assertNotLastSuperAdmin(user: StoredUser): Promise<void> {
-    if (user.status !== 'active') return;
-    const others = await UserModel.countDocuments({
-      _id: { $ne: user._id },
-      role: 'super_admin',
-      status: 'active',
-    });
-    if (others === 0) {
-      throw new AppError(
-        422,
-        'LAST_SUPER_ADMIN',
-        'There must always be at least one active Super Admin.',
-      );
-    }
   }
 }

@@ -228,6 +228,7 @@ export const propertySchema = z.object({
   publishIssues: z.array(publishIssueSchema),
   publishedAt: z.string().nullable(),
   statusChangedAt: z.string(),
+  version: z.number().int().meta({ description: 'Send it back in If-Match when saving changes' }),
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: userRefSchema,

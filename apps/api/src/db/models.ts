@@ -3,6 +3,7 @@
  * Add each new model file here.
  */
 import '../modules/users/user.model';
+import '../modules/roles/role.model';
 import '../modules/settings/settings.model';
 import '../modules/changeLogs/changeLog.model';
 import '../modules/auth/refreshToken.model';

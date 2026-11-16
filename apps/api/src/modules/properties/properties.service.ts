@@ -19,6 +19,8 @@ import type {
   PropertyStatusCounts,
   UpdateProperty,
 } from '@real-estate/shared';
+import { withTransaction } from '../../db/transaction';
+import { versionConflict } from '../../db/versionPlugin';
 import { AppError, businessRule, notFound, validationError } from '../../lib/errors';
 import type { ErrorDetail } from '../../lib/errors';
 import { pageMeta, pageSkip, parseSort } from '../../lib/http';
@@ -26,7 +28,7 @@ import type { StorageProvider } from '../../lib/storage';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
 import type { SubcategoryDoc } from '../propertyTypes/propertyTypes.model';
-import { PropertySubcategoryModel } from '../propertyTypes/propertyTypes.model';
+import { AmenityModel, PropertySubcategoryModel } from '../propertyTypes/propertyTypes.model';
 import type { FormDefinition, PropertyTypesService } from '../propertyTypes/propertyTypes.service';
 import { UserModel } from '../users/user.model';
 import type { MediaDoc, PropertyDoc } from './property.model';
@@ -254,40 +256,62 @@ export class PropertiesService {
     const definition = await this.propertyTypes.definitionFor(input.subcategoryId);
     this.assertCanList(definition);
     const values = this.checkInput(definition, input, {}, []);
-    const code = await nextPropertyCode(definition.subcategory.codePrefix);
     const now = new Date();
-    const doc = await PropertyModel.create({
-      code,
-      categoryKey: definition.category.key,
-      subcategoryId: definition.subcategory._id,
-      title: input.title,
-      purpose: input.purpose,
-      price: input.price,
-      rental: input.purpose === 'sale' ? null : input.rental,
-      area: input.area ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) } : null,
-      location: input.location,
-      attributeValues: values.attributeValues,
-      extraAttributes: values.extraAttributes,
-      removedAttributeKeys: values.removedAttributeKeys,
-      amenityIds: values.amenityIds,
-      status: 'draft',
-      isFeatured: input.isFeatured,
-      statusChangedAt: now,
-      createdBy: actorId,
-      updatedBy: actorId,
-    });
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: doc._id,
-      action: 'created',
-      changes: { code: [null, code], title: [null, input.title] },
+    const doc = await withTransaction(async () => {
+      await this.touchTypesInUse(definition.subcategory._id, values.amenityIds);
+      const code = await nextPropertyCode(definition.subcategory.codePrefix);
+      const [created] = await PropertyModel.create([
+        {
+          code,
+          categoryKey: definition.category.key,
+          subcategoryId: definition.subcategory._id,
+          title: input.title,
+          purpose: input.purpose,
+          price: input.price,
+          rental: input.purpose === 'sale' ? null : input.rental,
+          area: input.area
+            ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) }
+            : null,
+          location: input.location,
+          attributeValues: values.attributeValues,
+          extraAttributes: values.extraAttributes,
+          removedAttributeKeys: values.removedAttributeKeys,
+          amenityIds: values.amenityIds,
+          status: 'draft',
+          isFeatured: input.isFeatured,
+          statusChangedAt: now,
+          createdBy: actorId,
+          updatedBy: actorId,
+        },
+      ]);
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: created!._id,
+        action: 'created',
+        changes: { code: [null, code], title: [null, input.title] },
+      });
+      return created!;
     });
     return this.get(doc._id);
   }
 
-  async update(actorId: string, id: string, input: UpdateProperty): Promise<Property> {
+  /**
+   * Edits a property. `expectedVersion` (from If-Match) rejects a stale edit with 409.
+   * Either way the write only applies to the version that was read, so a concurrent change
+   * between reading and writing is never silently overwritten (H4).
+   */
+  async update(
+    actorId: string,
+    id: string,
+    input: UpdateProperty,
+    expectedVersion?: number,
+  ): Promise<Property> {
     const before = await this.find(id);
+    const readVersion = before.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== readVersion) {
+      throw versionConflict(readVersion);
+    }
     if (before.status === 'archived') {
       throw businessRule("Archived properties can't be edited. Restore it as a draft first.");
     }
@@ -350,27 +374,6 @@ export class PropertiesService {
 
     const changes = changesBetween(snapshot(before), snapshot(next));
     if (Object.keys(changes).length === 0) return this.toResponse(before, definition);
-    await PropertyModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          categoryKey: next.categoryKey,
-          subcategoryId: next.subcategoryId,
-          title: next.title,
-          purpose: next.purpose,
-          price: next.price,
-          rental: next.rental,
-          area: next.area,
-          location: next.location,
-          attributeValues: next.attributeValues,
-          extraAttributes: next.extraAttributes,
-          removedAttributeKeys: next.removedAttributeKeys,
-          amenityIds: next.amenityIds,
-          isFeatured: next.isFeatured,
-          updatedBy: actorId,
-        },
-      },
-    );
     if (changes.subcategoryId) {
       changes.subcategoryId = [
         (await this.subcategoryNames([before.subcategoryId])).get(before.subcategoryId) ??
@@ -378,7 +381,40 @@ export class PropertiesService {
         definition.subcategory.name,
       ];
     }
-    await recordChange({ actorId, entity: 'property', entityId: id, action: 'updated', changes });
+    await withTransaction(async () => {
+      await this.touchTypesInUse(next.subcategoryId, next.amenityIds);
+      const written = await PropertyModel.updateOne(
+        // A document with no version yet (created before versioning) counts as version 0.
+        readVersion === 0
+          ? { _id: id, $or: [{ version: 0 }, { version: { $exists: false } }] }
+          : { _id: id, version: readVersion },
+        {
+          $set: {
+            categoryKey: next.categoryKey,
+            subcategoryId: next.subcategoryId,
+            title: next.title,
+            purpose: next.purpose,
+            price: next.price,
+            rental: next.rental,
+            area: next.area,
+            location: next.location,
+            attributeValues: next.attributeValues,
+            extraAttributes: next.extraAttributes,
+            removedAttributeKeys: next.removedAttributeKeys,
+            amenityIds: next.amenityIds,
+            isFeatured: next.isFeatured,
+            updatedBy: actorId,
+          },
+        },
+      );
+      if (written.matchedCount === 0) {
+        const current = await PropertyModel.findById(id)
+          .select('version')
+          .lean<{ version?: number }>();
+        throw versionConflict(current?.version ?? 0);
+      }
+      await recordChange({ actorId, entity: 'property', entityId: id, action: 'updated', changes });
+    });
     return this.get(id);
   }
 
@@ -536,6 +572,30 @@ export class PropertiesService {
     };
   }
 
+  /**
+   * Writes to the subcategory and amenities a property save uses, inside the save's
+   * transaction. Deleting one of them writes the same documents, so a delete racing a save
+   * conflicts and one of them retries and sees the other: no property can end up pointing
+   * at a deleted type or amenity (L3).
+   */
+  private async touchTypesInUse(subcategoryId: string, amenityIds: string[]): Promise<void> {
+    const at = { $currentDate: { lastUsedAt: true } };
+    const sub = await PropertySubcategoryModel.updateOne({ _id: subcategoryId }, at, {
+      timestamps: false,
+    });
+    if (sub.matchedCount === 0) {
+      throw businessRule('This property type was just deleted. Reload and choose another.');
+    }
+    if (amenityIds.length > 0) {
+      const used = await AmenityModel.updateMany({ _id: { $in: amenityIds } }, at, {
+        timestamps: false,
+      });
+      if (used.matchedCount !== new Set(amenityIds).size) {
+        throw businessRule('An amenity was just deleted. Reload and tick the amenities again.');
+      }
+    }
+  }
+
   private async toResponse(doc: PropertyDoc, known?: FormDefinition): Promise<Property> {
     const definition = known ?? (await this.propertyTypes.definitionFor(doc.subcategoryId));
     const shown = new Set(definition.attributes.map((a) => a.attribute.key));
@@ -574,6 +634,7 @@ export class PropertiesService {
       publishIssues: publishIssues(definition, doc),
       publishedAt: iso(doc.publishedAt),
       statusChangedAt: iso(doc.statusChangedAt)!,
+      version: doc.version ?? 0,
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),
       createdBy: ref(doc.createdBy),

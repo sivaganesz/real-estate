@@ -86,7 +86,7 @@ describe('property media', () => {
     await ensureStartingPropertyTypes();
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       await UserModel.create({
         name: role,
         email: `${role}@company.com`,
@@ -181,7 +181,7 @@ describe('property media', () => {
     });
     const none = await as('admin', request(ctx.app).post(`${BASE}/${p.id}/media`));
     expect(none.body.error.code).toBe('FILE_REQUIRED');
-    expect((await upload(p.id, PDF, 'x.pdf', 'brochure', 'sales_agent')).status).toBe(403);
+    expect((await upload(p.id, PDF, 'x.pdf', 'brochure', 'sales_executive')).status).toBe(403);
   });
 
   it('sets the cover, reorders, and records each change', async () => {

@@ -14,14 +14,63 @@ export const emailSchema = z
   .pipe(z.email('Enter a valid email address'))
   .meta({ example: 'name@company.com' });
 
-/** Password rules (PRD ADM-AUTH): at least 6 characters with a letter and a number. */
-export const PASSWORD_MIN_LENGTH = 6;
+/**
+ * Words that make a password easy to guess when the rest is only digits or symbols,
+ * e.g. "Password@123" or "admin12345" (TRD M4).
+ */
+const COMMON_PASSWORD_WORDS = new Set([
+  'password',
+  'passw',
+  'pass',
+  'qwerty',
+  'qwertyuiop',
+  'asdf',
+  'asdfgh',
+  'zxcvbn',
+  'abc',
+  'abcd',
+  'abcdef',
+  'abcdefg',
+  'abcdefgh',
+  'welcome',
+  'admin',
+  'administrator',
+  'letmein',
+  'iloveyou',
+  'changeme',
+  'test',
+  'testing',
+  'user',
+  'login',
+  'secret',
+  'master',
+  'monkey',
+  'dragon',
+  'india',
+  'realestate',
+  'property',
+  'default',
+]);
+
+/** True when the password is a common word padded with digits or symbols. */
+export function isCommonPassword(password: string): boolean {
+  const letters = password.toLowerCase().replace(/[^a-z]/g, '');
+  return letters.length === 0 || COMMON_PASSWORD_WORDS.has(letters);
+}
+
+/**
+ * Password rules for setting or changing a password (TRD M4): at least 10 characters,
+ * a letter and a number, and not a common word padded with numbers. Sign-in accepts any
+ * existing password, so older shorter passwords keep working until they are changed.
+ */
+export const PASSWORD_MIN_LENGTH = 10;
 export const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   .max(128, 'Password must be at most 128 characters')
   .regex(/[A-Za-z]/, 'Password must contain a letter')
-  .regex(/\d/, 'Password must contain a number');
+  .regex(/\d/, 'Password must contain a number')
+  .refine((p) => !isCommonPassword(p), 'This password is too easy to guess. Choose another one');
 
 /**
  * Phone number: digits only (an optional leading "+" for the country code). Letters,

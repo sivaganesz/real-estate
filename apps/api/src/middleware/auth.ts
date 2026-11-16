@@ -38,7 +38,7 @@ export function authenticate(accessTokens: AccessTokens): RequestHandler {
 
     const user = await UserModel.findById(userId).lean();
     if (!user || user.status !== 'active') throw unauthenticated();
-    req.user = toAuthUser(user);
+    req.user = await toAuthUser(user);
     next();
   };
 }

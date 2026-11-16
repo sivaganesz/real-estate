@@ -113,7 +113,7 @@ describe('bulk import', () => {
     await ensureStartingPropertyTypes();
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       const user = await UserModel.create({
         name: role === 'admin' ? 'Asha Admin' : 'Ravi Agent',
         email: `${role}@company.com`,
@@ -459,10 +459,14 @@ describe('bulk import', () => {
     const empty = await upload((await template()).body);
     expect(empty.body.error.code).toBe('EMPTY_FILE');
     expect(
-      (await as('sales_agent', request(ctx.app).get(`${BASE}/template?subcategoryId=${villaId}`)))
-        .status,
+      (
+        await as(
+          'sales_executive',
+          request(ctx.app).get(`${BASE}/template?subcategoryId=${villaId}`),
+        )
+      ).status,
     ).toBe(403);
-    expect((await upload((await template()).body, 'sales_agent')).status).toBe(403);
+    expect((await upload((await template()).body, 'sales_executive')).status).toBe(403);
   });
 });
 

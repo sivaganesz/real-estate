@@ -1,4 +1,4 @@
-import { ROLES, USER_STATUSES } from '@real-estate/shared';
+import { USER_STATUSES } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import type { InferSchemaType } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
@@ -11,7 +11,8 @@ const userSchema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, trim: true },
-    role: { type: String, required: true, enum: ROLES },
+    /** A `roles.key` (TRD §7.14); checked against existing roles when set. */
+    role: { type: String, required: true },
     status: { type: String, required: true, enum: USER_STATUSES, default: 'invited' },
     passwordHash: { type: String, select: false },
     lastLoginAt: { type: Date },

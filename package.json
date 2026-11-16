@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:up": "docker compose up -d mongo",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "migrate": "pnpm --filter @real-estate/api migrate"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

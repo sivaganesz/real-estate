@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildTestApp } from './test/helpers';
+import { buildTestApp, PRODUCTION_ENV_VARS } from './test/helpers';
 
 describe('app (no database)', () => {
   let ctx: Awaited<ReturnType<typeof buildTestApp>>;
@@ -75,14 +75,14 @@ describe('app (no database)', () => {
 
 describe('API docs in production', () => {
   it('are not served without SWAGGER_BASIC_AUTH', async () => {
-    const ctx = await buildTestApp({ NODE_ENV: 'production' });
+    const ctx = await buildTestApp({ ...PRODUCTION_ENV_VARS });
     expect((await request(ctx.app).get('/api/openapi.json')).status).toBe(404);
     await ctx.cleanup();
   });
 
   it('require basic auth when SWAGGER_BASIC_AUTH is set', async () => {
     const ctx = await buildTestApp({
-      NODE_ENV: 'production',
+      ...PRODUCTION_ENV_VARS,
       SWAGGER_BASIC_AUTH: 'docs:secret-pass',
     });
     expect((await request(ctx.app).get('/api/openapi.json')).status).toBe(401);

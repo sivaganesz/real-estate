@@ -17,7 +17,7 @@ async function createUser(overrides: Record<string, unknown> = {}) {
   return UserModel.create({
     name: 'Owner Name',
     email: 'owner@company.com',
-    role: 'super_admin',
+    role: 'admin',
     status: 'active',
     passwordHash: await hashPassword(PASSWORD),
     ...overrides,
@@ -78,9 +78,9 @@ describe('users', () => {
   });
 
   describe('permissions', () => {
-    it('only Super Admins can use the users API', async () => {
-      await createUser({ email: 'admin@company.com', role: 'admin', name: 'Admin User' });
-      token = await signIn('admin@company.com');
+    it('only Admins can use the users API', async () => {
+      await createUser({ email: 'manager@company.com', role: 'sales_manager', name: 'Manager' });
+      token = await signIn('manager@company.com');
       const res = await api().get('/users');
       expect(res.status).toBe(403);
       expect((await request(ctx.app).get('/api/v1/admin/users')).status).toBe(401);
@@ -92,20 +92,20 @@ describe('users', () => {
       await createUser({
         email: 'agent.a@company.com',
         name: 'Agent A',
-        role: 'sales_agent',
+        role: 'sales_executive',
         phone: '+919876543210',
       });
       await createUser({
         email: 'agent.b@company.com',
         name: 'Agent B',
-        role: 'sales_agent',
+        role: 'sales_executive',
         status: 'invited',
         passwordHash: undefined,
       });
       await createUser({
         email: 'agent.c@company.com',
         name: 'Agent C',
-        role: 'sales_agent',
+        role: 'sales_executive',
         lockedUntil: new Date(Date.now() + 600_000),
       });
       await createUser({
@@ -129,7 +129,7 @@ describe('users', () => {
         (await api().get('/users?q=agent b')).body.data.map((u: { name: string }) => u.name),
       ).toEqual(['Agent B']);
       expect((await api().get('/users?q=98765')).body.data[0].name).toBe('Agent A');
-      expect((await api().get('/users?role=sales_agent')).body.meta.total).toBe(3);
+      expect((await api().get('/users?role=sales_executive')).body.meta.total).toBe(3);
       const locked = (await api().get('/users?status=locked')).body.data;
       expect(locked.map((u: { name: string }) => u.name)).toEqual(['Agent C']);
       expect(locked[0].locked).toBe(true);
@@ -153,7 +153,7 @@ describe('users', () => {
         name: 'Priya Kumar',
         email: 'Priya@Company.com',
         phone: '9876543210',
-        role: 'sales_agent',
+        role: 'sales_executive',
       });
       expect(res.status).toBe(201);
       expect(res.body.data.emailSent).toBe(true);
@@ -161,7 +161,7 @@ describe('users', () => {
         email: 'priya@company.com',
         phone: '+919876543210',
         status: 'invited',
-        role: 'sales_agent',
+        role: 'sales_executive',
       });
       const expiresIn = Date.parse(res.body.data.user.inviteExpiresAt) - Date.now();
       expect(expiresIn).toBeGreaterThan(71 * 3600_000);
@@ -169,13 +169,14 @@ describe('users', () => {
       expect(ctx.email.sent.at(-1)!.text).toContain('Owner Name has invited you');
 
       const inviteToken = linkTokenFromLastEmail('accept-invite');
-      const info = await request(ctx.app).get(
-        `/api/v1/auth/invite?token=${encodeURIComponent(inviteToken)}`,
-      );
+      const info = await request(ctx.app)
+        .post('/api/v1/auth/invite/info')
+        .send({ token: inviteToken });
       expect(info.body.data).toEqual({
         name: 'Priya Kumar',
         email: 'priya@company.com',
-        role: 'sales_agent',
+        role: 'sales_executive',
+        roleName: 'Sales Executive',
         invitedBy: 'Owner Name',
       });
 
@@ -209,7 +210,7 @@ describe('users', () => {
         name: 'X',
         email: 'nope',
         phone: '123',
-        role: 'boss',
+        role: 'Boss!',
       });
       expect(bad.status).toBe(400);
       const paths = bad.body.error.details.map((d: { path: string }) => d.path);
@@ -243,12 +244,10 @@ describe('users', () => {
       const second = linkTokenFromLastEmail('accept-invite');
       expect(second).not.toBe(first);
       expect(
-        (await request(ctx.app).get(`/api/v1/auth/invite?token=${encodeURIComponent(first)}`))
-          .status,
+        (await request(ctx.app).post('/api/v1/auth/invite/info').send({ token: first })).status,
       ).toBe(400);
       expect(
-        (await request(ctx.app).get(`/api/v1/auth/invite?token=${encodeURIComponent(second)}`))
-          .status,
+        (await request(ctx.app).post('/api/v1/auth/invite/info').send({ token: second })).status,
       ).toBe(200);
 
       expect((await api().post(`/users/${owner._id}/resend-invite`)).status).toBe(422);
@@ -278,7 +277,7 @@ describe('users', () => {
       const agent = await createUser({
         email: 'agent@company.com',
         name: 'Agent',
-        role: 'sales_agent',
+        role: 'sales_executive',
         phone: '+919876543210',
       });
       const res = await api().patch(`/users/${agent._id}`, {
@@ -293,14 +292,14 @@ describe('users', () => {
         action: 'role_changed',
       }).lean();
       expect(log?.changes).toMatchObject({
-        role: ['sales_agent', 'admin'],
+        role: ['sales_executive', 'admin'],
         name: ['Agent', 'Agent Renamed'],
       });
       expect(log?.actorId).toBe(owner._id);
     });
 
     it("doesn't let you change your own role or deactivate yourself", async () => {
-      const role = await api().patch(`/users/${owner._id}`, { role: 'admin' });
+      const role = await api().patch(`/users/${owner._id}`, { role: 'sales_manager' });
       expect(role.status).toBe(422);
       expect(role.body.error.message).toBe("You can't change your own role.");
       expect((await api().post(`/users/${owner._id}/deactivate`)).status).toBe(422);
@@ -310,15 +309,39 @@ describe('users', () => {
       );
     });
 
-    it('lets a Super Admin demote another Super Admin while another stays active', async () => {
+    it('lets an Admin demote another Admin while another stays active', async () => {
       await createUser({ email: 'second@company.com', name: 'Second Owner' });
       token = await signIn('second@company.com');
-      const res = await api().patch(`/users/${owner._id}`, { role: 'admin' });
+      const res = await api().patch(`/users/${owner._id}`, { role: 'sales_manager' });
       expect(res.status).toBe(200);
-      expect(res.body.data.role).toBe('admin');
+      expect(res.body.data).toMatchObject({ role: 'sales_manager', roleName: 'Sales Manager' });
     });
 
-    it('never removes the last active Super Admin (service safety net)', async () => {
+    it('refuses a role that does not exist', async () => {
+      const res = await api().post('/users', {
+        name: 'Nobody',
+        email: 'nobody@company.com',
+        role: 'r_does-not-exist',
+      });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('UNKNOWN_ROLE');
+    });
+
+    it('two Admins demoting each other at once can never leave zero Admins (ROLE-02)', async () => {
+      const second = await createUser({ email: 'second@company.com', name: 'Second Owner' });
+      const secondToken = await signIn('second@company.com');
+      const [a, b] = await Promise.all([
+        api().patch(`/users/${second._id}`, { role: 'sales_manager' }),
+        request(ctx.app)
+          .patch(`/api/v1/admin/users/${owner._id}`)
+          .set('authorization', `Bearer ${secondToken}`)
+          .send({ role: 'sales_manager' }),
+      ]);
+      expect([a.status, b.status].sort()).toEqual([200, 409].sort());
+      expect(await UserModel.countDocuments({ role: 'admin', status: 'active' })).toBe(1);
+    });
+
+    it('never removes the last active Admin (service safety net)', async () => {
       // Through the API this can't happen (you can't demote or deactivate yourself), so call
       // the service directly with an actor who isn't a stored user.
       const service = new UsersService({
@@ -336,14 +359,15 @@ describe('users', () => {
         name: 'System',
         email: 's@x.com',
         phone: null,
-        role: 'super_admin' as const,
+        role: 'admin',
+        roleName: 'Admin',
         permissions: [],
       };
-      await expect(service.update(outsider, owner._id, { role: 'admin' })).rejects.toMatchObject({
-        code: 'LAST_SUPER_ADMIN',
-      });
+      await expect(
+        service.update(outsider, owner._id, { role: 'sales_manager' }),
+      ).rejects.toMatchObject({ code: 'LAST_ADMIN' });
       await expect(service.deactivate(outsider, owner._id)).rejects.toMatchObject({
-        code: 'LAST_SUPER_ADMIN',
+        code: 'LAST_ADMIN',
       });
     });
 
@@ -358,7 +382,7 @@ describe('users', () => {
       const agent = await createUser({
         email: 'agent@company.com',
         name: 'Agent',
-        role: 'sales_agent',
+        role: 'sales_executive',
       });
       const login = await request(ctx.app)
         .post('/api/v1/auth/login')
@@ -406,7 +430,7 @@ describe('users', () => {
       const agent = await createUser({
         email: 'agent@company.com',
         name: 'Agent',
-        role: 'sales_agent',
+        role: 'sales_executive',
         lockedUntil: new Date(Date.now() + 600_000),
         failedLoginCount: 0,
       });
@@ -426,7 +450,7 @@ describe('users', () => {
       const agent = await createUser({
         email: 'agent@company.com',
         name: 'Agent',
-        role: 'sales_agent',
+        role: 'sales_executive',
       });
       const res = await api().post(`/users/${agent._id}/send-password-reset`);
       expect(res.body.data).toEqual({ emailSent: true });
@@ -442,23 +466,5 @@ describe('users', () => {
       });
       expect((await api().post(`/users/${invited._id}/send-password-reset`)).status).toBe(422);
     });
-  });
-
-  it('returns the read-only roles matrix', async () => {
-    const res = await api().get('/roles');
-    expect(res.status).toBe(200);
-    expect(res.body.data.roles.map((r: { label: string }) => r.label)).toEqual([
-      'Super Admin',
-      'Admin',
-      'Sales Agent',
-    ]);
-    const usersRow = res.body.data.matrix.find(
-      (r: { module: string }) => r.module === 'Users & Roles',
-    );
-    expect(usersRow.access).toEqual({ super_admin: 'full', admin: 'none', sales_agent: 'none' });
-    const appointments = res.body.data.matrix.find(
-      (r: { module: string }) => r.module === 'Appointments',
-    );
-    expect(appointments.access.sales_agent).toBe('own');
   });
 });

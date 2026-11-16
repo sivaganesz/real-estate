@@ -64,6 +64,8 @@ const subcategorySchema = new Schema(
     codePrefix: { type: String, required: true },
     purposes: { type: [String], enum: PURPOSES, default: [] },
     isActive: { type: Boolean, default: true },
+    /** Touched by every property save that uses it, so a delete racing a save conflicts (L3). */
+    lastUsedAt: { type: Date, default: null },
     order: { type: Number, default: 0 },
     attributes: { type: [placementSchema], default: [] },
     ...auditFields,
@@ -85,6 +87,8 @@ const amenitySchema = new Schema(
     appliesToAll: { type: Boolean, default: true },
     subcategoryIds: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
+    /** Touched by every property save that uses it, so a delete racing a save conflicts (L3). */
+    lastUsedAt: { type: Date, default: null },
     order: { type: Number, default: 0 },
     ...auditFields,
   },

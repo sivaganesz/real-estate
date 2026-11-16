@@ -15,6 +15,8 @@ export default defineConfig(
       '**/coverage/**',
       'apps/api/uploads/**',
       'docs/**',
+      // Vanilla-JS clickable wireframe kept as the UI reference (not app code).
+      'spec-system-wireframe/**',
     ],
   },
   js.configs.recommended,

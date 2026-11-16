@@ -108,8 +108,16 @@ export function useCreateProperty() {
 export function useUpdateProperty() {
   const after = useAfterChange();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdatePropertyBody }) =>
-      api.patch<Property>(`${PATH}/${id}`, body),
+    // `version` is the one the user loaded: a newer save by someone else gets 409, not lost.
+    mutationFn: ({
+      id,
+      version,
+      body,
+    }: {
+      id: string;
+      version: number;
+      body: UpdatePropertyBody;
+    }) => api.patch<Property>(`${PATH}/${id}`, body, { ifMatch: version }),
     onSuccess: after,
   });
 }

@@ -15,6 +15,7 @@ const admin: AuthUser = {
   email: 'admin@company.com',
   phone: null,
   role: 'admin',
+  roleName: 'Admin',
   permissions: ['settings:edit', 'properties:read'],
 };
 

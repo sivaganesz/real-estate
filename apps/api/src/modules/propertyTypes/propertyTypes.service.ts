@@ -18,6 +18,7 @@ import type {
   UpdateAttribute,
   UpdateSubcategory,
 } from '@real-estate/shared';
+import { withTransaction } from '../../db/transaction';
 import { AppError, businessRule, conflict, notFound, validationError } from '../../lib/errors';
 import type { FieldChanges } from '../changeLogs/changeLog.service';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
@@ -330,21 +331,25 @@ export class PropertyTypesService {
   async deleteSubcategory(actorId: string, id: string): Promise<PropertyTypes> {
     const sub = await this.findSubcategory(id);
     await this.activeCategory(sub.categoryKey);
-    const count = (await this.usage.countBySubcategory([id])).get(id) ?? 0;
-    if (count > 0) {
-      throw businessRule(
-        `"${sub.name}" has ${count} properties, so it can't be deleted. Deactivate it instead.`,
-      );
-    }
-    await PropertySubcategoryModel.deleteOne({ _id: id });
-    await AmenityModel.updateMany({ subcategoryIds: id }, { $pull: { subcategoryIds: id } });
-    for (const p of sub.attributes) await this.deleteIfUnused(p.attributeId);
-    await recordChange({
-      actorId,
-      entity: 'propertyType',
-      entityId: id,
-      action: 'subcategory_deleted',
-      changes: { name: [sub.name, null] },
+    // Check and delete in one transaction; property saves touch the subcategory, so a save
+    // racing this delete conflicts with it instead of slipping in between (L3).
+    await withTransaction(async () => {
+      const count = (await this.usage.countBySubcategory([id])).get(id) ?? 0;
+      if (count > 0) {
+        throw businessRule(
+          `"${sub.name}" has ${count} properties, so it can't be deleted. Deactivate it instead.`,
+        );
+      }
+      await PropertySubcategoryModel.deleteOne({ _id: id });
+      await AmenityModel.updateMany({ subcategoryIds: id }, { $pull: { subcategoryIds: id } });
+      for (const p of sub.attributes) await this.deleteIfUnused(p.attributeId);
+      await recordChange({
+        actorId,
+        entity: 'propertyType',
+        entityId: id,
+        action: 'subcategory_deleted',
+        changes: { name: [sub.name, null] },
+      });
     });
     return this.getAll();
   }
@@ -624,19 +629,21 @@ export class PropertyTypesService {
   async deleteAmenity(actorId: string, id: string): Promise<PropertyTypes> {
     const amenity = await this.findAmenity(id);
     await this.activeCategory(amenity.categoryKey);
-    const count = (await this.usage.countByAmenity([id])).get(id) ?? 0;
-    if (count > 0) {
-      throw businessRule(
-        `"${amenity.name}" is ticked on ${count} properties, so it can't be deleted. Deactivate it instead.`,
-      );
-    }
-    await AmenityModel.deleteOne({ _id: id });
-    await recordChange({
-      actorId,
-      entity: 'propertyType',
-      entityId: id,
-      action: 'amenity_deleted',
-      changes: { name: [amenity.name, null] },
+    await withTransaction(async () => {
+      const count = (await this.usage.countByAmenity([id])).get(id) ?? 0;
+      if (count > 0) {
+        throw businessRule(
+          `"${amenity.name}" is ticked on ${count} properties, so it can't be deleted. Deactivate it instead.`,
+        );
+      }
+      await AmenityModel.deleteOne({ _id: id });
+      await recordChange({
+        actorId,
+        entity: 'propertyType',
+        entityId: id,
+        action: 'amenity_deleted',
+        changes: { name: [amenity.name, null] },
+      });
     });
     return this.getAll();
   }

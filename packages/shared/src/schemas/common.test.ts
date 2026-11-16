@@ -2,15 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { emailSchema, paginationQuerySchema, passwordSchema, phoneSchema } from './common';
 
 describe('passwordSchema', () => {
-  it('accepts a password with 6+ characters, a letter and a number', () => {
-    expect(passwordSchema.safeParse('abc123').success).toBe(true);
-    expect(passwordSchema.safeParse('secretpass1').success).toBe(true);
+  it('accepts a password with 10+ characters, a letter and a number', () => {
+    expect(passwordSchema.safeParse('correct-horse-9').success).toBe(true);
+    expect(passwordSchema.safeParse('Madurai2026plot').success).toBe(true);
   });
 
   it('rejects short passwords and passwords without a letter or a number', () => {
-    expect(passwordSchema.safeParse('abc12').success).toBe(false);
-    expect(passwordSchema.safeParse('onlyletters').success).toBe(false);
-    expect(passwordSchema.safeParse('123456').success).toBe(false);
+    expect(passwordSchema.safeParse('abc123def').success).toBe(false);
+    expect(passwordSchema.safeParse('onlyletterslong').success).toBe(false);
+    expect(passwordSchema.safeParse('1234567890').success).toBe(false);
+  });
+
+  it('rejects common words padded with numbers or symbols', () => {
+    for (const p of ['Password@123', 'admin12345', 'qwerty123456', 'Welcome@2026', 'abcd123456'])
+      expect(passwordSchema.safeParse(p).success, p).toBe(false);
   });
 });
 

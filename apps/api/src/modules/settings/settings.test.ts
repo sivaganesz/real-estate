@@ -5,7 +5,12 @@ import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
+import { SettingsModel } from './settings.model';
 import { getCompanyName } from './settings.service';
+
+/** If-Match for the company settings as stored now (a client that just loaded them). */
+const companyVersion = async () =>
+  `"${(await SettingsModel.findOne({ key: 'company' }).lean<{ version?: number }>())?.version ?? 0}"`;
 
 const PASSWORD = 'correct-horse-9';
 const BASE = '/api/v1/admin/settings/company';
@@ -48,7 +53,7 @@ describe('settings → company info', () => {
     const passwordHash = await hashPassword(PASSWORD);
     for (const [role, name] of [
       ['admin', 'Asha Admin'],
-      ['sales_agent', 'Ravi Agent'],
+      ['sales_executive', 'Ravi Agent'],
     ] as const) {
       const user = await UserModel.create({
         name,
@@ -69,7 +74,7 @@ describe('settings → company info', () => {
   });
 
   it('any signed-in role can read it; before setup it shows the defaults', async () => {
-    const res = await as('sales_agent', request(ctx.app).get(BASE));
+    const res = await as('sales_executive', request(ctx.app).get(BASE));
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       name: 'Your Company Name',
@@ -83,18 +88,32 @@ describe('settings → company info', () => {
   });
 
   it('only roles with settings:edit can change it', async () => {
-    expect((await as('sales_agent', request(ctx.app).put(BASE)).send(VALID)).status).toBe(403);
-    const upload = await as('sales_agent', request(ctx.app).post(`${BASE}/logo`)).attach(
+    expect(
+      (
+        await as(
+          'sales_executive',
+          request(ctx.app)
+            .put(BASE)
+            .set('if-match', await companyVersion()),
+        ).send(VALID)
+      ).status,
+    ).toBe(403);
+    const upload = await as('sales_executive', request(ctx.app).post(`${BASE}/logo`)).attach(
       'file',
       PNG,
       'logo.png',
     );
     expect(upload.status).toBe(403);
-    expect((await as('sales_agent', request(ctx.app).delete(`${BASE}/logo`))).status).toBe(403);
+    expect((await as('sales_executive', request(ctx.app).delete(`${BASE}/logo`))).status).toBe(403);
   });
 
   it('saves the details, normalises the phone and email, and records who changed what', async () => {
-    const res = await as('admin', request(ctx.app).put(BASE)).send(VALID);
+    const res = await as(
+      'admin',
+      request(ctx.app)
+        .put(BASE)
+        .set('if-match', await companyVersion()),
+    ).send(VALID);
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       name: 'Skyline Realty',
@@ -108,7 +127,12 @@ describe('settings → company info', () => {
     expect(await getCompanyName()).toBe('Skyline Realty'); // used in emails
 
     // A second save logs only the fields that changed.
-    await as('admin', request(ctx.app).put(BASE)).send({ ...VALID, name: 'Skyline Homes' });
+    await as(
+      'admin',
+      request(ctx.app)
+        .put(BASE)
+        .set('if-match', await companyVersion()),
+    ).send({ ...VALID, name: 'Skyline Homes' });
     const logs = await ChangeLogModel.find({ entity: 'settings' }).sort({ at: 1 }).lean();
     expect(logs.map((l) => l.action)).toEqual(['created', 'updated']);
     expect(logs[1]!.changes).toEqual({ name: ['Skyline Realty', 'Skyline Homes'] });
@@ -116,7 +140,12 @@ describe('settings → company info', () => {
   });
 
   it('rejects invalid details with field errors', async () => {
-    const res = await as('admin', request(ctx.app).put(BASE)).send({
+    const res = await as(
+      'admin',
+      request(ctx.app)
+        .put(BASE)
+        .set('if-match', await companyVersion()),
+    ).send({
       ...VALID,
       phone: '98765abc',
       email: 'not-an-email',
@@ -130,7 +159,12 @@ describe('settings → company info', () => {
   });
 
   it('uploads a logo, serves it, and replaces the old file on the next upload', async () => {
-    await as('admin', request(ctx.app).put(BASE)).send(VALID);
+    await as(
+      'admin',
+      request(ctx.app)
+        .put(BASE)
+        .set('if-match', await companyVersion()),
+    ).send(VALID);
     const first = await as('admin', request(ctx.app).post(`${BASE}/logo`)).attach(
       'file',
       PNG,
@@ -166,7 +200,12 @@ describe('settings → company info', () => {
       'logo.png',
     );
     expect(upload.body.data).toMatchObject({ name: 'Your Company Name', isConfigured: false });
-    const saved = await as('admin', request(ctx.app).put(BASE)).send(VALID);
+    const saved = await as(
+      'admin',
+      request(ctx.app)
+        .put(BASE)
+        .set('if-match', await companyVersion()),
+    ).send(VALID);
     expect(saved.body.data.logoUrl).toBe(upload.body.data.logoUrl);
   });
 

@@ -1,5 +1,5 @@
-import { hasPermission, permissionsFor } from '@real-estate/shared';
-import type { AuthUser, Permission, Role } from '@real-estate/shared';
+import { effectivePermissions, SYSTEM_ROLES } from '@real-estate/shared';
+import type { AuthUser, Permission, SystemRoleKey } from '@real-estate/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -11,10 +11,11 @@ import { ThemeProvider } from '@/theme/ThemeProvider';
 import { AuthContext } from './auth-context';
 import type { AuthContextValue } from './auth-context';
 
+type Role = SystemRoleKey;
 const NAMES: Record<Role, string> = {
-  super_admin: 'Owner Sam',
-  admin: 'Office Asha',
-  sales_agent: 'Agent Ravi',
+  admin: 'Owner Sam',
+  sales_manager: 'Manager Meena',
+  sales_executive: 'Executive Ravi',
 };
 
 function userFor(role: Role): AuthUser {
@@ -24,7 +25,8 @@ function userFor(role: Role): AuthUser {
     email: `${role}@company.com`,
     phone: null,
     role,
-    permissions: [...permissionsFor(role)],
+    roleName: SYSTEM_ROLES[role].name,
+    permissions: effectivePermissions(role, SYSTEM_ROLES[role].permissions),
   };
 }
 
@@ -43,6 +45,7 @@ function fakeApi(url: string) {
           isConfigured: false,
           updatedAt: null,
           updatedBy: null,
+          version: 0,
         },
       }
     : url.includes('/admin/users/stats')
@@ -70,7 +73,7 @@ function fakeApi(url: string) {
               : url.includes('/admin/profile')
                 ? {
                     data: {
-                      ...userFor('sales_agent'),
+                      ...userFor('sales_executive'),
                       lastLoginAt: null,
                       createdAt: '2026-11-01T00:00:00.000Z',
                     },
@@ -88,7 +91,7 @@ function renderAs(role: Role, path: string) {
     status: 'authenticated',
     user,
     signOutReason: null,
-    can: (permission: Permission) => hasPermission(role, permission),
+    can: (permission: Permission) => user.permissions.includes(permission),
     logout: vi.fn(),
     updateUser: vi.fn(),
     startSession: vi.fn(),
@@ -128,9 +131,9 @@ describe('role-based menus and pages', () => {
   });
 
   it.each([
-    ['super_admin', '/users', ['Properties', 'Bulk Import', 'Users & Roles', 'Settings']],
-    ['admin', '/properties', ['Properties', 'Bulk Import', 'Settings']],
-    ['sales_agent', '/properties', ['Properties']],
+    ['admin', '/users', ['Properties', 'Bulk Import', 'Users & Roles', 'Settings']],
+    ['sales_manager', '/properties', ['Properties']],
+    ['sales_executive', '/properties', ['Properties']],
   ] as const)('%s: "/" opens %s and the sidebar shows %j', async (role, home, links) => {
     const router = renderAs(role, '/');
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(home));
@@ -138,17 +141,17 @@ describe('role-based menus and pages', () => {
   });
 
   it.each([
-    ['admin', '/users'],
-    ['admin', '/users/roles'],
-    ['sales_agent', '/users'],
-    ['sales_agent', '/settings/company'],
+    ['sales_manager', '/users'],
+    ['sales_manager', '/users/roles'],
+    ['sales_executive', '/users'],
+    ['sales_executive', '/settings/company'],
   ] as const)('%s opening %s directly sees "no access"', async (role, path) => {
     renderAs(role, path);
     expect(await screen.findByText("You don't have access to this page")).toBeInTheDocument();
   });
 
   it('every role can open My Profile', async () => {
-    for (const role of ['super_admin', 'admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_manager', 'sales_executive'] as const) {
       renderAs(role, '/profile');
       expect(await screen.findByText('Personal details')).toBeInTheDocument();
       expect(screen.queryByText("You don't have access to this page")).not.toBeInTheDocument();

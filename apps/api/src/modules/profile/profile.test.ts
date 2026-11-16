@@ -36,7 +36,7 @@ describe('profile', () => {
       name: 'Agent Ravi',
       email: 'ravi@company.com',
       phone: '+919876543210',
-      role: 'sales_agent',
+      role: 'sales_executive',
       status: 'active',
       passwordHash: await hashPassword(PASSWORD),
     });
@@ -56,7 +56,7 @@ describe('profile', () => {
       name: 'Agent Ravi',
       email: 'ravi@company.com',
       phone: '+919876543210',
-      role: 'sales_agent',
+      role: 'sales_executive',
     });
     expect(res.body.data.lastLoginAt).toEqual(expect.any(String));
     expect(JSON.stringify(res.body)).not.toContain('passwordHash');
@@ -74,14 +74,14 @@ describe('profile', () => {
       name: 'Ravi Kumar',
       phone: '',
       email: 'hacker@company.com',
-      role: 'super_admin',
+      role: 'admin',
     });
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       name: 'Ravi Kumar',
       phone: null,
       email: 'ravi@company.com',
-      role: 'sales_agent',
+      role: 'sales_executive',
     });
     const log = await ChangeLogModel.findOne({
       entityId: userId,

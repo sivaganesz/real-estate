@@ -52,7 +52,7 @@ describe('settings → property types → amenities', () => {
     await ensureStartingPropertyTypes();
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       await UserModel.create({
         name: role,
         email: `${role}@company.com`,
@@ -149,7 +149,7 @@ describe('settings → property types → amenities', () => {
         .put(`${BASE}/categories/residential/amenities/order`)
         .send({ ids: [gym.id] }),
     ];
-    for (const attempt of attempts) expect((await as('sales_agent', attempt)).status).toBe(403);
+    for (const attempt of attempts) expect((await as('sales_executive', attempt)).status).toBe(403);
   });
 
   it('adds an amenity for some subcategories and checks names and choices', async () => {

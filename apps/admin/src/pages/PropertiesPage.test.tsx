@@ -1,10 +1,10 @@
-import { hasPermission, permissionsFor } from '@real-estate/shared';
+import { effectivePermissions, SYSTEM_ROLES } from '@real-estate/shared';
 import type {
   Permission,
   Property,
   PropertyListItem,
   PropertyTypes,
-  Role,
+  SystemRoleKey,
 } from '@real-estate/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
@@ -142,6 +142,7 @@ const savedProperty: Property = {
   publishIssues: [{ path: 'media', message: 'Add at least one photo' }],
   publishedAt: null,
   statusChangedAt: new Date().toISOString(),
+  version: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   createdBy: null,
@@ -155,7 +156,8 @@ function json(status: number, body: unknown) {
   });
 }
 
-function renderAs(role: Role, path: string) {
+function renderAs(role: SystemRoleKey, path: string) {
+  const permissions = effectivePermissions(role, SYSTEM_ROLES[role].permissions);
   const auth = {
     status: 'authenticated',
     user: {
@@ -164,9 +166,10 @@ function renderAs(role: Role, path: string) {
       email: 'a@x.com',
       phone: null,
       role,
-      permissions: [...permissionsFor(role)],
+      roleName: SYSTEM_ROLES[role].name,
+      permissions,
     },
-    can: (p: Permission) => hasPermission(role, p),
+    can: (p: Permission) => permissions.includes(p),
   } as unknown as AuthContextValue;
   const router = createMemoryRouter(
     [
@@ -269,8 +272,8 @@ describe('Properties pages', () => {
     expect(screen.getByText(': Add at least one photo')).toBeInTheDocument();
   });
 
-  it('Sales Agents see the list without selection, Add or edit actions', async () => {
-    renderAs('sales_agent', '/properties');
+  it('Sales Executives see the list without selection, Add or edit actions', async () => {
+    renderAs('sales_executive', '/properties');
     expect(await screen.findByText('Villa number 1')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'Select all on this page' })).toBeNull();
     expect(screen.queryByText('Add property')).toBeNull();

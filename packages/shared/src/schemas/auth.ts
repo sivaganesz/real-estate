@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { PERMISSIONS, ROLES } from '../roles';
+import { PERMISSIONS } from '../roles';
 import { emailSchema, idSchema, passwordSchema } from './common';
+import { roleKeySchema } from './roles';
 
 /** POST /auth/login */
 export const loginBodySchema = z.object({
@@ -26,7 +27,8 @@ export const authUserSchema = z.object({
   name: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
-  role: z.enum(ROLES),
+  role: roleKeySchema,
+  roleName: z.string(),
   permissions: z.array(z.enum(PERMISSIONS)),
 });
 export type AuthUser = z.infer<typeof authUserSchema>;

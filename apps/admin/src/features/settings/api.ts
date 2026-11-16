@@ -22,7 +22,9 @@ function useSaveToCache() {
 export function useUpdateCompanySettings() {
   const save = useSaveToCache();
   return useMutation({
-    mutationFn: (body: UpdateCompanySettingsBody) => api.put<CompanySettings>(PATH, body),
+    // `version` is the one on screen: a save based on an outdated copy gets 409.
+    mutationFn: ({ version, ...body }: UpdateCompanySettingsBody & { version: number }) =>
+      api.put<CompanySettings>(PATH, body, { ifMatch: version }),
     onSuccess: save,
   });
 }

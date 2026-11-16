@@ -36,6 +36,12 @@ const envSchema = z
       .string()
       .regex(/^[^:]+:.+$/, 'must be in the format user:password')
       .optional(),
+
+    /**
+     * Number of reverse proxies in front of the API whose X-Forwarded-For is trusted (for
+     * rate limits and logs). Default: 1 in production, none otherwise.
+     */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
@@ -44,6 +50,23 @@ const envSchema = z
         path: ['RESEND_API_KEY'],
         message: 'is required when EMAIL_PROVIDER=resend',
       });
+    }
+    // Production guards (TRD H-6, M5): unsafe development defaults are refused.
+    if (env.NODE_ENV === 'production') {
+      if (env.EMAIL_PROVIDER === 'console') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMAIL_PROVIDER'],
+          message:
+            'must be "resend" in production (the console provider writes sign-in and reset links to the log)',
+        });
+      }
+      for (const key of ['ADMIN_ORIGIN', 'APP_BASE_URL', 'WEB_ORIGIN'] as const) {
+        const value = env[key];
+        if (value && !value.startsWith('https://')) {
+          ctx.addIssue({ code: 'custom', path: [key], message: 'must use https in production' });
+        }
+      }
     }
   });
 

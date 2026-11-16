@@ -1,5 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { idField, refField } from '../../db/ids';
+import { versionPlugin } from '../../db/versionPlugin';
 
 /**
  * One document per settings key (TRD §7.4): "company" in Phase 1, "visitSlots" in Phase 3.
@@ -15,6 +16,7 @@ const settingsSchema = new Schema(
   { timestamps: true, minimize: false },
 );
 
+settingsSchema.plugin(versionPlugin);
 settingsSchema.index({ key: 1 }, { unique: true });
 
 export const SettingsModel = model('Settings', settingsSchema);

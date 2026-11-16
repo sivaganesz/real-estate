@@ -61,13 +61,16 @@ interface RequestOptions {
   auth?: boolean;
   /** Return the whole { data, meta } envelope instead of just `data` (list endpoints). */
   envelope?: boolean;
+  /** Version the change is based on (optimistic concurrency): sent as If-Match. */
+  ifMatch?: number;
 }
 
 async function send(
   path: string,
-  { method = 'GET', body, auth = true }: RequestOptions,
+  { method = 'GET', body, auth = true, ifMatch }: RequestOptions,
 ): Promise<Response> {
   const headers: Record<string, string> = { 'x-requested-with': 'XMLHttpRequest' };
+  if (ifMatch !== undefined) headers['if-match'] = `"${ifMatch}"`;
   if (body !== undefined && !(body instanceof FormData))
     headers['content-type'] = 'application/json';
   if (auth && accessToken) headers.authorization = `Bearer ${accessToken}`;
@@ -105,10 +108,19 @@ async function parse<T>(res: Response, envelope = false): Promise<T> {
  */
 export function refreshSession(): Promise<SessionResponse | null> {
   refreshInFlight ??= (async () => {
+    const attempt = async () =>
+      parse<SessionResponse>(await send('/auth/refresh', { method: 'POST', auth: false }));
     try {
-      const session = await parse<SessionResponse>(
-        await send('/auth/refresh', { method: 'POST', auth: false }),
-      );
+      let session: SessionResponse;
+      try {
+        session = await attempt();
+      } catch (err) {
+        // Another tab refreshed at the same moment and the browser now holds its new
+        // cookie: retry once with it instead of signing out.
+        if (!(err instanceof ApiError && err.code === 'REFRESH_RACE')) throw err;
+        await new Promise((r) => setTimeout(r, 250));
+        session = await attempt();
+      }
       accessToken = session.accessToken;
       return session;
     } catch {
@@ -212,7 +224,9 @@ export const api = {
   },
   post: <T>(path: string, body?: unknown, opts: { auth?: boolean } = {}) =>
     apiRequest<T>(path, { method: 'POST', body, ...opts }),
-  put: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PUT', body }),
-  patch: <T>(path: string, body?: unknown) => apiRequest<T>(path, { method: 'PATCH', body }),
+  put: <T>(path: string, body?: unknown, opts: { ifMatch?: number } = {}) =>
+    apiRequest<T>(path, { method: 'PUT', body, ...opts }),
+  patch: <T>(path: string, body?: unknown, opts: { ifMatch?: number } = {}) =>
+    apiRequest<T>(path, { method: 'PATCH', body, ...opts }),
   delete: <T>(path: string) => apiRequest<T>(path, { method: 'DELETE' }),
 };

@@ -6,6 +6,7 @@ export * from './phone';
 export * from './schemas/common';
 export * from './schemas/auth';
 export * from './schemas/users';
+export * from './schemas/roles';
 export * from './schemas/profile';
 export * from './schemas/settings';
 export * from './schemas/propertyTypes';

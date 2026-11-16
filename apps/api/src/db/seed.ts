@@ -13,17 +13,17 @@ export const superAdminSeedSchema = z.object({
 export type SuperAdminSeed = z.infer<typeof superAdminSeedSchema>;
 
 /**
- * Creates the first Super Admin. Does nothing if a Super Admin already exists, so it is
+ * Creates the first Admin. Does nothing if an Admin already exists, so it is
  * safe to run more than once.
  */
 export async function seedSuperAdmin(input: SuperAdminSeed): Promise<'created' | 'exists'> {
-  const existing = await UserModel.exists({ role: 'super_admin' });
+  const existing = await UserModel.exists({ role: 'admin' });
   if (existing) return 'exists';
 
   await UserModel.create({
     name: input.name,
     email: input.email,
-    role: 'super_admin',
+    role: 'admin',
     status: 'active',
     passwordHash: await hashPassword(input.password),
   });

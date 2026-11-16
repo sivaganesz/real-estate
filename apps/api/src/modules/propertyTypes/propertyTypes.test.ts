@@ -50,7 +50,7 @@ describe('settings → property types (categories & attributes)', () => {
     await ensureStartingPropertyTypes();
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       const user = await UserModel.create({
         name: role === 'admin' ? 'Asha Admin' : 'Ravi Agent',
         email: `${role}@company.com`,
@@ -209,7 +209,7 @@ describe('settings → property types (categories & attributes)', () => {
   });
 
   it('every role that views properties can read it; only settings:edit can change it', async () => {
-    expect((await as('sales_agent', request(ctx.app).get(BASE))).status).toBe(200);
+    expect((await as('sales_executive', request(ctx.app).get(BASE))).status).toBe(200);
     expect((await request(ctx.app).get(BASE)).status).toBe(401);
 
     const villa = sub(await read(), 'Villa / House');
@@ -219,7 +219,7 @@ describe('settings → property types (categories & attributes)', () => {
       request(ctx.app).post(`${BASE}/categories/residential/attributes`).send({}),
       request(ctx.app).get(`${BASE}/attributes?q=bhk`),
     ];
-    for (const attempt of attempts) expect((await as('sales_agent', attempt)).status).toBe(403);
+    for (const attempt of attempts) expect((await as('sales_executive', attempt)).status).toBe(403);
   });
 
   it('adds a new attribute to a subcategory, with a key made from its name', async () => {

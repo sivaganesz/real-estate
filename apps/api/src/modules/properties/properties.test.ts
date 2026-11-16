@@ -53,8 +53,13 @@ describe('properties API', () => {
   const amenityId = (name: string, category = 'residential') =>
     types.categories.find((c) => c.key === category)!.amenities.find((a) => a.name === name)!.id;
   const create = (body: object) => as('admin', request(ctx.app).post(BASE)).send(body);
-  const patch = (id: string, body: object) =>
-    as('admin', request(ctx.app).patch(`${BASE}/${id}`)).send(body);
+  /** PATCH with If-Match set to the version currently stored (a client that just reloaded). */
+  const patch = async (id: string, body: object) => {
+    const current = await PropertyModel.findById(id).select('version').lean<{ version?: number }>();
+    return as('admin', request(ctx.app).patch(`${BASE}/${id}`))
+      .set('if-match', `"${current?.version ?? 0}"`)
+      .send(body);
+  };
   const setStatus = (id: string, status: string) =>
     as('admin', request(ctx.app).post(`${BASE}/${id}/status`)).send({ status });
   const addPhoto = (id: string) =>
@@ -82,7 +87,7 @@ describe('properties API', () => {
     await ensureStartingPropertyTypes();
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       const user = await UserModel.create({
         name: role === 'admin' ? 'Asha Admin' : 'Ravi Agent',
         email: `${role}@company.com`,
@@ -200,18 +205,18 @@ describe('properties API', () => {
 
   it('only roles with properties:write can create or change; agents can view', async () => {
     const id = (await villa()).body.data.id;
-    expect((await as('sales_agent', request(ctx.app).get(BASE))).status).toBe(200);
-    expect((await as('sales_agent', request(ctx.app).get(`${BASE}/${id}`))).status).toBe(200);
-    expect((await as('sales_agent', request(ctx.app).get(`${BASE}/${id}/history`))).status).toBe(
-      200,
-    );
+    expect((await as('sales_executive', request(ctx.app).get(BASE))).status).toBe(200);
+    expect((await as('sales_executive', request(ctx.app).get(`${BASE}/${id}`))).status).toBe(200);
+    expect(
+      (await as('sales_executive', request(ctx.app).get(`${BASE}/${id}/history`))).status,
+    ).toBe(200);
     for (const attempt of [
       request(ctx.app).post(BASE).send({}),
       request(ctx.app).patch(`${BASE}/${id}`).send({ title: 'Changed title' }),
       request(ctx.app).post(`${BASE}/${id}/status`).send({ status: 'archived' }),
       request(ctx.app).delete(`${BASE}/${id}`),
     ]) {
-      expect((await as('sales_agent', attempt)).status).toBe(403);
+      expect((await as('sales_executive', attempt)).status).toBe(403);
     }
   });
 
@@ -254,6 +259,64 @@ describe('properties API', () => {
       'attributes.bathrooms': [null, 3],
     });
     expect(history[0].by).toEqual({ id: adminId, name: 'Asha Admin' });
+  });
+
+  it('never lets a stale edit overwrite a newer one (If-Match, H4)', async () => {
+    const created = (await villa()).body.data;
+    expect(created.version).toBe(0);
+    const edit = (version: string | null, title: string) => {
+      const req = as('admin', request(ctx.app).patch(`${BASE}/${created.id}`));
+      return (version === null ? req : req.set('if-match', version)).send({ title });
+    };
+
+    // Two people opened version 0. The first save wins and bumps the version...
+    const first = await edit('"0"', 'Villa edited by the first user');
+    expect(first.status).toBe(200);
+    expect(first.body.data.version).toBe(1);
+    expect(first.headers.etag).toBe('"1"');
+    // ...the second gets 409 with the current version instead of overwriting.
+    const stale = await edit('"0"', 'Villa edited by the second user');
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.code).toBe('VERSION_CONFLICT');
+    expect(stale.body.error.details[0].message).toBe('1');
+    // Without If-Match the API can't know which version was edited.
+    expect((await edit(null, 'No version')).status).toBe(428);
+    // A status change also counts as a change.
+    await setStatus(created.id, 'archived');
+    await setStatus(created.id, 'draft');
+    expect((await edit('"1"', 'Old version')).status).toBe(409);
+    expect((await PropertyModel.findById(created.id).lean())!.title).toBe(
+      'Villa edited by the first user',
+    );
+  });
+
+  it('a property type deleted while a property is being saved never leaves an orphan (L3)', async () => {
+    for (let round = 0; round < 4; round++) {
+      const types = await as('admin', request(ctx.app).post(`${TYPES}/subcategories`)).send({
+        categoryKey: 'residential',
+        name: `Race type ${round}`,
+        codePrefix: `RC${'ABCD'[round]}`,
+        purposes: ['sale'],
+      });
+      const raceSub = types.body.data.categories
+        .flatMap((c: { subcategories: { id: string; name: string }[] }) => c.subcategories)
+        .find((s: { name: string }) => s.name === `Race type ${round}`);
+      const [created, deleted] = await Promise.all([
+        create({ subcategoryId: raceSub.id, title: 'Racing property', purpose: 'sale' }),
+        as('admin', request(ctx.app).delete(`${TYPES}/subcategories/${raceSub.id}`)),
+      ]);
+      // Exactly one wins: either the property exists and the type stays, or the type is gone
+      // and no property points at it.
+      const typeExists = await PropertySubcategoryModel.exists({ _id: raceSub.id });
+      const orphans = await PropertyModel.countDocuments({ subcategoryId: raceSub.id });
+      if (typeExists) {
+        expect(created.status).toBe(201);
+        expect(deleted.status).toBe(422);
+      } else {
+        expect(deleted.status).toBe(200);
+        expect(orphans).toBe(0);
+      }
+    }
   });
 
   it('publishes only when complete, and a published property stays complete', async () => {
@@ -397,7 +460,7 @@ describe('properties API', () => {
     });
 
     const suggest = (qs: string) =>
-      as('sales_agent', request(ctx.app).get(`${BASE}/location-suggestions?${qs}`)).then(
+      as('sales_executive', request(ctx.app).get(`${BASE}/location-suggestions?${qs}`)).then(
         (r) => r.body.data,
       );
     expect(await suggest('field=city&q=chen')).toEqual([

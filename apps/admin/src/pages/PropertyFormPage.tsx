@@ -283,7 +283,7 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
       try {
         const body = bodyFromValues(values, layout);
         const saved = property
-          ? await update.mutateAsync({ id: property.id, body })
+          ? await update.mutateAsync({ id: property.id, version: property.version, body })
           : await create.mutateAsync(body);
         form.reset(valuesFromProperty(saved, layoutFor(categories, saved.subcategoryId)));
         if (!property) {

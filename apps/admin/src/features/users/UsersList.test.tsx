@@ -14,7 +14,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: v
 
 const base: Omit<User, 'id' | 'name' | 'email' | 'status'> = {
   phone: null,
-  role: 'admin',
+  role: 'sales_manager',
+  roleName: 'Sales Manager',
   locked: false,
   lockedUntil: null,
   failedLoginCount: 0,
@@ -31,7 +32,8 @@ const users: User[] = [
     name: 'Owner',
     email: 'owner@x.com',
     status: 'active',
-    role: 'super_admin',
+    role: 'admin',
+    roleName: 'Admin',
   },
   {
     ...base,
@@ -57,7 +59,8 @@ const me: AuthUser = {
   name: 'Owner',
   email: 'owner@x.com',
   phone: null,
-  role: 'super_admin',
+  role: 'admin',
+  roleName: 'Admin',
   permissions: ['users:manage'],
 };
 

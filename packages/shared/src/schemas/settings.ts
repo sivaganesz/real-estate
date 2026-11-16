@@ -31,6 +31,8 @@ export const companySettingsSchema = z.object({
   isConfigured: z.boolean(),
   updatedAt: z.string().nullable(),
   updatedBy: z.object({ id: idSchema, name: z.string() }).nullable(),
+  /** Send it back in If-Match when saving (0 before the first save). */
+  version: z.number().int(),
 });
 export type CompanySettings = z.infer<typeof companySettingsSchema>;
 

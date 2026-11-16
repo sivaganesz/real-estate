@@ -17,11 +17,40 @@ describe('downloadPublicFile', () => {
       'fd00::1',
       'fe80::1',
       '::ffff:10.0.0.1',
+      // Bypasses of the v1 check (H1): mapped IPv4 in hex, NAT64, 6to4, Teredo, site-local
+      '::ffff:7f00:1',
+      '::ffff:a9fe:a9fe',
+      '64:ff9b::a00:1',
+      '2002:7f00:1::',
+      '2001::1',
+      'fec0::1',
+      '198.18.0.1',
+      '255.255.255.255',
+      'not-an-ip',
     ]) {
       expect(isPrivateAddress(ip), ip).toBe(true);
     }
-    for (const ip of ['93.184.216.34', '8.8.8.8', '2606:4700::1111'])
+    for (const ip of ['93.184.216.34', '8.8.8.8', '2606:4700::1111', '::ffff:8.8.8.8'])
       expect(isPrivateAddress(ip), ip).toBe(false);
+  });
+
+  it('checks the address again on the connection itself (DNS rebinding)', async () => {
+    // The first lookup (the pre-check) answers a public address, the second (the socket's
+    // own lookup) a private one: the pinned fetch must refuse to connect.
+    const answers = [['93.184.216.34'], ['127.0.0.1']];
+    const resolveHost = vi.fn(async () => answers.shift() ?? ['127.0.0.1']);
+    await expect(
+      downloadPublicFile('https://rebind.example.com/a.jpg', { maxBytes: 100, resolveHost }),
+    ).rejects.toThrow('private networks');
+    expect(resolveHost).toHaveBeenCalledTimes(2);
+  });
+
+  it('refuses IPv6 literals that wrap private IPv4 addresses', async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+    await expect(
+      downloadPublicFile('https://[::ffff:7f00:1]/a.jpg', { maxBytes: 5, fetchImpl }),
+    ).rejects.toThrow('private networks');
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('downloads a public https file', async () => {

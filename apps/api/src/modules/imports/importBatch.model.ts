@@ -24,7 +24,8 @@ const rowSchema = new Schema(
     filled: { type: [String], default: [] },
     outcome: { type: String, default: null },
   },
-  { _id: false },
+  // "errors" is a Mongoose reserved name, but here it's only a plain field (L10).
+  { _id: false, suppressReservedKeysWarning: true },
 );
 
 /** One uploaded spreadsheet: its checked rows, then the import result (TRD §7.10). */
