@@ -231,7 +231,7 @@ function Details({
                 {p.title}
                 {p.isFeatured && (
                   <StarIcon
-                    className="size-4 fill-amber-400 text-amber-400"
+                    className="size-4 fill-tone-amber text-tone-amber"
                     aria-label="Featured"
                   />
                 )}

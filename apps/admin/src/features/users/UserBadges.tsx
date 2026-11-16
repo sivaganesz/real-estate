@@ -1,4 +1,5 @@
 import type { User } from '@real-estate/shared';
+import { TONE_CHIP } from '@/components/patterns/tone';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { statusDetail, statusOf } from './status';
@@ -6,13 +7,13 @@ import type { StatusKind } from './status';
 
 /** One colour per system role; custom roles share a neutral chip. */
 const ROLE_STYLE: Record<string, string> = {
-  admin: 'bg-orange-500/10 text-orange-600 dark:bg-primary/15 dark:text-primary',
-  sales_manager: 'bg-violet-500/10 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300',
-  sales_executive: 'bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-400',
+  admin: TONE_CHIP.amber,
+  sales_manager: TONE_CHIP.purple,
+  sales_executive: TONE_CHIP.blue,
 };
-const CUSTOM_ROLE_STYLE = 'bg-muted text-foreground';
+const CUSTOM_ROLE_STYLE = TONE_CHIP.grey;
 
-/** Role chip: Admin orange, Sales Manager violet, Sales Executive blue, custom roles grey. */
+/** Role chip: Admin amber, Sales Manager purple, Sales Executive blue, custom roles grey. */
 export function RoleBadge({
   role,
   name,

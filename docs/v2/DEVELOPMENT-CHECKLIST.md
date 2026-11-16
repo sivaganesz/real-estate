@@ -104,24 +104,26 @@
 - [x] UI: `RolePicker`, `UserBadges`, `UsersFilters` and menus read roles and permissions from the API, not constants
 - [x] Tests: each system role's matrix; a custom role end to end (create → assign → access → edit → next request reflects it → delete blocked → move users → delete); reserved permissions rejected; last-Admin guard incl. concurrent demotion; migration up (no down by design)
 
-**Shared domain package**
+**Shared domain package** (moved to R1.1, built together with its first users)
 - [ ] `packages/shared/src/domain/` created: `status.ts`, `pricing.ts`, `legal.ts`, `location.ts` (R1); stubs for later
 - [ ] Golden tests ported from the wireframe fixtures (pricing, legal wording, location preview, status transitions)
 
 **Front end: design system and shell**
-- [ ] Tokens from the wireframe into `index.css`: brand, background, panel, ink, muted, lines, tone colours and soft variants; **dark pairs**; Inter font (TRD §12.1)
-- [ ] Replace hard-coded palette classes with tones; lint rule against raw palette classes outside `components/ui`
-- [ ] shadcn additions: dialog, radio-group, progress, popover, command, toggle-group, accordion
-- [ ] Pattern components: `PageHeader`, `KpiTile`, `Chip`, `Note`, `NumberedSection`, `DescriptionGrid`, `Meter`, `Timeline`, `ConfirmDialog`, `InlineField`, `EditableTable`, `StatusSelect`, `RadioCards`, `StepBar`, `EmptyState`, `CountBadge`
-- [ ] Global restyle: table header and rows, underline tabs, card borders and shadow, buttons
-- [ ] App shell:
+- [x] Tokens from the wireframe into `index.css`: brand, background, panel, ink, muted, lines, tone colours and soft variants; **dark pairs**; Inter font (TRD §12.1)
+- [x] Replace hard-coded palette classes with tones; lint rule against raw palette classes outside `components/ui`
+- [ ] shadcn additions (dialog, radio-group, progress, popover, command, toggle-group, accordion): added with the screens that first use them (R1.1–R1.7)
+- [x] Pattern components (`components/patterns`): `PageHeader`, `KpiTile`, `Chip`, `Note`, `NumberedSection`, `Meter`, `EmptyState`, tone maps
+- [ ] Remaining patterns, built with the screen that first needs them: `DescriptionGrid`, `Timeline`, `ConfirmDialog`, `InlineField`, `EditableTable`, `StatusSelect`, `RadioCards`, `StepBar`
+- [x] Global restyle: table header and rows, underline tabs (brand), card borders and shadow
+- [x] App shell:
   - wireframe sidebar groups, 236 px, collapsible, soft active state, count slots, lock icon;
   - top bar with breadcrumbs (section prefix + entity code) and quick actions;
   - content max 1380 px;
   - mobile drawer on `Sheet` (focus trap, Escape)
-- [ ] Route-level code splitting (`React.lazy`) and `manualChunks`; check the initial bundle is under 350 KB gzip
-- [ ] Add an `<h1>` via `PageHeader` on every page; fix `ChangeStatusDialog` to use `Dialog`
-- [ ] Playwright set up (local + CI job on the built app)
+- [x] Route-level code splitting (`React.lazy`): initial load ≈ 285 KB gzip (was 345 KB, one 1.16 MB chunk); `manualChunks` not needed
+- [x] An `<h1>` via `PageHeader` on every page (route `handle.page`, wireframe wording)
+- [ ] `ChangeStatusDialog` on `Dialog`: with the new statuses (R1.1)
+- [ ] Playwright set up (local + CI job on the built app): moved to the R1.8 testing gate; screen checks for R1.0 were done with headless Edge
 
 **Gate R1.0:** all suites green; screenshots of the restyled existing screens in light and dark; security tests for H1–H4 pass.
 

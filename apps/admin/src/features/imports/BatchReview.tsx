@@ -36,9 +36,9 @@ function Stat({
       <div
         className={cn(
           'text-2xl font-semibold',
-          tone === 'good' && 'text-emerald-700 dark:text-emerald-400',
+          tone === 'good' && 'text-tone-green',
           tone === 'bad' && value > 0 && 'text-destructive',
-          tone === 'warn' && value > 0 && 'text-amber-600 dark:text-amber-400',
+          tone === 'warn' && value > 0 && 'text-tone-amber',
         )}
       >
         {value}
@@ -167,13 +167,13 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
                       ))}
                     </ul>
                   ) : r.status === 'duplicate' ? (
-                    <span className="text-amber-700 dark:text-amber-400">
+                    <span className="text-tone-amber">
                       {r.duplicateOf?.row
                         ? `Same as row ${r.duplicateOf.row} in this file`
                         : `Already exists as ${r.duplicateOf?.code}`}
                     </span>
                   ) : (
-                    <span className="text-emerald-700 dark:text-emerald-400">Ready</span>
+                    <span className="text-tone-green">Ready</span>
                   )}
                 </TableCell>
               </TableRow>
@@ -194,7 +194,7 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
       {imported && batch.result ? (
         <Card className="grid gap-3 p-5">
           <h2 className="flex items-center gap-2 font-semibold">
-            <CheckCircle2Icon className="size-5 text-emerald-600" /> Import finished
+            <CheckCircle2Icon className="size-5 text-tone-green" /> Import finished
           </h2>
           <p className="text-sm">
             {batch.result.created} created

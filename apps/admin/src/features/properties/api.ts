@@ -44,8 +44,9 @@ export function useProperties(query: Partial<ListPropertiesQuery>) {
   });
 }
 
-export function useStatusCounts() {
+export function useStatusCounts({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled,
     queryKey: propertiesKeys.counts,
     queryFn: () => api.get<PropertyStatusCounts>(`${PATH}/status-counts`),
   });

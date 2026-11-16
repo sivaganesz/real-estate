@@ -932,14 +932,14 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
                   Save the draft, then add at least one photo.
                 </p>
               ) : issues.length === 0 ? (
-                <p className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                <p className="flex items-center gap-2 text-sm text-tone-green">
                   <CheckCircle2Icon className="size-4" /> Everything needed is filled in
                 </p>
               ) : (
                 <ul className="grid gap-1.5 text-sm">
                   {issues.map((i) => (
                     <li key={i.path} className="flex items-start gap-2">
-                      <CircleAlertIcon className="mt-0.5 size-4 flex-none text-amber-600" />
+                      <CircleAlertIcon className="mt-0.5 size-4 flex-none text-tone-amber" />
                       {i.message}
                     </li>
                   ))}

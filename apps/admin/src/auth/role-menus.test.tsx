@@ -3,7 +3,7 @@ import type { AuthUser, Permission, SystemRoleKey } from '@real-estate/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { tokenStore } from '@/lib/api';
 import { routes } from '@/router';
@@ -116,9 +116,21 @@ function renderAs(role: Role, path: string) {
 const sidebarLinks = () =>
   within(screen.getAllByRole('navigation', { name: 'Main' })[0]!)
     .queryAllByRole('link')
-    .map((a) => a.textContent);
+    // The label only: links may also carry a count badge.
+    .map((a) => a.querySelector('[data-label]')?.textContent ?? a.textContent);
 
 describe('role-based menus and pages', () => {
+  // Pages are split per route (React.lazy). Load their code once up front so these tests
+  // check menus and access, not how fast a busy test machine compiles a page.
+  beforeAll(async () => {
+    await Promise.all([
+      import('@/pages/ProfilePage'),
+      import('@/pages/PropertiesPage'),
+      import('@/pages/UsersPage'),
+      import('@/pages/CompanySettingsPage'),
+    ]);
+  }, 60_000);
+
   const fetchMock = vi.fn<typeof fetch>();
   beforeEach(() => {
     fetchMock.mockImplementation(async (input) => fakeApi(String(input)));
@@ -131,7 +143,7 @@ describe('role-based menus and pages', () => {
   });
 
   it.each([
-    ['admin', '/users', ['Properties', 'Bulk Import', 'Users & Roles', 'Settings']],
+    ['admin', '/users', ['Properties', 'Bulk import', 'Users & Roles', 'Settings']],
     ['sales_manager', '/properties', ['Properties']],
     ['sales_executive', '/properties', ['Properties']],
   ] as const)('%s: "/" opens %s and the sidebar shows %j', async (role, home, links) => {
@@ -153,7 +165,10 @@ describe('role-based menus and pages', () => {
   it('every role can open My Profile', async () => {
     for (const role of ['admin', 'sales_manager', 'sales_executive'] as const) {
       renderAs(role, '/profile');
-      expect(await screen.findByText('Personal details')).toBeInTheDocument();
+      // Pages load on demand, so allow for the first load of the page code.
+      expect(
+        await screen.findByText('Personal details', undefined, { timeout: 5000 }),
+      ).toBeInTheDocument();
       expect(screen.queryByText("You don't have access to this page")).not.toBeInTheDocument();
       cleanup();
     }

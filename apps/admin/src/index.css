@@ -1,13 +1,18 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
+@import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design tokens from the approved wireframe (spec-system-wireframe/styles.css, TRD v2 §12.1).
+ * Components use these tokens only: brand, surfaces, ink, lines, and six status tones, each
+ * with a soft background. Raw Tailwind palette classes (bg-blue-500…) are not used in app code.
+ */
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -24,6 +29,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-line-soft: var(--line-soft);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -35,12 +41,31 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-foreground: var(--foreground);
+  --color-ink-2: var(--ink-2);
   --color-background: var(--background);
+  --color-table-head: var(--table-head);
+
+  /* Status tones (chips, notes, meters, KPI accents) */
+  --color-tone-green: var(--tone-green);
+  --color-tone-green-soft: var(--tone-green-soft);
+  --color-tone-amber: var(--tone-amber);
+  --color-tone-amber-soft: var(--tone-amber-soft);
+  --color-tone-red: var(--tone-red);
+  --color-tone-red-soft: var(--tone-red-soft);
+  --color-tone-blue: var(--tone-blue);
+  --color-tone-blue-soft: var(--tone-blue-soft);
+  --color-tone-purple: var(--tone-purple);
+  --color-tone-purple-soft: var(--tone-purple-soft);
+  --color-tone-grey: var(--tone-grey);
+  --color-tone-grey-soft: var(--tone-grey-soft);
+
+  --shadow-card: var(--card-shadow);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,56 +75,77 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Light: the wireframe's palette. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: #f3f4f7;
+  --foreground: #1b2130;
+  --ink-2: #3a4254;
+  --card: #ffffff;
+  --card-foreground: #1b2130;
+  --popover: #ffffff;
+  --popover-foreground: #1b2130;
+  --primary: #2f5bea;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e9efff;
+  --secondary: #eff1f4;
+  --secondary-foreground: #1b2130;
+  --muted: #eff1f4;
+  --muted-foreground: #6b7385;
+  --accent: #eff1f4;
+  --accent-foreground: #1b2130;
+  --destructive: #b42318;
+  --border: #e1e4ea;
+  --line-soft: #eef0f4;
+  --input: #d5d9e1;
+  --ring: #2f5bea;
+  --table-head: #fafbfc;
+  --success: #11743f;
+  --warning: #995400;
+  --tone-green: #11743f;
+  --tone-green-soft: #e3f4ea;
+  --tone-amber: #995400;
+  --tone-amber-soft: #fff1d9;
+  --tone-red: #b42318;
+  --tone-red-soft: #fdeceb;
+  --tone-blue: #1958c9;
+  --tone-blue-soft: #e7effd;
+  --tone-purple: #6a3fc4;
+  --tone-purple-soft: #f0eaff;
+  --tone-grey: #4b5363;
+  --tone-grey-soft: #eff1f4;
+  --chart-1: #2f5bea;
+  --chart-2: #22985a;
+  --chart-3: #e0a043;
+  --chart-4: #8b6be0;
+  --chart-5: #9aa2b1;
   --radius: 0.625rem;
-  --success: oklch(0.627 0.17 149);
-  --warning: oklch(0.77 0.16 70);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.03);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3a4254;
+  --sidebar-primary: #2f5bea;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9efff;
+  --sidebar-accent-foreground: #2f5bea;
+  --sidebar-border: #e1e4ea;
+  --sidebar-ring: #2f5bea;
 }
 
 /*
- * Dark theme, matched to the reference design: near-black warm/violet surfaces,
- * soft white text, muted grey labels and an orange accent.
+ * Dark: the original (v1) dark theme, kept by the owner's choice (2026-11-16): warm
+ * near-black surfaces, soft white text, muted grey labels and an orange accent. Status
+ * tones are light text on deep tints of the same hue.
  */
 .dark {
   --background: #0f0d12;
   --foreground: #ededf0;
+  --ink-2: #d6d3dc;
   --card: #17151b;
   --card-foreground: #ededf0;
   --popover: #1a181f;
   --popover-foreground: #ededf0;
   --primary: #f26a2e;
   --primary-foreground: #ffffff;
+  --primary-soft: #2a1a14;
   --secondary: #221f27;
   --secondary-foreground: #e4e2e8;
   --muted: #1c1a21;
@@ -108,15 +154,30 @@
   --accent-foreground: #ededf0;
   --destructive: #f0614f;
   --border: #27242c;
+  --line-soft: #211e26;
   --input: #2d2a33;
   --ring: #f26a2e;
+  --table-head: #1a181f;
   --success: #22c55e;
   --warning: #eab308;
+  --tone-green: #22c55e;
+  --tone-green-soft: #10291a;
+  --tone-amber: #eab308;
+  --tone-amber-soft: #2e2608;
+  --tone-red: #f0614f;
+  --tone-red-soft: #36161a;
+  --tone-blue: #6b9cff;
+  --tone-blue-soft: #16203a;
+  --tone-purple: #b79cff;
+  --tone-purple-soft: #251c3d;
+  --tone-grey: #a19ca8;
+  --tone-grey-soft: #221f27;
   --chart-1: #f26a2e;
   --chart-2: #22c55e;
   --chart-3: #eab308;
   --chart-4: #8e8994;
   --chart-5: #5c5763;
+  --card-shadow: none;
   --sidebar: #131116;
   --sidebar-foreground: #ededf0;
   --sidebar-primary: #f26a2e;
@@ -132,10 +193,13 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  /* Wireframe body text: 14 px / 1.45. */
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.45;
   }
 }

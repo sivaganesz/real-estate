@@ -6,7 +6,7 @@ import type { PillNavItem } from '@/components/PillNav';
 const TABS: PillNavItem[] = [
   { label: 'Company info', to: '/settings/company' },
   { label: 'Property types & amenities', to: '/settings/property-types', exact: false },
-  { label: 'Visit slots', phase: 'Phase 3' },
+  { label: 'Visit slots', phase: 'R6' },
 ];
 
 /** The Settings top navbar at the top of the content, with the tab's actions on the right. */

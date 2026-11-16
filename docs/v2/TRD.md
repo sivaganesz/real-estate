@@ -704,7 +704,7 @@ If a second instance is ever added, move the rate limiter to Mongo or Redis (doc
 |---|---|
 | Status rename (published → available) breaks old links and filters | Migration + aliases in `listPropertiesQuerySchema` for one release |
 | Replica set adds local setup work | docker-compose with an init script; documented in README; tests use `MongoMemoryReplSet` |
-| Dark mode for wireframe colours (the wireframe is light only) | Define dark token pairs in R1; designer or team review of both themes |
+| Dark mode for wireframe colours (the wireframe is light only) | Decided 2026-11-16 (owner): dark mode keeps the original v1 dark theme (warm near-black surfaces, orange accent); light mode uses the wireframe palette (brand blue). Change only on request |
 | Inline tab editing and conflicts | Section-level `If-Match`, element-level atomic updates, clear conflict UI |
 | Lead source (PRD D5) reverses the v1 “Perfox only” rule | Team decision before R3; the data model supports an external `sourceRef` later |
 | Single instance (in-memory rate limit and caches) | Accepted for now; documented upgrade path |

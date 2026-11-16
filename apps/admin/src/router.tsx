@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import type { RouteObject } from 'react-router';
 import { HomeRedirect, PublicOnly, RequireAuth, RequirePermission } from '@/auth/guards';
@@ -6,16 +7,35 @@ import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
-import { CompanySettingsPage } from '@/pages/CompanySettingsPage';
 import { ErrorPage } from '@/pages/ErrorPage';
-import { ImportPage } from '@/pages/ImportPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { PropertiesPage } from '@/pages/PropertiesPage';
-import { PropertyDetailPage } from '@/pages/PropertyDetailPage';
-import { PropertyFormPage } from '@/pages/PropertyFormPage';
-import { PropertyTypesPage } from '@/pages/PropertyTypesPage';
-import { UsersPage } from '@/pages/UsersPage';
+
+/**
+ * Signed-in pages load on demand (code splitting, TRD v2 F1): the first load carries only
+ * the shell and the sign-in pages. AppLayout shows a skeleton while a page loads.
+ */
+const CompanySettingsPage = lazy(() =>
+  import('@/pages/CompanySettingsPage').then((m) => ({ default: m.CompanySettingsPage })),
+);
+const ImportPage = lazy(() =>
+  import('@/pages/ImportPage').then((m) => ({ default: m.ImportPage })),
+);
+const ProfilePage = lazy(() =>
+  import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
+const PropertiesPage = lazy(() =>
+  import('@/pages/PropertiesPage').then((m) => ({ default: m.PropertiesPage })),
+);
+const PropertyDetailPage = lazy(() =>
+  import('@/pages/PropertyDetailPage').then((m) => ({ default: m.PropertyDetailPage })),
+);
+const PropertyFormPage = lazy(() =>
+  import('@/pages/PropertyFormPage').then((m) => ({ default: m.PropertyFormPage })),
+);
+const PropertyTypesPage = lazy(() =>
+  import('@/pages/PropertyTypesPage').then((m) => ({ default: m.PropertyTypesPage })),
+);
+const UsersPage = lazy(() => import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage })));
 
 export const routes: RouteObject[] = [
   {
@@ -47,7 +67,14 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomeRedirect /> },
       {
         path: 'imports',
-        handle: { breadcrumbs: [{ label: 'Bulk Import' }] },
+        handle: {
+          page: {
+            title: 'Bulk import properties',
+            description:
+              'Add or update many properties at once from a spreadsheet. Every row is checked before anything is saved.',
+          },
+          breadcrumbs: [{ label: 'Bulk Import' }],
+        },
         element: (
           <RequirePermission permission="imports:run">
             <ImportPage tab="new" />
@@ -56,7 +83,14 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'imports/history',
-        handle: { breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'History' }] },
+        handle: {
+          page: {
+            title: 'Bulk import properties',
+            description:
+              'Add or update many properties at once from a spreadsheet. Every row is checked before anything is saved.',
+          },
+          breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'History' }],
+        },
         element: (
           <RequirePermission permission="imports:run">
             <ImportPage tab="history" />
@@ -65,7 +99,14 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'imports/:id',
-        handle: { breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'Import' }] },
+        handle: {
+          page: {
+            title: 'Bulk import properties',
+            description:
+              'Add or update many properties at once from a spreadsheet. Every row is checked before anything is saved.',
+          },
+          breadcrumbs: [{ label: 'Bulk Import', to: '/imports' }, { label: 'Import' }],
+        },
         element: (
           <RequirePermission permission="imports:run">
             <ImportPage tab="batch" />
@@ -74,7 +115,14 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'properties',
-        handle: { breadcrumbs: [{ label: 'Properties' }] },
+        handle: {
+          page: {
+            title: 'Property specification database',
+            description:
+              'Every property has a unique ID and a standard specification. Form fields change by property type.',
+          },
+          breadcrumbs: [{ label: 'Properties' }],
+        },
         element: (
           <RequirePermission permission="properties:read">
             <PropertiesPage />
@@ -84,6 +132,11 @@ export const routes: RouteObject[] = [
       {
         path: 'properties/new',
         handle: {
+          page: {
+            title: 'Add property',
+            description:
+              'Main information is common to all properties. The specification section below changes with the property type.',
+          },
           breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Add property' }],
         },
         element: (
@@ -117,6 +170,11 @@ export const routes: RouteObject[] = [
       {
         path: 'properties/:id/edit',
         handle: {
+          page: {
+            title: 'Edit property',
+            description:
+              'Main information is common to all properties. The specification section below changes with the property type.',
+          },
           breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Edit property' }],
         },
         element: (
@@ -127,7 +185,10 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'users',
-        handle: { breadcrumbs: [{ label: 'Users & Roles', to: '/users' }, { label: 'Users' }] },
+        // No page heading here (owner's choice): the tabs and breadcrumbs say where you are.
+        handle: {
+          breadcrumbs: [{ label: 'Users & Roles', to: '/users' }, { label: 'Users' }],
+        },
         element: (
           <RequirePermission permission="users:manage">
             <UsersPage tab="users" />
@@ -148,6 +209,7 @@ export const routes: RouteObject[] = [
       { path: 'settings', element: <Navigate to="/settings/company" replace /> },
       {
         path: 'settings/company',
+        // No page heading on Settings (owner's choice): the tabs and breadcrumbs say where you are.
         handle: {
           breadcrumbs: [{ label: 'Settings', to: '/settings' }, { label: 'Company info' }],
         },
@@ -188,7 +250,10 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'profile',
-        handle: { breadcrumbs: [{ label: 'Account' }, { label: 'My Profile' }] },
+        handle: {
+          page: { title: 'My Profile', description: 'Your details, password and sign-in history.' },
+          breadcrumbs: [{ label: 'Account' }, { label: 'My Profile' }],
+        },
         element: <ProfilePage />,
       },
       { path: '*', handle: { breadcrumbs: [{ label: 'Not found' }] }, element: <NotFoundPage /> },

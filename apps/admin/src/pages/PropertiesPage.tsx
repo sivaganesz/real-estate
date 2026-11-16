@@ -488,7 +488,7 @@ export function PropertiesPage() {
                         <span className="line-clamp-1">{p.title}</span>
                         {p.isFeatured && (
                           <StarIcon
-                            className="size-3.5 flex-none fill-amber-400 text-amber-400"
+                            className="size-3.5 flex-none fill-tone-amber text-tone-amber"
                             aria-label="Featured"
                           />
                         )}

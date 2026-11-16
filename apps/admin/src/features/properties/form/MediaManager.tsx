@@ -243,7 +243,7 @@ export function MediaManager({ property }: { property: Property }) {
                 />
                 {m.isCover && (
                   <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium">
-                    <StarIcon className="size-3 fill-amber-400 text-amber-400" /> Cover
+                    <StarIcon className="size-3 fill-tone-amber text-tone-amber" /> Cover
                   </span>
                 )}
               </div>

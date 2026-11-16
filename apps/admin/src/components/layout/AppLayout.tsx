@@ -1,56 +1,103 @@
 import type { Permission } from '@real-estate/shared';
 import {
+  BarChart3Icon,
   CalendarDaysIcon,
-  ContactIcon,
   HouseIcon,
+  KanbanSquareIcon,
+  LayoutDashboardIcon,
+  LockIcon,
   MenuIcon,
-  MessagesSquareIcon,
-  PhoneCallIcon,
+  PlusIcon,
   SettingsIcon,
+  ShieldCheckIcon,
+  TargetIcon,
   UploadIcon,
   UsersIcon,
-  XIcon,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
-import { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { Suspense, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '@/auth/auth-context';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/patterns';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useStatusCounts } from '@/features/properties/api';
 import { useCompanySettings } from '@/features/settings/api';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './BrandMark';
 import { Breadcrumbs } from './Breadcrumbs';
+import { usePageHeading } from './use-page-heading';
 import { UserMenu } from './UserMenu';
 
 type Icon = ComponentType<{ className?: string }>;
 
-interface NavItem {
+interface NavLinkItem {
   to: string;
   label: string;
   icon: Icon;
   permission?: Permission;
+  /** Count shown at the right (wireframe `.cnt`). */
+  count?: 'availableProperties';
 }
 
-/** Inventory (Phase 2). */
-const INVENTORY_NAV: NavItem[] = [
-  { to: '/properties', label: 'Properties', icon: HouseIcon, permission: 'properties:read' },
-  { to: '/imports', label: 'Bulk Import', icon: UploadIcon, permission: 'imports:run' },
-];
+/** A module from a later release: shown greyed with its release, so the plan is visible. */
+interface ComingItem {
+  label: string;
+  icon: Icon;
+  release: string;
+  /** Shown with a lock to roles without this permission (wireframe: HNI). */
+  restrictedTo?: Permission;
+}
 
-/** Administration (shown only to roles that can use them). */
-const ADMIN_NAV: NavItem[] = [
-  { to: '/users', label: 'Users & Roles', icon: UsersIcon, permission: 'users:manage' },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon, permission: 'settings:edit' },
-];
+interface NavSection {
+  title: string;
+  links?: NavLinkItem[];
+  coming?: ComingItem[];
+}
 
-/** Later phases, shown greyed out so the team can see what's coming. */
-const COMING_NEXT: { label: string; icon: Icon; phase: string }[] = [
-  { label: 'Appointments', icon: CalendarDaysIcon, phase: 'Phase 3' },
-  { label: 'Leads', icon: ContactIcon, phase: 'Phase 3' },
-  { label: 'Conversations', icon: MessagesSquareIcon, phase: 'Phase 3' },
-  { label: 'Call Logs', icon: PhoneCallIcon, phase: 'Phase 3' },
+/** Sidebar groups, in the wireframe's order (spec-system-wireframe/app.js NAV). */
+const NAV: NavSection[] = [
+  {
+    title: 'Overview',
+    coming: [{ label: 'Sales dashboard', icon: LayoutDashboardIcon, release: 'R7' }],
+  },
+  {
+    title: 'Specification data',
+    links: [
+      {
+        to: '/properties',
+        label: 'Properties',
+        icon: HouseIcon,
+        permission: 'properties:read',
+        count: 'availableProperties',
+      },
+      { to: '/imports', label: 'Bulk import', icon: UploadIcon, permission: 'imports:run' },
+    ],
+  },
+  {
+    title: 'Sales & qualification',
+    coming: [
+      { label: 'Lead pipeline', icon: KanbanSquareIcon, release: 'R3' },
+      { label: 'Matching engine', icon: TargetIcon, release: 'R5' },
+      { label: 'Appointments', icon: CalendarDaysIcon, release: 'R6' },
+      { label: 'Reports', icon: BarChart3Icon, release: 'R7' },
+      {
+        label: 'HNI qualification',
+        icon: ShieldCheckIcon,
+        release: 'R8',
+        restrictedTo: 'hni:read',
+      },
+    ],
+  },
+  {
+    title: 'Administration',
+    links: [
+      { to: '/users', label: 'Users & Roles', icon: UsersIcon, permission: 'users:manage' },
+      { to: '/settings', label: 'Settings', icon: SettingsIcon, permission: 'settings:edit' },
+    ],
+  },
 ];
 
 const COLLAPSE_KEY = 're-admin-sidebar-collapsed';
@@ -81,14 +128,17 @@ function WithTip({
   );
 }
 
-function GroupLabel({ collapsed, children }: { collapsed: boolean; children: string }) {
-  if (collapsed) return <div className="mx-3 my-2 h-px bg-border" aria-hidden />;
+function SectionLabel({ collapsed, children }: { collapsed: boolean; children: string }) {
+  if (collapsed) return <div className="mx-3 my-2 h-px bg-sidebar-border" aria-hidden />;
   return (
-    <div className="px-3 pt-4 pb-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase">
+    <div className="px-2.5 pt-3 pb-1 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
       {children}
     </div>
   );
 }
+
+const countClass =
+  'ml-auto rounded-full bg-tone-grey-soft px-1.5 text-[11px] leading-[18px] text-muted-foreground tabular-nums';
 
 function Sidebar({
   collapsed,
@@ -102,36 +152,25 @@ function Sidebar({
 }) {
   const { user, can } = useAuth();
   const { data: company } = useCompanySettings();
+  const showCounts = can('properties:read');
+  const counts = useStatusCounts({ enabled: showCounts });
   if (!user) return null;
-  const inventoryItems = INVENTORY_NAV.filter((item) => !item.permission || can(item.permission));
-  const adminItems = ADMIN_NAV.filter((item) => !item.permission || can(item.permission));
 
+  const countOf = (key: NavLinkItem['count']) =>
+    key === 'availableProperties' ? counts.data?.published : undefined;
+
+  // Wireframe `.nav a` / `.nav a.on`: soft brand background for the current page.
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'group flex h-9 items-center gap-3 rounded-lg text-sm font-medium transition-colors',
-      collapsed ? 'justify-center px-0' : 'px-3',
+      'flex h-8 items-center gap-2.5 rounded-lg text-[14px] font-medium transition-colors',
+      collapsed ? 'justify-center px-0' : 'px-2.5',
       isActive
-        ? 'bg-primary text-primary-foreground shadow-xs dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:shadow-none'
-        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+        : 'text-sidebar-foreground hover:bg-tone-grey-soft',
     );
 
-  const renderLinks = (items: NavItem[]) =>
-    items.map(({ to, label, icon: ItemIcon }) => (
-      <WithTip key={to} show={collapsed} label={label}>
-        <NavLink
-          to={to}
-          className={linkClass}
-          onClick={onNavigate}
-          aria-label={collapsed ? label : undefined}
-        >
-          <ItemIcon className="size-4 shrink-0" />
-          {!collapsed && <span className="truncate">{label}</span>}
-        </NavLink>
-      </WithTip>
-    ));
-
   return (
-    <nav aria-label="Main" className="flex h-full flex-col gap-0.5 p-3">
+    <nav aria-label="Main" className="flex h-full flex-col gap-0.5 px-2.5 py-3.5">
       <div className={cn('flex h-11 items-center', collapsed ? 'justify-center' : 'px-1')}>
         <BrandMark
           compact={collapsed}
@@ -141,57 +180,114 @@ function Sidebar({
         />
       </div>
 
-      {inventoryItems.length > 0 && (
-        <>
-          <GroupLabel collapsed={collapsed}>Inventory</GroupLabel>
-          {renderLinks(inventoryItems)}
-        </>
-      )}
-
-      {adminItems.length > 0 && (
-        <>
-          <GroupLabel collapsed={collapsed}>Administration</GroupLabel>
-          {renderLinks(adminItems)}
-        </>
-      )}
-
-      <GroupLabel collapsed={collapsed}>Coming next</GroupLabel>
-      {COMING_NEXT.map(({ label, icon: ItemIcon, phase }) => (
-        <WithTip key={label} show={collapsed} label={`${label} · ${phase}`}>
-          <div
-            className={cn(
-              'flex h-9 items-center gap-3 rounded-lg text-sm text-muted-foreground/55',
-              collapsed ? 'justify-center' : 'px-3',
-            )}
-            aria-disabled="true"
-            aria-label={collapsed ? `${label}, available in ${phase}` : undefined}
-            title={collapsed ? undefined : `Available in ${phase}`}
-          >
-            <ItemIcon className="size-4 shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="flex-1 truncate">{label}</span>
-                <Badge
-                  variant="outline"
-                  className="border-dashed text-[10px] font-normal text-muted-foreground/70"
-                >
-                  {phase}
-                </Badge>
-              </>
-            )}
+      {NAV.map((section) => {
+        const links = (section.links ?? []).filter((l) => !l.permission || can(l.permission));
+        const coming = section.coming ?? [];
+        if (links.length === 0 && coming.length === 0) return null;
+        return (
+          <div key={section.title} className="grid gap-0.5">
+            <SectionLabel collapsed={collapsed}>{section.title}</SectionLabel>
+            {links.map(({ to, label, icon: ItemIcon, count }) => {
+              const n = count ? countOf(count) : undefined;
+              return (
+                <WithTip key={to} show={collapsed} label={label}>
+                  <NavLink
+                    to={to}
+                    className={linkClass}
+                    onClick={onNavigate}
+                    aria-label={collapsed ? label : undefined}
+                  >
+                    <ItemIcon className="size-4 shrink-0 opacity-80" />
+                    {!collapsed && (
+                      <>
+                        <span data-label className="truncate">
+                          {label}
+                        </span>
+                        {n !== undefined && (
+                          <span className={countClass} aria-label={`${n} available`}>
+                            {n}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </WithTip>
+              );
+            })}
+            {coming.map(({ label, icon: ItemIcon, release, restrictedTo }) => {
+              const locked = restrictedTo !== undefined && !can(restrictedTo);
+              return (
+                <WithTip key={label} show={collapsed} label={`${label} · ${release}`}>
+                  <div
+                    className={cn(
+                      'flex h-8 items-center gap-2.5 rounded-lg text-[14px] text-muted-foreground/60',
+                      collapsed ? 'justify-center' : 'px-2.5',
+                    )}
+                    aria-disabled="true"
+                    aria-label={collapsed ? `${label}, coming in ${release}` : undefined}
+                    title={collapsed ? undefined : `Coming in release ${release}`}
+                  >
+                    <ItemIcon className="size-4 shrink-0" />
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 truncate">{label}</span>
+                        {locked ? (
+                          <LockIcon className="size-3.5" aria-label="Restricted" />
+                        ) : (
+                          <span className="rounded border border-dashed px-1 text-[10px]">
+                            {release}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </WithTip>
+              );
+            })}
           </div>
-        </WithTip>
-      ))}
+        );
+      })}
     </nav>
   );
 }
 
-/** Signed-in layout: collapsible sidebar + top bar with breadcrumbs. */
+/** Shown while a page's code loads (pages are split per route). */
+function PageLoading() {
+  return (
+    <div className="grid gap-4" aria-busy="true" aria-label="Loading page">
+      <Skeleton className="h-7 w-56" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
+}
+
+/** Quick actions in the top bar (wireframe: "＋ Property"; more arrive with later modules). */
+function QuickActions() {
+  const { can } = useAuth();
+  const { pathname } = useLocation();
+  if (!can('properties:write') || pathname === '/properties/new') return null;
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="hidden sm:inline-flex"
+      render={<Link to="/properties/new" />}
+    >
+      <PlusIcon /> Property
+    </Button>
+  );
+}
+
+/**
+ * Signed-in layout from the wireframe: a 236 px sidebar (collapsible on desktop, a drawer
+ * on phones), a white top bar with breadcrumbs and quick actions, and content up to 1380 px.
+ */
 export function AppLayout() {
   const { user } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const heading = usePageHeading();
 
   if (!user) return null;
   const toggleCollapsed = () => {
@@ -206,45 +302,31 @@ export function AppLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-muted/30 dark:bg-background">
+    <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden shrink-0 border-r bg-background transition-[width] duration-200 lg:block dark:border-sidebar-border dark:bg-sidebar',
-          collapsed ? 'w-[68px]' : 'w-64',
+          'hidden shrink-0 border-r border-sidebar-border bg-sidebar transition-[width] duration-200 lg:block',
+          collapsed ? 'w-[68px]' : 'w-[236px]',
         )}
       >
-        <div className="sticky top-0 h-screen overflow-y-auto overflow-x-hidden">
+        <div className="sticky top-0 h-screen overflow-x-hidden overflow-y-auto">
           <Sidebar collapsed={collapsed} onNavigate={() => undefined} onToggle={toggleCollapsed} />
         </div>
       </aside>
 
-      {/* Mobile sidebar */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close menu"
-            className="absolute inset-0 bg-black/40 animate-in fade-in-0 dark:bg-black/60"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-background shadow-xl animate-in slide-in-from-left duration-200 dark:bg-sidebar">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 z-10"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
-            >
-              <XIcon />
-            </Button>
+      {/* Phone / tablet: the same sidebar in a drawer (focus stays inside; Escape closes). */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-[260px] max-w-[85%] gap-0 bg-sidebar p-0 lg:hidden">
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <div className="h-full overflow-y-auto">
             <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
-          </aside>
-        </div>
-      )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur-sm lg:px-6 dark:border-sidebar-border">
+        <header className="sticky top-0 z-30 flex min-h-[52px] flex-wrap items-center gap-3 border-b bg-card px-4 py-2 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -255,17 +337,21 @@ export function AppLayout() {
             <MenuIcon />
           </Button>
           <Breadcrumbs />
-          <div className="ml-auto flex items-center">
+          <div className="ml-auto flex items-center gap-2">
+            <QuickActions />
             <UserMenu />
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main className="flex-1 px-4 pt-5 pb-14 lg:px-6">
           <div
             key={location.pathname}
-            className="mx-auto w-full max-w-6xl animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
+            className="w-full max-w-[1380px] animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
           >
-            <Outlet />
+            <Suspense fallback={<PageLoading />}>
+              {heading && <PageHeader title={heading.title} description={heading.description} />}
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

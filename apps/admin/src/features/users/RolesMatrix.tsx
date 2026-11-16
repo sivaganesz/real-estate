@@ -114,7 +114,7 @@ export function RolesMatrix() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="max-w-80 text-sm text-muted-foreground">
+                    <TableCell className="max-w-80 min-w-56 text-sm whitespace-normal text-muted-foreground">
                       {role.description}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{role.userCount}</TableCell>
