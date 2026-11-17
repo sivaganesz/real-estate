@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { canChangeStatus } from '@real-estate/shared';
 import type { Category, Property } from '@real-estate/shared';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -7,7 +6,7 @@ import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import type { Path } from 'react-hook-form';
 import { Link, useBlocker, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
-import { NumberedSection, Note } from '@/components/patterns';
+import { Note, NumberedSection, PageHeader } from '@/components/patterns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -31,7 +30,6 @@ import {
 import { AmenitiesSection } from '@/features/properties/form/AmenitiesSection';
 import { ChangeSubcategoryDialog } from '@/features/properties/form/ChangeSubcategoryDialog';
 import { ConflictDialog } from '@/features/properties/form/ConflictDialog';
-import { FormSidePanel } from '@/features/properties/form/FormSidePanel';
 import type { PropertyFormValues } from '@/features/properties/form/formModel';
 import {
   bodyFromValues,
@@ -42,7 +40,6 @@ import {
   valuesFromProperty,
 } from '@/features/properties/form/formModel';
 import { MainInfoSection } from '@/features/properties/form/MainInfoSection';
-import { MediaManager } from '@/features/properties/form/MediaManager';
 import { SpecificationsSection } from '@/features/properties/form/SpecificationsSection';
 import { usePropertyTypes } from '@/features/propertyTypes/api';
 import { ApiError } from '@/lib/api';
@@ -96,9 +93,9 @@ export function PropertyFormPage() {
 }
 
 /**
- * The property form as one card with numbered sections (PROP-59): 1 main information,
- * 2 type-specific specifications, 3 amenities, 4 media (after the first save), 5 a pointer to
- * the detail tabs. Actions stay in a sticky bar at the bottom.
+ * The property form as in the wireframe: one card with numbered sections (PROP-59):
+ * 1 main information, 2 type-specific specifications, 3 features & amenities, 4 a pointer to
+ * the Location, Legal, Pricing and Media tabs. Cancel and Save at the bottom.
  */
 function PropertyForm({
   categories,
@@ -191,39 +188,42 @@ function PropertyForm({
     setFormProblems([errorMessage(err)]);
   };
 
-  const save = (then?: 'available') =>
+  const save = () =>
     form.handleSubmit(async (values) => {
       if (!layout) return;
       setFormProblems([]);
       try {
         const body = bodyFromValues(values, layout);
-        const saved = property
-          ? await update.mutateAsync({ id: property.id, version: property.version, body })
-          : await create.mutateAsync(body);
-        form.reset(valuesFromProperty(saved, layoutFor(categories, saved.subcategoryId)));
         if (!property) {
-          toast.success(`Saved as draft ${saved.code}. Add photos next.`);
+          const created = await create.mutateAsync(body);
           leaving.current = true;
-          navigate(`/properties/${saved.id}/edit#photos`, { replace: true });
+          form.reset(valuesFromProperty(created, layoutFor(categories, created.subcategoryId)));
+          // Like the wireframe: next, the Location, Legal and Pricing tabs (PROP-61).
+          toast.success(`Property ${created.code} created. Now add the location and photos.`);
+          navigate(`/properties/${created.id}/location`, { replace: true });
           return;
         }
-        if (then === 'available') {
-          await changeStatus.mutateAsync({ id: property.id, status: 'available' });
-          toast.success(`${saved.code} is now Available`);
-          leaving.current = true;
-          navigate(`/properties/${property.id}`);
-          return;
+        const listingDate =
+          values.listingDate && values.listingDate !== form.formState.defaultValues?.listingDate
+            ? { listingDate: values.listingDate }
+            : {};
+        let saved = await update.mutateAsync({
+          id: property.id,
+          version: property.version,
+          body: { ...body, ...listingDate },
+        });
+        // A new status goes through the status rules (e.g. the Available checklist).
+        if (values.status !== property.status) {
+          saved = await changeStatus.mutateAsync({ id: property.id, status: values.status });
         }
-        toast.success('Changes saved');
+        form.reset(valuesFromProperty(saved, layoutFor(categories, saved.subcategoryId)));
+        toast.success('Property saved');
+        leaving.current = true;
+        navigate(`/properties/${property.id}`);
       } catch (err) {
         await showError(err);
       }
     })();
-
-  const canMakeAvailable =
-    property &&
-    property.status !== 'available' &&
-    canChangeStatus(property.status, 'available', property.purpose);
 
   return (
     <FormProvider {...form}>
@@ -234,6 +234,12 @@ function PropertyForm({
         }}
         noValidate
       >
+        {property && (
+          <PageHeader
+            title={`Edit ${property.title}`}
+            description="Main information is common to all properties. The specification section below changes with the property type."
+          />
+        )}
         {formProblems.length > 0 && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>
@@ -246,84 +252,55 @@ function PropertyForm({
           </Alert>
         )}
 
-        <div className="flex flex-wrap items-start gap-5">
-          {/* overflow-visible: the action bar is sticky, which a clipped card would break. */}
-          <Card className="min-w-0 flex-[3_1_640px] gap-0 overflow-visible py-0">
-            <div className="grid gap-6 p-5">
-              <MainInfoSection
-                categories={categories}
-                property={property}
-                layout={layout}
-                onPickType={pickType}
-                onChangeType={() => setChangingType(true)}
-              />
-              {layout ? (
-                <>
-                  <SpecificationsSection layout={layout} propertyId={property?.id ?? null} />
-                  <AmenitiesSection layout={layout} />
-                </>
-              ) : (
-                <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Choose a property type to see its specifications and amenities.
-                </p>
-              )}
-              <div id="photos" className="scroll-mt-20">
-                <NumberedSection number={4} title="Media">
-                  {property ? (
-                    <MediaManager property={property} />
-                  ) : (
-                    <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Save the draft first, then add photos, floor plans and brochures here.
-                    </p>
-                  )}
-                </NumberedSection>
-              </div>
-              <NumberedSection number={5} title="Location, legal documents and valuation">
-                <Note tone="blue">
-                  After saving, complete the <b>Location</b> (GPS, measured distances, existing vs
-                  planned infrastructure), <b>Legal &amp; documents</b> (three-status verification)
-                  and <b>Pricing &amp; valuation</b> (comparables) tabs on the property page.
-                </Note>
-              </NumberedSection>
-            </div>
+        {/* One card with numbered sections (wireframe `form.card`) */}
+        {/* overflow-visible: the action bar is sticky, which a clipped card would break. */}
+        <Card className="gap-0 overflow-visible py-0">
+          <div className="grid gap-[18px] p-5">
+            <MainInfoSection
+              categories={categories}
+              property={property}
+              layout={layout}
+              onPickType={pickType}
+              onChangeType={() => setChangingType(true)}
+            />
+            {layout ? (
+              <>
+                <SpecificationsSection layout={layout} propertyId={property?.id ?? null} />
+                <AmenitiesSection layout={layout} />
+              </>
+            ) : (
+              <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Choose a property type to see its specifications and amenities.
+              </p>
+            )}
+            <NumberedSection number={4} title="Location, legal documents and valuation">
+              <Note tone="blue">
+                After saving, complete the <b>Location</b> (GPS, measured distances, existing vs
+                planned infrastructure), <b>Legal &amp; documents</b> (three-status verification)
+                and <b>Pricing &amp; valuation</b> (comparables) tabs on the property page. Photos
+                are added on its <b>Media</b> tab.
+              </Note>
+            </NumberedSection>
+          </div>
 
-            {/* Sticky action bar (wireframe `.form-actions`) */}
-            <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 rounded-b-lg border-t bg-card/95 px-5 py-3 backdrop-blur">
-              {isDirty && (
-                <span className="mr-auto text-xs text-muted-foreground">Unsaved changes</span>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(property ? `/properties/${property.id}` : '/properties')}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant={canMakeAvailable ? 'outline' : 'default'}
-                disabled={isSubmitting || (Boolean(property) && !isDirty)}
-              >
-                {isSubmitting && !changeStatus.isPending && (
-                  <Loader2Icon className="animate-spin" />
-                )}
-                {property ? 'Save changes' : 'Save draft'}
-              </Button>
-              {canMakeAvailable && (
-                <Button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void save('available')}
-                >
-                  {changeStatus.isPending && <Loader2Icon className="animate-spin" />}
-                  {isDirty ? 'Save & make Available' : 'Make Available'}
-                </Button>
-              )}
-            </div>
-          </Card>
-
-          <FormSidePanel property={property} />
-        </div>
+          {/* Wireframe `.form-actions`: stays in view at the bottom while scrolling. */}
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 rounded-b-lg border-t bg-card/95 px-5 py-3 backdrop-blur">
+            {isDirty && (
+              <span className="mr-auto text-xs text-muted-foreground">Unsaved changes</span>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(property ? `/properties/${property.id}` : '/properties')}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || (Boolean(property) && !isDirty)}>
+              {isSubmitting && <Loader2Icon className="animate-spin" />}
+              {property ? 'Save changes' : 'Save property'}
+            </Button>
+          </div>
+        </Card>
 
         {changingType && property && layout && (
           <ChangeSubcategoryDialog

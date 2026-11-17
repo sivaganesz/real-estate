@@ -23,8 +23,10 @@ import type {
   PropertyListItem,
   PropertyStatus,
   PropertyStatusCounts,
+  UpdateLocation,
   UpdateProperty,
 } from '@real-estate/shared';
+import { newId } from '../../db/ids';
 import { withTransaction } from '../../db/transaction';
 import { versionConflict } from '../../db/versionPlugin';
 import { AppError, businessRule, conflict, notFound, validationError } from '../../lib/errors';
@@ -69,6 +71,14 @@ const LIST_FIELDS = [
   'publishedAt',
   'updatedAt',
 ].join(' ');
+/** For "did anything change": compares rows without their ids. */
+const stripIds = (v: unknown) =>
+  Array.isArray(v)
+    ? v.map((row: Record<string, unknown>) => {
+        const { _id: _ignored, id: _alsoIgnored, ...rest } = row;
+        return rest;
+      })
+    : v;
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const exactly = (text: string) => new RegExp(`^${escapeRegex(text)}$`, 'i');
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
@@ -435,6 +445,18 @@ export class PropertiesService {
     }
 
     const changes = changesBetween(snapshot(before), snapshot(next));
+    // The listing date can be corrected once the property has been listed (form section 1).
+    const day = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10); // India date
+    let publishedAt = before.publishedAt ?? null;
+    if (input.listingDate !== undefined) {
+      if (!before.publishedAt) {
+        throw businessRule('The listing date is set when the property first becomes Available.');
+      }
+      if (input.listingDate !== day(before.publishedAt)) {
+        publishedAt = new Date(`${input.listingDate}T09:00:00+05:30`);
+        changes.listingDate = [day(before.publishedAt), input.listingDate];
+      }
+    }
     if (Object.keys(changes).length === 0) return this.toResponse(before, definition);
     if (changes.subcategoryId) {
       changes.subcategoryId = [
@@ -471,6 +493,7 @@ export class PropertiesService {
             removedAttributeKeys: next.removedAttributeKeys,
             amenityIds: next.amenityIds,
             isFeatured: next.isFeatured,
+            publishedAt,
             updatedBy: actorId,
           },
         },
@@ -482,6 +505,72 @@ export class PropertiesService {
         throw versionConflict(current?.version ?? 0);
       }
       await recordChange({ actorId, entity: 'property', entityId: id, action: 'updated', changes });
+    });
+    return this.get(id);
+  }
+
+  /**
+   * The Location tab (PROP-22–24, PROP-67): one change at a time. Address fields go through
+   * `update` (a listed property must stay complete, derived fields, history); the highway
+   * and the nearby places are saved here, versioned and logged the same way.
+   */
+  async updateLocation(
+    actorId: string,
+    id: string,
+    input: UpdateLocation,
+    expectedVersion: number,
+  ): Promise<Property> {
+    const before = await this.find(id);
+    if (input.location) {
+      return this.update(
+        actorId,
+        id,
+        // Properties saved before R1.1 may have no road fields yet.
+        { location: { roadType: '', roadWidthFt: null, ...before.location, ...input.location } },
+        expectedVersion,
+      );
+    }
+    const readVersion = before.version ?? 0;
+    if (expectedVersion !== readVersion) throw versionConflict(readVersion);
+    if (before.status === 'archived') {
+      throw businessRule("Archived properties can't be edited. Restore it as a draft first.");
+    }
+    const field = input.highway !== undefined ? 'highway' : 'nearby';
+    const after =
+      field === 'highway'
+        ? input.highway
+        : (input.nearby ?? []).map(({ id: rowId, ...rest }) => ({
+            _id: rowId ?? newId(),
+            ...rest,
+          }));
+    const show = (v: unknown) =>
+      field === 'highway'
+        ? v
+        : ((v as { name: string }[] | undefined) ?? []).map((n) => n.name).join(', ') || null;
+    const beforeValue = field === 'highway' ? (before.highway ?? null) : (before.nearby ?? []);
+    if (JSON.stringify(stripIds(beforeValue)) === JSON.stringify(stripIds(after))) {
+      return this.toResponse(before);
+    }
+    await withTransaction(async () => {
+      const written = await PropertyModel.updateOne(
+        readVersion === 0
+          ? { _id: id, $or: [{ version: 0 }, { version: { $exists: false } }] }
+          : { _id: id, version: readVersion },
+        { $set: { [field]: after, updatedBy: actorId } },
+      );
+      if (written.matchedCount === 0) {
+        const current = await PropertyModel.findById(id)
+          .select('version')
+          .lean<{ version?: number }>();
+        throw versionConflict(current?.version ?? 0);
+      }
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: 'updated',
+        changes: { [field]: [show(beforeValue), show(after)] },
+      });
     });
     return this.get(id);
   }

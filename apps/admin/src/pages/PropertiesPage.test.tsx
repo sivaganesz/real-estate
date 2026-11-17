@@ -200,6 +200,7 @@ function renderAs(role: SystemRoleKey, path: string) {
       { path: '/properties/new', element: <PropertyFormPage /> },
       { path: '/properties/:id/edit', element: <PropertyFormPage /> },
       { path: '/properties/:id', element: <p>Detail page</p> },
+      { path: '/properties/:id/location', element: <p>Location tab</p> },
     ],
     { initialEntries: [path] },
   );
@@ -342,39 +343,38 @@ describe('Properties pages', () => {
     expect(screen.queryByRole('menuitem', { name: 'Edit' })).toBeNull();
   });
 
-  it('Add property: checks the form, sends the values, and opens the edit page for photos', async () => {
+  it('Add property: checks the form, sends the values, and opens the Location tab', async () => {
     const router = renderAs('admin', '/properties/new');
-    expect(await screen.findByLabelText('Property code')).toHaveValue('Auto: on first save');
+    expect(await screen.findByLabelText('Property ID')).toHaveValue('Auto: on first save');
     await pickType();
     // The type fills in the derived category, the code prefix and the area label.
     expect(screen.getByLabelText('Property category')).toHaveValue('Residential');
-    expect(screen.getByLabelText('Property code')).toHaveValue('Auto: RE-VIL-…');
+    expect(screen.getByLabelText('Property ID')).toHaveValue('Auto: RE-VIL-…');
     expect(screen.getByLabelText('Built-up area *')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Property name *'), 'Vil');
-    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await userEvent.type(screen.getByLabelText('Property title *'), 'Vil');
+    await userEvent.click(screen.getByRole('button', { name: 'Save property' }));
     expect(
       await screen.findByText('Property name must be at least 5 characters'),
     ).toBeInTheDocument();
     expect(callsTo('POST', '/admin/properties')).toHaveLength(0);
 
-    await userEvent.type(screen.getByLabelText('Property name *'), 'la near station');
+    await userEvent.type(screen.getByLabelText('Property title *'), 'la near station');
     await userEvent.type(screen.getByLabelText('Asking price (₹) *'), '9000000');
-    expect(screen.getByText('₹90 L')).toBeInTheDocument();
+    expect(screen.getByText('Shows as ₹90 L')).toBeInTheDocument();
     // Live price per sq.ft. (PROP-59), worked out like the API does.
     expect(screen.getByLabelText('Asking price per sq.ft.')).toHaveValue('—');
     await userEvent.type(screen.getByLabelText('Built-up area *'), '1500');
     expect(screen.getByLabelText('Asking price per sq.ft.')).toHaveValue('₹6,000');
-    await userEvent.type(screen.getByLabelText('Road width (ft)'), '30');
     await userEvent.click(screen.getByLabelText('BHK'));
     await userEvent.click(await screen.findByRole('option', { name: '3 BHK' }));
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove from this property: Floors' }),
     );
-    await userEvent.click(screen.getByRole('button', { name: /Gated community/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Gated community' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save property' }));
 
     await vi.waitFor(() =>
-      expect(router.state.location.pathname).toBe(`/properties/${ID(400)}/edit`),
+      expect(router.state.location.pathname).toBe(`/properties/${ID(400)}/location`),
     );
     const [, init] = callsTo('POST', '/admin/properties')[0]!;
     expect(JSON.parse(String(init!.body))).toMatchObject({
@@ -384,7 +384,7 @@ describe('Properties pages', () => {
       price: { amount: 9_000_000, basis: 'total', negotiable: false, onRequest: false },
       rental: null,
       area: { value: 1500, unit: 'sqft' },
-      location: { roadType: '', roadWidthFt: 30 },
+      location: { roadType: '', roadWidthFt: null },
       attributeValues: { facing: null, bhk: '3 BHK', floors: null },
       removedAttributeKeys: ['floors'],
       amenityIds: [ID(201)],
@@ -426,11 +426,12 @@ describe('Properties pages', () => {
       return json(200, { data: [] });
     });
     renderAs('admin', `/properties/${ID(400)}/edit`);
-    expect(await screen.findByLabelText('Road width (ft)')).toHaveValue('30');
-    expect(screen.getByLabelText('Property code')).toHaveValue('RE-VIL-000003');
+    // Road details are on the Location tab now, but the form must still send them back.
+    expect(await screen.findByLabelText('Property ID')).toHaveValue('RE-VIL-000003');
+    expect(screen.queryByLabelText('Road width (ft)')).toBeNull();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Property name *'), ' (garden)');
+    await userEvent.type(screen.getByLabelText('Property title *'), ' (garden)');
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     const [, init] = callsTo('PATCH', `/admin/properties/${ID(400)}`)[0]!;
@@ -444,7 +445,7 @@ describe('Properties pages', () => {
       await screen.findByRole('alertdialog', { name: 'RE-VIL-000003 was changed by Priya' }),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Load their version' }));
-    expect(screen.getByLabelText('Property name *')).toHaveValue('Villa near the new station');
+    expect(screen.getByLabelText('Property title *')).toHaveValue('Villa near the new station');
   }, 20_000);
 
   it('Add attribute for the whole type: summary first; Cancel keeps the inputs and saves nothing', async () => {
@@ -528,8 +529,8 @@ describe('Properties pages', () => {
     });
     renderAs('admin', '/properties/new');
     await pickType();
-    await userEvent.type(screen.getByLabelText('Property name *'), 'Villa near station');
-    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await userEvent.type(screen.getByLabelText('Property title *'), 'Villa near station');
+    await userEvent.click(screen.getByRole('button', { name: 'Save property' }));
     expect(await screen.findByText('Floors: Enter a number')).toBeInTheDocument();
   });
 });

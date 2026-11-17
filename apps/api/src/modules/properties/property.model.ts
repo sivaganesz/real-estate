@@ -111,7 +111,8 @@ const propertySchema = new Schema(
         new Schema({
           _id: idField,
           category: { type: String, enum: NEARBY_CATEGORIES, required: true },
-          name: { type: String, required: true },
+          // May be blank while a new row is being filled in on the Location tab.
+          name: { type: String, default: '' },
           distanceKm: { type: Number, default: null },
           routeChecked: { type: Boolean, default: false },
           status: { type: String, enum: INFRA_STATUSES, default: 'existing' },

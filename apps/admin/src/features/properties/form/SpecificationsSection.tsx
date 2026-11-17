@@ -5,7 +5,6 @@ import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-
 import { useAuth } from '@/auth/auth-context';
 import { Chip, NumberedSection } from '@/components/patterns';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { AttributeField } from './AttributeField';
 import { AttributeInput } from './AttributeInput';
 import { CreateAttributeDialog } from './CreateAttributeDialog';
@@ -41,11 +40,11 @@ export function SpecificationsSection({
       aside={<Chip tone="blue">{layout.subcategory.name}</Chip>}
     >
       <p className="-mt-1 mb-3 text-[13px] text-muted-foreground">
-        Only the fields relevant to this type are shown. All optional unless marked *; ✕ removes a
-        field from this property only.
+        Only the fields relevant to this type are shown — a plot never asks for BHK, a flat never
+        asks for survey subdivision.
       </p>
       {visible.length > 0 || extras.fields.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-x-3.5 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((a) => (
             <AttributeField key={a.id} attribute={a} />
           ))}
@@ -101,14 +100,13 @@ export function SpecificationsSection({
           ))}
         </div>
       )}
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className="mt-4 w-fit border-dashed"
+        className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
         onClick={() => setAdding(true)}
       >
-        <PlusIcon /> Add attribute
-      </Button>
+        <PlusIcon className="size-3.5" /> Add attribute
+      </button>
 
       {adding && (
         <CreateAttributeDialog

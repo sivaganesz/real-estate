@@ -15,6 +15,7 @@ import {
   propertyStatusCountsSchema,
   reorderMediaBodySchema,
   uploadMediaQuerySchema,
+  updateLocationBodySchema,
   updatePropertyBodySchema,
 } from '@real-estate/shared';
 import type { RequestHandler } from 'express';
@@ -298,6 +299,20 @@ export function createPropertiesRouter(deps: {
       async ({ params, body }, req, res) => {
         const expected = requireIfMatch(req);
         const updated = await properties.update(req.user!.id, params.id, body, expected);
+        res.setHeader('ETag', `"${updated.version}"`);
+        sendData(res, updated);
+      },
+    ),
+  );
+  // The Location tab saves one change at a time (PROP-22–24, PROP-67).
+  router.patch(
+    '/:id/location',
+    canWrite,
+    endpoint(
+      { params: idParams, body: updateLocationBodySchema },
+      async ({ params, body }, req, res) => {
+        const expected = requireIfMatch(req);
+        const updated = await properties.updateLocation(req.user!.id, params.id, body, expected);
         res.setHeader('ETag', `"${updated.version}"`);
         sendData(res, updated);
       },

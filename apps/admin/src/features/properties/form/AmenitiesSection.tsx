@@ -1,10 +1,9 @@
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { NumberedSection } from '@/components/patterns';
-import { AmenityIcon } from '@/features/propertyTypes/AmenityIcon';
-import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { FormLayout, PropertyFormValues } from './formModel';
 
-/** Section 3, "Features & amenities": the amenities this type offers, tap to select. */
+/** Section 3, "Features & amenities": a checkbox per amenity this type offers (wireframe). */
 export function AmenitiesSection({ layout }: { layout: FormLayout }) {
   const form = useFormContext<PropertyFormValues>();
   const [subcategoryId, amenityIds] = useWatch({
@@ -28,30 +27,25 @@ export function AmenitiesSection({ layout }: { layout: FormLayout }) {
           control={form.control}
           name="amenityIds"
           render={({ field }) => (
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Amenities">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5" role="group" aria-label="Amenities">
               {offered.map((a) => {
                 const on = field.value.includes(a.id);
                 return (
-                  <button
+                  <label
                     key={a.id}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() =>
-                      field.onChange(
-                        on ? field.value.filter((x) => x !== a.id) : [...field.value, a.id],
-                      )
-                    }
-                    className={cn(
-                      'inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm transition-colors',
-                      on ? 'border-primary bg-primary-soft font-medium' : 'hover:bg-muted',
-                    )}
+                    className="inline-flex cursor-pointer items-center gap-[7px] text-[13px]"
                   >
-                    <AmenityIcon icon={a.icon} className="size-6 rounded-full" />
+                    <Checkbox
+                      checked={on}
+                      onCheckedChange={() =>
+                        field.onChange(
+                          on ? field.value.filter((x) => x !== a.id) : [...field.value, a.id],
+                        )
+                      }
+                    />
                     {a.name}
-                    {!a.isActive && (
-                      <span className="text-xs text-muted-foreground">(inactive)</span>
-                    )}
-                  </button>
+                    {!a.isActive && <span className="text-muted-foreground">(inactive)</span>}
+                  </label>
                 );
               })}
             </div>

@@ -3,6 +3,7 @@ export * from './roleMatrix';
 export * from './format';
 export * from './area';
 export * from './domain/legal';
+export * from './domain/location';
 export * from './domain/pricing';
 export * from './domain/search';
 export * from './phone';

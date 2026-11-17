@@ -144,21 +144,28 @@ export const routes: RouteObject[] = [
           </RequirePermission>
         ),
       },
-      {
-        path: 'properties/:id',
+      // Property page: one route per tab (PROP-66); the page draws its own header.
+      ...(
+        [
+          ['properties/:id', 'specs', 'Specifications'],
+          ['properties/:id/location', 'location', 'Location'],
+          ['properties/:id/media', 'media', 'Media'],
+        ] as const
+      ).map(([path, tab, label]) => ({
+        path,
         handle: {
-          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Property' }],
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label }],
         },
         element: (
           <RequirePermission permission="properties:read">
-            <PropertyDetailPage tab="details" />
+            <PropertyDetailPage tab={tab} />
           </RequirePermission>
         ),
-      },
+      })),
       {
         path: 'properties/:id/history',
         handle: {
-          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Change history' }],
+          breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'History' }],
         },
         element: (
           <RequirePermission permission="properties:read">
@@ -168,12 +175,8 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'properties/:id/edit',
+        // The page shows "Edit ‹property title›" itself (wireframe).
         handle: {
-          page: {
-            title: 'Edit property',
-            description:
-              'Main information is common to all properties. The specification section below changes with the property type.',
-          },
           breadcrumbs: [{ label: 'Properties', to: '/properties' }, { label: 'Edit property' }],
         },
         element: (

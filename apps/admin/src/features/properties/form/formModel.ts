@@ -3,6 +3,7 @@ import {
   EXTRA_ATTRIBUTE_TYPES,
   PINCODE_PATTERN,
   PRICE_BASES,
+  PROPERTY_STATUSES,
   propertyTitleSchema,
   PURPOSES,
   ROAD_TYPES,
@@ -90,6 +91,10 @@ export const propertyFormSchema = z
     removedAttributeKeys: z.array(z.string()),
     amenityIds: z.array(z.string()),
     isFeatured: z.boolean(),
+    /** Changed through the status rules after saving (not part of the save body). */
+    status: z.enum(PROPERTY_STATUSES),
+    /** YYYY-MM-DD; editable once the property has been listed. */
+    listingDate: z.string(),
   })
   .refine((v) => !(v.location.lat === '' && v.location.lng !== ''), {
     path: ['location', 'lat'],
@@ -149,6 +154,10 @@ function fromField(
   return text;
 }
 
+/** The calendar date in India of an ISO time: "2026-11-16". */
+export const indiaDate = (iso: string) =>
+  new Date(new Date(iso).getTime() + 330 * 60_000).toISOString().slice(0, 10);
+
 export function emptyValues(): PropertyFormValues {
   return {
     subcategoryId: '',
@@ -179,6 +188,8 @@ export function emptyValues(): PropertyFormValues {
     removedAttributeKeys: [],
     amenityIds: [],
     isFeatured: false,
+    status: 'draft',
+    listingDate: '',
   };
 }
 
@@ -220,6 +231,8 @@ export function valuesFromProperty(p: Property, layout: FormLayout | null): Prop
     removedAttributeKeys: p.removedAttributeKeys,
     amenityIds: p.amenityIds,
     isFeatured: p.isFeatured,
+    status: p.status,
+    listingDate: p.publishedAt ? indiaDate(p.publishedAt) : '',
   };
 }
 

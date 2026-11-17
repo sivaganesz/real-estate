@@ -489,9 +489,81 @@ export type CreateProperty = z.output<typeof createPropertyBodySchema>;
  * key by key (null clears a value); `extraAttributes` and `amenityIds` replace the list.
  * Changing `subcategoryId` keeps the code; values the new subcategory doesn't show are hidden.
  */
-export const updatePropertyBodySchema = z.object(propertyFields).partial();
+export const updatePropertyBodySchema = z
+  .object({
+    ...propertyFields,
+    /**
+     * Corrects the listing date (YYYY-MM-DD) of a property that has been listed; it is set
+     * automatically the first time the property becomes Available.
+     */
+    listingDate: z.iso.date('Enter a valid listing date'),
+  })
+  .partial();
 export type UpdatePropertyBody = z.input<typeof updatePropertyBodySchema>;
 export type UpdateProperty = z.output<typeof updatePropertyBodySchema>;
+
+/** Highway access as entered on the Location tab (PROP-23). */
+export const highwayInputSchema = z.object({
+  name: text(120, 'Highway name'),
+  distanceKm: z
+    .number()
+    .min(0, 'Distance cannot be negative')
+    .max(500, 'Distance looks too large')
+    .nullable(),
+  routeNote: text(300, 'How it was measured'),
+});
+
+/** One nearby place (PROP-24). A new row has no id yet. */
+export const nearbyInputSchema = z.object({
+  id: idSchema.optional(),
+  category: z.enum(NEARBY_CATEGORIES),
+  name: text(120, 'Place name'),
+  distanceKm: z
+    .number()
+    .min(0, 'Distance cannot be negative')
+    .max(500, 'Distance looks too large')
+    .nullable(),
+  routeChecked: z.boolean(),
+  status: z.enum(INFRA_STATUSES),
+});
+export type NearbyInput = z.infer<typeof nearbyInputSchema>;
+export const MAX_NEARBY_PLACES = 30;
+
+const { shape: loc } = locationSchema;
+
+/**
+ * PATCH /admin/properties/:id/location (If-Match): the Location tab saves one change at a
+ * time (PROP-22–24, PROP-67). `location` is merged key by key; `highway` replaces the
+ * highway (null clears it); `nearby` replaces the list.
+ */
+export const updateLocationBodySchema = z
+  .object({
+    location: z
+      .object({
+        state: loc.state.unwrap(),
+        city: loc.city.unwrap(),
+        locality: loc.locality.unwrap(),
+        pincode: loc.pincode.unwrap(),
+        address: loc.address.unwrap(),
+        landmark: loc.landmark.unwrap(),
+        mapPin: loc.mapPin.unwrap(),
+        roadType: loc.roadType.unwrap(),
+        roadWidthFt: loc.roadWidthFt.unwrap(),
+      })
+      .partial()
+      .optional(),
+    highway: highwayInputSchema.nullable().optional(),
+    nearby: z
+      .array(nearbyInputSchema)
+      .max(MAX_NEARBY_PLACES, `Up to ${MAX_NEARBY_PLACES} places`)
+      .optional(),
+  })
+  .refine(
+    (b) => [b.location, b.highway, b.nearby].filter((v) => v !== undefined).length === 1,
+    'Send one change at a time: location, highway or nearby',
+  );
+export type UpdateLocationBody = z.input<typeof updateLocationBodySchema>;
+export type UpdateLocation = z.output<typeof updateLocationBodySchema>;
 
 /** POST /admin/properties/:id/status */
 export const changeStatusBodySchema = z.object({ status: z.enum(PROPERTY_STATUSES) });

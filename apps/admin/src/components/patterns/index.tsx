@@ -188,3 +188,52 @@ export function NumberedSection({
     </section>
   );
 }
+
+/** Label over value, three columns (wireframe `.dl3`); one column on a phone. */
+export function DescriptionGrid({
+  items,
+  label,
+}: {
+  items: { label: ReactNode; value: ReactNode; wide?: boolean }[];
+  /** Accessible name, e.g. "Main property information". */
+  label?: string;
+}) {
+  return (
+    <dl aria-label={label} className="grid gap-x-[18px] gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((item, i) => (
+        <div key={i} className={cn('min-w-0', item.wide && 'sm:col-span-2 lg:col-span-3')}>
+          <dt className="text-xs text-muted-foreground">{item.label}</dt>
+          <dd className="font-medium break-words">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** "Not recorded" in the muted style the wireframe uses for empty values. */
+export function NotRecorded() {
+  return <span className="font-normal text-muted-foreground">Not recorded</span>;
+}
+
+/** Vertical timeline with a dot per entry (wireframe `.tl`). */
+export function Timeline({
+  items,
+  label,
+}: {
+  items: { key: string; when: ReactNode; children: ReactNode }[];
+  label: string;
+}) {
+  return (
+    <ol aria-label={label} className="m-0 list-none p-0">
+      {items.map((item) => (
+        <li
+          key={item.key}
+          className="relative ml-1.5 border-l-2 border-border pb-3.5 pl-5 last:border-l-transparent before:absolute before:top-[3px] before:-left-[7px] before:size-3 before:rounded-full before:border-2 before:border-primary before:bg-card"
+        >
+          <div className="text-xs text-muted-foreground">{item.when}</div>
+          {item.children}
+        </li>
+      ))}
+    </ol>
+  );
+}

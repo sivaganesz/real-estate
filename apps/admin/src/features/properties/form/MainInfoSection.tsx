@@ -1,21 +1,22 @@
 import {
   AREA_UNIT_LABELS,
   AREA_UNITS,
+  canChangeStatus,
   formatPrice,
   groupIndian,
   MAIN_AREA_LABELS,
   pricePerSqft,
+  PROPERTY_STATUS_LABELS,
+  PROPERTY_STATUSES,
   PURPOSE_LABELS,
   PURPOSES,
-  ROAD_TYPES,
   toSqft,
 } from '@real-estate/shared';
 import type { Category, Property } from '@real-estate/shared';
-import { ShuffleIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { FormField } from '@/components/forms/FormField';
 import { NumberedSection } from '@/components/patterns';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,7 +30,6 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useLocationSuggestions } from '../api';
-import { AddressSection } from './AddressSection';
 import { AttributeField } from './AttributeField';
 import type { FormLayout, PropertyFormValues } from './formModel';
 
@@ -39,22 +39,63 @@ const BASIS_ITEMS = [
   { value: 'per_month', label: 'Per month' },
 ];
 const UNIT_ITEMS = AREA_UNITS.map((u) => ({ value: u, label: AREA_UNIT_LABELS[u] }));
-const ROAD_ITEMS = [
-  { value: '', label: 'Not recorded' },
-  ...ROAD_TYPES.map((r) => ({ value: r, label: r })),
-];
 
-/** A small select bound to a form field. */
+/** A wireframe `fld`: label (with * when required), control, then a hint or the error. */
+function Fld({
+  id,
+  label,
+  required,
+  hint,
+  error,
+  className,
+  action,
+  children,
+}: {
+  id?: string;
+  label: ReactNode;
+  required?: boolean;
+  hint?: ReactNode;
+  error?: string;
+  className?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn('grid content-start gap-1.5', className)}>
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={id} className="text-xs font-medium text-ink-2">
+          {label}
+          {required && <span className="text-destructive"> *</span>}
+        </label>
+        {action}
+      </div>
+      {children}
+      {error ? (
+        <p className="text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      ) : (
+        hint && <p className="text-xs text-muted-foreground">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+/** A select bound to a form field. */
 function FieldSelect({
+  id,
   name,
   label,
   items,
   className,
+  disabled,
 }: {
-  name: 'priceBasis' | 'areaUnit' | 'location.roadType';
+  id?: string;
+  name: 'priceBasis' | 'areaUnit' | 'purpose' | 'status';
   label: string;
-  items: { value: string; label: string }[];
+  items: { value: string; label: string; disabled?: boolean }[];
   className?: string;
+  disabled?: boolean;
 }) {
   const form = useFormContext<PropertyFormValues>();
   return (
@@ -65,18 +106,15 @@ function FieldSelect({
         <Select
           items={items}
           value={field.value}
+          disabled={disabled}
           onValueChange={(v) => v !== null && field.onChange(v)}
         >
-          <SelectTrigger
-            id={name === 'location.roadType' ? 'pf-road-type' : undefined}
-            aria-label={label}
-            className={className}
-          >
+          <SelectTrigger id={id} aria-label={label} className={cn('w-full', className)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {items.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
+              <SelectItem key={i.value} value={i.value} disabled={i.disabled}>
                 {i.label}
               </SelectItem>
             ))}
@@ -88,9 +126,9 @@ function FieldSelect({
 }
 
 /**
- * Section 1, "Main property information" (PROP-59): what every property has. The type picks
- * the rest of the form; the area label follows the type's main-area meaning, and the price
- * per sq.ft. is worked out as you type.
+ * Section 1, "Main property information" (PROP-59), in the wireframe's order: ID and title;
+ * type, derived category and purpose; state, city and locality; pincode, facing and area;
+ * price, live ₹/sq.ft. and status; listing date. The type picks section 2.
  */
 export function MainInfoSection({
   categories,
@@ -120,13 +158,23 @@ export function MainInfoSection({
         'areaUnit',
       ],
     });
-  const [city, locality, pincode, removed] = useWatch({
+  const [city, locality, removed] = useWatch({
     control: form.control,
-    name: ['location.city', 'location.locality', 'location.pincode', 'removedAttributeKeys'],
+    name: ['location.city', 'location.locality', 'removedAttributeKeys'],
   });
+  // Sale prices are a total; rent and lease are per month. Follow the purpose when it changes.
+  const lastPurpose = useRef(purpose);
+  useEffect(() => {
+    if (purpose === lastPurpose.current) return;
+    lastPurpose.current = purpose;
+    const basis = form.getValues('priceBasis');
+    if (purpose !== 'sale' && basis === 'total')
+      form.setValue('priceBasis', 'per_month', { shouldDirty: true });
+    if (purpose === 'sale' && basis === 'per_month')
+      form.setValue('priceBasis', 'total', { shouldDirty: true });
+  }, [purpose, form]);
   const cities = useLocationSuggestions('city', city ?? '');
   const localities = useLocationSuggestions('locality', locality ?? '', city || undefined);
-  const pincodes = useLocationSuggestions('pincode', pincode ?? '', city || undefined);
 
   const groups = categories
     .filter((c) => c.isActive)
@@ -136,6 +184,18 @@ export function MainInfoSection({
     c.subcategories.map((s) => ({ value: s.id, label: s.name })),
   );
   const allowedPurposes = layout?.subcategory.purposes ?? PURPOSES;
+  const purposeItems = PURPOSES.map((p) => ({
+    value: p,
+    label: PURPOSE_LABELS[p],
+    disabled: !allowedPurposes.includes(p),
+  }));
+  // Status: the current one and the moves the rules allow. A new property starts as Draft.
+  const statusItems = PROPERTY_STATUSES.filter(
+    (s) =>
+      s === (property?.status ?? 'draft') ||
+      (property && canChangeStatus(property.status, s, property.purpose)),
+  ).map((s) => ({ value: s, label: PROPERTY_STATUS_LABELS[s] }));
+
   const sqft = areaValue && Number(areaValue) > 0 ? toSqft(Number(areaValue), areaUnit) : null;
   const amount = priceAmount && Number(priceAmount) > 0 ? Number(priceAmount) : null;
   const pricePreview =
@@ -144,141 +204,105 @@ export function MainInfoSection({
     ? null
     : pricePerSqft({ purpose, price: { amount, basis: priceBasis }, areaSqft: sqft });
   const areaLabel = layout ? MAIN_AREA_LABELS[layout.subcategory.mainAreaMeaning] : 'Area';
+  const facing = layout?.common.find((a) => a.key === 'facing');
+  const otherCommon = (layout?.common ?? []).filter(
+    (a) => a !== facing && !removed.includes(a.key),
+  );
   const code =
     property?.code ??
     (layout ? `Auto: RE-${layout.subcategory.codePrefix}-…` : 'Auto: on first save');
 
   return (
     <NumberedSection number={1} title="Main property information">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <FormField id="pf-code" label="Property code" hint="Unique; never rely on the name alone">
+      <div className="grid gap-x-3.5 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Fld id="pf-code" label="Property ID" hint="Unique; never rely on the title alone">
           <Input id="pf-code" value={code} disabled readOnly />
-        </FormField>
-        <div className="sm:col-span-1 lg:col-span-2">
-          <FormField id="pf-title" label="Property name *" error={errors.title?.message}>
-            <Input
-              id="pf-title"
-              placeholder="e.g. Premium residential plot"
-              aria-invalid={!!errors.title}
-              {...form.register('title')}
-            />
-          </FormField>
-        </div>
+        </Fld>
+        <Fld
+          id="pf-title"
+          label="Property title"
+          required
+          error={errors.title?.message}
+          className="lg:col-span-2"
+        >
+          <Input
+            id="pf-title"
+            placeholder="e.g. Premium residential plot"
+            aria-invalid={!!errors.title}
+            {...form.register('title')}
+          />
+        </Fld>
 
-        {/* Type → derived category */}
-        <div className="grid content-start gap-2">
-          <label htmlFor="pf-type" className="text-sm font-medium">
-            Property type *
-          </label>
-          {property ? (
-            <div className="flex gap-2">
-              <Input id="pf-type" value={layout?.subcategory.name ?? ''} disabled readOnly />
-              <Button
+        <Fld
+          id="pf-type"
+          label="Property type"
+          required
+          error={errors.subcategoryId?.message}
+          action={
+            property && (
+              <button
                 type="button"
-                variant="outline"
+                className="text-xs font-medium text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
                 disabled={isDirty}
                 title={isDirty ? 'Save your changes first' : undefined}
                 onClick={onChangeType}
               >
-                <ShuffleIcon /> Change…
-              </Button>
-            </div>
-          ) : (
-            <Select
-              items={typeItems}
-              value={subcategoryId || null}
-              onValueChange={(v) => v && onPickType(v as string)}
-            >
-              <SelectTrigger id="pf-type" aria-invalid={!!errors.subcategoryId} className="w-full">
-                <SelectValue placeholder="Choose a type" />
-              </SelectTrigger>
-              <SelectContent>
-                {groups.map((c) => (
-                  <SelectGroup key={c.key}>
-                    <SelectLabel>{c.name}</SelectLabel>
-                    {c.subcategories.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {errors.subcategoryId && (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.subcategoryId.message}
-            </p>
-          )}
-        </div>
-        <FormField id="pf-category" label="Property category" hint="Derived from the type">
-          <Input id="pf-category" value={layout?.category.name ?? '—'} disabled readOnly />
-        </FormField>
-        <div className="grid content-start gap-2">
-          <span className="text-sm font-medium">Listing purpose *</span>
-          <Controller
-            control={form.control}
+                Change type…
+              </button>
+            )
+          }
+        >
+          <Select
+            items={typeItems}
+            value={subcategoryId || null}
+            disabled={Boolean(property)}
+            onValueChange={(v) => v && onPickType(v as string)}
+          >
+            <SelectTrigger id="pf-type" aria-invalid={!!errors.subcategoryId} className="w-full">
+              <SelectValue placeholder="Choose a type" />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((c) => (
+                <SelectGroup key={c.key}>
+                  <SelectLabel>{c.name}</SelectLabel>
+                  {c.subcategories.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
+        </Fld>
+        <Fld id="pf-category" label="Property category" hint="Derived from type">
+          <Input id="pf-category" value={layout?.category.name ?? ''} disabled readOnly />
+        </Fld>
+        <Fld id="pf-purpose" label="Listing purpose" required error={errors.purpose?.message}>
+          <FieldSelect
+            id="pf-purpose"
             name="purpose"
-            render={({ field }) => (
-              <div
-                className="inline-flex h-8 w-fit overflow-hidden rounded-lg border"
-                role="radiogroup"
-                aria-label="Purpose"
-              >
-                {PURPOSES.map((p) => {
-                  const allowed = allowedPurposes.includes(p);
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      role="radio"
-                      aria-checked={field.value === p}
-                      disabled={!allowed}
-                      title={
-                        allowed || !layout
-                          ? undefined
-                          : `${layout.subcategory.name} can't be listed for ${PURPOSE_LABELS[p]}`
-                      }
-                      onClick={() => {
-                        field.onChange(p);
-                        const basis = form.getValues('priceBasis');
-                        if (p !== 'sale' && basis === 'total')
-                          form.setValue('priceBasis', 'per_month', { shouldDirty: true });
-                        if (p === 'sale' && basis === 'per_month')
-                          form.setValue('priceBasis', 'total', { shouldDirty: true });
-                      }}
-                      className={cn(
-                        'h-8 border-r px-4 text-sm font-medium last:border-r-0 disabled:cursor-not-allowed disabled:text-muted-foreground/50',
-                        field.value === p ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                      )}
-                    >
-                      {PURPOSE_LABELS[p]}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            label="Listing purpose"
+            items={purposeItems}
           />
-          {errors.purpose && <p className="text-sm text-destructive">{errors.purpose.message}</p>}
-        </div>
+        </Fld>
 
-        {/* Location: state, city, locality, pincode, road (asked once, here) */}
-        <FormField id="pf-state" label="State" error={errors.location?.state?.message}>
+        <Fld id="pf-state" label="State" error={errors.location?.state?.message}>
           <Input id="pf-state" placeholder="e.g. Tamil Nadu" {...form.register('location.state')} />
-        </FormField>
-        <FormField id="pf-city" label="City / district *" error={errors.location?.city?.message}>
+        </Fld>
+        <Fld id="pf-city" label="City / district" required error={errors.location?.city?.message}>
           <Input
             id="pf-city"
             list="pf-city-options"
             autoComplete="off"
             {...form.register('location.city')}
           />
-        </FormField>
-        <FormField
+        </Fld>
+        <Fld
           id="pf-locality"
-          label="Locality *"
-          hint="The actual locality name"
+          label="Locality"
+          required
+          hint="Actual locality name"
           error={errors.location?.locality?.message}
         >
           <Input
@@ -287,41 +311,7 @@ export function MainInfoSection({
             autoComplete="off"
             {...form.register('location.locality')}
           />
-        </FormField>
-        <FormField id="pf-pincode" label="Pincode *" error={errors.location?.pincode?.message}>
-          <Input
-            id="pf-pincode"
-            list="pf-pincode-options"
-            inputMode="numeric"
-            maxLength={6}
-            autoComplete="off"
-            {...form.register('location.pincode')}
-          />
-        </FormField>
-        <div className="grid content-start gap-2">
-          <label htmlFor="pf-road-type" className="text-sm font-medium">
-            Road type
-          </label>
-          <FieldSelect
-            name="location.roadType"
-            label="Road type"
-            items={ROAD_ITEMS}
-            className="w-full"
-          />
-        </div>
-        <FormField
-          id="pf-road-width"
-          label="Road width (ft)"
-          error={errors.location?.roadWidthFt?.message}
-        >
-          <Input
-            id="pf-road-width"
-            inputMode="decimal"
-            placeholder="e.g. 30"
-            aria-invalid={!!errors.location?.roadWidthFt}
-            {...form.register('location.roadWidthFt')}
-          />
-        </FormField>
+        </Fld>
         <datalist id="pf-city-options">
           {cities.data?.map((s) => (
             <option key={s.value} value={s.value} />
@@ -332,17 +322,18 @@ export function MainInfoSection({
             <option key={s.value} value={s.value} />
           ))}
         </datalist>
-        <datalist id="pf-pincode-options">
-          {pincodes.data?.map((s) => (
-            <option key={s.value} value={s.value} />
-          ))}
-        </datalist>
 
-        {/* Area, price, live price per sq.ft. */}
-        <div className="grid content-start gap-2">
-          <label htmlFor="pf-area" className="text-sm font-medium">
-            {areaLabel} *
-          </label>
+        <Fld id="pf-pincode" label="Pincode" required error={errors.location?.pincode?.message}>
+          <Input
+            id="pf-pincode"
+            inputMode="numeric"
+            maxLength={6}
+            autoComplete="off"
+            {...form.register('location.pincode')}
+          />
+        </Fld>
+        {facing && !removed.includes(facing.key) && <AttributeField attribute={facing} />}
+        <Fld id="pf-area" label={areaLabel} required error={errors.areaValue?.message}>
           <div className="flex gap-2">
             <Input
               id="pf-area"
@@ -350,28 +341,20 @@ export function MainInfoSection({
               aria-invalid={!!errors.areaValue}
               {...form.register('areaValue')}
             />
-            <FieldSelect
-              name="areaUnit"
-              label="Area unit"
-              items={UNIT_ITEMS}
-              className="w-28 flex-none"
-            />
+            <FieldSelect name="areaUnit" label="Area unit" items={UNIT_ITEMS} className="w-24" />
           </div>
-          {errors.areaValue ? (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.areaValue.message}
-            </p>
-          ) : (
-            sqft !== null &&
-            areaUnit !== 'sqft' && (
-              <p className="text-sm text-muted-foreground">= {groupIndian(sqft)} sq.ft</p>
-            )
+          {sqft !== null && areaUnit !== 'sqft' && !errors.areaValue && (
+            <p className="text-xs text-muted-foreground">= {groupIndian(sqft)} sq.ft</p>
           )}
-        </div>
-        <div className="grid content-start gap-2">
-          <label htmlFor="pf-price" className="text-sm font-medium">
-            {purpose === 'sale' ? 'Asking price (₹) *' : 'Monthly rent (₹) *'}
-          </label>
+        </Fld>
+
+        <Fld
+          id="pf-price"
+          label={purpose === 'sale' ? 'Asking price (₹)' : 'Monthly rent (₹)'}
+          required
+          error={errors.priceAmount?.message}
+          hint={pricePreview && !onRequest ? `Shows as ${pricePreview}` : undefined}
+        >
           <div className="flex gap-2">
             <Input
               id="pf-price"
@@ -385,38 +368,11 @@ export function MainInfoSection({
               name="priceBasis"
               label="Price basis"
               items={BASIS_ITEMS}
-              className="w-32 flex-none"
+              className="w-28"
             />
           </div>
-          {errors.priceAmount ? (
-            <p className="text-sm text-destructive" role="alert">
-              {errors.priceAmount.message}
-            </p>
-          ) : (
-            pricePreview &&
-            !onRequest && (
-              <p className="text-sm text-muted-foreground">
-                Shows as <b>{pricePreview}</b>
-              </p>
-            )
-          )}
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {(['negotiable', 'onRequest'] as const).map((name) => (
-              <Controller
-                key={name}
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                  <label className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    {name === 'negotiable' ? 'Negotiable' : 'Price on request'}
-                  </label>
-                )}
-              />
-            ))}
-          </div>
-        </div>
-        <FormField
+        </Fld>
+        <Fld
           id="pf-ppsf"
           label="Asking price per sq.ft."
           hint={purpose === 'sale' ? 'Total price ÷ area (auto)' : 'For sale prices only'}
@@ -427,32 +383,71 @@ export function MainInfoSection({
             disabled
             readOnly
           />
-        </FormField>
+        </Fld>
+        <Fld
+          id="pf-status"
+          label="Property status"
+          hint={!property ? 'Becomes Available after photos are added' : undefined}
+        >
+          <FieldSelect
+            id="pf-status"
+            name="status"
+            label="Property status"
+            items={statusItems}
+            disabled={!property}
+          />
+        </Fld>
 
+        <Fld
+          id="pf-listing-date"
+          label="Listing date"
+          error={errors.listingDate?.message}
+          hint={property?.publishedAt ? undefined : 'Set when it first becomes Available'}
+        >
+          <Input
+            id="pf-listing-date"
+            type="date"
+            disabled={!property?.publishedAt}
+            {...form.register('listingDate')}
+          />
+        </Fld>
         {purpose !== 'sale' && (
           <>
-            <FormField id="pf-deposit" label="Security deposit (₹)" error={errors.deposit?.message}>
+            <Fld id="pf-deposit" label="Security deposit (₹)" error={errors.deposit?.message}>
               <Input id="pf-deposit" inputMode="numeric" {...form.register('deposit')} />
-            </FormField>
-            <FormField
-              id="pf-lockin"
-              label="Lock-in period (months)"
-              error={errors.lockIn?.message}
-            >
+            </Fld>
+            <Fld id="pf-lockin" label="Lock-in period (months)" error={errors.lockIn?.message}>
               <Input id="pf-lockin" inputMode="numeric" {...form.register('lockIn')} />
-            </FormField>
+            </Fld>
           </>
         )}
 
-        {/* Common attributes of the category, e.g. facing */}
-        {layout?.common
-          .filter((a) => !removed.includes(a.key))
-          .map((a) => (
-            <AttributeField key={a.id} attribute={a} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:col-span-2 lg:col-span-3">
+          {(
+            [
+              ['negotiable', 'Price negotiable'],
+              ['onRequest', 'Price on request'],
+              ['isFeatured', 'Featured listing'],
+            ] as const
+          ).map(([name, text]) => (
+            <Controller
+              key={name}
+              control={form.control}
+              name={name}
+              render={({ field }) => (
+                <label className="inline-flex cursor-pointer items-center gap-[7px] text-[13px]">
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  {text}
+                </label>
+              )}
+            />
           ))}
-      </div>
-      <div className="mt-4">
-        <AddressSection form={form} />
+        </div>
+
+        {/* Other common attributes of the category (e.g. Description) */}
+        {otherCommon.map((a) => (
+          <AttributeField key={a.id} attribute={a} />
+        ))}
       </div>
     </NumberedSection>
   );

@@ -3,13 +3,15 @@
 
 | | |
 |---|---|
-| **Version** | 2.0 (draft for team approval) |
-| **Date** | 16 November 2026 |
+| **Version** | 2.1 (draft for team approval) |
+| **Date** | 17 November 2026 (2.0: 16 November 2026) |
 | **Status** | Draft. Review with the team before development starts |
 | **Replaces** | `docs/PRD.md` (v1) for every module listed here. v1 stays in the repository for history |
 | **UI reference** | Approved wireframe: `spec-system-wireframe/` (branch `spec-system-wireframe`, commit `80209dc`), demoed to the team on 16 Nov 2026 |
 | **Business reference** | `spec-system-wireframe/docs/Real_Estate_Specification_System_Project_Spec.pdf` |
 | **Companion documents** | `docs/v2/TRD.md` (technical design) · `docs/v2/DEVELOPMENT-CHECKLIST.md` (build plan) |
+
+> **Changed in 2.1 (17 Nov 2026, owner's decision):** the add / edit property form follows the wireframe layout exactly (§6.11: PROP-59, 61, 62 rewritten). Photos move to the property page's **Media** tab, and road type, road width and the map pin to its **Location** tab (PROP-09, PROP-22). Fields the system needs that the wireframe form does not show (pincode, price options, rent deposit and lock-in, area unit, featured) stay in section 1 in the same style; "+ Add attribute" (§6.4) stays.
 
 > **How to read this document.** Each requirement has an ID (e.g. `PROP-12`) used in the TRD and the checklist. **Priority:** **M** = must have in that release, **S** = should have, **C** = could have. **Release** says when it is built (§3). Each screen requirement names the wireframe screen it must follow. Decisions that still need the team's confirmation are marked **⚑** and listed in §20.
 
@@ -176,7 +178,7 @@ Properties are configured, not hard-coded (existing model, kept):
 | PROP-06 | Area | Value + unit; stored also in sq.ft. Each subcategory defines **what the main area means** (Plot area, Built-up area, Super built-up area, Carpet area, Land area, Usable area). The label follows it, e.g. “Plot / land area (sq.ft.)” | M |
 | PROP-07 | Price per sq.ft. | **Calculated** = total price ÷ area in sq.ft. (Sale with Total basis), shown with its basis, e.g. “₹2,333 / sq.ft. (plot area)” | M |
 | PROP-08 | Facing | East, North, West, South, North-East, North-West, South-East, South-West (existing “Facing” attribute) | M |
-| PROP-09 | Location | State, city/district, locality (with suggestions from existing values), pincode, full address, landmark, map pin (geocoding and reverse geocoding: existing). **Road type and road width** are common to every property and asked only once, here. The plot and commercial specifications display them | M |
+| PROP-09 | Location | On the form (section 1): state, city/district and locality (with suggestions from existing values) and pincode. On the **Location tab** (PROP-22): full address, landmark, map pin (the map follows the typed address until a pin is dropped), and **road type and road width**, which are common to every property and asked only once, there | M |
 | PROP-10 | Status and listing date | §6.8. Listing date = first time it became Available | M |
 | PROP-11 | Featured flag | Existing | S |
 | PROP-12 | Amenities | Checklist of the amenities offered for the subcategory | M |
@@ -187,7 +189,7 @@ The form shows only the attributes of the chosen property type: a plot never ask
 
 | Applies to | Attributes |
 |---|---|
-| **Every type (common)** | Facing, Description (plus road type and road width, stored with the location, PROP-09) |
+| **Every type (common)** | Facing, Description (plus road type and road width, stored with the location and edited on the Location tab, PROP-09) |
 | Residential plot | Length, Width, Road access, Corner / non-corner, Topography, Survey number, Subdivision, Layout approval details, Land-use classification, Water supply, Electricity, Drainage |
 | Flat / Apartment | BHK configuration, Carpet area, Super built-up area, Floor number, Total floors, Number of lifts, Parking allocation, UDS, Maintenance, Possession status, Expected possession (month) |
 | Independent house / Villa | House or villa, Land area, Number of floors, Bedrooms, Bathrooms, Car parking, Construction year, Construction quality, Condition, Private garden / amenities, Water supply, Power arrangement, Approval & completion documents |
@@ -220,7 +222,7 @@ Wireframe: Properties → detail → **Location** tab.
 
 | ID | Requirement | Pri |
 |---|---|---|
-| PROP-22 | Address and coordinates: state, district (derived from the city), locality, latitude/longitude (map pin), road type and road width (ft) | M |
+| PROP-22 | Address and coordinates: state and district (shown; edited on the form), locality, pincode, full address, landmark, latitude/longitude (map pin, click or drag on the map), road type and road width (ft) | M |
 | PROP-23 | Highway access: name, distance by road (km), and **how it was measured** (free text, e.g. “route driven 02 Nov 2026”) | M |
 | PROP-24 | Nearby places table, with add and remove: category (School, Hospital, Bus stop, Railway station, Airport, Market, Other), name, **measured road distance (km)**, **Route checked** (yes/no), **Status** (Existing / Under construction / Planned / Proposed) | M |
 | PROP-25 | Advertising rule per row: “OK to advertise” only when Existing **and** route checked; “Route not checked” and “Not an existing benefit” are warnings | M |
@@ -325,14 +327,14 @@ Wireframe: **Properties** list.
 
 ### 6.11 Add / edit property form
 
-Wireframe: **Add property** form with numbered sections.
+Wireframe: **Add property** form with numbered sections. The form follows the wireframe layout (one card, the same sections, field order and wording); the few extra fields the system needs sit in section 1 in the same style.
 
 | ID | Requirement | Pri |
 |---|---|---|
-| PROP-59 | Numbered sections:<br>**1 Main property information** (code shown as “Auto: RE-PLT-…”, name, category/type, derived category, purpose, state, city, locality, facing, area, price, live ₹/sq.ft., status, listing date)<br>**2 Property-specific specifications** (a chip shows the subcategory)<br>**3 Features & amenities**<br>**4 Media** (after the first save)<br>**5** a note pointing to the Location, Legal and Pricing tabs after saving | M |
+| PROP-59 | Numbered sections, as in the wireframe:<br>**1 Main property information**: Property ID (“Auto: RE-PLT-…”), property title, property type (grouped by category), derived category, listing purpose, state, city/district, locality, **pincode**, facing, area (label from the type's main-area meaning, with unit), asking price (with basis), live ₹/sq.ft., property status, listing date; for rent and lease also security deposit and lock-in; checkboxes Price negotiable, Price on request, Featured listing; other common attributes (e.g. Description)<br>**2 Property-specific specifications** (a chip shows the type; optional fields can be removed from one property; “+ Add attribute”, §6.4)<br>**3 Features & amenities** (checkboxes)<br>**4** a note pointing to the Location, Legal & documents, Pricing & valuation and Media tabs<br>Photos are not on the form: they are added on the Media tab | M |
 | PROP-60 | Changing the type swaps section 2's fields immediately without losing the main information. In edit mode, changing subcategory uses the existing “Change subcategory” dialog (warns which values will be hidden) | M |
-| PROP-61 | New property: “Save draft” creates it (code assigned) and opens the Location tab. Edit: “Save changes” (disabled when nothing changed) and “Save & make Available” when the checklist passes. Unsaved-change protection | M |
-| PROP-62 | Side panel: status, featured switch, “Ready to make Available” checklist, link to history | M |
+| PROP-61 | New property: **Save property** creates it as a Draft (code assigned) and opens the Location tab. Edit (heading “Edit ‹title›”): **Save changes** (disabled when nothing changed). Cancel and Save stay in view at the bottom. Unsaved-change protection | M |
+| PROP-62 | **Property status** and **listing date** are fields in section 1 (no side panel). The status list shows only the moves the rules allow (PROP-43); choosing Available runs the publish checklist on save and lists anything missing. A new property starts as Draft. The listing date is set the first time a property becomes Available and can then be corrected (logged). History is on the property page's History tab | M |
 | PROP-63 | Field-level validation messages come from the shared rules; server errors are mapped back onto fields | M |
 
 ### 6.12 Property detail

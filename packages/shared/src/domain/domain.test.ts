@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { legalChecklist, legalSummary, mergeLegalChecks, newLegalCheck } from './legal';
 import type { PropertyLegalCheck } from './legal';
+import { advertising, customerPreview } from './location';
 import { pricePerSqft } from './pricing';
 import { propertySearchText } from './search';
 
@@ -92,5 +93,32 @@ describe('propertySearchText (M7)', () => {
         location: { city: 'Madurai', locality: 'Vilangudi', pincode: '625018' },
       }),
     ).toBe('re-plt-000001 premium residential plot madurai vilangudi 625018');
+  });
+});
+
+describe('nearby places: what may be advertised (PROP-25/26)', () => {
+  const place = (name: string, status: 'existing' | 'planned', routeChecked: boolean) => ({
+    name,
+    distanceKm: 2,
+    routeChecked,
+    status,
+  });
+
+  it('only existing places with a checked route are OK to advertise', () => {
+    expect(advertising(place('School', 'existing', true))).toBe('ok');
+    expect(advertising(place('School', 'existing', false))).toBe('route_not_checked');
+    expect(advertising(place('Metro', 'planned', true))).toBe('not_existing');
+  });
+
+  it('the preview lists verified places, future infrastructure and how many are hidden', () => {
+    const preview = customerPreview([
+      place('Kendriya Vidyalaya', 'existing', true),
+      place('Ring road', 'planned', false),
+      place('Bus stand', 'existing', false),
+      place('', 'existing', true), // a blank row is ignored
+    ]);
+    expect(preview.verified.map((p) => p.name)).toEqual(['Kendriya Vidyalaya']);
+    expect(preview.future.map((p) => p.name)).toEqual(['Ring road']);
+    expect(preview.hiddenCount).toBe(1);
   });
 });

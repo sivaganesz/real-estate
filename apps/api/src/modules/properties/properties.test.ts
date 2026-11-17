@@ -522,6 +522,87 @@ describe('properties API', () => {
     expect(row).not.toHaveProperty('attributeValues');
   });
 
+  it('Location tab: one change at a time, versioned, logged, and complete while listed', async () => {
+    const p = (await villa(COMPLETE)).body.data as Property;
+    const location = async (body: object, version?: number) => {
+      const current =
+        version ??
+        (await PropertyModel.findById(p.id).select('version').lean<{ version?: number }>())
+          ?.version ??
+        0;
+      return as('admin', request(ctx.app).patch(`${BASE}/${p.id}/location`))
+        .set('if-match', `"${current}"`)
+        .send(body);
+    };
+
+    // An address field is merged; the rest of the location stays.
+    const road = await location({ location: { roadType: 'Tar road', roadWidthFt: 30 } });
+    expect(road.status).toBe(200);
+    expect(road.body.data.location).toMatchObject({
+      city: COMPLETE.location.city,
+      pincode: COMPLETE.location.pincode,
+      roadType: 'Tar road',
+      roadWidthFt: 30,
+    });
+
+    // Highway and nearby places (a new row gets an id; blank names are allowed while editing).
+    const highway = await location({
+      highway: { name: 'NH 44', distanceKm: 4.5, routeNote: 'Route driven 02 Nov 2026' },
+    });
+    expect(highway.body.data.highway).toEqual({
+      name: 'NH 44',
+      distanceKm: 4.5,
+      routeNote: 'Route driven 02 Nov 2026',
+    });
+    const school = {
+      category: 'School',
+      name: 'Kendriya Vidyalaya',
+      distanceKm: 1.2,
+      routeChecked: true,
+      status: 'existing',
+    };
+    const nearby = await location({
+      nearby: [school, { ...school, name: '', status: 'planned', routeChecked: false }],
+    });
+    expect(nearby.body.data.nearby).toHaveLength(2);
+    const [first] = nearby.body.data.nearby;
+    expect(first).toMatchObject({ ...school, id: expect.any(String) });
+    // Editing keeps the row id.
+    const edited = await location({ nearby: [{ ...first, distanceKm: 1.4 }] });
+    expect(edited.body.data.nearby).toEqual([{ ...first, distanceKm: 1.4 }]);
+
+    // Each save is in the history; a stale version is refused; one change at a time.
+    const logs = await ChangeLogModel.find({ entityId: p.id, action: 'updated' }).lean();
+    expect(logs.map((l) => Object.keys(l.changes ?? {})).flat()).toEqual(
+      expect.arrayContaining(['location', 'highway', 'nearby']),
+    );
+    expect((await location({ highway: null }, 0)).status).toBe(409);
+    expect((await location({ highway: null, nearby: [] })).status).toBe(400);
+    expect(
+      (await location({ nearby: [{ ...school, distanceKm: -1 }] })).body.error.details[0].message,
+    ).toBe('Distance cannot be negative');
+
+    // A listed property keeps what it needs to be Available.
+    await addPhoto(p.id);
+    expect((await setStatus(p.id, 'available')).status).toBe(200);
+    // Once listed, the listing date can be corrected (and the change is logged).
+    const listed = await patch(p.id, { listingDate: '2026-11-01' });
+    expect(listed.status).toBe(200);
+    expect(listed.body.data.publishedAt.slice(0, 10)).toBe('2026-11-01');
+    expect(
+      await ChangeLogModel.exists({ entityId: p.id, 'changes.listingDate': { $exists: true } }),
+    ).toBeTruthy();
+    const draft = (await villa(COMPLETE)).body.data as Property;
+    expect((await patch(draft.id, { listingDate: '2026-11-01' })).status).toBe(422);
+
+    const cleared = await location({ location: { pincode: '' } });
+    expect(cleared.status).toBe(422);
+    expect(cleared.body.error.code).toBe('PUBLISH_BLOCKED');
+    expect(
+      (await as('sales_executive', request(ctx.app).patch(`${BASE}/${p.id}/location`))).status,
+    ).toBe(403);
+  });
+
   it('suggests existing city and locality spellings, most used first', async () => {
     await villa(COMPLETE);
     await villa(COMPLETE);

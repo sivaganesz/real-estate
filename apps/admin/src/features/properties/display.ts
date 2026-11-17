@@ -140,3 +140,10 @@ export function historyValue(field: string, value: unknown, names: Names): strin
   }
   return JSON.stringify(value);
 }
+
+/** The property page shows the full amount, as the wireframe does: "₹28,00,000". */
+export function formatPriceFull(price: Parameters<typeof formatPrice>[0]): string {
+  return price.basis === 'total' && !price.onRequest && price.amount !== null
+    ? `₹${price.amount.toLocaleString('en-IN')}`
+    : formatPrice(price);
+}

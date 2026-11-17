@@ -156,16 +156,15 @@
   - filters: type, city (dropdown of every city in use), status (dropdown with counts, replaces the tab row), legal, archive view, purpose, price, featured; all in the URL;
   - footer “n shown · n active · n archived”;
   - row click opens the property; row menu as before (Archive/Restore through Change status until R1.7); empty, loading and error states
-- [x] **Admin form**:
-  - `PropertyFormPage` split into `MainInfoSection`, `SpecificationsSection`, `AmenitiesSection`, `FormSidePanel`, `ConflictDialog`;
-  - one card with numbered sections 1–5 (PROP-59); type picked from a dropdown grouped by category, derived category shown;
-  - live ₹/sq.ft. (shared `pricePerSqft`) and area label from `mainAreaMeaning`; code shown as “Auto: RE-PLT-…”;
-  - road type and width with the location (choice B); State moved into section 1;
-  - sticky action bar;
-  - property name and road width rules shared with the API;
-  - 409 conflict dialog (who saved; load theirs or keep mine)
-  - Fixed: the form did not send road type and width, so saving erased them (the whole location is saved)
-  - Status and listing date are shown in the side panel (status changes keep going through the status actions); after the first save the form opens the Media section until the Location tab exists (R1.4)
+- [x] **Admin form** (wireframe layout, PRD 2.1):
+  - split into `MainInfoSection`, `SpecificationsSection`, `AmenitiesSection`, `ConflictDialog`;
+  - one card with sections 1–4 exactly as the wireframe (PROP-59): ID, title, type (grouped), derived category, purpose, state, city, locality, pincode, facing, area, price, live ₹/sq.ft., status, listing date; checkboxes; section 2 with the type chip; amenity checkboxes; the note;
+  - extra fields the system needs kept in the same style: pincode, price basis / negotiable / on request, rent deposit and lock-in, area unit, featured, description; "+ Add attribute" and ✕ kept;
+  - status in the form (only allowed moves; Available runs the checklist on save); listing date editable once listed (`listingDate` on PATCH, logged);
+  - "Save property" opens the new property's Location tab; heading "Edit ‹title›"; sticky Cancel / Save;
+  - no side panel and no Media section: photos are on the Media tab, road and map pin on the Location tab;
+  - property name rule shared with the API; 409 conflict dialog;
+  - Fixed: the form did not send road type and width, so saving erased them (the form now carries the whole location)
 - [x] **Attribute from the form**:
   - two-step dialog: details → **confirmation summary** (impact count) → **Confirm and add to settings** (PROP-16–21); Cancel returns with the inputs kept;
   - `POST …/attributes/preview`; adding from a form without `confirmed: true` is refused (428 CONFIRMATION_REQUIRED);
@@ -179,28 +178,24 @@
 
 ### R1.3 Property detail shell + Specifications, Media, History
 
-- [ ] Nested routes `/properties/:id/{specs,location,legal,pricing,media,history}` (matches tab hidden until R5); lazy tabs (PROP-66)
-- [ ] Header:
-  - icon, name, chips (code, category, type, purpose, status), meta line;
-  - price + ₹/sq.ft. with basis;
-  - `StatusSelect`, Edit, Archive, Delete (Restore when archived) (PROP-64)
-- [ ] Banners: archived info; open mandatory legal checks (PROP-65)
-- [ ] Specifications tab: `DescriptionGrid` for main and type-specific fields, amenity chips, Edit links
-- [ ] Media tab: reuse `MediaManager` (photos, cover, floor plans, brochures, documents, videos)
-- [ ] History tab: `Timeline` (who, what, when, before → after), with archive, restore and delete tombstone labels
-- [ ] Tests: detail page component tests (not covered before); history rendering
+> Built early with the R1.2 form change (owner's decision, 17 Nov 2026), so photos and GPS have a home.
+
+- [x] Routes `/properties/:id` (Specifications), `/location`, `/media`, `/history`; Legal & documents and Pricing & valuation shown greyed until R1.5 / R1.6; Matching customers hidden until R5 (PROP-66)
+- [x] Header: type icon, name, chips (code, category, type, purpose, status), meta line; full price + ₹/sq.ft. with basis; status dropdown (allowed moves only) and Edit (PROP-64)
+- [ ] Archive, Delete and Restore buttons: R1.7 (archiving works through the status dropdown until then)
+- [x] Banners: archived info; open mandatory legal checks (PROP-65)
+- [x] Specifications tab: `DescriptionGrid` for main and type-specific fields ("Not recorded" when empty), amenity chips, Edit link
+- [x] Media tab: `MediaManager` for people who can edit; a read-only gallery for others
+- [x] History tab: `Timeline` (who, what, when, before → after)
+- [ ] Archive, restore and delete tombstone labels: with R1.7
+- [x] Tests: property page (header, banner, tabs, empty values, permissions)
 
 ### R1.4 Location tab
 
-- [ ] **API**: `PATCH /properties/:id/location` (If-Match): road type and width, highway, `nearby[]` (≤ 30, validated enums) (PROP-22–24)
-- [ ] **Shared**: `advertisable()` preview rules (PROP-25/26)
-- [ ] **Admin**:
-  - address and coordinates fields (inline);
-  - highway card;
-  - nearby `EditableTable` (category, name, km, route checked, status, advertising chip, remove);
-  - map card with “Open in maps”;
-  - customer-facing preview card (verified list, future infrastructure, hidden count)
-- [ ] Tests: validation, preview rules, a concurrent edit gives 409, inline save and error states
+- [x] **API**: `PATCH /properties/:id/location` (If-Match), one change at a time: address fields (through the normal update rules), highway, `nearby[]` (≤ 30, validated) (PROP-22–24)
+- [x] **Shared**: `advertising()` and `customerPreview()` rules (PROP-25/26)
+- [x] **Admin**: address, coordinates, road and highway fields saved on blur (queued, so quick edits never conflict); nearby table (category, name, km, route checked, status, advertising chip, remove); map card (click or drag the pin, follows the typed address, “Open in maps”); customer-facing preview
+- [x] Tests: validation, preview rules, a stale version gives 409, a listed property stays complete, inline save and error states, read-only for Sales Executives
 
 ### R1.5 Legal & documents tab
 

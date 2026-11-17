@@ -451,8 +451,8 @@ All under `/api/v1/admin` unless stated. Existing endpoints (auth, users, profil
 | `GET /properties` | + filters `legal=open|clean`, `archived=only|include`, status list; projection; sorts with indexes | read |
 | `GET /properties/stats` | Counts for the nav and tabs (available, by status) | read |
 | `GET /properties/:id` | + `version`, `location.nearby`, `legal`, `legalSummary`, `valuation`, `pricePerSqft`, `archive` | read |
-| `PATCH /properties/:id` (If-Match) | Main info, specs, amenities. 409 on version conflict | write |
-| `PATCH /properties/:id/location` (If-Match) | Road, highway, `nearby[]` (whole list, validated) | write |
+| `PATCH /properties/:id` (If-Match) | Main info, specs, amenities; `listingDate` corrects the listing date of a listed property. 409 on version conflict | write |
+| `PATCH /properties/:id/location` (If-Match) | One change at a time: `location` (merged key by key: locality, pincode, address, landmark, map pin, road), `highway`, or `nearby[]` (whole list, ≤ 30, validated). Address changes go through the normal update rules (a listed property stays complete) | write |
 | `PATCH /properties/:id/legal/:key` | One check: status, verifiedBy, date, mediaId, note (atomic, element-level) | write |
 | `PATCH /properties/:id/valuation` (If-Match) | reviewDate, valuerReport, notes, `comparables[]` | write |
 | `POST /properties/:id/status` | Body `{status}`; transition and publish checks | write |

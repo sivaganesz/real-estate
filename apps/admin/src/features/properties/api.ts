@@ -10,6 +10,7 @@ import type {
   PropertyListItem,
   PropertyStatus,
   PropertyStatusCounts,
+  UpdateLocationBody,
   UpdatePropertyBody,
 } from '@real-estate/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -232,5 +233,36 @@ export function useGeoReverse(pin: { lat: number; lng: number } | null) {
     enabled: lat !== null && lng !== null,
     staleTime: Infinity,
     retry: false,
+  });
+}
+
+/** Location tab saves, one at a time per property, so each uses the latest version. */
+const locationQueues = new Map<string, Promise<unknown>>();
+
+/**
+ * The Location tab saves field by field (PROP-67). Saves are queued: a second edit waits
+ * for the first and is sent with the version the first one returned, so quick edits to
+ * several fields never conflict with each other. A change by someone else still gets 409.
+ */
+export function useUpdateLocation(id: string) {
+  const queryClient = useQueryClient();
+  const after = useAfterChange();
+  return useMutation({
+    mutationFn: (body: UpdateLocationBody) => {
+      const run = (locationQueues.get(id) ?? Promise.resolve())
+        .catch(() => undefined)
+        .then(async () => {
+          const version =
+            queryClient.getQueryData<Property>(propertiesKeys.detail(id))?.version ?? 0;
+          const saved = await api.patch<Property>(`${PATH}/${id}/location`, body, {
+            ifMatch: version,
+          });
+          queryClient.setQueryData(propertiesKeys.detail(id), saved);
+          return saved;
+        });
+      locationQueues.set(id, run);
+      return run;
+    },
+    onSuccess: after,
   });
 }
