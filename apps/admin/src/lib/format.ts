@@ -40,3 +40,7 @@ export function formatExpiry(iso: string | null, now = new Date()): string | nul
 
 export const formatDate = (iso: string) => date.format(new Date(iso));
 export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
+
+const monthYear = new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' });
+/** "2027-09" → "Sep 2027" (Month attributes, e.g. Expected possession). */
+export const formatMonth = (yyyyMm: string) => monthYear.format(new Date(`${yyyyMm}-01T00:00:00`));

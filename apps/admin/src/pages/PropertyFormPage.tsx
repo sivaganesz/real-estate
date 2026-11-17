@@ -293,8 +293,8 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
           return;
         }
         if (then === 'publish') {
-          await changeStatus.mutateAsync({ id: property.id, status: 'published' });
-          toast.success(`${saved.code} is published`);
+          await changeStatus.mutateAsync({ id: property.id, status: 'available' });
+          toast.success(`${saved.code} is now Available`);
           leaving.current = true;
           navigate(`/properties/${property.id}`);
           return;
@@ -307,8 +307,8 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
 
   const canPublish =
     property &&
-    property.status !== 'published' &&
-    canChangeStatus(property.status, 'published', property.purpose);
+    property.status !== 'available' &&
+    canChangeStatus(property.status, 'available', property.purpose);
   const allowedPurposes = layout?.subcategory.purposes ?? PURPOSES;
   const visibleOwn = (layout?.own ?? []).filter((a) => !removed.includes(a.key));
   const visibleCommon = (layout?.common ?? []).filter((a) => !removed.includes(a.key));
@@ -400,7 +400,7 @@ function PropertyForm({ categories, property }: { categories: Category[]; proper
           {canPublish && (
             <Button type="button" disabled={isSubmitting} onClick={() => void save('publish')}>
               {changeStatus.isPending && <Loader2Icon className="animate-spin" />}
-              {isDirty ? 'Save & publish' : 'Publish'}
+              {isDirty ? 'Save & mark Available' : 'Mark Available'}
             </Button>
           )}
         </div>

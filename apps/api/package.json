@@ -11,7 +11,9 @@
     "seed": "tsx src/db/seed.cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/migrations/cli.ts"
+    "migrate": "tsx src/migrations/cli.ts",
+    "db:reset-catalogue": "tsx src/db/resetCatalogue.cli.ts",
+    "seed:demo": "tsx src/db/seedDemo.cli.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",

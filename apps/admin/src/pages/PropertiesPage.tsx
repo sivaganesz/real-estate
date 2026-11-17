@@ -70,9 +70,11 @@ import { useSettled } from '@/lib/useSettled';
 const TABS: (PropertyStatus | 'all')[] = [
   'all',
   'draft',
-  'published',
-  'unpublished',
+  'available',
+  'under_negotiation',
+  'reserved',
   'booked',
+  'on_hold',
   'sold',
   'rented',
   'leased',

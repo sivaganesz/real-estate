@@ -57,8 +57,10 @@ function fakeApi(url: string) {
               data: {
                 all: 0,
                 draft: 0,
-                published: 0,
-                unpublished: 0,
+                available: 0,
+                under_negotiation: 0,
+                reserved: 0,
+                on_hold: 0,
                 booked: 0,
                 sold: 0,
                 rented: 0,
@@ -150,6 +152,9 @@ describe('role-based menus and pages', () => {
     const router = renderAs(role, '/');
     await vi.waitFor(() => expect(router.state.location.pathname).toBe(home));
     expect(sidebarLinks()).toEqual(links);
+    // Customers (R3) is listed under Specification data, greyed and not a link.
+    const customers = screen.getByText('Customers').closest('[aria-disabled="true"]');
+    expect(customers).toHaveAttribute('title', 'Coming in release R3 (Lead Pipeline)');
   });
 
   it.each([

@@ -153,7 +153,7 @@ export function RoleEditorSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <SheetContent className="w-full overflow-x-hidden overflow-y-auto data-[side=right]:sm:max-w-xl">
           <SheetHeader>
             <SheetTitle>{role ? `Edit ${role.name}` : 'New role'}</SheetTitle>
             <SheetDescription>
@@ -163,7 +163,7 @@ export function RoleEditorSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="grid gap-5 px-4 pb-4">
+          <div className="grid grid-cols-1 gap-5 px-4 pb-4">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{errorMessage(error)}</AlertDescription>

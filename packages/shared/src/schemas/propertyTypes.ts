@@ -2,6 +2,47 @@ import { z } from 'zod';
 import { idSchema } from './common';
 
 /**
+ * What a property type's main area means (PRD v2 PROP-06): the area field on the form is
+ * labelled with it, and price per sq.ft. is worked out against it.
+ */
+export const MAIN_AREA_MEANINGS = [
+  'plot',
+  'built_up',
+  'super_built_up',
+  'carpet',
+  'land',
+  'usable',
+] as const;
+export type MainAreaMeaning = (typeof MAIN_AREA_MEANINGS)[number];
+export const MAIN_AREA_LABELS: Record<MainAreaMeaning, string> = {
+  plot: 'Plot / land area',
+  built_up: 'Built-up area',
+  super_built_up: 'Super built-up area',
+  carpet: 'Carpet area',
+  land: 'Land area',
+  usable: 'Carpet / usable area',
+};
+
+/** One check of a property type's legal checklist (PRD v2 §6.6, SET-03). */
+export const legalChecklistItemSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-z0-9_]{1,59}$/, 'Use lower-case letters, numbers and _'),
+  label: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
+  verifies: z.string().trim().max(160).default(''),
+  mandatory: z.boolean().default(false),
+});
+export type LegalChecklistItemInput = z.input<typeof legalChecklistItemSchema>;
+
+const legalChecklistSchema = z
+  .array(legalChecklistItemSchema)
+  .max(30)
+  .refine((list) => new Set(list.map((c) => c.key)).size === list.length, {
+    message: 'Each check can appear only once',
+  });
+
+/**
  * Settings → Property types & amenities → Categories & attributes.
  *
  * Category (Residential, …) → Subcategory (Residential Plot, Villa / House, …) → Attributes.
@@ -32,6 +73,7 @@ export const ATTRIBUTE_TYPES = [
   'dropdown',
   'multi_select',
   'date',
+  'month',
 ] as const;
 export type AttributeType = (typeof ATTRIBUTE_TYPES)[number];
 export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
@@ -42,6 +84,7 @@ export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
   dropdown: 'Dropdown',
   multi_select: 'Multi-select',
   date: 'Date',
+  month: 'Month',
 };
 
 /** Types that need a list of options. */
@@ -95,6 +138,10 @@ export const subcategorySchema = z.object({
   /** The code prefix can't change once properties use it (their codes contain it). */
   prefixLocked: z.boolean(),
   attributes: z.array(placedAttributeSchema),
+  mainAreaMeaning: z.enum(MAIN_AREA_MEANINGS),
+  legalChecklist: z.array(
+    z.object({ key: z.string(), label: z.string(), verifies: z.string(), mandatory: z.boolean() }),
+  ),
 });
 export type Subcategory = z.infer<typeof subcategorySchema>;
 
@@ -276,6 +323,8 @@ const subcategoryFields = {
     .min(1, 'Choose at least one purpose')
     .transform((list) => PURPOSES.filter((p) => list.includes(p))),
   isActive: z.boolean(),
+  mainAreaMeaning: z.enum(MAIN_AREA_MEANINGS),
+  legalChecklist: legalChecklistSchema,
 };
 
 /** POST /admin/property-types/subcategories */
@@ -283,6 +332,8 @@ export const createSubcategoryBodySchema = z.object({
   categoryKey: z.enum(CATEGORY_KEYS),
   ...subcategoryFields,
   isActive: subcategoryFields.isActive.default(true),
+  mainAreaMeaning: subcategoryFields.mainAreaMeaning.default('built_up'),
+  legalChecklist: subcategoryFields.legalChecklist.default([]),
 });
 export type CreateSubcategoryBody = z.input<typeof createSubcategoryBodySchema>;
 export type CreateSubcategory = z.output<typeof createSubcategoryBodySchema>;

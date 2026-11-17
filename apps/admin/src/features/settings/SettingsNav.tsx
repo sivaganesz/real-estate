@@ -6,6 +6,7 @@ import type { PillNavItem } from '@/components/PillNav';
 const TABS: PillNavItem[] = [
   { label: 'Company info', to: '/settings/company' },
   { label: 'Property types & amenities', to: '/settings/property-types', exact: false },
+  { label: 'Cost assumptions', to: '/settings/costs' },
   { label: 'Visit slots', phase: 'R6' },
 ];
 

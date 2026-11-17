@@ -2,6 +2,8 @@ import {
   companySettingsSchema,
   LOGO_MAX_BYTES,
   updateCompanySettingsBodySchema,
+  valuationCostsBodySchema,
+  valuationCostsSchema,
 } from '@real-estate/shared';
 import type { RequestHandler } from 'express';
 import { Router } from 'express';
@@ -16,6 +18,7 @@ import { authenticate, requirePermission } from '../../middleware/auth';
 import { endpoint } from '../../middleware/validate';
 import type { AuthService } from '../auth/auth.service';
 import type { CompanySettingsService } from './company.service';
+import type { ValuationCostsService } from './valuationCosts.service';
 
 // ------------------------------------------------------------------ OpenAPI
 
@@ -95,11 +98,41 @@ function logoUpload(): RequestHandler {
   };
 }
 
+const valuationResponse = {
+  description: 'Cost assumptions',
+  content: json(z.object({ data: valuationCostsSchema })),
+};
+registry.registerPath({
+  ...secured,
+  method: 'get',
+  path: '/api/v1/admin/settings/valuation-costs',
+  summary: 'Transaction cost assumptions for the Pricing & valuation tab (SET-04)',
+  responses: { 200: valuationResponse, 401: err('Not signed in'), 403: err('Missing permission') },
+});
+registry.registerPath({
+  ...secured,
+  method: 'put',
+  path: '/api/v1/admin/settings/valuation-costs',
+  summary: 'Update the cost assumptions (needs settings:edit; send If-Match)',
+  request: {
+    headers: z.object({ 'if-match': z.string().meta({ example: '"0"' }) }),
+    body: { content: json(valuationCostsBodySchema) },
+  },
+  responses: {
+    200: valuationResponse,
+    400: err('Invalid input'),
+    403: err('Missing permission'),
+    409: err('VERSION_CONFLICT'),
+    428: err('If-Match header missing'),
+  },
+});
+
 export function createSettingsRouter(deps: {
   auth: AuthService;
   company: CompanySettingsService;
+  valuationCosts: ValuationCostsService;
 }): Router {
-  const { auth, company } = deps;
+  const { auth, company, valuationCosts } = deps;
   const router = Router();
   const canEdit = requirePermission('settings:edit');
   router.use(authenticate(auth.accessTokens));
@@ -123,6 +156,18 @@ export function createSettingsRouter(deps: {
   router.delete('/company/logo', canEdit, async (req, res) => {
     sendData(res, await company.removeLogo(req.user!.id));
   });
+
+  router.get('/valuation-costs', requirePermission('properties:read'), async (_req, res) => {
+    sendData(res, await valuationCosts.get());
+  });
+
+  router.put(
+    '/valuation-costs',
+    canEdit,
+    endpoint({ body: valuationCostsBodySchema }, async ({ body }, req, res) => {
+      sendData(res, await valuationCosts.update(req.user!.id, body, requireIfMatch(req)));
+    }),
+  );
 
   return router;
 }

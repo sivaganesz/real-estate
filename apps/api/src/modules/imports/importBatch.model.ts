@@ -40,7 +40,7 @@ const importBatchSchema = new Schema(
     status: { type: String, required: true, enum: IMPORT_BATCH_STATUSES, default: 'checked' },
     unknownColumns: { type: [String], default: [] },
     rows: { type: [rowSchema], default: [] },
-    importAs: { type: String, enum: ['draft', 'published', null], default: null },
+    importAs: { type: String, enum: ['draft', 'available', null], default: null },
     duplicates: { type: String, enum: ['skip', 'update', null], default: null },
     result: { type: Schema.Types.Mixed, default: null },
     createdBy: refField('User'),
@@ -73,7 +73,7 @@ export interface ImportBatchDoc {
   status: ImportBatchStatus;
   unknownColumns: string[];
   rows: ImportRowDoc[];
-  importAs: 'draft' | 'published' | null;
+  importAs: 'draft' | 'available' | null;
   duplicates: 'skip' | 'update' | null;
   result: ImportResult | null;
   createdBy?: string | null;

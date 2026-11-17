@@ -163,6 +163,8 @@ export class PropertyTypesService {
               propertyCount,
               prefixLocked: propertyCount > 0,
               attributes: present(s._id, s.attributes),
+              mainAreaMeaning: s.mainAreaMeaning ?? 'built_up',
+              legalChecklist: s.legalChecklist ?? [],
             };
           }),
         amenities: amenities
@@ -298,7 +300,7 @@ export class PropertyTypesService {
     const changes = diffFields(
       before as unknown as Record<string, unknown>,
       next as unknown as Record<string, unknown>,
-      ['name', 'codePrefix', 'purposes', 'isActive'],
+      ['name', 'codePrefix', 'purposes', 'isActive', 'mainAreaMeaning', 'legalChecklist'],
     );
     if (Object.keys(changes).length === 0) return this.getAll();
     try {

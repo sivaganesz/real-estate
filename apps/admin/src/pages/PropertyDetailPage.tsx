@@ -322,21 +322,18 @@ function Details({
           </div>
           <p className="text-muted-foreground">Since {formatDate(p.statusChangedAt)}</p>
           {p.publishedAt && (
-            <p className="text-muted-foreground">First published {formatDate(p.publishedAt)}</p>
+            <p className="text-muted-foreground">Listed {formatDate(p.publishedAt)}</p>
           )}
-          {canWrite &&
-            p.status !== 'published' &&
-            p.publishIssues.length > 0 &&
-            p.status !== 'archived' && (
-              <div className="grid gap-1 border-t pt-3">
-                <span className="font-medium">Before publishing</span>
-                <ul className="list-disc pl-5 text-muted-foreground">
-                  {p.publishIssues.map((i) => (
-                    <li key={i.path}>{i.message}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          {canWrite && p.status === 'draft' && p.publishIssues.length > 0 && (
+            <div className="grid gap-1 border-t pt-3">
+              <span className="font-medium">Before it can be Available</span>
+              <ul className="list-disc pl-5 text-muted-foreground">
+                {p.publishIssues.map((i) => (
+                  <li key={i.path}>{i.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
 
         <Card className="grid gap-3 p-5 text-sm">

@@ -2,6 +2,7 @@ import type { Permission } from '@real-estate/shared';
 import {
   BarChart3Icon,
   CalendarDaysIcon,
+  ContactIcon,
   HouseIcon,
   KanbanSquareIcon,
   LayoutDashboardIcon,
@@ -42,30 +43,45 @@ interface NavLinkItem {
   count?: 'availableProperties';
 }
 
-/** A module from a later release: shown greyed with its release, so the plan is visible. */
+/** The planned releases (docs/v2/PRD.md §3), named in the badge's tooltip. */
+const RELEASES = {
+  R3: 'Lead Pipeline',
+  R5: 'Matching',
+  R6: 'Appointments',
+  R7: 'Dashboard & Reports',
+  R8: 'HNI assessment',
+} as const;
+type Release = keyof typeof RELEASES;
+
+/**
+ * A module from a later release: shown greyed with its release, so the plan is visible.
+ * Not a link: the page does not exist yet.
+ */
 interface ComingItem {
   label: string;
   icon: Icon;
-  release: string;
+  release: Release;
   /** Shown with a lock to roles without this permission (wireframe: HNI). */
   restrictedTo?: Permission;
 }
 
+type NavItem = NavLinkItem | ComingItem;
+const isComing = (item: NavItem): item is ComingItem => 'release' in item;
+
 interface NavSection {
   title: string;
-  links?: NavLinkItem[];
-  coming?: ComingItem[];
+  items: NavItem[];
 }
 
 /** Sidebar groups, in the wireframe's order (spec-system-wireframe/app.js NAV). */
 const NAV: NavSection[] = [
   {
     title: 'Overview',
-    coming: [{ label: 'Sales dashboard', icon: LayoutDashboardIcon, release: 'R7' }],
+    items: [{ label: 'Sales dashboard', icon: LayoutDashboardIcon, release: 'R7' }],
   },
   {
     title: 'Specification data',
-    links: [
+    items: [
       {
         to: '/properties',
         label: 'Properties',
@@ -73,12 +89,13 @@ const NAV: NavSection[] = [
         permission: 'properties:read',
         count: 'availableProperties',
       },
+      { label: 'Customers', icon: ContactIcon, release: 'R3' },
       { to: '/imports', label: 'Bulk import', icon: UploadIcon, permission: 'imports:run' },
     ],
   },
   {
     title: 'Sales & qualification',
-    coming: [
+    items: [
       { label: 'Lead pipeline', icon: KanbanSquareIcon, release: 'R3' },
       { label: 'Matching engine', icon: TargetIcon, release: 'R5' },
       { label: 'Appointments', icon: CalendarDaysIcon, release: 'R6' },
@@ -93,7 +110,7 @@ const NAV: NavSection[] = [
   },
   {
     title: 'Administration',
-    links: [
+    items: [
       { to: '/users', label: 'Users & Roles', icon: UsersIcon, permission: 'users:manage' },
       { to: '/settings', label: 'Settings', icon: SettingsIcon, permission: 'settings:edit' },
     ],
@@ -157,7 +174,7 @@ function Sidebar({
   if (!user) return null;
 
   const countOf = (key: NavLinkItem['count']) =>
-    key === 'availableProperties' ? counts.data?.published : undefined;
+    key === 'availableProperties' ? counts.data?.available : undefined;
 
   // Wireframe `.nav a` / `.nav a.on`: soft brand background for the current page.
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -181,13 +198,18 @@ function Sidebar({
       </div>
 
       {NAV.map((section) => {
-        const links = (section.links ?? []).filter((l) => !l.permission || can(l.permission));
-        const coming = section.coming ?? [];
-        if (links.length === 0 && coming.length === 0) return null;
+        const items = section.items.filter(
+          (item) => isComing(item) || !item.permission || can(item.permission),
+        );
+        if (items.length === 0) return null;
         return (
           <div key={section.title} className="grid gap-0.5">
             <SectionLabel collapsed={collapsed}>{section.title}</SectionLabel>
-            {links.map(({ to, label, icon: ItemIcon, count }) => {
+            {items.map((item) => {
+              if (isComing(item)) {
+                return <ComingNavItem key={item.label} item={item} collapsed={collapsed} />;
+              }
+              const { to, label, icon: ItemIcon, count } = item;
               const n = count ? countOf(count) : undefined;
               return (
                 <WithTip key={to} show={collapsed} label={label}>
@@ -214,40 +236,43 @@ function Sidebar({
                 </WithTip>
               );
             })}
-            {coming.map(({ label, icon: ItemIcon, release, restrictedTo }) => {
-              const locked = restrictedTo !== undefined && !can(restrictedTo);
-              return (
-                <WithTip key={label} show={collapsed} label={`${label} · ${release}`}>
-                  <div
-                    className={cn(
-                      'flex h-8 items-center gap-2.5 rounded-lg text-[14px] text-muted-foreground/60',
-                      collapsed ? 'justify-center' : 'px-2.5',
-                    )}
-                    aria-disabled="true"
-                    aria-label={collapsed ? `${label}, coming in ${release}` : undefined}
-                    title={collapsed ? undefined : `Coming in release ${release}`}
-                  >
-                    <ItemIcon className="size-4 shrink-0" />
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 truncate">{label}</span>
-                        {locked ? (
-                          <LockIcon className="size-3.5" aria-label="Restricted" />
-                        ) : (
-                          <span className="rounded border border-dashed px-1 text-[10px]">
-                            {release}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </WithTip>
-              );
-            })}
           </div>
         );
       })}
     </nav>
+  );
+}
+
+/** A greyed, non-clickable entry for a module of a later release. */
+function ComingNavItem({ item, collapsed }: { item: ComingItem; collapsed: boolean }) {
+  const { can } = useAuth();
+  const { label, icon: ItemIcon, release, restrictedTo } = item;
+  const locked = restrictedTo !== undefined && !can(restrictedTo);
+  const when = `Coming in release ${release} (${RELEASES[release]})`;
+  return (
+    <WithTip show={collapsed} label={`${label} · ${when}`}>
+      <div
+        className={cn(
+          'flex h-8 items-center gap-2.5 rounded-lg text-[14px] text-muted-foreground/60',
+          collapsed ? 'justify-center' : 'px-2.5',
+        )}
+        aria-disabled="true"
+        aria-label={collapsed ? `${label}, ${when}` : undefined}
+        title={collapsed ? undefined : when}
+      >
+        <ItemIcon className="size-4 shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{label}</span>
+            {locked ? (
+              <LockIcon className="size-3.5" aria-label="Restricted" />
+            ) : (
+              <span className="rounded border border-dashed px-1 text-[10px]">{release}</span>
+            )}
+          </>
+        )}
+      </div>
+    </WithTip>
   );
 }
 

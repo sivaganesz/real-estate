@@ -257,4 +257,32 @@ describe('settings → company info', () => {
     expect(existsSync(file)).toBe(false);
     expect(await ChangeLogModel.countDocuments({ action: 'logo_removed' })).toBe(1);
   });
+
+  it('cost assumptions: defaults 7/4/1, readable by property viewers, edited with If-Match (SET-04)', async () => {
+    const URL = '/api/v1/admin/settings/valuation-costs';
+    const read = await as('sales_executive', request(ctx.app).get(URL));
+    expect(read.status).toBe(200);
+    expect(read.body.data).toMatchObject({
+      stampDutyPct: 7,
+      registrationPct: 4,
+      otherPct: 1,
+      version: 0,
+    });
+    const body = { stampDutyPct: 7, registrationPct: 1, otherPct: 1.5 };
+    expect(
+      (await as('sales_executive', request(ctx.app).put(URL)).set('if-match', '"0"').send(body))
+        .status,
+    ).toBe(403);
+    const saved = await as('admin', request(ctx.app).put(URL)).set('if-match', '"0"').send(body);
+    expect(saved.status).toBe(200);
+    expect(saved.body.data).toMatchObject({ ...body, version: 1 });
+    // A second admin still on version 0 can't overwrite it.
+    const stale = await as('admin', request(ctx.app).put(URL)).set('if-match', '"0"').send(body);
+    expect(stale.status).toBe(409);
+    const bad = await as('admin', request(ctx.app).put(URL))
+      .set('if-match', '"1"')
+      .send({ ...body, stampDutyPct: -1 });
+    expect(bad.status).toBe(400);
+    expect(await ChangeLogModel.countDocuments({ action: 'valuation_costs_updated' })).toBe(1);
+  });
 });

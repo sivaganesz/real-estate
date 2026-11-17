@@ -61,6 +61,13 @@ export function checkAttributeValue(
       if (raw === '') return { value: undefined };
       return isValidDate(raw) ? { value: raw } : { error: 'Enter a date as YYYY-MM-DD' };
     }
+    case 'month': {
+      // Stored as YYYY-MM. A full date (e.g. an Excel date cell) keeps its month.
+      if (typeof raw !== 'string') return { error: 'Enter a month' };
+      if (raw === '') return { value: undefined };
+      const m = /^(\d{4})-(0[1-9]|1[0-2])(?:-\d{2})?$/.exec(raw.trim());
+      return m ? { value: `${m[1]}-${m[2]}` } : { error: 'Enter a month as YYYY-MM' };
+    }
   }
 }
 

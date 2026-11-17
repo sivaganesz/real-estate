@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 import { ensureStartingPropertyTypes } from './propertyTypes.defaults';
@@ -47,7 +48,7 @@ describe('settings → property types (categories & attributes)', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
     for (const role of ['admin', 'sales_executive'] as const) {
@@ -180,7 +181,7 @@ describe('settings → property types (categories & attributes)', () => {
       request(ctx.app).delete(`${BASE}/subcategories/${plot.id}/attributes/${layout.id}`),
     );
 
-    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    expect(await ensureStartingPropertyTypes(TEST_CATALOGUE)).toBe('exists');
     const data = await read();
     const commercial = data.categories.find((c) => c.key === 'commercial')!;
     expect(commercial.isActive).toBe(true);
@@ -192,7 +193,7 @@ describe('settings → property types (categories & attributes)', () => {
     // Runs once: a removed Commercial subcategory isn't added back.
     const warehouse = sub(data, 'Warehouse / Godown');
     await as('admin', request(ctx.app).delete(`${BASE}/subcategories/${warehouse.id}`));
-    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    expect(await ensureStartingPropertyTypes(TEST_CATALOGUE)).toBe('exists');
     const after = (await read()).categories.find((c) => c.key === 'commercial')!;
     expect(after.subcategories.map((s) => s.name)).not.toContain('Warehouse / Godown');
   });
@@ -204,7 +205,7 @@ describe('settings → property types (categories & attributes)', () => {
       'admin',
       request(ctx.app).delete(`${BASE}/subcategories/${villa.id}/attributes/${floors.id}`),
     );
-    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    expect(await ensureStartingPropertyTypes(TEST_CATALOGUE)).toBe('exists');
     expect(labels(sub(await read(), 'Villa / House').attributes)).not.toContain('Floors');
   });
 
@@ -558,7 +559,7 @@ describe('property type rules that depend on existing properties', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
   });
 
   it('locks the code prefix and blocks deleting a subcategory that has properties', async () => {

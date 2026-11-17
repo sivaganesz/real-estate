@@ -129,21 +129,23 @@
 
 ### R1.1 Statuses, settings and data model
 
-- [ ] **DB**: migration `published → available`, `unpublished → on_hold`; `listedAt` backfill (D1, PROP-45)
-- [ ] **Shared**: new `PROPERTY_STATUSES`, labels, tones and `STATUS_TRANSITIONS` (PROP-43); list query accepts old values as aliases for one release
-- [ ] **API**: status endpoint uses the new transitions; the publish checklist leads to Available; bulk status
-- [ ] **DB**: property fields `pricePerSqft`, `legal[]`, `legalSummary`, `location.{roadType, roadWidthFt, highway, nearby[]}`, `valuation`, `archive`, `searchText`, `version`, `media[].caption/visibility` (TRD §7.3)
-- [ ] **DB**: subcategory `mainAreaMeaning` and `legalChecklist[]`; attribute `review` (TRD §7.1–7.2)
-- [ ] **Catalogue v2** ([PROPERTY-CATALOGUE.md](PROPERTY-CATALOGUE.md)): new `propertyTypes.defaults.ts`; attribute type `month`; seed when the catalogue is empty; `pnpm db:reset-catalogue` (dev/test only); `pnpm seed:demo` with the wireframe's 12 sample properties; update test fixtures (PROP-13)
-- [ ] **Migration**: legal checklist templates (PRD §6.6) and backfill `legal[]` + `legalSummary` on existing properties
-- [ ] **Migration**: `pricePerSqft`, `searchText`, indexes (TRD §7.12)
-- [ ] **Settings**: `valuationCosts` (7/4/1) and endpoints `GET/PUT /settings/valuation-costs`
-- [ ] **Admin, Settings → Property types:**
-  - legal checklist editor (add, reorder, mandatory flag);
-  - main-area meaning per subcategory;
-  - “New” attribute review list (Mark reviewed / Edit / Remove);
-  - Valuation costs panel
-- [ ] Tests: migrations up/down on a seeded DB; transition matrix; settings validation
+- [x] **DB**: migration 0003 `published → available`, `unpublished → on_hold` (with a safe `down`); the listing date stays in `publishedAt` (D1, PROP-45)
+- [x] **Shared**: new `PROPERTY_STATUSES`, labels, tones and `STATUS_TRANSITIONS` (PROP-43); list query accepts old values as aliases for one release
+- [x] **API**: status endpoint uses the new transitions; the publish checklist leads to Available; bulk status
+- [x] **DB**: property fields `pricePerSqft`, `legal[]`, `legalSummary`, `location.{roadType, roadWidthFt}`, `highway`, `nearby[]` (top-level, see TRD §7.3), `valuation`, `archive`, `searchText`, `version`; derived fields computed by the shared domain on every write
+- [ ] `media[].caption/visibility` (private documents, M6): with the Legal & documents tab (R1.5)
+- [x] **DB**: subcategory `mainAreaMeaning` and `legalChecklist[]` (TRD §7.1)
+- [ ] Attribute `review` (PROP-20): with the attribute-from-form confirmation (R1.2)
+- [x] **Catalogue v2** ([PROPERTY-CATALOGUE.md](PROPERTY-CATALOGUE.md)): new `propertyTypes.defaults.ts`; attribute type `month`; seed when the catalogue is empty; `pnpm db:reset-catalogue` (dev/test only); `pnpm seed:demo` with the wireframe's 12 sample properties; update test fixtures (PROP-13)
+- [x] **Migration** 0004: legal checks from each type checklist and `legalSummary` on existing properties (idempotent)
+- [x] **Migration** 0004: `pricePerSqft`, `searchText`; indexes of TRD §7.12 (applied by `pnpm migrate`)
+- [x] **Settings**: `valuationCosts` (7/4/1) and endpoints `GET/PUT /settings/valuation-costs` (If-Match)
+- [x] **Admin, Settings → Property types:** legal checklist editor (standard or custom checks, reorder, mandatory) and main-area meaning per type
+- [x] **Admin, Settings → Cost assumptions** tab with a worked example
+- [ ] “New” attribute review list (Mark reviewed / Edit / Remove): R1.2, with PROP-20
+- [x] Tests: migrations 0003/0004 (up, down, idempotent); transition matrix; catalogue v2 contents; reset and demo commands; domain golden tests (pricing, legal, search); settings validation
+- [x] Local database: reset to catalogue v2 with the 12 wireframe sample properties (backup taken first)
+- [ ] Properties list: with 11 statuses the status tabs overflow and “All” scrolls out of view; the R1.2 list uses the wireframe filter layout
 
 ### R1.2 Properties list and form (restyle + attribute confirmation)
 

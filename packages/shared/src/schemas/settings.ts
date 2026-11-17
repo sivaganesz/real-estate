@@ -59,3 +59,34 @@ export const updateCompanySettingsBodySchema = z.object({
 });
 export type UpdateCompanySettingsBody = z.input<typeof updateCompanySettingsBodySchema>;
 export type UpdateCompanySettings = z.output<typeof updateCompanySettingsBodySchema>;
+
+/**
+ * Transaction cost assumptions (PRD v2 SET-04), used for the illustrative cost breakdown on
+ * a property's Pricing & valuation tab. Defaults 7 / 4 / 1 are placeholders until the
+ * client confirms current rates (D8).
+ */
+const percent = (label: string) =>
+  z
+    .number(`${label} must be a number`)
+    .min(0, `${label} can't be negative`)
+    .max(25, `${label} looks too high`);
+
+export const valuationCostsBodySchema = z.object({
+  stampDutyPct: percent('Stamp duty'),
+  registrationPct: percent('Registration fee'),
+  otherPct: percent('Other costs'),
+});
+export type ValuationCostsBody = z.infer<typeof valuationCostsBodySchema>;
+
+export const DEFAULT_VALUATION_COSTS: ValuationCostsBody = {
+  stampDutyPct: 7,
+  registrationPct: 4,
+  otherPct: 1,
+};
+
+export const valuationCostsSchema = valuationCostsBodySchema.extend({
+  updatedAt: z.string().nullable(),
+  /** Send it back in If-Match when saving (0 before the first save). */
+  version: z.number().int(),
+});
+export type ValuationCosts = z.infer<typeof valuationCostsSchema>;

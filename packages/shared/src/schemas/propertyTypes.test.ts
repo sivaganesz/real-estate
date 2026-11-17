@@ -59,6 +59,8 @@ describe('property types', () => {
       codePrefix: 'FRM',
       purposes: ['sale', 'lease'],
       isActive: true,
+      mainAreaMeaning: 'built_up',
+      legalChecklist: [],
     });
     expect(
       createSubcategoryBodySchema.safeParse({

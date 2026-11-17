@@ -18,7 +18,7 @@ import type { FormDefinition } from '../propertyTypes/propertyTypes.service';
 /** A spreadsheet cell after reading (rich text, links and formulas reduced to their value). */
 export type CellValue = string | number | boolean | Date | null;
 
-type ColumnKind = 'text' | 'number' | 'yes_no' | 'list' | 'multi' | 'date' | 'urls';
+type ColumnKind = 'text' | 'number' | 'yes_no' | 'list' | 'multi' | 'date' | 'month' | 'urls';
 
 export interface ImportColumn {
   /** "title", "price", "attr:bhk"… */
@@ -57,6 +57,8 @@ function attributeKind(type: AttributeType): ColumnKind {
       return 'multi';
     case 'date':
       return 'date';
+    case 'month':
+      return 'month';
     default:
       return 'text';
   }
@@ -259,7 +261,9 @@ export function columnsFor(def: FormDefinition): ImportColumn[] {
               ? `Number${a.unit ? ` in ${a.unit}` : ''}.`
               : kind === 'date'
                 ? 'A date (e.g. 2026-11-12).'
-                : 'Text.';
+                : kind === 'month'
+                  ? 'A month (e.g. 2027-09).'
+                  : 'Text.';
     return {
       key: `attr:${a.key}`,
       header,

@@ -57,6 +57,8 @@ const SETUP: PropertyTypes = {
           isActive: true,
           propertyCount: 0,
           prefixLocked: false,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
           attributes: [
             attr(10, 'Road width', { type: 'number', unit: 'ft', searchFilter: true }),
             attr(11, 'Corner plot', { type: 'yes_no' }),
@@ -71,6 +73,8 @@ const SETUP: PropertyTypes = {
           isActive: true,
           propertyCount: 0,
           prefixLocked: false,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
           attributes: [bhk(['Apartment / Flat'])],
         },
       ],
@@ -299,6 +303,8 @@ describe('PropertyTypesPage', () => {
       codePrefix: 'FRM',
       purposes: ['sale', 'lease'],
       isActive: true,
+      mainAreaMeaning: 'built_up',
+      legalChecklist: [],
     });
     // The new subcategory is selected.
     expect(await screen.findByText('No attributes yet.', { exact: false })).toBeInTheDocument();

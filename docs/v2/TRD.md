@@ -281,6 +281,7 @@ Existing collections (`users`, `refreshTokens`, `authTokens`, `settings`, `chang
   version }
 ```
 
+- **As built (R1.1):** `highway` and `nearby[]` are top-level fields, not inside `location`: the main form saves the whole location, which must never wipe the Location tab’s data. The listing date stays in `publishedAt` (first time Available) rather than a new `listedAt`.
 - **Derived fields** (`pricePerSqft`, `legalSummary`, `searchText`, `listedAt`) are computed by the shared domain functions in the same write.
 - **Legal checklist on create:** a new property copies its subcategory's checklist. Changing subcategory merges the checklists and keeps existing checks. Checks removed from the template stay on old properties, marked as not in the template.
 - **Embedded limits:** nearby ≤ 30, comparables ≤ 20, legal ≤ 30, media ≤ 60 (enforced atomically with `'media.59': {$exists:false}`, L1).

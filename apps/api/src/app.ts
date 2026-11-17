@@ -29,6 +29,7 @@ import { createProfileRouter } from './modules/profile/profile.routes';
 import { ProfileService } from './modules/profile/profile.service';
 import { CompanySettingsService } from './modules/settings/company.service';
 import { createSettingsRouter } from './modules/settings/settings.routes';
+import { ValuationCostsService } from './modules/settings/valuationCosts.service';
 import { createRolesRouter } from './modules/roles/roles.routes';
 import { RolesService } from './modules/roles/roles.service';
 import { createUsersRouter } from './modules/users/users.routes';
@@ -51,7 +52,10 @@ function createApiRouter(deps: AppDeps): express.Router {
   const profile = new ProfileService({ ...deps, auth });
   router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
   const company = new CompanySettingsService(deps);
-  router.use('/admin/settings', createSettingsRouter({ auth, company }));
+  router.use(
+    '/admin/settings',
+    createSettingsRouter({ auth, company, valuationCosts: new ValuationCostsService() }),
+  );
   const propertyTypes = new PropertyTypesService({ usage: propertyUsage });
   router.use('/admin/property-types', createPropertyTypesRouter({ auth, propertyTypes }));
   const properties = new PropertiesService({ propertyTypes, storage: deps.storage });

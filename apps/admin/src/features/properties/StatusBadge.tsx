@@ -3,15 +3,20 @@ import type { PropertyStatus } from '@real-estate/shared';
 import { TONE_CHIP } from '@/components/patterns/tone';
 import { cn } from '@/lib/utils';
 
-/** Soft colour per status: green = live, amber = booked, blue = closed, grey = not live. */
+/**
+ * Status chips with the wireframe's tones: Available green, Under negotiation purple,
+ * Reserved and Booked blue, On hold amber, closed grey, Draft dashed.
+ */
 const STYLE: Record<PropertyStatus, string> = {
   draft: 'border border-dashed border-foreground/25 text-muted-foreground',
-  published: TONE_CHIP.green,
-  unpublished: TONE_CHIP.grey,
-  booked: TONE_CHIP.amber,
-  sold: TONE_CHIP.blue,
-  rented: TONE_CHIP.blue,
-  leased: TONE_CHIP.blue,
+  available: TONE_CHIP.green,
+  under_negotiation: TONE_CHIP.purple,
+  reserved: TONE_CHIP.blue,
+  booked: TONE_CHIP.blue,
+  on_hold: TONE_CHIP.amber,
+  sold: TONE_CHIP.grey,
+  rented: TONE_CHIP.grey,
+  leased: TONE_CHIP.grey,
   archived: `${TONE_CHIP.grey} line-through decoration-foreground/30`,
 };
 

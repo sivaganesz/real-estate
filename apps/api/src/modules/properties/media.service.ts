@@ -1,4 +1,4 @@
-import { MAX_MEDIA_PER_PROPERTY, MEDIA_RULES } from '@real-estate/shared';
+import { LISTED_STATUSES, MAX_MEDIA_PER_PROPERTY, MEDIA_RULES } from '@real-estate/shared';
 import type { MediaKind, Property } from '@real-estate/shared';
 import { withTransaction } from '../../db/transaction';
 import { AppError, businessRule, conflict, notFound } from '../../lib/errors';
@@ -204,14 +204,18 @@ export class PropertyMediaService {
     return this.properties.get(id);
   }
 
-  /** Deletes the file; the next photo becomes the cover. A published property keeps one photo. */
+  /** Deletes the file; the next photo becomes the cover. A listed property keeps one photo. */
   async remove(actorId: string, id: string, mediaId: string): Promise<Property> {
     const property = await this.editable(id);
     const target = this.findMedia(property, mediaId);
     const photos = (property.media ?? []).filter((m) => m.kind === 'image');
-    if (property.status === 'published' && target.kind === 'image' && photos.length === 1) {
+    if (
+      LISTED_STATUSES.includes(property.status) &&
+      target.kind === 'image' &&
+      photos.length === 1
+    ) {
       throw businessRule(
-        'A published property needs at least one photo. Add another first, or unpublish it.',
+        'A property on the market needs at least one photo. Add another first, or put it on hold.',
       );
     }
     await withTransaction(async () => {

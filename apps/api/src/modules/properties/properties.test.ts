@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { ensureStartingPropertyTypes } from '../propertyTypes/propertyTypes.defaults';
 import {
@@ -84,7 +85,7 @@ describe('properties API', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
     for (const role of ['admin', 'sales_executive'] as const) {
@@ -261,6 +262,51 @@ describe('properties API', () => {
     expect(history[0].by).toEqual({ id: adminId, name: 'Asha Admin' });
   });
 
+  it('copies the type legal checklist, works out price per sq.ft., and keeps checks on a type change', async () => {
+    const villaId = sub('Villa / House').id;
+    const setChecklist = (id: string, legalChecklist: object[]) =>
+      as('admin', request(ctx.app).patch(`${TYPES}/subcategories/${id}`)).send({ legalChecklist });
+    await setChecklist(villaId, [
+      { key: 'sale_deed', label: 'Sale deed', mandatory: true },
+      { key: 'tax_receipts', label: 'Tax receipts' },
+    ]);
+    const created = await create({
+      subcategoryId: villaId,
+      title: '3 BHK villa with garden',
+      purpose: 'sale',
+      price: { amount: 2_800_000, basis: 'total', negotiable: false, onRequest: false },
+      area: { value: 1200, unit: 'sqft' },
+      location: { city: 'Madurai', locality: 'Vilangudi', roadType: 'Tar road', roadWidthFt: 30 },
+    });
+    expect(created.status).toBe(201);
+    const p = created.body.data;
+    expect(p.pricePerSqft).toBe(2333);
+    expect(p.location).toMatchObject({ roadType: 'Tar road', roadWidthFt: 30 });
+    expect(p.legal.map((c: { key: string; status: string }) => [c.key, c.status])).toEqual([
+      ['sale_deed', 'not_collected'],
+      ['tax_receipts', 'not_collected'],
+    ]);
+    expect(p.legalSummary).toMatchObject({ total: 2, openMandatory: ['sale_deed'] });
+    expect((await PropertyModel.findById(p.id).lean())!.searchText).toContain('vilangudi');
+
+    // Moving to a type with another checklist: its checks are added, none is lost.
+    const flatId = sub('Apartment / Flat').id;
+    await setChecklist(flatId, [{ key: 'rera', label: 'RERA registration', mandatory: true }]);
+    const moved = (await patch(p.id, { subcategoryId: flatId })).body.data;
+    expect(moved.legal.map((c: { key: string }) => c.key)).toEqual([
+      'rera',
+      'sale_deed',
+      'tax_receipts',
+    ]);
+    // A price change is reflected immediately.
+    const repriced = (
+      await patch(p.id, {
+        price: { amount: 3_000_000, basis: 'total', negotiable: false, onRequest: false },
+      })
+    ).body.data;
+    expect(repriced.pricePerSqft).toBe(2500);
+  });
+
   it('never lets a stale edit overwrite a newer one (If-Match, H4)', async () => {
     const created = (await villa()).body.data;
     expect(created.version).toBe(0);
@@ -319,9 +365,9 @@ describe('properties API', () => {
     }
   });
 
-  it('publishes only when complete, and a published property stays complete', async () => {
+  it('lists as Available only when complete, and a listed property stays complete', async () => {
     const id = (await villa()).body.data.id;
-    const blocked = await setStatus(id, 'published');
+    const blocked = await setStatus(id, 'available');
     expect(blocked.status).toBe(422);
     expect(blocked.body.error.code).toBe('PUBLISH_BLOCKED');
     expect(blocked.body.error.details).toContainEqual({
@@ -339,15 +385,15 @@ describe('properties API', () => {
     ).send({ required: true });
     await patch(id, COMPLETE);
     await addPhoto(id);
-    const stillBlocked = await setStatus(id, 'published');
+    const stillBlocked = await setStatus(id, 'available');
     expect(stillBlocked.body.error.details).toEqual([
       { path: 'attributeValues.bhk', message: 'Fill in BHK' },
     ]);
 
     await patch(id, { attributeValues: { bhk: '3 BHK' } });
-    const published = await setStatus(id, 'published');
+    const published = await setStatus(id, 'available');
     expect(published.status).toBe(200);
-    expect(published.body.data).toMatchObject({ status: 'published', publishIssues: [] });
+    expect(published.body.data).toMatchObject({ status: 'available', publishIssues: [] });
     expect(published.body.data.publishedAt).toEqual(expect.any(String));
 
     const clearPrice = await patch(id, { price: { amount: null } });
@@ -362,7 +408,7 @@ describe('properties API', () => {
     expect((await setStatus(id, 'booked')).body.error.message).toBe(
       "A Draft property can't be marked Booked.",
     );
-    await setStatus(id, 'published');
+    await setStatus(id, 'available');
     expect((await setStatus(id, 'rented')).body.error.message).toBe(
       'A property for Sale is marked Sold, not Rented.',
     );
@@ -382,7 +428,7 @@ describe('properties API', () => {
       .sort({ at: 1 })
       .lean();
     expect(statuses.map((l) => (l.changes as { status: string[] }).status[1])).toEqual([
-      'published',
+      'available',
       'booked',
       'sold',
       'archived',
@@ -396,7 +442,7 @@ describe('properties API', () => {
     const notReady = (await villa()).body.data;
     const res = await as('admin', request(ctx.app).post(`${BASE}/bulk-status`)).send({
       ids: [ready.id, notReady.id],
-      status: 'published',
+      status: 'available',
     });
     expect(res.body.data.updated).toEqual([{ id: ready.id, code: ready.code }]);
     expect(res.body.data.failed).toHaveLength(1);
@@ -443,7 +489,7 @@ describe('properties API', () => {
     });
 
     const counts = (await as('admin', request(ctx.app).get(`${BASE}/status-counts`))).body.data;
-    expect(counts).toMatchObject({ all: 2, draft: 2, archived: 1, published: 0 });
+    expect(counts).toMatchObject({ all: 2, draft: 2, archived: 1, available: 0 });
     expect((await list('sort=password')).status).toBe(400);
   });
 

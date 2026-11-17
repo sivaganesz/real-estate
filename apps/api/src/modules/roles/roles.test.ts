@@ -4,6 +4,8 @@ import { hashPassword } from '../../lib/password';
 import { MIGRATIONS } from '../../migrations';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
+import { PropertyModel } from '../properties/property.model';
+import { PropertySubcategoryModel } from '../propertyTypes/propertyTypes.model';
 import { UserModel } from '../users/user.model';
 import { RoleModel } from './role.model';
 
@@ -178,6 +180,65 @@ describe('role management (PRD §4.2)', () => {
     const reset = await admin().post('/roles/sales_executive/reset');
     expect(reset.body.data).toMatchObject({ customised: false });
     expect(reset.body.data.permissions).not.toContain('properties:archive');
+  });
+
+  it('migration 0003 renames v1 property statuses, and reverses while no v2-only status is used', async () => {
+    const props = PropertyModel.collection;
+    await props.insertMany([
+      { _id: 'p-pub' as never, code: 'RE-T-1', status: 'published' },
+      { _id: 'p-unp' as never, code: 'RE-T-2', status: 'unpublished' },
+      { _id: 'p-sold' as never, code: 'RE-T-3', status: 'sold' },
+    ]);
+    const m = MIGRATIONS.find((x) => x.id === '0003-property-statuses')!;
+    await m.up();
+    const status = async (id: string) => (await props.findOne({ _id: id as never }))!.status;
+    expect([await status('p-pub'), await status('p-unp'), await status('p-sold')]).toEqual([
+      'available',
+      'on_hold',
+      'sold',
+    ]);
+    await m.down!();
+    expect(await status('p-pub')).toBe('published');
+    await m.up();
+    await props.updateOne({ _id: 'p-sold' as never }, { $set: { status: 'reserved' } });
+    await expect(m.down!()).rejects.toThrow(/Under negotiation, Reserved/);
+  });
+
+  it('migration 0004 backfills legal checks and derived fields, and can run twice', async () => {
+    await PropertySubcategoryModel.collection.insertOne({
+      _id: 'sub-plot' as never,
+      legalChecklist: [
+        { key: 'sale_deed', label: 'Sale deed', verifies: '', mandatory: true },
+        { key: 'tax_receipts', label: 'Tax receipts', verifies: '', mandatory: false },
+      ],
+    });
+    await PropertyModel.collection.insertOne({
+      _id: 'p-old' as never,
+      code: 'RE-PLT-000009',
+      title: 'Old plot',
+      subcategoryId: 'sub-plot',
+      purpose: 'sale',
+      price: { amount: 2_400_000, basis: 'total' },
+      area: { value: 1200, unit: 'sqft', sqft: 1200 },
+      location: { city: 'Madurai', locality: 'Ponmeni' },
+      status: 'available',
+    });
+    const m = MIGRATIONS.find((x) => x.id === '0004-property-v2-fields')!;
+    await m.up();
+    await PropertyModel.collection.updateOne(
+      { _id: 'p-old' as never },
+      { $set: { 'legal.0.status': 'verified' } },
+    );
+    await m.up(); // again: the verified check stays verified
+    const p = (await PropertyModel.collection.findOne({ _id: 'p-old' as never }))!;
+    expect(p.pricePerSqft).toBe(2000);
+    expect(p.legal.map((c: { key: string; status: string }) => [c.key, c.status])).toEqual([
+      ['sale_deed', 'verified'],
+      ['tax_receipts', 'not_collected'],
+    ]);
+    expect(p.legalSummary).toMatchObject({ total: 2, verified: 1, openMandatory: [] });
+    expect(p.searchText).toBe('re-plt-000009 old plot madurai ponmeni');
+    expect(p.location).toMatchObject({ roadType: '', roadWidthFt: null });
   });
 
   it('migration 0002 maps v1 roles: Super Admin → Admin, Sales Agent → Sales Executive (ROLE-10)', async () => {

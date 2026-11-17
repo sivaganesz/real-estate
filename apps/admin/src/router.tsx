@@ -14,6 +14,9 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
  * Signed-in pages load on demand (code splitting, TRD v2 F1): the first load carries only
  * the shell and the sign-in pages. AppLayout shows a skeleton while a page loads.
  */
+const CostAssumptionsPage = lazy(() =>
+  import('@/pages/CostAssumptionsPage').then((m) => ({ default: m.CostAssumptionsPage })),
+);
 const CompanySettingsPage = lazy(() =>
   import('@/pages/CompanySettingsPage').then((m) => ({ default: m.CompanySettingsPage })),
 );
@@ -216,6 +219,17 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="settings:edit">
             <CompanySettingsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'settings/costs',
+        handle: {
+          breadcrumbs: [{ label: 'Settings', to: '/settings' }, { label: 'Cost assumptions' }],
+        },
+        element: (
+          <RequirePermission permission="settings:edit">
+            <CostAssumptionsPage />
           </RequirePermission>
         ),
       },

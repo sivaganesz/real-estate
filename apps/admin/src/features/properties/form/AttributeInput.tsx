@@ -83,6 +83,18 @@ export function AttributeInput({
         />
       );
       break;
+    case 'month':
+      control = (
+        <Input
+          id={id}
+          type="month"
+          value={text}
+          aria-invalid={!!error}
+          aria-describedby={describedBy}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      );
+      break;
     case 'date':
       control = (
         <Input

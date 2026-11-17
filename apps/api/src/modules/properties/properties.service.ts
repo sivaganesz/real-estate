@@ -1,6 +1,12 @@
 import {
   canChangeStatus,
+  legalSummary,
+  mergeLegalChecks,
+  pricePerSqft,
+  propertySearchText,
   CLOSED_STATUS_FOR,
+  CLOSED_STATUSES,
+  LISTED_STATUSES,
   PROPERTY_STATUS_LABELS,
   PROPERTY_STATUSES,
   PURPOSE_LABELS,
@@ -21,7 +27,7 @@ import type {
 } from '@real-estate/shared';
 import { withTransaction } from '../../db/transaction';
 import { versionConflict } from '../../db/versionPlugin';
-import { AppError, businessRule, notFound, validationError } from '../../lib/errors';
+import { AppError, businessRule, conflict, notFound, validationError } from '../../lib/errors';
 import type { ErrorDetail } from '../../lib/errors';
 import { pageMeta, pageSkip, parseSort } from '../../lib/http';
 import type { StorageProvider } from '../../lib/storage';
@@ -94,6 +100,25 @@ function changesBetween(before: Record<string, unknown>, after: Record<string, u
  * Properties (Phase 2.2): create as Draft, edit, list with search and filters, status
  * changes with the publish rules, duplicate, archive and change history.
  */
+/** Fields worked out from others on every write (TRD v2 §7.3): never edited directly. */
+function derivedFields(p: {
+  code: string;
+  title: string;
+  purpose: PropertyDoc['purpose'];
+  price: PropertyDoc['price'];
+  area: PropertyDoc['area'];
+  location: PropertyDoc['location'];
+  legal: NonNullable<PropertyDoc['legal']>;
+}) {
+  return {
+    pricePerSqft: pricePerSqft({ purpose: p.purpose, price: p.price, areaSqft: p.area?.sqft }),
+    legalSummary: legalSummary(p.legal),
+    searchText: propertySearchText(p),
+  };
+}
+
+const EMPTY_VALUATION = { reviewDate: null, valuerReport: '', notes: '', comparables: [] };
+
 export class PropertiesService {
   private readonly propertyTypes: PropertyTypesService;
   private readonly storage: StorageProvider;
@@ -260,9 +285,16 @@ export class PropertiesService {
     const doc = await withTransaction(async () => {
       await this.touchTypesInUse(definition.subcategory._id, values.amenityIds);
       const code = await nextPropertyCode(definition.subcategory.codePrefix);
+      // A new property gets its type's legal checklist, every check not collected yet.
+      const legal = mergeLegalChecks([], definition.subcategory.legalChecklist ?? []);
+      const area = input.area
+        ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) }
+        : null;
       const [created] = await PropertyModel.create([
         {
           code,
+          legal,
+          ...derivedFields({ ...input, code, area, legal }),
           categoryKey: definition.category.key,
           subcategoryId: definition.subcategory._id,
           title: input.title,
@@ -359,8 +391,8 @@ export class PropertiesService {
       isFeatured: input.isFeatured ?? before.isFeatured,
     };
 
-    // A published property must stay complete: it is visible to the AI agent.
-    if (before.status === 'published') {
+    // A listed property (Available, Under negotiation, Reserved, Booked) must stay complete.
+    if (LISTED_STATUSES.includes(before.status)) {
       const issues = publishIssues(definition, next);
       if (issues.length > 0) {
         throw new AppError(
@@ -381,6 +413,10 @@ export class PropertiesService {
         definition.subcategory.name,
       ];
     }
+    // A type change merges in the new type's checklist; collected checks are never dropped.
+    const nextLegal = subcategoryChanged
+      ? mergeLegalChecks(before.legal ?? [], definition.subcategory.legalChecklist ?? [])
+      : (before.legal ?? []);
     await withTransaction(async () => {
       await this.touchTypesInUse(next.subcategoryId, next.amenityIds);
       const written = await PropertyModel.updateOne(
@@ -390,6 +426,8 @@ export class PropertiesService {
           : { _id: id, version: readVersion },
         {
           $set: {
+            ...derivedFields({ ...next, code: before.code, legal: nextLegal }),
+            ...(subcategoryChanged && { legal: nextLegal }),
             categoryKey: next.categoryKey,
             subcategoryId: next.subcategoryId,
             title: next.title,
@@ -422,14 +460,15 @@ export class PropertiesService {
     const before = await this.find(id);
     if (before.status === to) return this.toResponse(before);
     if (!canChangeStatus(before.status, to, before.purpose)) {
-      const closing: readonly PropertyStatus[] = ['sold', 'rented', 'leased'];
       throw businessRule(
-        closing.includes(to) && CLOSED_STATUS_FOR[before.purpose] !== to
+        CLOSED_STATUSES.includes(to) && CLOSED_STATUS_FOR[before.purpose] !== to
           ? `A property for ${PURPOSE_LABELS[before.purpose]} is marked ${PROPERTY_STATUS_LABELS[CLOSED_STATUS_FOR[before.purpose]]}, not ${PROPERTY_STATUS_LABELS[to]}.`
           : `A ${PROPERTY_STATUS_LABELS[before.status]} property can't be marked ${PROPERTY_STATUS_LABELS[to]}.`,
       );
     }
-    if (to === 'published') {
+    // Coming onto the market (from Draft, On hold or a closed status): the publish checklist.
+    const goesOnMarket = to === 'available' && !LISTED_STATUSES.includes(before.status);
+    if (goesOnMarket) {
       const definition = await this.propertyTypes.definitionFor(before.subcategoryId);
       this.assertCanList(definition);
       const issues = publishIssues(definition, before);
@@ -437,29 +476,36 @@ export class PropertiesService {
         throw new AppError(
           422,
           'PUBLISH_BLOCKED',
-          'Fill in the missing details before publishing.',
+          'Fill in the missing details before marking it Available.',
           issues,
         );
       }
     }
     const now = new Date();
-    await PropertyModel.updateOne(
-      { _id: id, status: before.status },
-      {
-        $set: {
-          status: to,
-          statusChangedAt: now,
-          updatedBy: actorId,
-          ...(to === 'published' && !before.publishedAt ? { publishedAt: now } : {}),
+    await withTransaction(async () => {
+      // Only from the status that was read: a concurrent change makes this fail, not overwrite.
+      const written = await PropertyModel.updateOne(
+        { _id: id, status: before.status },
+        {
+          $set: {
+            status: to,
+            statusChangedAt: now,
+            updatedBy: actorId,
+            // `publishedAt` is the listing date: the first time it became Available.
+            ...(to === 'available' && !before.publishedAt ? { publishedAt: now } : {}),
+          },
         },
-      },
-    );
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: id,
-      action: to === 'archived' ? 'archived' : 'status_changed',
-      changes: { status: [before.status, to] },
+      );
+      if (written.matchedCount === 0) {
+        throw conflict('The status changed meanwhile. Reload and try again.', 'STATUS_CHANGED');
+      }
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: to === 'archived' ? 'archived' : 'status_changed',
+        changes: { status: [before.status, to] },
+      });
     });
     return this.get(id);
   }
@@ -492,8 +538,15 @@ export class PropertiesService {
     this.assertCanList(definition);
     const code = await nextPropertyCode(definition.subcategory.codePrefix);
     const copyTitle = `${source.title} (copy)`.slice(0, 150);
+    // A copy is another listing: same place and nearby, its own documents and valuation.
+    const legal = mergeLegalChecks([], definition.subcategory.legalChecklist ?? []);
     const doc = await PropertyModel.create({
       code,
+      legal,
+      highway: source.highway ?? null,
+      nearby: source.nearby ?? [],
+      valuation: EMPTY_VALUATION,
+      ...derivedFields({ ...source, code, title: copyTitle, legal }),
       categoryKey: source.categoryKey,
       subcategoryId: source.subcategoryId,
       title: copyTitle,
@@ -612,7 +665,12 @@ export class PropertiesService {
       price: doc.price,
       rental: doc.rental ?? null,
       area: doc.area ?? null,
-      location: { ...doc.location, mapPin: doc.location.mapPin ?? null },
+      location: {
+        ...doc.location,
+        mapPin: doc.location.mapPin ?? null,
+        roadType: doc.location.roadType ?? '',
+        roadWidthFt: doc.location.roadWidthFt ?? null,
+      },
       attributeValues: doc.attributeValues ?? {},
       hiddenAttributeKeys: Object.keys(doc.attributeValues ?? {}).filter((k) => !shown.has(k)),
       extraAttributes: doc.extraAttributes ?? [],
@@ -634,6 +692,33 @@ export class PropertiesService {
       publishIssues: publishIssues(definition, doc),
       publishedAt: iso(doc.publishedAt),
       statusChangedAt: iso(doc.statusChangedAt)!,
+      pricePerSqft: doc.pricePerSqft ?? null,
+      highway: doc.highway ?? null,
+      nearby: (doc.nearby ?? []).map(({ _id, ...n }) => ({ id: _id, ...n })),
+      legal: (doc.legal ?? []).map((c) => ({
+        key: c.key,
+        label: c.label,
+        verifies: c.verifies ?? '',
+        mandatory: c.mandatory,
+        status: c.status,
+        verifiedBy: c.verifiedBy ?? '',
+        date: c.date ?? null,
+        mediaId: c.mediaId ?? null,
+        note: c.note ?? '',
+      })),
+      legalSummary: legalSummary(doc.legal ?? []),
+      valuation: {
+        ...EMPTY_VALUATION,
+        ...doc.valuation,
+        comparables: (doc.valuation?.comparables ?? []).map(({ _id, ...c }) => ({ id: _id, ...c })),
+      },
+      archive: doc.archive
+        ? {
+            at: doc.archive.at.toISOString(),
+            by: ref(doc.archive.by),
+            reason: doc.archive.reason ?? '',
+          }
+        : null,
       version: doc.version ?? 0,
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),

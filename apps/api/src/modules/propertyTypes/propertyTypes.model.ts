@@ -1,4 +1,11 @@
-import { AMENITY_ICONS, ATTRIBUTE_TYPES, CATEGORY_KEYS, PURPOSES } from '@real-estate/shared';
+import {
+  AMENITY_ICONS,
+  ATTRIBUTE_TYPES,
+  CATEGORY_KEYS,
+  MAIN_AREA_MEANINGS,
+  PURPOSES,
+} from '@real-estate/shared';
+import type { LegalChecklistItem, MainAreaMeaning } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
 import { idField, refField } from '../../db/ids';
@@ -68,6 +75,23 @@ const subcategorySchema = new Schema(
     lastUsedAt: { type: Date, default: null },
     order: { type: Number, default: 0 },
     attributes: { type: [placementSchema], default: [] },
+    /** What the main area means: labels the area field (PRD v2 PROP-06). */
+    mainAreaMeaning: { type: String, enum: MAIN_AREA_MEANINGS, default: 'built_up' },
+    /** Checks every new property of this type gets (PRD v2 §6.6, SET-03). */
+    legalChecklist: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true },
+            verifies: { type: String, default: '' },
+            mandatory: { type: Boolean, default: false },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     ...auditFields,
   },
   { timestamps: true },
@@ -149,4 +173,6 @@ export interface SubcategoryDoc {
   isActive: boolean;
   order: number;
   attributes: Placement[];
+  mainAreaMeaning?: MainAreaMeaning;
+  legalChecklist?: LegalChecklistItem[];
 }

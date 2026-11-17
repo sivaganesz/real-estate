@@ -52,6 +52,8 @@ const TYPES: PropertyTypes = {
           isActive: true,
           propertyCount: 2,
           prefixLocked: true,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
           attributes: [
             {
               id: ID(10),
@@ -130,6 +132,8 @@ const savedProperty: Property = {
     address: '',
     landmark: '',
     mapPin: null,
+    roadType: '',
+    roadWidthFt: null,
   },
   attributeValues: { bhk: '3 BHK' },
   hiddenAttributeKeys: [],
@@ -142,6 +146,13 @@ const savedProperty: Property = {
   publishIssues: [{ path: 'media', message: 'Add at least one photo' }],
   publishedAt: null,
   statusChangedAt: new Date().toISOString(),
+  pricePerSqft: null,
+  highway: null,
+  nearby: [],
+  legal: [],
+  legalSummary: { total: 0, verified: 0, pending: 0, notCollected: 0, openMandatory: [] },
+  valuation: { reviewDate: null, valuerReport: '', notes: '', comparables: [] },
+  archive: null,
   version: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -213,8 +224,10 @@ describe('Properties pages', () => {
           data: {
             all: 2,
             draft: 1,
-            published: 1,
-            unpublished: 0,
+            available: 1,
+            under_negotiation: 0,
+            reserved: 0,
+            on_hold: 0,
             booked: 0,
             sold: 0,
             rented: 0,
@@ -235,7 +248,7 @@ describe('Properties pages', () => {
         return json(201, { data: savedProperty });
       }
       return json(200, {
-        data: [row(1), row(2, { status: 'published', isFeatured: true })],
+        data: [row(1), row(2, { status: 'available', isFeatured: true })],
         meta: { page: 1, limit: 20, total: 2, totalPages: 1 },
       });
     });
@@ -260,13 +273,13 @@ describe('Properties pages', () => {
       }),
     );
     await userEvent.click(screen.getByLabelText('New status'));
-    await userEvent.click(await screen.findByRole('option', { name: 'Published' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Available' }));
     await userEvent.click(screen.getByRole('button', { name: 'Change status' }));
 
     const [, init] = callsTo('POST', '/bulk-status')[0]!;
     expect(JSON.parse(String(init!.body))).toEqual({
       ids: [ID(301), ID(302)],
-      status: 'published',
+      status: 'available',
     });
     expect(await screen.findByText("1 couldn't change:")).toBeInTheDocument();
     expect(screen.getByText(': Add at least one photo')).toBeInTheDocument();

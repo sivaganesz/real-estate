@@ -59,7 +59,7 @@ export const importBatchSchema = z.object({
   duplicateCount: z.number().int(),
   /** Columns the file has that the template doesn't (ignored). */
   unknownColumns: z.array(z.string()),
-  importAs: z.enum(['draft', 'published']).nullable(),
+  importAs: z.enum(['draft', 'available']).nullable(),
   duplicates: z.enum(['skip', 'update']).nullable(),
   result: importResultSchema.nullable(),
   createdAt: z.string(),
@@ -79,7 +79,7 @@ export const importSubcategoryQuerySchema = z.object({ subcategoryId: idSchema }
 
 /** POST /admin/imports/:id/commit */
 export const commitImportBodySchema = z.object({
-  importAs: z.enum(['draft', 'published']),
+  importAs: z.enum(['draft', 'available']),
   duplicates: z.enum(['skip', 'update']),
 });
 export type CommitImportBody = z.infer<typeof commitImportBodySchema>;
