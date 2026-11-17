@@ -22,6 +22,7 @@ const attr = (n: number, label: string, extra: Partial<PlacedAttribute> = {}): P
   searchFilter: false,
   required: false,
   usedIn: [],
+  review: null,
   ...extra,
 });
 
@@ -268,6 +269,34 @@ describe('PropertyTypesPage', () => {
 
     const [url] = callsTo('DELETE')[0]!;
     expect(url).toBe(`/api/v1/admin/property-types/subcategories/${ID(101)}/attributes/${ID(11)}`);
+  });
+
+  it('lists attributes added from property forms: Mark reviewed, Edit or Remove (PROP-20)', async () => {
+    const review = {
+      status: 'new' as const,
+      propertyId: ID(500),
+      propertyCode: 'RE-VIL-000004',
+      addedBy: { id: ID(9), name: 'Meena' },
+      at: '2026-11-17T05:00:00.000Z',
+    };
+    const withNew = structuredClone(SETUP);
+    withNew.categories[0]!.subcategories[1]!.attributes.push(
+      attr(30, 'Servant room', { type: 'yes_no', review }),
+    );
+    fetchMock.mockImplementation(async () => json(200, { data: withNew }));
+    renderPage();
+    const region = await screen.findByRole('region', { name: 'New attributes to review' });
+    expect(within(region).getByText('Servant room')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Added from property RE-VIL-000004 by Meena on 17 Nov 2026'),
+    ).toBeInTheDocument();
+    expect(within(region).getByText(/Yes \/ No · Villa \/ House/)).toBeInTheDocument();
+
+    await userEvent.click(within(region).getByRole('button', { name: 'Mark reviewed' }));
+    const [url] = callsTo('POST')[0]!;
+    expect(url).toBe(
+      `/api/v1/admin/property-types/subcategories/${ID(102)}/attributes/${ID(30)}/review`,
+    );
   });
 
   it('adds a subcategory and checks its fields first', async () => {

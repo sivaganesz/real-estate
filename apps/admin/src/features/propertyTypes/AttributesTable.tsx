@@ -1,6 +1,6 @@
-import { ATTRIBUTE_TYPE_LABELS } from '@real-estate/shared';
 import type { CoreAttribute, PlacedAttribute } from '@real-estate/shared';
 import { LockIcon } from 'lucide-react';
+import { Chip } from '@/components/patterns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,22 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-const MAX_OPTIONS_SHOWN = 4;
-
-/** "Number · ft", "Dropdown · DTCP, CMDA, Panchayat, Unapproved", "Dropdown · 1 RK, 1 BHK, … (6)". */
-function describeType(attribute: Pick<PlacedAttribute, 'type' | 'unit' | 'options'>) {
-  const { type, unit, options } = attribute;
-  let detail = '';
-  if (unit) detail = unit;
-  if (options.length > 0) {
-    detail =
-      options.length > MAX_OPTIONS_SHOWN
-        ? `${options.slice(0, MAX_OPTIONS_SHOWN).join(', ')}, … (${options.length})`
-        : options.join(', ');
-  }
-  return { label: ATTRIBUTE_TYPE_LABELS[type], detail };
-}
+import { describeType, reviewText } from './format';
 
 function RequiredCell({ required }: { required: boolean }) {
   return required ? (
@@ -89,6 +74,13 @@ export function AttributesTable({
             <TableRow key={a.id}>
               <TableCell className="whitespace-normal">
                 <span className="font-medium">{a.label}</span>
+                {a.review && (
+                  <span title={reviewText(a.review)}>
+                    <Chip tone="blue" className="ml-2 align-middle">
+                      New
+                    </Chip>
+                  </span>
+                )}
                 {a.searchFilter && (
                   <Badge variant="outline" className="ml-2 align-middle">
                     Search filter

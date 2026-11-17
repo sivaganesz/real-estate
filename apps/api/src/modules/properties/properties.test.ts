@@ -491,6 +491,35 @@ describe('properties API', () => {
     const counts = (await as('admin', request(ctx.app).get(`${BASE}/status-counts`))).body.data;
     expect(counts).toMatchObject({ all: 2, draft: 2, archived: 1, available: 0 });
     expect((await list('sort=password')).status).toBe(400);
+
+    // Search: every word must start a word (code parts included); no match mid-word.
+    expect(codes(await list('q=villa%20vel'))).toEqual([b.code]);
+    expect(codes(await list('q=lachery'))).toEqual([]);
+    expect(codes(await list(`q=${a.code.slice(-6)}`))).toEqual([a.code]);
+    expect(codes(await list('q=600042'))).toEqual([b.code]);
+
+    // Archive view (PROP-51): a status filter wins over it.
+    expect(codes(await list('archived=only'))).toEqual([c.code]);
+    expect(codes(await list('archived=include'))).toEqual([c.code, b.code, a.code]);
+    expect(codes(await list('archived=include&status=draft'))).toEqual([b.code, a.code]);
+
+    // Legal filter (PROP-55): "open" = a mandatory check not verified yet.
+    await PropertyModel.updateOne(
+      { _id: a.id },
+      { $set: { 'legalSummary.openMandatory': ['Encumbrance certificate'] } },
+    );
+    expect(codes(await list('legal=open'))).toEqual([a.code]);
+    expect(codes(await list('legal=clean'))).toEqual([b.code]);
+    expect((await list('legal=maybe')).status).toBe(400);
+
+    // Rows carry what the list columns show, and nothing heavy.
+    const row = (await list(`q=${b.code}`)).body.data[0];
+    expect(row).toMatchObject({
+      pricePerSqft: Math.round(15_000_000 / 2100),
+      legalSummary: { openMandatory: [] },
+      publishedAt: null,
+    });
+    expect(row).not.toHaveProperty('attributeValues');
   });
 
   it('suggests existing city and locality spellings, most used first', async () => {
@@ -517,6 +546,11 @@ describe('properties API', () => {
       { value: 'Tambaram', count: 2 },
       { value: 'Tambaram West', count: 1 },
     ]);
+    expect(await suggest('field=city&limit=1')).toEqual([{ value: 'Chennai', count: 3 }]);
+    expect(
+      (await as('admin', request(ctx.app).get(`${BASE}/location-suggestions?field=city&limit=500`)))
+        .status,
+    ).toBe(400);
   });
 
   it('duplicates a property as a new Draft without photos', async () => {

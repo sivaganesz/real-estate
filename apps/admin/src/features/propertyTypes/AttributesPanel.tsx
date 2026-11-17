@@ -13,17 +13,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Chip } from '@/components/patterns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { errorMessage } from '@/lib/errors';
 import type { AttributeTarget } from './api';
-import { useRemoveAttribute } from './api';
+import { useMarkAttributeReviewed, useRemoveAttribute } from './api';
 import type { AttributePlace, AttributeSheetMode } from './AttributeSheet';
 import { AttributeSheet } from './AttributeSheet';
 import { AttributesTable } from './AttributesTable';
 import { CategoryPicker } from './CategoryPicker';
-import { count } from './format';
+import { count, describeType, reviewText } from './format';
 import { PickCard } from './PickCard';
 import { SubcategorySheet } from './SubcategorySheet';
 
@@ -78,6 +79,14 @@ export function AttributesPanel({
   const sub = category.subcategories.find((s) => s.id === subId) ?? category.subcategories[0];
   const places = placesFor(category);
   const placeLabel = (value: string) => places.find((p) => p.value === value)?.label ?? '';
+  const targetOf = (value: string) => places.find((p) => p.value === value)!.target;
+  const markReviewed = useMarkAttributeReviewed();
+  const toReview = [
+    ...category.commonAttributes.map((attribute) => ({ attribute, place: COMMON })),
+    ...category.subcategories.flatMap((s) =>
+      s.attributes.map((attribute) => ({ attribute, place: s.id })),
+    ),
+  ].filter((x) => x.attribute.review);
 
   const confirmDelete = () => {
     if (!deleting) return;
@@ -131,6 +140,71 @@ export function AttributesPanel({
             </div>
           </section>
         </Card>
+
+        {/* Attributes added from property forms, waiting for an admin (PROP-20) */}
+        {toReview.length > 0 && (
+          <Card className="grid gap-3 p-5" role="region" aria-label="New attributes to review">
+            <div>
+              <h2 className="flex items-center gap-2 font-semibold">
+                New attributes to review <Chip tone="blue">{toReview.length}</Chip>
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Added to {category.name} from property forms. Check the name, type and options, then
+                mark each one reviewed, edit it, or remove it.
+              </p>
+            </div>
+            <ul className="grid divide-y rounded-lg border">
+              {toReview.map(({ attribute: a, place }) => (
+                <li
+                  key={`${place}:${a.id}`}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-[1_1_16rem]">
+                    <span className="font-medium">{a.label}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {' '}
+                      · {describeType(a).label} · {placeLabel(place)}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {reviewText(a.review!)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={markReviewed.isPending}
+                      onClick={() =>
+                        markReviewed.mutate(
+                          { target: targetOf(place), id: a.id },
+                          {
+                            onSuccess: () => toast.success(`"${a.label}" marked reviewed`),
+                            onError: (err) => toast.error(errorMessage(err)),
+                          },
+                        )
+                      }
+                    >
+                      Mark reviewed
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAttributeSheet({ kind: 'edit', place, attribute: a })}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeleting({ attribute: a, place })}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         {/* Common attributes: shared by every subcategory in the category */}
         <Card className="grid gap-4 p-5">

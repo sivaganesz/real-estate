@@ -9,6 +9,7 @@ import type {
   AddAttribute,
   Amenity,
   AttributeMatch,
+  AttributePreview,
   CategoryKey,
   CreateAmenity,
   CreateSubcategory,
@@ -27,6 +28,7 @@ import type {
   AttributeDoc,
   CategoryDoc,
   Placement,
+  PlacementReview,
   SubcategoryDoc,
 } from './propertyTypes.model';
 import {
@@ -35,6 +37,7 @@ import {
   PropertyCategoryModel,
   PropertySubcategoryModel,
 } from './propertyTypes.model';
+import { UserModel } from '../users/user.model';
 import type { PropertyUsage } from './propertyUsage';
 
 /** Where attributes are placed: a category's common attributes, or one subcategory. */
@@ -138,6 +141,17 @@ export class PropertyTypesService {
             usedIn: (places.get(a._id) ?? [])
               .filter((x) => x.placeId !== placeId)
               .map((x) => x.name),
+            review: p.review
+              ? {
+                  status: 'new' as const,
+                  propertyId: p.review.propertyId ?? null,
+                  propertyCode: p.review.propertyCode ?? null,
+                  addedBy: p.review.addedById
+                    ? { id: p.review.addedById, name: p.review.addedByName ?? '' }
+                    : null,
+                  at: p.review.at.toISOString(),
+                }
+              : null,
           },
         ];
       });
@@ -366,6 +380,30 @@ export class PropertyTypesService {
     const place = await this.loadTarget(target);
     let attribute: AttributeDoc;
     let createdNow = false;
+    // From a property form, nothing is added globally until the user confirmed the
+    // summary (PROP-18/19): the client previews first, then sends confirmed: true.
+    if (input.origin === 'property' && !input.confirmed) {
+      throw new AppError(
+        428,
+        'CONFIRMATION_REQUIRED',
+        'Confirm the summary before adding this attribute to settings.',
+      );
+    }
+    const review: PlacementReview | null =
+      input.origin === 'property'
+        ? {
+            status: 'new',
+            propertyId: input.propertyId,
+            propertyCode: input.propertyId
+              ? ((await this.usage.codeOf?.(input.propertyId)) ?? null)
+              : null,
+            addedById: actorId,
+            addedByName:
+              (await UserModel.findById(actorId).select('name').lean<{ name: string }>())?.name ??
+              null,
+            at: new Date(),
+          }
+        : null;
 
     if (input.source === 'existing') {
       const found = await PropertyAttributeModel.findById(input.attributeId).lean<AttributeDoc>();
@@ -408,7 +446,7 @@ export class PropertyTypesService {
       }
     }
 
-    const placement = { attributeId: attribute._id, required: input.required };
+    const placement = { attributeId: attribute._id, required: input.required, review };
     const result = await this.updateTarget(
       place,
       { _id: place.id, 'attributes.attributeId': { $ne: attribute._id } },
@@ -423,7 +461,95 @@ export class PropertyTypesService {
       entity: 'propertyType',
       entityId: place.id,
       action: 'attribute_added',
-      changes: { [attribute.key]: [null, { label: attribute.label, required: input.required }] },
+      changes: {
+        [attribute.key]: [
+          null,
+          {
+            label: attribute.label,
+            required: input.required,
+            ...(review && { fromProperty: review.propertyCode ?? 'new property' }),
+          },
+        ],
+      },
+    });
+    return this.getAll();
+  }
+
+  /**
+   * The confirmation summary for adding an attribute (PROP-18): what will be added, where,
+   * and how many existing properties it will appear on. Runs the same checks as adding
+   * (duplicate name, already added) without saving anything.
+   */
+  async previewAttribute(target: AttributeTarget, input: AddAttribute): Promise<AttributePreview> {
+    const place = await this.loadTarget(target);
+    let def: Pick<AttributeDoc, 'label' | 'type' | 'unit' | 'options'>;
+    let usedIn: string[] = [];
+    if (input.source === 'existing') {
+      const found = await PropertyAttributeModel.findById(input.attributeId).lean<AttributeDoc>();
+      if (!found) throw notFound('That attribute no longer exists.');
+      await this.assertNotPlacedInCategory(place, found);
+      def = found;
+      usedIn =
+        (await this.searchAttributes(found.label)).find((m) => m.id === found._id)?.usedIn ?? [];
+    } else {
+      const existing = await PropertyAttributeModel.findOne({
+        labelKey: normalizeLabel(input.label),
+      }).lean<AttributeDoc>();
+      if (existing) {
+        throw conflict(
+          `An attribute called "${existing.label}" already exists. Use the existing one instead.`,
+          'ATTRIBUTE_EXISTS',
+        );
+      }
+      def = cleanDefinition(input);
+    }
+    const category = await PropertyCategoryModel.findOne({
+      key: place.categoryKey,
+    }).lean<CategoryDoc>();
+    const subcategoryIds =
+      place.kind === 'subcategory'
+        ? [place.id]
+        : (
+            await PropertySubcategoryModel.find({ categoryKey: place.categoryKey })
+              .select('_id')
+              .lean<{ _id: string }[]>()
+          ).map((s) => s._id);
+    const counts = await this.usage.countBySubcategory(subcategoryIds);
+    return {
+      label: def.label,
+      type: def.type,
+      unit: def.unit ?? null,
+      options: def.options ?? [],
+      required: input.required,
+      targetName:
+        place.kind === 'subcategory' ? `${category?.name ?? ''} › ${place.name}` : place.name,
+      existingProperties: [...counts.values()].reduce((sum, n) => sum + n, 0),
+      usedIn,
+    };
+  }
+
+  /** "Mark reviewed" in Settings: the attribute stops showing as New (PROP-20). */
+  async markAttributeReviewed(
+    actorId: string,
+    target: AttributeTarget,
+    attributeId: string,
+  ): Promise<PropertyTypes> {
+    const place = await this.loadTarget(target);
+    const placement = place.attributes.find((p) => p.attributeId === attributeId);
+    if (!placement) throw notFound(`That attribute isn't used in ${place.name}.`);
+    if (!placement.review) return this.getAll();
+    await this.updateTarget(
+      place,
+      { _id: place.id, 'attributes.attributeId': attributeId },
+      { $set: { 'attributes.$.review': null, updatedBy: actorId } },
+    );
+    const attribute = await PropertyAttributeModel.findById(attributeId).lean<AttributeDoc>();
+    await recordChange({
+      actorId,
+      entity: 'propertyType',
+      entityId: place.id,
+      action: 'attribute_reviewed',
+      changes: { [attribute?.key ?? attributeId]: ['new', 'reviewed'] },
     });
     return this.getAll();
   }

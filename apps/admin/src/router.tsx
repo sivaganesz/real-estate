@@ -118,12 +118,8 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'properties',
+        // The page renders its own header: it carries Add property and Bulk import (PROP-53).
         handle: {
-          page: {
-            title: 'Property specification database',
-            description:
-              'Every property has a unique ID and a standard specification. Form fields change by property type.',
-          },
           breadcrumbs: [{ label: 'Properties' }],
         },
         element: (

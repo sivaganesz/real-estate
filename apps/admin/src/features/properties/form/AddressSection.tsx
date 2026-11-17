@@ -53,7 +53,8 @@ export function AddressSection({ form }: { form: UseFormReturn<PropertyFormValue
       'location.pincode',
     ],
   });
-  const hasDetails = Boolean(state || address || landmark || lat || lng);
+  // State, city, locality and pincode are main fields (form section 1); this panel holds the rest.
+  const hasDetails = Boolean(address || landmark || lat || lng);
   const [open, setOpen] = useState(hasDetails);
   const pin = parsePin(lat, lng);
 
@@ -91,7 +92,6 @@ export function AddressSection({ form }: { form: UseFormReturn<PropertyFormValue
 
   const clearAll = () => {
     for (const name of [
-      'location.state',
       'location.address',
       'location.landmark',
       'location.lat',
@@ -137,7 +137,6 @@ export function AddressSection({ form }: { form: UseFormReturn<PropertyFormValue
               pin && `Pin ${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)}`,
               address,
               landmark && `near ${landmark}`,
-              state,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -176,9 +175,6 @@ export function AddressSection({ form }: { form: UseFormReturn<PropertyFormValue
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="pf-state" label="State" error={errors.location?.state?.message}>
-          <Input id="pf-state" placeholder="e.g. Tamil Nadu" {...form.register('location.state')} />
-        </FormField>
         <FormField id="pf-landmark" label="Landmark" error={errors.location?.landmark?.message}>
           <Input id="pf-landmark" placeholder="Near…" {...form.register('location.landmark')} />
         </FormField>

@@ -225,6 +225,28 @@ export function createPropertyTypesRouter(deps: {
 
   for (const t of targets) {
     const toTarget = t.target as (p: Record<string, string>) => AttributeTarget;
+    // The confirmation summary before adding from a property form (PROP-18). Saves nothing.
+    router.post(
+      `${t.path}/preview`,
+      canEdit,
+      endpoint(
+        { params: t.params, body: addAttributeBodySchema },
+        async ({ params, body }, _req, res) => {
+          sendData(res, await service.previewAttribute(toTarget(params), body));
+        },
+      ),
+    );
+    // "Mark reviewed" for an attribute added from a property form (PROP-20).
+    router.post(
+      `${t.path}/:attributeId/review`,
+      canEdit,
+      endpoint({ params: t.itemParams }, async ({ params }, req, res) => {
+        sendData(
+          res,
+          await service.markAttributeReviewed(req.user!.id, toTarget(params), params.attributeId),
+        );
+      }),
+    );
     router.post(
       t.path,
       canEdit,

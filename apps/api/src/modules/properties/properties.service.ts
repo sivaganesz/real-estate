@@ -49,6 +49,26 @@ import {
 } from './propertyRules';
 
 const SORTABLE = ['updatedAt', 'createdAt', 'price.amount', 'area.sqft', 'title', 'code'] as const;
+/** What a list row needs: never the attribute values, legal checks or valuation (M7). */
+const LIST_FIELDS = [
+  'code',
+  'title',
+  'categoryKey',
+  'subcategoryId',
+  'purpose',
+  'price',
+  'area',
+  'location.city',
+  'location.locality',
+  'location.pincode',
+  'media',
+  'status',
+  'isFeatured',
+  'pricePerSqft',
+  'legalSummary',
+  'publishedAt',
+  'updatedAt',
+].join(' ');
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const exactly = (text: string) => new RegExp(`^${escapeRegex(text)}$`, 'i');
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
@@ -131,9 +151,12 @@ export class PropertiesService {
   // ---------------------------------------------------------------- read
 
   async list(query: ListPropertiesQuery): Promise<{ items: PropertyListItem[]; meta: PageMeta }> {
-    const filter: Record<string, unknown> = {
-      status: query.status ?? { $ne: 'archived' },
-    };
+    const filter: Record<string, unknown> = {};
+    if (query.status) filter.status = query.status;
+    else if (query.archived === 'only') filter.status = 'archived';
+    else if (query.archived !== 'include') filter.status = { $ne: 'archived' };
+    if (query.legal === 'open') filter['legalSummary.openMandatory.0'] = { $exists: true };
+    if (query.legal === 'clean') filter['legalSummary.openMandatory'] = { $size: 0 };
     if (query.categoryKey) filter.categoryKey = query.categoryKey;
     if (query.subcategoryId) filter.subcategoryId = query.subcategoryId;
     if (query.purpose) filter.purpose = query.purpose;
@@ -148,14 +171,17 @@ export class PropertiesService {
       };
     }
     if (query.q) {
-      const contains = new RegExp(escapeRegex(query.q), 'i');
-      filter.$or = ['code', 'title', 'location.city', 'location.locality', 'location.pincode'].map(
-        (field) => ({ [field]: contains }),
-      );
+      // Every word must start a word of the stored search text (code, name, city, locality,
+      // pincode), so "vel plot" finds "Velachery … plot" (TRD v2 §7.12).
+      const words = query.q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 8);
+      filter.$and = words.map((w) => ({
+        searchText: new RegExp(`(?:^|[^a-z0-9])${escapeRegex(w)}`),
+      }));
     }
     const sort = parseSort(query.sort, SORTABLE, { updatedAt: -1 });
     const [docs, total] = await Promise.all([
       PropertyModel.find(filter)
+        .select(LIST_FIELDS)
         .sort({ ...sort, _id: -1 })
         .skip(pageSkip(query.page, query.limit))
         .limit(query.limit)
@@ -182,6 +208,9 @@ export class PropertiesService {
         coverUrl: this.coverUrl(d.media ?? []),
         status: d.status,
         isFeatured: d.isFeatured,
+        pricePerSqft: d.pricePerSqft ?? null,
+        legalSummary: d.legalSummary ?? legalSummary(d.legal ?? []),
+        publishedAt: d.publishedAt?.toISOString() ?? null,
         updatedAt: d.updatedAt.toISOString(),
       })),
       meta: pageMeta(total, query.page, query.limit),
@@ -235,6 +264,7 @@ export class PropertiesService {
     field: 'state' | 'city' | 'locality' | 'pincode',
     q: string,
     city?: string,
+    limit = 10,
   ): Promise<LocationSuggestion[]> {
     const path = `location.${field}`;
     const match: Record<string, unknown> = {
@@ -252,7 +282,7 @@ export class PropertiesService {
         },
       },
       { $sort: { count: -1, value: 1 } },
-      { $limit: 10 },
+      { $limit: limit },
       { $project: { _id: '$value', count: 1 } },
     ]);
     return rows.map((r) => ({ value: r._id, count: r.count }));

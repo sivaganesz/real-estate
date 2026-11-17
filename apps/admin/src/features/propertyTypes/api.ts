@@ -1,6 +1,7 @@
 import type {
   AddAttributeBody,
   AttributeMatch,
+  AttributePreview,
   CategoryKey,
   CreateAmenityBody,
   CreateSubcategoryBody,
@@ -68,6 +69,19 @@ export const useDeleteSubcategory = () =>
 export const useAddAttribute = () =>
   useSave(({ target, body }: { target: AttributeTarget; body: AddAttributeBody }) =>
     api.post<PropertyTypes>(targetPath(target), body),
+  );
+
+/** The confirmation summary before adding an attribute from a property form (saves nothing). */
+export const usePreviewAttribute = () =>
+  useMutation({
+    mutationFn: ({ target, body }: { target: AttributeTarget; body: AddAttributeBody }) =>
+      api.post<AttributePreview>(`${targetPath(target)}/preview`, body),
+  });
+
+/** "Mark reviewed" for an attribute added from a property form. */
+export const useMarkAttributeReviewed = () =>
+  useSave(({ target, id }: { target: AttributeTarget; id: string }) =>
+    api.post<PropertyTypes>(`${targetPath(target)}/${id}/review`),
   );
 
 export const useUpdateAttribute = () =>

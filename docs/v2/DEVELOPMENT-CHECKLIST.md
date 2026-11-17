@@ -135,45 +135,47 @@
 - [x] **DB**: property fields `pricePerSqft`, `legal[]`, `legalSummary`, `location.{roadType, roadWidthFt}`, `highway`, `nearby[]` (top-level, see TRD §7.3), `valuation`, `archive`, `searchText`, `version`; derived fields computed by the shared domain on every write
 - [ ] `media[].caption/visibility` (private documents, M6): with the Legal & documents tab (R1.5)
 - [x] **DB**: subcategory `mainAreaMeaning` and `legalChecklist[]` (TRD §7.1)
-- [ ] Attribute `review` (PROP-20): with the attribute-from-form confirmation (R1.2)
+- [x] Attribute `review` (PROP-20): built in R1.2, stored on each placement
 - [x] **Catalogue v2** ([PROPERTY-CATALOGUE.md](PROPERTY-CATALOGUE.md)): new `propertyTypes.defaults.ts`; attribute type `month`; seed when the catalogue is empty; `pnpm db:reset-catalogue` (dev/test only); `pnpm seed:demo` with the wireframe's 12 sample properties; update test fixtures (PROP-13)
 - [x] **Migration** 0004: legal checks from each type checklist and `legalSummary` on existing properties (idempotent)
 - [x] **Migration** 0004: `pricePerSqft`, `searchText`; indexes of TRD §7.12 (applied by `pnpm migrate`)
 - [x] **Settings**: `valuationCosts` (7/4/1) and endpoints `GET/PUT /settings/valuation-costs` (If-Match)
 - [x] **Admin, Settings → Property types:** legal checklist editor (standard or custom checks, reorder, mandatory) and main-area meaning per type
 - [x] **Admin, Settings → Cost assumptions** tab with a worked example
-- [ ] “New” attribute review list (Mark reviewed / Edit / Remove): R1.2, with PROP-20
+- [x] “New” attribute review list (Mark reviewed / Edit / Remove): built in R1.2
 - [x] Tests: migrations 0003/0004 (up, down, idempotent); transition matrix; catalogue v2 contents; reset and demo commands; domain golden tests (pricing, legal, search); settings validation
 - [x] Local database: reset to catalogue v2 with the 12 wireframe sample properties (backup taken first)
-- [ ] Properties list: with 11 statuses the status tabs overflow and “All” scrolls out of view; the R1.2 list uses the wireframe filter layout
+- [x] Properties list: the status tabs overflowed; fixed in R1.2 (status is a dropdown with counts)
 
 ### R1.2 Properties list and form (restyle + attribute confirmation)
 
-- [ ] **API list**: projection; `legal=open|clean`; `archived=only|include`; status filters; indexed sorts; `searchText` prefix search; `GET /properties/stats` (PROP-54–56)
-- [ ] **Admin list**:
-  - `PageHeader` with ＋ Add property and **📥 Bulk import right after it** (PROP-53);
-  - columns: code, property, location, area, price + ₹/sq.ft., Legal chip, Status chip + Archived, listed/updated;
-  - filters: legal, archive view, city combobox (replaces datalist);
-  - footer counts;
-  - row menu (incl. Archive/Restore); empty, loading and error states
-- [ ] **Admin form**:
-  - split `PropertyFormPage` into section components;
-  - one card with numbered sections 1–5 (PROP-59);
-  - live ₹/sq.ft. and area label from `mainAreaMeaning`;
-  - sticky action footer;
-  - shared-schema form validation;
-  - 409 conflict dialog
-- [ ] **Attribute from the form**:
-  - two-step dialog: details → **confirmation summary** (impact count) → **Confirm and add to settings** (PROP-16–21);
-  - `POST …/attributes/preview` and `confirmed: true` with `origin: 'property'`;
-  - “Use existing” also confirms;
-  - “Only this property” stays immediate;
-  - the global attribute gets `review.status='new'`
-- [ ] Media: delete confirmation; caption; private visibility for documents; authenticated download route (H-7, PROP-68)
-- [ ] Tests:
-  - API: list filters, sorts and permissions;
-  - admin: list, form, the attribute confirm/cancel flow (Cancel leaves settings unchanged);
-  - Playwright: add a plot → draft → photos → Available
+- [x] **API list**: projection (list fields only); `legal=open|clean`; `archived=only|include` (a status filter wins); indexed sorts; word-prefix search on `searchText`; rows carry ₹/sq.ft., legal summary and listing date. The existing `GET /properties/status-counts` serves as the stats endpoint (nav count, status counts, footer). `location-suggestions` takes `limit` (≤ 200) for the city filter (PROP-54–56)
+- [x] **Admin list**:
+  - page header with ＋ Add property and **Bulk import right after it** (PROP-53);
+  - columns: code, property (photo, type · purpose), location, area, price + ₹/sq.ft., Legal chip, Status chip, listed / updated;
+  - filters: type, city (dropdown of every city in use), status (dropdown with counts, replaces the tab row), legal, archive view, purpose, price, featured; all in the URL;
+  - footer “n shown · n active · n archived”;
+  - row click opens the property; row menu as before (Archive/Restore through Change status until R1.7); empty, loading and error states
+- [x] **Admin form**:
+  - `PropertyFormPage` split into `MainInfoSection`, `SpecificationsSection`, `AmenitiesSection`, `FormSidePanel`, `ConflictDialog`;
+  - one card with numbered sections 1–5 (PROP-59); type picked from a dropdown grouped by category, derived category shown;
+  - live ₹/sq.ft. (shared `pricePerSqft`) and area label from `mainAreaMeaning`; code shown as “Auto: RE-PLT-…”;
+  - road type and width with the location (choice B); State moved into section 1;
+  - sticky action bar;
+  - property name and road width rules shared with the API;
+  - 409 conflict dialog (who saved; load theirs or keep mine)
+  - Fixed: the form did not send road type and width, so saving erased them (the whole location is saved)
+  - Status and listing date are shown in the side panel (status changes keep going through the status actions); after the first save the form opens the Media section until the Location tab exists (R1.4)
+- [x] **Attribute from the form**:
+  - two-step dialog: details → **confirmation summary** (impact count) → **Confirm and add to settings** (PROP-16–21); Cancel returns with the inputs kept;
+  - `POST …/attributes/preview`; adding from a form without `confirmed: true` is refused (428 CONFIRMATION_REQUIRED);
+  - “Use for ‹type›” also confirms; “Only this property” stays immediate;
+  - the placement gets `review` (property code, who, when) → “New” chip and a **New attributes to review** list in Settings (Mark reviewed / Edit / Remove; logged)
+- [ ] Media: delete confirmation; caption; private visibility for documents; authenticated download route (H-7, PROP-68): moved to R1.5 with the Legal & documents tab
+- [x] Tests:
+  - API: list filters (legal, archive view, word-prefix search), row fields, suggestion limit; attribute preview, confirmation, review tag and Mark reviewed;
+  - admin: list (chips, footer, filters to URL), form (type dropdown, live ₹/sq.ft., road fields sent, 409 dialog), the attribute confirm/cancel flow (Cancel saves nothing), the review list
+- [ ] Playwright: add a plot → draft → photos → Available: moved to R1.8 with the release tests
 
 ### R1.3 Property detail shell + Specifications, Media, History
 

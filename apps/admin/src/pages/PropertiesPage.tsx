@@ -1,22 +1,27 @@
 import {
+  ARCHIVE_VIEW_LABELS,
+  ARCHIVE_VIEWS,
   formatArea,
+  formatINR,
   formatPrice,
+  groupIndian,
+  LEGAL_FILTER_LABELS,
+  LEGAL_FILTERS,
   PROPERTY_STATUS_LABELS,
+  PROPERTY_STATUSES,
   PURPOSE_LABELS,
   PURPOSES,
 } from '@real-estate/shared';
-import type { PropertyListItem, PropertyStatus } from '@real-estate/shared';
+import type { PropertyListItem } from '@real-estate/shared';
 import {
   ArchiveIcon,
   CopyIcon,
   EllipsisIcon,
   EyeIcon,
-  HouseIcon,
   PencilIcon,
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
-  SearchXIcon,
   StarIcon,
   UploadIcon,
   XIcon,
@@ -25,6 +30,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/auth-context';
+import { EmptyState, PageHeader } from '@/components/patterns';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -51,7 +57,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useDuplicateProperty,
   useLocationSuggestions,
@@ -60,26 +65,14 @@ import {
 } from '@/features/properties/api';
 import type { StatusTarget } from '@/features/properties/ChangeStatusDialog';
 import { ChangeStatusDialog } from '@/features/properties/ChangeStatusDialog';
+import { LegalChip } from '@/features/properties/LegalChip';
 import { StatusBadge } from '@/features/properties/StatusBadge';
 import { PRICE_RANGES, SORTS, usePropertyFilters } from '@/features/properties/useListFilters';
 import { usePropertyTypes } from '@/features/propertyTypes/api';
 import { errorMessage } from '@/lib/errors';
-import { formatLastSeen } from '@/lib/format';
+import { formatAgo, formatDate } from '@/lib/format';
 import { useSettled } from '@/lib/useSettled';
 
-const TABS: (PropertyStatus | 'all')[] = [
-  'all',
-  'draft',
-  'available',
-  'under_negotiation',
-  'reserved',
-  'booked',
-  'on_hold',
-  'sold',
-  'rented',
-  'leased',
-  'archived',
-];
 const toTarget = (p: PropertyListItem): StatusTarget => ({
   id: p.id,
   code: p.code,
@@ -97,6 +90,36 @@ function useDebouncedFilter(value: string, apply: (v: string | undefined) => voi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settled]);
   return [text, setText] as const;
+}
+
+/** One filter dropdown; "all" (the first item) means no filter. */
+function FilterSelect({
+  label,
+  value,
+  items,
+  onChange,
+  className = 'w-44',
+}: {
+  label: string;
+  value: string;
+  items: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <Select items={items} value={value} onValueChange={(v) => onChange(v as string)}>
+      <SelectTrigger aria-label={label} className={className}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((i) => (
+          <SelectItem key={i.value} value={i.value}>
+            {i.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 function RowMenu({
@@ -156,41 +179,83 @@ function RowMenu({
   );
 }
 
+/** "₹28 L" with "₹2,333/sq.ft." under it (PROP-54). */
+function PriceCell({ property }: { property: PropertyListItem }) {
+  const { price, pricePerSqft } = property;
+  const short =
+    price.basis === 'total' && !price.onRequest && price.amount !== null
+      ? formatINR(price.amount)
+      : formatPrice(price);
+  return (
+    <>
+      <span className="font-semibold">{short}</span>
+      {pricePerSqft !== null && (
+        <span className="block text-xs text-muted-foreground">
+          ₹{groupIndian(pricePerSqft)}/sq.ft.
+        </span>
+      )}
+    </>
+  );
+}
+
 /**
- * Properties list: status tabs with counts, search and filters (kept in the URL), and for
- * Admins bulk status changes. Sales Executives see the list and details only.
+ * Properties list in the wireframe layout (PROP-53–58): search and filters kept in the
+ * URL, legal checks and status chips, and for writers bulk status changes. Sales
+ * Executives see the list and details only.
  */
 export function PropertiesPage() {
   const { can } = useAuth();
+  const navigate = useNavigate();
   const canWrite = can('properties:write');
   const filters = usePropertyFilters();
   const list = useProperties(filters.query);
   const counts = useStatusCounts();
   const types = usePropertyTypes();
+  const cities = useLocationSuggestions('city', '', undefined, 200);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusTargets, setStatusTargets] = useState<StatusTarget[] | null>(null);
   const [search, setSearch] = useDebouncedFilter(filters.q, (q) => filters.update({ q }));
-  const [city, setCity] = useDebouncedFilter(filters.city, (c) => filters.update({ city: c }));
-  const cities = useLocationSuggestions('city', city);
 
   const subcategories = (types.data?.categories ?? [])
     .filter((c) => c.isActive)
     .flatMap((c) => c.subcategories);
+  const n = (value: number | undefined) => (value === undefined ? '' : ` (${value})`);
   const typeItems = [
     { value: 'all', label: 'All types' },
     ...subcategories.map((s) => ({ value: s.id, label: s.name })),
+  ];
+  const cityNames = (cities.data ?? []).map((c) => c.value).sort((a, b) => a.localeCompare(b));
+  if (filters.city !== 'all' && !cityNames.includes(filters.city)) cityNames.push(filters.city);
+  const cityItems = [
+    { value: 'all', label: 'All cities' },
+    ...cityNames.map((c) => ({ value: c, label: c })),
+  ];
+  const statusItems = [
+    { value: 'all', label: 'Any status' },
+    ...PROPERTY_STATUSES.filter((s) => s !== 'archived').map((s) => ({
+      value: s,
+      label: `${PROPERTY_STATUS_LABELS[s]}${n(counts.data?.[s])}`,
+    })),
+  ];
+  const legalItems = [
+    { value: 'all', label: 'Any legal status' },
+    ...LEGAL_FILTERS.map((v) => ({ value: v, label: LEGAL_FILTER_LABELS[v] })),
+  ];
+  const viewItems = [
+    { value: 'all', label: 'Active properties' },
+    ...ARCHIVE_VIEWS.map((v) => ({ value: v, label: ARCHIVE_VIEW_LABELS[v] })),
   ];
   const purposeItems = [
     { value: 'all', label: 'Sale, rent or lease' },
     ...PURPOSES.map((p) => ({ value: p, label: PURPOSE_LABELS[p] })),
   ];
+
   const rows = list.data?.items ?? [];
   const meta = list.data?.meta;
-  const from = meta && meta.total > 0 ? (meta.page - 1) * meta.limit + 1 : 0;
-  const to = meta ? Math.min(meta.page * meta.limit, meta.total) : 0;
   const pageIds = rows.map((r) => r.id);
   const allOnPage = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
   const selectedRows = rows.filter((r) => selected.has(r.id));
+  const columns = canWrite ? 10 : 9;
 
   // Selection is per page and filter.
   useEffect(() => setSelected(new Set()), [list.data]);
@@ -203,140 +268,87 @@ export function PropertiesPage() {
       return next;
     });
 
+  const addButton = (size?: 'sm') =>
+    canWrite && (
+      <Button size={size} nativeButton={false} render={<Link to="/properties/new" />}>
+        <PlusIcon /> Add property
+      </Button>
+    );
+
   return (
     <>
-      {/* Status tabs + Add property */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <Tabs
-          value={filters.status}
-          onValueChange={(v) => filters.update({ status: v as string })}
-          className="min-w-0 flex-[1_1_520px]"
-        >
-          <TabsList variant="line" className="max-w-full overflow-x-auto">
-            {TABS.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {tab === 'all' ? 'All' : PROPERTY_STATUS_LABELS[tab]}
-                {counts.data && (
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">
-                    {counts.data[tab]}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        {can('imports:run') && (
-          <Button
-            variant="outline"
-            className="ml-auto h-9"
-            nativeButton={false}
-            render={<Link to="/imports" />}
-          >
-            <UploadIcon /> Bulk import
-          </Button>
-        )}
-        {canWrite && (
-          <Button
-            className={can('imports:run') ? 'h-9' : 'ml-auto h-9'}
-            nativeButton={false}
-            render={<Link to="/properties/new" />}
-          >
-            <PlusIcon /> Add property
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Property specification database"
+        description="Every property has a unique ID and a standard specification. Form fields change by property type."
+        actions={
+          <>
+            {addButton()}
+            {can('imports:run') && (
+              <Button variant="outline" nativeButton={false} render={<Link to="/imports" />}>
+                <UploadIcon /> Bulk import
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-[1_1_260px]">
+      {/* Filters (wireframe `.filters`) */}
+      <div className="mb-4 flex flex-wrap items-center gap-2" role="search">
+        <div className="relative min-w-0 flex-[1_1_240px]">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             aria-label="Search properties"
-            placeholder="Search code, name, area or pincode…"
+            placeholder="Search code, name, locality, city or pincode…"
             className="pl-8"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select
-          items={typeItems}
+        <FilterSelect
+          label="Property type"
           value={filters.subcategoryId}
-          onValueChange={(v) => filters.update({ type: v as string })}
-        >
-          <SelectTrigger aria-label="Property type" className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {typeItems.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
-                {i.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          items={purposeItems}
-          value={filters.purpose}
-          onValueChange={(v) => filters.update({ purpose: v as string })}
-        >
-          <SelectTrigger aria-label="Purpose" className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {purposeItems.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
-                {i.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          aria-label="City"
-          placeholder="City"
-          className="w-36"
-          list="property-city-options"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
+          items={typeItems}
+          onChange={(v) => filters.update({ type: v })}
         />
-        <datalist id="property-city-options">
-          {cities.data?.map((c) => (
-            <option key={c.value} value={c.value} />
-          ))}
-        </datalist>
-        <Select
-          items={[...PRICE_RANGES]}
+        <FilterSelect
+          label="City"
+          value={filters.city}
+          items={cityItems}
+          onChange={(v) => filters.update({ city: v })}
+          className="w-40"
+        />
+        <FilterSelect
+          label="Status"
+          value={filters.status}
+          items={statusItems}
+          onChange={(v) => filters.update({ status: v })}
+        />
+        <FilterSelect
+          label="Legal checks"
+          value={filters.legal}
+          items={legalItems}
+          onChange={(v) => filters.update({ legal: v })}
+          className="w-52"
+        />
+        <FilterSelect
+          label="Archive view"
+          value={filters.view}
+          items={viewItems}
+          onChange={(v) => filters.update({ view: v })}
+        />
+        <FilterSelect
+          label="Purpose"
+          value={filters.purpose}
+          items={purposeItems}
+          onChange={(v) => filters.update({ purpose: v })}
+        />
+        <FilterSelect
+          label="Price"
           value={filters.price}
-          onValueChange={(v) => filters.update({ price: v as string })}
-        >
-          <SelectTrigger aria-label="Price" className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PRICE_RANGES.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
-                {i.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          items={[...SORTS]}
-          value={filters.sort}
-          onValueChange={(v) =>
-            filters.update({ sort: v === SORTS[0].value ? undefined : (v as string) })
-          }
-        >
-          <SelectTrigger aria-label="Sort by" className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORTS.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
-                {i.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          items={[...PRICE_RANGES]}
+          onChange={(v) => filters.update({ price: v })}
+          className="w-40"
+        />
         <label className="flex h-8 items-center gap-2 px-1 text-sm">
           <Checkbox
             checked={filters.featured}
@@ -349,6 +361,14 @@ export function PropertiesPage() {
             <XIcon /> Clear filters
           </Button>
         )}
+        <div className="ml-auto">
+          <FilterSelect
+            label="Sort by"
+            value={filters.sort}
+            items={[...SORTS]}
+            onChange={(v) => filters.update({ sort: v === SORTS[0].value ? undefined : v })}
+          />
+        </div>
       </div>
 
       {/* Bulk actions */}
@@ -374,9 +394,9 @@ export function PropertiesPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl bg-card shadow-xs ring-1 ring-foreground/10 dark:shadow-none">
-        <Table aria-label="Properties" aria-busy={list.isFetching} className="min-w-[980px]">
+      {/* Table (wireframe `.tbl-wrap`) */}
+      <div className="rounded-xl bg-card shadow-card ring-1 ring-foreground/10 dark:shadow-none">
+        <Table aria-label="Properties" aria-busy={list.isFetching} className="min-w-[1120px]">
           <TableHeader>
             <TableRow>
               {canWrite && (
@@ -388,13 +408,14 @@ export function PropertiesPage() {
                   />
                 </TableHead>
               )}
+              <TableHead>Code</TableHead>
               <TableHead>Property</TableHead>
-              <TableHead>Type · Purpose</TableHead>
-              <TableHead>City / Area</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Area</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead className="text-right">Area</TableHead>
+              <TableHead className="text-right">Asking price</TableHead>
+              <TableHead>Legal checks</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Updated</TableHead>
+              <TableHead>Listed</TableHead>
               <TableHead className="w-12">
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -404,14 +425,14 @@ export function PropertiesPage() {
             {list.isPending &&
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={canWrite ? 9 : 8}>
+                  <TableCell colSpan={columns}>
                     <Skeleton className="h-10 w-full" />
                   </TableCell>
                 </TableRow>
               ))}
             {list.isError && (
               <TableRow>
-                <TableCell colSpan={canWrite ? 9 : 8} className="py-10 text-center">
+                <TableCell colSpan={columns} className="py-10 text-center">
                   <p className="text-sm text-destructive">{errorMessage(list.error)}</p>
                   <Button
                     variant="outline"
@@ -426,121 +447,120 @@ export function PropertiesPage() {
             )}
             {list.data && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={canWrite ? 9 : 8} className="py-12">
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-muted">
-                      {filters.hasFilters ? (
-                        <SearchXIcon className="size-5 text-muted-foreground" />
-                      ) : (
-                        <HouseIcon className="size-5 text-muted-foreground" />
-                      )}
-                    </span>
-                    <p className="font-medium">
-                      {filters.hasFilters ? 'No properties match' : 'No properties here yet'}
-                    </p>
-                    {filters.hasFilters ? (
-                      <Button variant="outline" size="sm" onClick={filters.clear}>
-                        Clear filters
-                      </Button>
-                    ) : (
-                      canWrite && (
-                        <Button
-                          size="sm"
-                          nativeButton={false}
-                          render={<Link to="/properties/new" />}
-                        >
-                          <PlusIcon /> Add property
+                <TableCell colSpan={columns}>
+                  {filters.hasFilters ? (
+                    <EmptyState
+                      title="No properties match these filters."
+                      action={
+                        <Button variant="outline" size="sm" onClick={filters.clear}>
+                          Clear filters
                         </Button>
-                      )
-                    )}
-                  </div>
+                      }
+                    />
+                  ) : (
+                    <EmptyState
+                      title="No properties here yet"
+                      description="Add one, or bring many in at once with Bulk import."
+                      action={addButton('sm')}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((p) => (
-              <TableRow key={p.id} data-state={selected.has(p.id) ? 'selected' : undefined}>
-                {canWrite && (
+            {rows.map((p) => {
+              const open = () => void navigate(`/properties/${p.id}`);
+              return (
+                <TableRow
+                  key={p.id}
+                  data-state={selected.has(p.id) ? 'selected' : undefined}
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    // Row click opens the detail page (PROP-57), except on its controls.
+                    if (!(e.target as HTMLElement).closest('a,button,[role=checkbox],[role=menu]'))
+                      open();
+                  }}
+                >
+                  {canWrite && (
+                    <TableCell>
+                      <Checkbox
+                        aria-label={`Select ${p.code}`}
+                        checked={selected.has(p.id)}
+                        onCheckedChange={() => toggle(p.id)}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell className="font-mono text-xs">{p.code}</TableCell>
+                  <TableCell className="min-w-72 whitespace-normal">
+                    <Link
+                      to={`/properties/${p.id}`}
+                      className="flex items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    >
+                      {p.coverUrl ? (
+                        <img
+                          src={p.coverUrl}
+                          alt=""
+                          className="h-10 w-14 flex-none rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="flex h-10 w-14 flex-none items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">
+                          No photo
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1.5 font-semibold hover:underline">
+                          <span className="line-clamp-2">{p.title}</span>
+                          {p.isFeatured && (
+                            <StarIcon
+                              className="size-3.5 flex-none fill-tone-amber text-tone-amber"
+                              aria-label="Featured"
+                            />
+                          )}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {p.subcategoryName} · {PURPOSE_LABELS[p.purpose]}
+                        </span>
+                      </span>
+                    </Link>
+                  </TableCell>
                   <TableCell>
-                    <Checkbox
-                      aria-label={`Select ${p.code}`}
-                      checked={selected.has(p.id)}
-                      onCheckedChange={() => toggle(p.id)}
+                    {p.location.locality || '—'}
+                    <span className="block text-xs text-muted-foreground">{p.location.city}</span>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {p.area ? formatArea(p.area.value, p.area.unit) : '—'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <PriceCell property={p} />
+                  </TableCell>
+                  <TableCell>
+                    <LegalChip summary={p.legalSummary} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={p.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <span className="block text-foreground">
+                      {p.publishedAt ? formatDate(p.publishedAt) : 'Not listed'}
+                    </span>
+                    Updated {formatAgo(p.updatedAt)}
+                  </TableCell>
+                  <TableCell>
+                    <RowMenu
+                      property={p}
+                      canWrite={canWrite}
+                      onStatus={() => setStatusTargets([toTarget(p)])}
                     />
                   </TableCell>
-                )}
-                <TableCell className="whitespace-normal">
-                  <Link
-                    to={`/properties/${p.id}`}
-                    className="flex items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                  >
-                    {p.coverUrl ? (
-                      <img
-                        src={p.coverUrl}
-                        alt=""
-                        className="h-11 w-16 flex-none rounded-md object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="flex h-11 w-16 flex-none items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">
-                        No photo
-                      </span>
-                    )}
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-1.5 font-medium hover:underline">
-                        <span className="line-clamp-1">{p.title}</span>
-                        {p.isFeatured && (
-                          <StarIcon
-                            className="size-3.5 flex-none fill-tone-amber text-tone-amber"
-                            aria-label="Featured"
-                          />
-                        )}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">{p.code}</span>
-                    </span>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {p.subcategoryName}
-                  <span className="block text-xs text-muted-foreground">
-                    {PURPOSE_LABELS[p.purpose]}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {p.location.city || '—'}
-                  <span className="block text-xs text-muted-foreground">
-                    {[p.location.locality, p.location.pincode].filter(Boolean).join(' · ')}
-                  </span>
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatPrice(p.price)}
-                  {p.price.negotiable && !p.price.onRequest && p.price.amount !== null && (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      Negotiable
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>{p.area ? formatArea(p.area.value, p.area.unit) : '—'}</TableCell>
-                <TableCell>
-                  <StatusBadge status={p.status} />
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatLastSeen(p.updatedAt)}
-                </TableCell>
-                <TableCell>
-                  <RowMenu
-                    property={p}
-                    canWrite={canWrite}
-                    onStatus={() => setStatusTargets([toTarget(p)])}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
-        {meta && meta.total > 0 && (
+        {meta && meta.totalPages > 1 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm">
             <span className="text-muted-foreground">
-              Showing {from}–{to} of {meta.total}
+              Page {meta.page} of {meta.totalPages}
             </span>
             <div className="flex gap-2">
               <Button
@@ -563,6 +583,16 @@ export function PropertiesPage() {
           </div>
         )}
       </div>
+
+      {/* Footer count (PROP-56) */}
+      {meta && counts.data && (
+        <p className="mt-2.5 text-[13px] text-muted-foreground" data-testid="list-footer">
+          {meta.total} shown · {counts.data.all} active
+          {counts.data.archived > 0 && ` · ${counts.data.archived} archived`}. Legal column counts
+          checks <i>verified by an authorised legal professional</i>; uploaded documents alone don’t
+          count.
+        </p>
+      )}
 
       {statusTargets && (
         <ChangeStatusDialog

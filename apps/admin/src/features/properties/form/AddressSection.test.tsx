@@ -75,7 +75,7 @@ describe('AddressSection', () => {
   it('opens and closes; closed, it summarises what was entered', async () => {
     renderSection({ city: 'Chennai' });
     await userEvent.click(screen.getByRole('button', { name: /Full address, landmark & map pin/ }));
-    expect(screen.getByLabelText('State')).toBeInTheDocument();
+    expect(screen.getByLabelText('Landmark')).toBeInTheDocument();
     expect(await screen.findByText('map pin: none')).toBeInTheDocument();
     // The typed city is looked up for the map (through our API).
     await waitFor(() =>
@@ -87,7 +87,7 @@ describe('AddressSection', () => {
 
     await userEvent.type(screen.getByLabelText('Landmark'), 'Railway station');
     await userEvent.click(screen.getByRole('button', { name: /Close/ }));
-    expect(screen.queryByLabelText('State')).toBeNull();
+    expect(screen.queryByLabelText('Landmark')).toBeNull();
     expect(screen.getByText('near Railway station')).toBeInTheDocument();
   });
 
@@ -118,11 +118,11 @@ describe('AddressSection', () => {
 
   it('Clear takes the section back to empty', async () => {
     renderSection({ state: 'Tamil Nadu', landmark: 'Temple', lat: '12.9', lng: '80.1' });
-    // Opens by itself when it already has details.
-    expect(screen.getByLabelText('State')).toHaveValue('Tamil Nadu');
+    // Opens by itself when it already has details. Clear leaves the main fields (state) alone.
+    expect(screen.getByLabelText('Landmark')).toHaveValue('Temple');
     await userEvent.click(screen.getByRole('button', { name: /Clear/ }));
     expect(latest.location).toMatchObject({
-      state: '',
+      state: 'Tamil Nadu',
       landmark: '',
       address: '',
       lat: '',

@@ -233,6 +233,8 @@ export const archiveInfoSchema = z.object({
   reason: z.string(),
 });
 
+export const ROAD_WIDTH_MAX_FT = 500;
+
 export const locationSchema = z.object({
   state: text(60, 'State').default(''),
   city: text(60, 'City').default(''),
@@ -249,7 +251,7 @@ export const locationSchema = z.object({
   roadWidthFt: z
     .number()
     .positive('Road width must be more than 0')
-    .max(500, 'Road width looks too large')
+    .max(ROAD_WIDTH_MAX_FT, 'Road width looks too large')
     .nullable()
     .default(null),
 });
@@ -396,6 +398,12 @@ export const propertyListItemSchema = z.object({
   coverUrl: z.string().nullable(),
   status: z.enum(PROPERTY_STATUSES),
   isFeatured: z.boolean(),
+  /** Total price ÷ area in sq.ft. (sale only). */
+  pricePerSqft: z.number().nullable(),
+  /** For the Legal checks chip (PROP-54). */
+  legalSummary: legalSummarySchema,
+  /** First time it became Available (the listing date). */
+  publishedAt: z.string().nullable(),
   updatedAt: z.string(),
 });
 export type PropertyListItem = z.infer<typeof propertyListItemSchema>;
@@ -418,7 +426,8 @@ export type PropertyHistoryEntry = z.infer<typeof propertyHistoryEntrySchema>;
 
 // ------------------------------------------------------------------ inputs
 
-const titleSchema = z
+/** Shared with the admin form so both show the same messages (PROP-63). */
+export const propertyTitleSchema = z
   .string()
   .trim()
   .min(5, 'Property name must be at least 5 characters')
@@ -426,7 +435,7 @@ const titleSchema = z
 
 const propertyFields = {
   subcategoryId: idSchema,
-  title: titleSchema,
+  title: propertyTitleSchema,
   purpose: z.enum(PURPOSES, 'Choose a purpose'),
   price: priceSchema,
   rental: rentalSchema.nullable(),
@@ -504,6 +513,17 @@ const boolQuery = z
   .optional();
 const amountQuery = z.coerce.number().min(0).optional();
 
+export const LEGAL_FILTERS = ['open', 'clean'] as const;
+export const LEGAL_FILTER_LABELS: Record<(typeof LEGAL_FILTERS)[number], string> = {
+  open: 'Mandatory checks open',
+  clean: 'Mandatory checks verified',
+};
+export const ARCHIVE_VIEWS = ['only', 'include'] as const;
+export const ARCHIVE_VIEW_LABELS: Record<(typeof ARCHIVE_VIEWS)[number], string> = {
+  only: 'Archived only',
+  include: 'Active + archived',
+};
+
 /** GET /admin/properties */
 export const listPropertiesQuerySchema = paginationQuerySchema.extend({
   /** Code, name, city, area / locality or pincode. */
@@ -516,9 +536,13 @@ export const listPropertiesQuerySchema = paginationQuerySchema.extend({
   pincode: z.string().trim().max(6).optional(),
   minPrice: amountQuery,
   maxPrice: amountQuery,
-  /** Without a status, archived properties are left out. v1 names (published…) still work. */
+  /** v1 names (published…) still work. A status filter overrides `archived`. */
   status: statusWithAliases.optional(),
   featured: boolQuery,
+  /** open: a mandatory legal check is not verified yet; clean: all mandatory checks verified. */
+  legal: z.enum(LEGAL_FILTERS).optional(),
+  /** Archived properties are left out unless asked for (PROP-51). */
+  archived: z.enum(ARCHIVE_VIEWS).optional(),
 });
 export type ListPropertiesQuery = z.infer<typeof listPropertiesQuerySchema>;
 
@@ -529,6 +553,8 @@ export const locationSuggestionsQuerySchema = z.object({
   q: z.string().trim().max(100).default(''),
   /** Narrows locality / pincode suggestions to one city. */
   city: z.string().trim().max(60).optional(),
+  /** How many to return (most used first); the list's city filter asks for all. */
+  limit: z.coerce.number().int().min(1).max(200).default(10),
 });
 export const locationSuggestionSchema = z.object({ value: z.string(), count: z.number().int() });
 export type LocationSuggestion = z.infer<typeof locationSuggestionSchema>;

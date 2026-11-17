@@ -24,7 +24,8 @@ export function PageHeader({
 }) {
   return (
     <div className="mb-4 flex flex-wrap items-start gap-3">
-      <div className="min-w-0 flex-1">
+      {/* At least 18rem wide, so on a phone the actions wrap under the title. */}
+      <div className="min-w-0 flex-[1_1_18rem]">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
           {meta}

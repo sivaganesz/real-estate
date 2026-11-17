@@ -38,6 +38,21 @@ const placementSchema = new Schema(
   {
     attributeId: { ...refField('PropertyAttribute'), required: true },
     required: { type: Boolean, default: false },
+    /** Added from a property form: "New" until an admin reviews it (PRD v2 PROP-20). */
+    review: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ['new'], required: true },
+          propertyId: { type: String, default: null },
+          propertyCode: { type: String, default: null },
+          addedById: { type: String, default: null },
+          addedByName: { type: String, default: null },
+          at: { type: Date, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { _id: false },
 );
@@ -138,9 +153,19 @@ export interface AmenityDoc {
   order: number;
 }
 
+export interface PlacementReview {
+  status: 'new';
+  propertyId: string | null;
+  propertyCode: string | null;
+  addedById: string | null;
+  addedByName: string | null;
+  at: Date;
+}
+
 export interface Placement {
   attributeId: string;
   required: boolean;
+  review?: PlacementReview | null;
 }
 
 export interface AttributeDoc {

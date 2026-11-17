@@ -28,6 +28,13 @@ export function formatLastSeen(iso: string | null, now = new Date()): string {
   return date.format(then);
 }
 
+/** Like formatLastSeen without the time, in lower case for use mid-sentence: "today". */
+export function formatAgo(iso: string, now = new Date()): string {
+  const days = Math.round((startOfDay(now) - startOfDay(new Date(iso))) / DAY);
+  if (days <= 0) return 'today';
+  return formatLastSeen(iso, now).toLowerCase();
+}
+
 /** "expires in 2 days" / "expires today" / "expired". */
 export function formatExpiry(iso: string | null, now = new Date()): string | null {
   if (!iso) return null;

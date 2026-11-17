@@ -1,3 +1,4 @@
+import { addAttributeBodySchema } from '@real-estate/shared';
 import type { PropertyTypes } from '@real-estate/shared';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -560,6 +561,86 @@ describe('property type rules that depend on existing properties', () => {
   beforeEach(async () => {
     await db.clear();
     await ensureStartingPropertyTypes(TEST_CATALOGUE);
+  });
+
+  it('from a property form: preview, confirm, then "New" until reviewed (PROP-18–20)', async () => {
+    const PID = '0192f3a4-7b1c-7e2d-9a3f-00000000a001';
+    const withCodes = new PropertyTypesService({
+      usage: { ...villaHas12, codeOf: async (id) => (id === PID ? 'RE-VIL-000004' : null) },
+    });
+    const user = await UserModel.create({
+      name: 'Meena Manager',
+      email: 'meena@company.com',
+      role: 'sales_manager',
+      status: 'active',
+    });
+    const villa = sub(await withCodes.getAll(), 'Villa / House');
+    const target = { kind: 'subcategory' as const, id: villa.id };
+    const body = (extra: object) =>
+      addAttributeBodySchema.parse({
+        source: 'new',
+        label: 'Servant room',
+        type: 'yes_no',
+        origin: 'property',
+        propertyId: PID,
+        ...extra,
+      });
+
+    // The summary: what, where, and the impact on existing properties. Nothing is saved.
+    expect(await withCodes.previewAttribute(target, body({}))).toMatchObject({
+      label: 'Servant room',
+      type: 'yes_no',
+      required: false,
+      targetName: 'Residential › Villa / House',
+      existingProperties: 12,
+    });
+    expect(sub(await withCodes.getAll(), 'Villa / House').attributes).toHaveLength(
+      villa.attributes.length,
+    );
+
+    // Without the confirmation it is refused.
+    await expect(withCodes.addAttribute(user._id, target, body({}))).rejects.toMatchObject({
+      status: 428,
+      code: 'CONFIRMATION_REQUIRED',
+    });
+
+    const added = sub(
+      await withCodes.addAttribute(user._id, target, body({ confirmed: true })),
+      'Villa / House',
+    ).attributes.find((a) => a.label === 'Servant room')!;
+    expect(added.review).toMatchObject({
+      status: 'new',
+      propertyId: PID,
+      propertyCode: 'RE-VIL-000004',
+      addedBy: { id: user._id, name: 'Meena Manager' },
+    });
+
+    // Reusing an attribute shows where it is used already; a duplicate name is caught early.
+    const plot = sub(await withCodes.getAll(), 'Residential Plot');
+    const bhk = villa.attributes.find((a) => a.key === 'bhk')!;
+    expect(
+      await withCodes.previewAttribute(
+        { kind: 'subcategory', id: plot.id },
+        addAttributeBodySchema.parse({
+          source: 'existing',
+          attributeId: bhk.id,
+          origin: 'property',
+        }),
+      ),
+    ).toMatchObject({ label: 'BHK', usedIn: expect.arrayContaining(['Villa / House']) });
+    await expect(withCodes.previewAttribute(target, body({}))).rejects.toMatchObject({
+      code: 'ATTRIBUTE_EXISTS',
+    });
+
+    // Mark reviewed clears the tag (and is logged).
+    const reviewed = sub(
+      await withCodes.markAttributeReviewed(user._id, target, added.id),
+      'Villa / House',
+    ).attributes.find((a) => a.id === added.id)!;
+    expect(reviewed.review).toBeNull();
+    expect(
+      await ChangeLogModel.exists({ action: 'attribute_reviewed', entityId: villa.id }),
+    ).toBeTruthy();
   });
 
   it('locks the code prefix and blocks deleting a subcategory that has properties', async () => {

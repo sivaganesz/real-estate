@@ -263,7 +263,10 @@ export function createPropertiesRouter(deps: {
     '/location-suggestions',
     canRead,
     endpoint({ query: locationSuggestionsQuerySchema }, async ({ query }, _req, res) => {
-      sendData(res, await properties.locationSuggestions(query.field, query.q, query.city));
+      sendData(
+        res,
+        await properties.locationSuggestions(query.field, query.q, query.city, query.limit),
+      );
     }),
   );
   router.post(

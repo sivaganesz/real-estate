@@ -111,6 +111,16 @@ export const coreAttributeSchema = z.object({
 });
 export type CoreAttribute = z.infer<typeof coreAttributeSchema>;
 
+export const attributeReviewSchema = z.object({
+  status: z.literal('new'),
+  propertyId: idSchema.nullable(),
+  /** Null when it was added while creating a property (no code yet). */
+  propertyCode: z.string().nullable(),
+  addedBy: z.object({ id: idSchema, name: z.string() }).nullable(),
+  at: z.string(),
+});
+export type AttributeReview = z.infer<typeof attributeReviewSchema>;
+
 /** An attribute as used in one place (common or a subcategory). */
 export const placedAttributeSchema = z.object({
   id: idSchema,
@@ -124,6 +134,8 @@ export const placedAttributeSchema = z.object({
   required: z.boolean(),
   /** The other places that use the same attribute, e.g. ["Apartment / Flat"]. */
   usedIn: z.array(z.string()),
+  /** "New — added from property RE-PLT-000004" until an admin reviews it (PROP-20). */
+  review: attributeReviewSchema.nullable(),
 });
 export type PlacedAttribute = z.infer<typeof placedAttributeSchema>;
 
@@ -260,6 +272,17 @@ export function checkAttributeOptions(value: DefinitionShape, ctx: z.RefinementC
   }
 }
 
+/**
+ * Where an attribute is added from (PROP-16–20). From the property form it must be
+ * `confirmed` after the preview (the confirmation summary), and it is tagged for review.
+ */
+const originFields = {
+  origin: z.enum(['settings', 'property']).default('settings'),
+  /** The property being edited, when added from its form (null for a new property). */
+  propertyId: idSchema.nullable().default(null),
+  confirmed: z.boolean().default(false),
+};
+
 /** A new attribute: its definition plus how it behaves in this place. */
 export const newAttributeBodySchema = z
   .object({
@@ -270,6 +293,7 @@ export const newAttributeBodySchema = z
     options: optionsSchema.default([]),
     searchFilter: z.boolean().default(false),
     required: z.boolean().default(false),
+    ...originFields,
   })
   .superRefine(checkAttributeOptions);
 
@@ -278,6 +302,7 @@ export const existingAttributeBodySchema = z.object({
   source: z.literal('existing'),
   attributeId: idSchema,
   required: z.boolean().default(false),
+  ...originFields,
 });
 
 /** POST …/attributes: either a new attribute or an existing one. */
@@ -287,6 +312,22 @@ export const addAttributeBodySchema = z.discriminatedUnion('source', [
 ]);
 export type AddAttributeBody = z.input<typeof addAttributeBodySchema>;
 export type AddAttribute = z.output<typeof addAttributeBodySchema>;
+
+/** POST …/attributes/preview: what "Confirm and add to settings" will do (PROP-18). */
+export const attributePreviewSchema = z.object({
+  label: z.string(),
+  type: z.enum(ATTRIBUTE_TYPES),
+  unit: z.string().nullable(),
+  options: z.array(z.string()),
+  required: z.boolean(),
+  /** "Residential › Residential plot" or "Residential (common)". */
+  targetName: z.string(),
+  /** Existing properties the attribute will appear on (archived included). */
+  existingProperties: z.number().int(),
+  /** Reusing an attribute: where else it is used already. */
+  usedIn: z.array(z.string()),
+});
+export type AttributePreview = z.infer<typeof attributePreviewSchema>;
 
 /**
  * PATCH …/attributes/:attributeId. Name, type, unit, options and search filter change the

@@ -22,4 +22,6 @@ export const propertyUsage: PropertyUsage = {
   countByAmenity: (ids) => countBy('amenityIds', ids),
   isAttributeUsed: async (key) =>
     Boolean(await PropertyModel.exists({ [`attributeValues.${key}`]: { $exists: true } })),
+  codeOf: async (id) =>
+    (await PropertyModel.findById(id).select('code').lean<{ code: string }>())?.code ?? null,
 };

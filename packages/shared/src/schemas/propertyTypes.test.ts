@@ -42,6 +42,10 @@ describe('property types', () => {
       source: 'existing',
       attributeId: id,
       required: false,
+      // Added from Settings unless a property form says otherwise (PROP-18–20).
+      origin: 'settings',
+      propertyId: null,
+      confirmed: false,
     });
   });
 

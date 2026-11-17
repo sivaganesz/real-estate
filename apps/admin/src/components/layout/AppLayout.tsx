@@ -290,7 +290,9 @@ function PageLoading() {
 function QuickActions() {
   const { can } = useAuth();
   const { pathname } = useLocation();
-  if (!can('properties:write') || pathname === '/properties/new') return null;
+  // The list and the form have their own Add property button.
+  if (!can('properties:write') || pathname === '/properties' || pathname === '/properties/new')
+    return null;
   return (
     <Button
       variant="outline"

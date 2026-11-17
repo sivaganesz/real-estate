@@ -72,12 +72,13 @@ export function useLocationSuggestions(
   field: 'state' | 'city' | 'locality' | 'pincode',
   q: string,
   city?: string,
+  limit?: number,
 ) {
   return useQuery({
-    queryKey: propertiesKeys.suggestions(field, q, city),
+    queryKey: [...propertiesKeys.suggestions(field, q, city), limit ?? 10],
     queryFn: () =>
       api.get<LocationSuggestion[]>(
-        `${PATH}/location-suggestions${toQueryString({ field, q: q.trim(), city })}`,
+        `${PATH}/location-suggestions${toQueryString({ field, q: q.trim(), city, limit })}`,
       ),
     staleTime: 60_000,
   });
