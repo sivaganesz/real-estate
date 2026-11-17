@@ -1,6 +1,12 @@
 import {
   canChangeStatus,
+  legalSummary,
+  mergeLegalChecks,
+  pricePerSqft,
+  propertySearchText,
   CLOSED_STATUS_FOR,
+  CLOSED_STATUSES,
+  LISTED_STATUSES,
   PROPERTY_STATUS_LABELS,
   PROPERTY_STATUSES,
   PURPOSE_LABELS,
@@ -17,16 +23,20 @@ import type {
   PropertyListItem,
   PropertyStatus,
   PropertyStatusCounts,
+  UpdateLocation,
   UpdateProperty,
 } from '@real-estate/shared';
-import { AppError, businessRule, notFound, validationError } from '../../lib/errors';
+import { newId } from '../../db/ids';
+import { withTransaction } from '../../db/transaction';
+import { versionConflict } from '../../db/versionPlugin';
+import { AppError, businessRule, conflict, notFound, validationError } from '../../lib/errors';
 import type { ErrorDetail } from '../../lib/errors';
 import { pageMeta, pageSkip, parseSort } from '../../lib/http';
 import type { StorageProvider } from '../../lib/storage';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
 import type { SubcategoryDoc } from '../propertyTypes/propertyTypes.model';
-import { PropertySubcategoryModel } from '../propertyTypes/propertyTypes.model';
+import { AmenityModel, PropertySubcategoryModel } from '../propertyTypes/propertyTypes.model';
 import type { FormDefinition, PropertyTypesService } from '../propertyTypes/propertyTypes.service';
 import { UserModel } from '../users/user.model';
 import type { MediaDoc, PropertyDoc } from './property.model';
@@ -41,6 +51,34 @@ import {
 } from './propertyRules';
 
 const SORTABLE = ['updatedAt', 'createdAt', 'price.amount', 'area.sqft', 'title', 'code'] as const;
+/** What a list row needs: never the attribute values, legal checks or valuation (M7). */
+const LIST_FIELDS = [
+  'code',
+  'title',
+  'categoryKey',
+  'subcategoryId',
+  'purpose',
+  'price',
+  'area',
+  'location.city',
+  'location.locality',
+  'location.pincode',
+  'media',
+  'status',
+  'isFeatured',
+  'pricePerSqft',
+  'legalSummary',
+  'publishedAt',
+  'updatedAt',
+].join(' ');
+/** For "did anything change": compares rows without their ids. */
+const stripIds = (v: unknown) =>
+  Array.isArray(v)
+    ? v.map((row: Record<string, unknown>) => {
+        const { _id: _ignored, id: _alsoIgnored, ...rest } = row;
+        return rest;
+      })
+    : v;
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const exactly = (text: string) => new RegExp(`^${escapeRegex(text)}$`, 'i');
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
@@ -92,6 +130,25 @@ function changesBetween(before: Record<string, unknown>, after: Record<string, u
  * Properties (Phase 2.2): create as Draft, edit, list with search and filters, status
  * changes with the publish rules, duplicate, archive and change history.
  */
+/** Fields worked out from others on every write (TRD v2 §7.3): never edited directly. */
+function derivedFields(p: {
+  code: string;
+  title: string;
+  purpose: PropertyDoc['purpose'];
+  price: PropertyDoc['price'];
+  area: PropertyDoc['area'];
+  location: PropertyDoc['location'];
+  legal: NonNullable<PropertyDoc['legal']>;
+}) {
+  return {
+    pricePerSqft: pricePerSqft({ purpose: p.purpose, price: p.price, areaSqft: p.area?.sqft }),
+    legalSummary: legalSummary(p.legal),
+    searchText: propertySearchText(p),
+  };
+}
+
+const EMPTY_VALUATION = { reviewDate: null, valuerReport: '', notes: '', comparables: [] };
+
 export class PropertiesService {
   private readonly propertyTypes: PropertyTypesService;
   private readonly storage: StorageProvider;
@@ -104,9 +161,12 @@ export class PropertiesService {
   // ---------------------------------------------------------------- read
 
   async list(query: ListPropertiesQuery): Promise<{ items: PropertyListItem[]; meta: PageMeta }> {
-    const filter: Record<string, unknown> = {
-      status: query.status ?? { $ne: 'archived' },
-    };
+    const filter: Record<string, unknown> = {};
+    if (query.status) filter.status = query.status;
+    else if (query.archived === 'only') filter.status = 'archived';
+    else if (query.archived !== 'include') filter.status = { $ne: 'archived' };
+    if (query.legal === 'open') filter['legalSummary.openMandatory.0'] = { $exists: true };
+    if (query.legal === 'clean') filter['legalSummary.openMandatory'] = { $size: 0 };
     if (query.categoryKey) filter.categoryKey = query.categoryKey;
     if (query.subcategoryId) filter.subcategoryId = query.subcategoryId;
     if (query.purpose) filter.purpose = query.purpose;
@@ -121,14 +181,17 @@ export class PropertiesService {
       };
     }
     if (query.q) {
-      const contains = new RegExp(escapeRegex(query.q), 'i');
-      filter.$or = ['code', 'title', 'location.city', 'location.locality', 'location.pincode'].map(
-        (field) => ({ [field]: contains }),
-      );
+      // Every word must start a word of the stored search text (code, name, city, locality,
+      // pincode), so "vel plot" finds "Velachery … plot" (TRD v2 §7.12).
+      const words = query.q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 8);
+      filter.$and = words.map((w) => ({
+        searchText: new RegExp(`(?:^|[^a-z0-9])${escapeRegex(w)}`),
+      }));
     }
     const sort = parseSort(query.sort, SORTABLE, { updatedAt: -1 });
     const [docs, total] = await Promise.all([
       PropertyModel.find(filter)
+        .select(LIST_FIELDS)
         .sort({ ...sort, _id: -1 })
         .skip(pageSkip(query.page, query.limit))
         .limit(query.limit)
@@ -155,6 +218,9 @@ export class PropertiesService {
         coverUrl: this.coverUrl(d.media ?? []),
         status: d.status,
         isFeatured: d.isFeatured,
+        pricePerSqft: d.pricePerSqft ?? null,
+        legalSummary: d.legalSummary ?? legalSummary(d.legal ?? []),
+        publishedAt: d.publishedAt?.toISOString() ?? null,
         updatedAt: d.updatedAt.toISOString(),
       })),
       meta: pageMeta(total, query.page, query.limit),
@@ -208,6 +274,7 @@ export class PropertiesService {
     field: 'state' | 'city' | 'locality' | 'pincode',
     q: string,
     city?: string,
+    limit = 10,
   ): Promise<LocationSuggestion[]> {
     const path = `location.${field}`;
     const match: Record<string, unknown> = {
@@ -225,7 +292,7 @@ export class PropertiesService {
         },
       },
       { $sort: { count: -1, value: 1 } },
-      { $limit: 10 },
+      { $limit: limit },
       { $project: { _id: '$value', count: 1 } },
     ]);
     return rows.map((r) => ({ value: r._id, count: r.count }));
@@ -254,40 +321,69 @@ export class PropertiesService {
     const definition = await this.propertyTypes.definitionFor(input.subcategoryId);
     this.assertCanList(definition);
     const values = this.checkInput(definition, input, {}, []);
-    const code = await nextPropertyCode(definition.subcategory.codePrefix);
     const now = new Date();
-    const doc = await PropertyModel.create({
-      code,
-      categoryKey: definition.category.key,
-      subcategoryId: definition.subcategory._id,
-      title: input.title,
-      purpose: input.purpose,
-      price: input.price,
-      rental: input.purpose === 'sale' ? null : input.rental,
-      area: input.area ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) } : null,
-      location: input.location,
-      attributeValues: values.attributeValues,
-      extraAttributes: values.extraAttributes,
-      removedAttributeKeys: values.removedAttributeKeys,
-      amenityIds: values.amenityIds,
-      status: 'draft',
-      isFeatured: input.isFeatured,
-      statusChangedAt: now,
-      createdBy: actorId,
-      updatedBy: actorId,
-    });
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: doc._id,
-      action: 'created',
-      changes: { code: [null, code], title: [null, input.title] },
+    const doc = await withTransaction(async () => {
+      await this.touchTypesInUse(definition.subcategory._id, values.amenityIds);
+      const code = await nextPropertyCode(definition.subcategory.codePrefix);
+      // A new property gets its type's legal checklist, every check not collected yet.
+      const legal = mergeLegalChecks([], definition.subcategory.legalChecklist ?? []);
+      const area = input.area
+        ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) }
+        : null;
+      const [created] = await PropertyModel.create([
+        {
+          code,
+          legal,
+          ...derivedFields({ ...input, code, area, legal }),
+          categoryKey: definition.category.key,
+          subcategoryId: definition.subcategory._id,
+          title: input.title,
+          purpose: input.purpose,
+          price: input.price,
+          rental: input.purpose === 'sale' ? null : input.rental,
+          area: input.area
+            ? { ...input.area, sqft: toSqft(input.area.value, input.area.unit) }
+            : null,
+          location: input.location,
+          attributeValues: values.attributeValues,
+          extraAttributes: values.extraAttributes,
+          removedAttributeKeys: values.removedAttributeKeys,
+          amenityIds: values.amenityIds,
+          status: 'draft',
+          isFeatured: input.isFeatured,
+          statusChangedAt: now,
+          createdBy: actorId,
+          updatedBy: actorId,
+        },
+      ]);
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: created!._id,
+        action: 'created',
+        changes: { code: [null, code], title: [null, input.title] },
+      });
+      return created!;
     });
     return this.get(doc._id);
   }
 
-  async update(actorId: string, id: string, input: UpdateProperty): Promise<Property> {
+  /**
+   * Edits a property. `expectedVersion` (from If-Match) rejects a stale edit with 409.
+   * Either way the write only applies to the version that was read, so a concurrent change
+   * between reading and writing is never silently overwritten (H4).
+   */
+  async update(
+    actorId: string,
+    id: string,
+    input: UpdateProperty,
+    expectedVersion?: number,
+  ): Promise<Property> {
     const before = await this.find(id);
+    const readVersion = before.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== readVersion) {
+      throw versionConflict(readVersion);
+    }
     if (before.status === 'archived') {
       throw businessRule("Archived properties can't be edited. Restore it as a draft first.");
     }
@@ -335,8 +431,8 @@ export class PropertiesService {
       isFeatured: input.isFeatured ?? before.isFeatured,
     };
 
-    // A published property must stay complete: it is visible to the AI agent.
-    if (before.status === 'published') {
+    // A listed property (Available, Under negotiation, Reserved, Booked) must stay complete.
+    if (LISTED_STATUSES.includes(before.status)) {
       const issues = publishIssues(definition, next);
       if (issues.length > 0) {
         throw new AppError(
@@ -349,28 +445,19 @@ export class PropertiesService {
     }
 
     const changes = changesBetween(snapshot(before), snapshot(next));
+    // The listing date can be corrected once the property has been listed (form section 1).
+    const day = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10); // India date
+    let publishedAt = before.publishedAt ?? null;
+    if (input.listingDate !== undefined) {
+      if (!before.publishedAt) {
+        throw businessRule('The listing date is set when the property first becomes Available.');
+      }
+      if (input.listingDate !== day(before.publishedAt)) {
+        publishedAt = new Date(`${input.listingDate}T09:00:00+05:30`);
+        changes.listingDate = [day(before.publishedAt), input.listingDate];
+      }
+    }
     if (Object.keys(changes).length === 0) return this.toResponse(before, definition);
-    await PropertyModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          categoryKey: next.categoryKey,
-          subcategoryId: next.subcategoryId,
-          title: next.title,
-          purpose: next.purpose,
-          price: next.price,
-          rental: next.rental,
-          area: next.area,
-          location: next.location,
-          attributeValues: next.attributeValues,
-          extraAttributes: next.extraAttributes,
-          removedAttributeKeys: next.removedAttributeKeys,
-          amenityIds: next.amenityIds,
-          isFeatured: next.isFeatured,
-          updatedBy: actorId,
-        },
-      },
-    );
     if (changes.subcategoryId) {
       changes.subcategoryId = [
         (await this.subcategoryNames([before.subcategoryId])).get(before.subcategoryId) ??
@@ -378,7 +465,113 @@ export class PropertiesService {
         definition.subcategory.name,
       ];
     }
-    await recordChange({ actorId, entity: 'property', entityId: id, action: 'updated', changes });
+    // A type change merges in the new type's checklist; collected checks are never dropped.
+    const nextLegal = subcategoryChanged
+      ? mergeLegalChecks(before.legal ?? [], definition.subcategory.legalChecklist ?? [])
+      : (before.legal ?? []);
+    await withTransaction(async () => {
+      await this.touchTypesInUse(next.subcategoryId, next.amenityIds);
+      const written = await PropertyModel.updateOne(
+        // A document with no version yet (created before versioning) counts as version 0.
+        readVersion === 0
+          ? { _id: id, $or: [{ version: 0 }, { version: { $exists: false } }] }
+          : { _id: id, version: readVersion },
+        {
+          $set: {
+            ...derivedFields({ ...next, code: before.code, legal: nextLegal }),
+            ...(subcategoryChanged && { legal: nextLegal }),
+            categoryKey: next.categoryKey,
+            subcategoryId: next.subcategoryId,
+            title: next.title,
+            purpose: next.purpose,
+            price: next.price,
+            rental: next.rental,
+            area: next.area,
+            location: next.location,
+            attributeValues: next.attributeValues,
+            extraAttributes: next.extraAttributes,
+            removedAttributeKeys: next.removedAttributeKeys,
+            amenityIds: next.amenityIds,
+            isFeatured: next.isFeatured,
+            publishedAt,
+            updatedBy: actorId,
+          },
+        },
+      );
+      if (written.matchedCount === 0) {
+        const current = await PropertyModel.findById(id)
+          .select('version')
+          .lean<{ version?: number }>();
+        throw versionConflict(current?.version ?? 0);
+      }
+      await recordChange({ actorId, entity: 'property', entityId: id, action: 'updated', changes });
+    });
+    return this.get(id);
+  }
+
+  /**
+   * The Location tab (PROP-22–24, PROP-67): one change at a time. Address fields go through
+   * `update` (a listed property must stay complete, derived fields, history); the highway
+   * and the nearby places are saved here, versioned and logged the same way.
+   */
+  async updateLocation(
+    actorId: string,
+    id: string,
+    input: UpdateLocation,
+    expectedVersion: number,
+  ): Promise<Property> {
+    const before = await this.find(id);
+    if (input.location) {
+      return this.update(
+        actorId,
+        id,
+        // Properties saved before R1.1 may have no road fields yet.
+        { location: { roadType: '', roadWidthFt: null, ...before.location, ...input.location } },
+        expectedVersion,
+      );
+    }
+    const readVersion = before.version ?? 0;
+    if (expectedVersion !== readVersion) throw versionConflict(readVersion);
+    if (before.status === 'archived') {
+      throw businessRule("Archived properties can't be edited. Restore it as a draft first.");
+    }
+    const field = input.highway !== undefined ? 'highway' : 'nearby';
+    const after =
+      field === 'highway'
+        ? input.highway
+        : (input.nearby ?? []).map(({ id: rowId, ...rest }) => ({
+            _id: rowId ?? newId(),
+            ...rest,
+          }));
+    const show = (v: unknown) =>
+      field === 'highway'
+        ? v
+        : ((v as { name: string }[] | undefined) ?? []).map((n) => n.name).join(', ') || null;
+    const beforeValue = field === 'highway' ? (before.highway ?? null) : (before.nearby ?? []);
+    if (JSON.stringify(stripIds(beforeValue)) === JSON.stringify(stripIds(after))) {
+      return this.toResponse(before);
+    }
+    await withTransaction(async () => {
+      const written = await PropertyModel.updateOne(
+        readVersion === 0
+          ? { _id: id, $or: [{ version: 0 }, { version: { $exists: false } }] }
+          : { _id: id, version: readVersion },
+        { $set: { [field]: after, updatedBy: actorId } },
+      );
+      if (written.matchedCount === 0) {
+        const current = await PropertyModel.findById(id)
+          .select('version')
+          .lean<{ version?: number }>();
+        throw versionConflict(current?.version ?? 0);
+      }
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: 'updated',
+        changes: { [field]: [show(beforeValue), show(after)] },
+      });
+    });
     return this.get(id);
   }
 
@@ -386,14 +579,15 @@ export class PropertiesService {
     const before = await this.find(id);
     if (before.status === to) return this.toResponse(before);
     if (!canChangeStatus(before.status, to, before.purpose)) {
-      const closing: readonly PropertyStatus[] = ['sold', 'rented', 'leased'];
       throw businessRule(
-        closing.includes(to) && CLOSED_STATUS_FOR[before.purpose] !== to
+        CLOSED_STATUSES.includes(to) && CLOSED_STATUS_FOR[before.purpose] !== to
           ? `A property for ${PURPOSE_LABELS[before.purpose]} is marked ${PROPERTY_STATUS_LABELS[CLOSED_STATUS_FOR[before.purpose]]}, not ${PROPERTY_STATUS_LABELS[to]}.`
           : `A ${PROPERTY_STATUS_LABELS[before.status]} property can't be marked ${PROPERTY_STATUS_LABELS[to]}.`,
       );
     }
-    if (to === 'published') {
+    // Coming onto the market (from Draft, On hold or a closed status): the publish checklist.
+    const goesOnMarket = to === 'available' && !LISTED_STATUSES.includes(before.status);
+    if (goesOnMarket) {
       const definition = await this.propertyTypes.definitionFor(before.subcategoryId);
       this.assertCanList(definition);
       const issues = publishIssues(definition, before);
@@ -401,29 +595,36 @@ export class PropertiesService {
         throw new AppError(
           422,
           'PUBLISH_BLOCKED',
-          'Fill in the missing details before publishing.',
+          'Fill in the missing details before marking it Available.',
           issues,
         );
       }
     }
     const now = new Date();
-    await PropertyModel.updateOne(
-      { _id: id, status: before.status },
-      {
-        $set: {
-          status: to,
-          statusChangedAt: now,
-          updatedBy: actorId,
-          ...(to === 'published' && !before.publishedAt ? { publishedAt: now } : {}),
+    await withTransaction(async () => {
+      // Only from the status that was read: a concurrent change makes this fail, not overwrite.
+      const written = await PropertyModel.updateOne(
+        { _id: id, status: before.status },
+        {
+          $set: {
+            status: to,
+            statusChangedAt: now,
+            updatedBy: actorId,
+            // `publishedAt` is the listing date: the first time it became Available.
+            ...(to === 'available' && !before.publishedAt ? { publishedAt: now } : {}),
+          },
         },
-      },
-    );
-    await recordChange({
-      actorId,
-      entity: 'property',
-      entityId: id,
-      action: to === 'archived' ? 'archived' : 'status_changed',
-      changes: { status: [before.status, to] },
+      );
+      if (written.matchedCount === 0) {
+        throw conflict('The status changed meanwhile. Reload and try again.', 'STATUS_CHANGED');
+      }
+      await recordChange({
+        actorId,
+        entity: 'property',
+        entityId: id,
+        action: to === 'archived' ? 'archived' : 'status_changed',
+        changes: { status: [before.status, to] },
+      });
     });
     return this.get(id);
   }
@@ -456,8 +657,15 @@ export class PropertiesService {
     this.assertCanList(definition);
     const code = await nextPropertyCode(definition.subcategory.codePrefix);
     const copyTitle = `${source.title} (copy)`.slice(0, 150);
+    // A copy is another listing: same place and nearby, its own documents and valuation.
+    const legal = mergeLegalChecks([], definition.subcategory.legalChecklist ?? []);
     const doc = await PropertyModel.create({
       code,
+      legal,
+      highway: source.highway ?? null,
+      nearby: source.nearby ?? [],
+      valuation: EMPTY_VALUATION,
+      ...derivedFields({ ...source, code, title: copyTitle, legal }),
       categoryKey: source.categoryKey,
       subcategoryId: source.subcategoryId,
       title: copyTitle,
@@ -536,6 +744,30 @@ export class PropertiesService {
     };
   }
 
+  /**
+   * Writes to the subcategory and amenities a property save uses, inside the save's
+   * transaction. Deleting one of them writes the same documents, so a delete racing a save
+   * conflicts and one of them retries and sees the other: no property can end up pointing
+   * at a deleted type or amenity (L3).
+   */
+  private async touchTypesInUse(subcategoryId: string, amenityIds: string[]): Promise<void> {
+    const at = { $currentDate: { lastUsedAt: true } };
+    const sub = await PropertySubcategoryModel.updateOne({ _id: subcategoryId }, at, {
+      timestamps: false,
+    });
+    if (sub.matchedCount === 0) {
+      throw businessRule('This property type was just deleted. Reload and choose another.');
+    }
+    if (amenityIds.length > 0) {
+      const used = await AmenityModel.updateMany({ _id: { $in: amenityIds } }, at, {
+        timestamps: false,
+      });
+      if (used.matchedCount !== new Set(amenityIds).size) {
+        throw businessRule('An amenity was just deleted. Reload and tick the amenities again.');
+      }
+    }
+  }
+
   private async toResponse(doc: PropertyDoc, known?: FormDefinition): Promise<Property> {
     const definition = known ?? (await this.propertyTypes.definitionFor(doc.subcategoryId));
     const shown = new Set(definition.attributes.map((a) => a.attribute.key));
@@ -552,7 +784,12 @@ export class PropertiesService {
       price: doc.price,
       rental: doc.rental ?? null,
       area: doc.area ?? null,
-      location: { ...doc.location, mapPin: doc.location.mapPin ?? null },
+      location: {
+        ...doc.location,
+        mapPin: doc.location.mapPin ?? null,
+        roadType: doc.location.roadType ?? '',
+        roadWidthFt: doc.location.roadWidthFt ?? null,
+      },
       attributeValues: doc.attributeValues ?? {},
       hiddenAttributeKeys: Object.keys(doc.attributeValues ?? {}).filter((k) => !shown.has(k)),
       extraAttributes: doc.extraAttributes ?? [],
@@ -574,6 +811,34 @@ export class PropertiesService {
       publishIssues: publishIssues(definition, doc),
       publishedAt: iso(doc.publishedAt),
       statusChangedAt: iso(doc.statusChangedAt)!,
+      pricePerSqft: doc.pricePerSqft ?? null,
+      highway: doc.highway ?? null,
+      nearby: (doc.nearby ?? []).map(({ _id, ...n }) => ({ id: _id, ...n })),
+      legal: (doc.legal ?? []).map((c) => ({
+        key: c.key,
+        label: c.label,
+        verifies: c.verifies ?? '',
+        mandatory: c.mandatory,
+        status: c.status,
+        verifiedBy: c.verifiedBy ?? '',
+        date: c.date ?? null,
+        mediaId: c.mediaId ?? null,
+        note: c.note ?? '',
+      })),
+      legalSummary: legalSummary(doc.legal ?? []),
+      valuation: {
+        ...EMPTY_VALUATION,
+        ...doc.valuation,
+        comparables: (doc.valuation?.comparables ?? []).map(({ _id, ...c }) => ({ id: _id, ...c })),
+      },
+      archive: doc.archive
+        ? {
+            at: doc.archive.at.toISOString(),
+            by: ref(doc.archive.by),
+            reason: doc.archive.reason ?? '',
+          }
+        : null,
+      version: doc.version ?? 0,
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),
       createdBy: ref(doc.createdBy),

@@ -3,6 +3,7 @@ import { AppError } from '../../lib/errors';
 import type { Logger } from '../../lib/logger';
 import type { StorageProvider } from '../../lib/storage';
 import { detectImageType } from '../../lib/storage';
+import { versionConflict } from '../../db/versionPlugin';
 import { diffFields, recordChange } from '../changeLogs/changeLog.service';
 import { UserModel } from '../users/user.model';
 import { DEFAULT_COMPANY_SETTINGS } from './company.defaults';
@@ -27,6 +28,7 @@ interface StoredDoc {
   value: Partial<StoredCompany>;
   updatedBy?: string | null;
   updatedAt?: Date;
+  version?: number;
 }
 
 const TRACKED_FIELDS = [
@@ -71,6 +73,7 @@ export class CompanySettingsService {
       isConfigured: Boolean(doc && value.email),
       updatedAt: doc?.updatedAt ? doc.updatedAt.toISOString() : null,
       updatedBy: updater ? { id: updater._id, name: updater.name } : null,
+      version: doc?.version ?? 0,
     };
   }
 
@@ -78,17 +81,35 @@ export class CompanySettingsService {
     return this.toResponse(await this.load());
   }
 
-  async update(actorId: string, input: UpdateCompanySettings): Promise<CompanySettings> {
+  /** `expectedVersion` (If-Match) rejects a save based on an outdated copy with 409 (H4). */
+  async update(
+    actorId: string,
+    input: UpdateCompanySettings,
+    expectedVersion?: number,
+  ): Promise<CompanySettings> {
     const before = await this.load();
+    const readVersion = before?.version ?? 0;
+    if (expectedVersion !== undefined && expectedVersion !== readVersion) {
+      throw versionConflict(readVersion);
+    }
     const value: StoredCompany = {
       ...input,
       logoPath: before?.value.logoPath ?? null,
     };
-    const after = await SettingsModel.findOneAndUpdate(
-      { key: KEY },
-      { $set: { value, updatedBy: actorId } },
-      { upsert: true, returnDocument: 'after' },
-    ).lean<StoredDoc>();
+    let after: StoredDoc | null;
+    try {
+      // Only applies to the version that was read; the first save inserts version 0 → 1.
+      after = await SettingsModel.findOneAndUpdate(
+        before ? { key: KEY, _id: before._id, version: before.version ?? 0 } : { key: KEY },
+        { $set: { value, updatedBy: actorId } },
+        { upsert: !before, returnDocument: 'after' },
+      ).lean<StoredDoc>();
+    } catch (err) {
+      // Two first saves at once: the second hits the unique key.
+      if ((err as { code?: number }).code === 11000) throw versionConflict(readVersion + 1);
+      throw err;
+    }
+    if (!after) throw versionConflict(readVersion + 1);
 
     const changes = diffFields(
       { ...DEFAULT_COMPANY_SETTINGS, ...before?.value },

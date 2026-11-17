@@ -56,7 +56,7 @@ export function UserMenu() {
         <div className="px-2.5 pt-2 pb-2.5">
           <div className="truncate text-sm font-semibold">{user.name}</div>
           <div className="truncate text-xs text-muted-foreground">{user.email}</div>
-          <RoleBadge role={user.role} className="mt-2" />
+          <RoleBadge role={user.role} name={user.roleName} className="mt-2" />
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>

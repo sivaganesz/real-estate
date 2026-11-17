@@ -15,16 +15,23 @@ const me: AuthUser = {
   name: 'Owner',
   email: 'owner@company.com',
   phone: null,
-  role: 'super_admin',
+  role: 'admin',
+  roleName: 'Admin',
   permissions: ['users:manage'],
 };
+
+const ROLE_OPTIONS = [
+  { key: 'admin', name: 'Admin', description: '', system: true },
+  { key: 'sales_manager', name: 'Sales Manager', description: '', system: true },
+];
 
 const priya: User = {
   id: '0192f3a4-0000-7000-8000-000000000002',
   name: 'Priya Kumar',
   email: 'priya@company.com',
   phone: null,
-  role: 'admin',
+  role: 'sales_manager',
+  roleName: 'Sales Manager',
   status: 'inactive',
   locked: false,
   lockedUntil: null,
@@ -71,8 +78,8 @@ describe('EditUserSheet', () => {
     const reactivated = { ...priya, status: 'active' as const };
     // Reactivate call, then any refetches return the new state.
     fetchMock.mockImplementation(async (input) =>
-      String(input).endsWith('/reactivate')
-        ? json(200, { data: reactivated })
+      String(input).includes('/roles/options')
+        ? json(200, { data: ROLE_OPTIONS })
         : json(200, { data: reactivated }),
     );
 
@@ -93,8 +100,10 @@ describe('EditUserSheet', () => {
       locked: true,
       lockedUntil: '2099-01-01T00:00:00.000Z',
     };
-    fetchMock.mockImplementation(async () =>
-      json(200, { data: { ...locked, locked: false, lockedUntil: null } }),
+    fetchMock.mockImplementation(async (input) =>
+      String(input).includes('/roles/options')
+        ? json(200, { data: ROLE_OPTIONS })
+        : json(200, { data: { ...locked, locked: false, lockedUntil: null } }),
     );
 
     renderSheet(locked);

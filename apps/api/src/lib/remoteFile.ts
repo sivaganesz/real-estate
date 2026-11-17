@@ -1,56 +1,113 @@
 import { lookup } from 'node:dns/promises';
+import https from 'node:https';
+import type { LookupFunction } from 'node:net';
 import { isIP } from 'node:net';
+import { Readable } from 'node:stream';
+import ipaddr from 'ipaddr.js';
 
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 10_000;
 
-/** True for addresses that must never be fetched: loopback, private, link-local, etc. */
+/**
+ * True for every address that must never be fetched. Only public unicast addresses are
+ * allowed. `ipaddr.process` unwraps IPv4-mapped IPv6 in any notation (`::ffff:7f00:1`), and
+ * NAT64, 6to4, Teredo, site-local, carrier-grade NAT and the rest are refused because their
+ * range isn't `unicast` (H1).
+ */
 export function isPrivateAddress(ip: string): boolean {
-  const v = isIP(ip);
-  if (v === 4) {
-    const [a, b] = ip.split('.').map(Number) as [number, number];
-    return (
-      a === 0 ||
-      a === 10 ||
-      a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) || // carrier-grade NAT
-      (a === 169 && b === 254) || // link-local, cloud metadata
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 192 && b === 0) ||
-      (a === 198 && (b === 18 || b === 19)) ||
-      a >= 224 // multicast and reserved
-    );
-  }
-  if (v === 6) {
-    const s = ip.toLowerCase();
-    if (s === '::' || s === '::1') return true;
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s);
-    if (mapped) return isPrivateAddress(mapped[1]!);
-    return /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(s);
-  }
-  return true;
+  if (!ipaddr.isValid(ip)) return true;
+  return ipaddr.process(ip).range() !== 'unicast';
 }
 
 export class RemoteFileError extends Error {}
 
+type ResolveHost = (host: string) => Promise<string[]>;
+
+const defaultResolveHost: ResolveHost = async (host) =>
+  (await lookup(host, { all: true }).catch(() => [])).map((a) => a.address);
+
+/** Resolves a host and refuses it unless every address is public. */
+async function publicAddresses(host: string, resolveHost: ResolveHost): Promise<string[]> {
+  const addresses = isIP(host) ? [host] : await resolveHost(host);
+  if (addresses.length === 0) throw new RemoteFileError("the website can't be found");
+  if (addresses.some(isPrivateAddress))
+    throw new RemoteFileError('links to private networks are not allowed');
+  return addresses;
+}
+
+/**
+ * A `fetch` for https GETs whose connection goes to an address checked at connect time.
+ * The socket's own DNS lookup runs the public-address check, so a host can't pass the check
+ * with a public address and then connect to a private one (DNS rebinding, H1).
+ */
+export function pinnedFetch(resolveHost: ResolveHost = defaultResolveHost): typeof fetch {
+  const pinnedLookup = ((hostname, options, callback) => {
+    publicAddresses(hostname, resolveHost).then(
+      (addresses) => {
+        if (options.all) {
+          callback(
+            null,
+            addresses.map((address) => ({ address, family: isIP(address) })),
+          );
+        } else {
+          callback(null, addresses[0]!, isIP(addresses[0]!));
+        }
+      },
+      (err: Error) => callback(err, '', 4),
+    );
+  }) as LookupFunction;
+
+  return (input, init) =>
+    new Promise<Response>((resolve, reject) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      const req = https.request(
+        url,
+        {
+          method: 'GET',
+          lookup: pinnedLookup,
+          signal: init?.signal ?? undefined,
+          headers: { 'user-agent': 'RealEstateAdmin/1.0 (photo import)', accept: 'image/*' },
+        },
+        (res) => {
+          const headers = new Headers();
+          for (const [key, value] of Object.entries(res.headers)) {
+            if (value === undefined) continue;
+            for (const v of Array.isArray(value) ? value : [value]) headers.append(key, v);
+          }
+          const status = res.statusCode ?? 502;
+          const noBody = status === 204 || status === 304 || (status >= 300 && status < 400);
+          if (noBody) res.resume();
+          resolve(
+            new Response(noBody ? null : (Readable.toWeb(res) as ReadableStream<Uint8Array>), {
+              status: status < 200 || status > 599 ? 502 : status,
+              headers,
+            }),
+          );
+        },
+      );
+      req.on('error', reject);
+      req.end();
+    });
+}
+
 /**
  * Downloads a file from a public https URL (for photo links in bulk import). Refuses
- * non-https links and hosts on private networks (checked again after every redirect),
- * stops after `maxBytes`, and gives up after 10 seconds.
+ * non-https links and hosts on private networks: checked before each request and again on
+ * the connection itself (pinned lookup), and after every redirect. Stops after `maxBytes`
+ * and gives up after 10 seconds.
  */
 export async function downloadPublicFile(
   rawUrl: string,
   {
     maxBytes,
-    fetchImpl = fetch,
-    resolveHost = async (host: string) =>
-      (await lookup(host, { all: true }).catch(() => [])).map((a) => a.address),
+    resolveHost = defaultResolveHost,
+    fetchImpl = pinnedFetch(resolveHost),
   }: {
     maxBytes: number;
-    fetchImpl?: typeof fetch;
     /** Host name → IP addresses (tests replace it). */
-    resolveHost?: (host: string) => Promise<string[]>;
+    resolveHost?: ResolveHost;
+    /** Tests replace it; the default connects only to checked public addresses. */
+    fetchImpl?: typeof fetch;
   },
 ): Promise<{ data: Buffer; fileName: string }> {
   let url: URL;
@@ -63,16 +120,15 @@ export async function downloadPublicFile(
     if (url.protocol !== 'https:') throw new RemoteFileError('only https links are allowed');
     if (url.username || url.password)
       throw new RemoteFileError('links with passwords are not allowed');
-    const host = url.hostname.replace(/^\[|\]$/g, '');
-    const addresses = isIP(host) ? [host] : await resolveHost(host);
-    if (addresses.length === 0) throw new RemoteFileError("the website can't be found");
-    if (addresses.some(isPrivateAddress))
-      throw new RemoteFileError('links to private networks are not allowed');
+    await publicAddresses(url.hostname.replace(/^\[|\]$/g, ''), resolveHost);
 
     let res: Response;
     try {
       res = await fetchImpl(url, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) });
-    } catch {
+    } catch (err) {
+      if (err instanceof RemoteFileError) throw err;
+      const cause = (err as { cause?: unknown }).cause;
+      if (cause instanceof RemoteFileError) throw cause;
       throw new RemoteFileError("the link didn't answer");
     }
     if (res.status >= 300 && res.status < 400) {

@@ -36,9 +36,9 @@ function Stat({
       <div
         className={cn(
           'text-2xl font-semibold',
-          tone === 'good' && 'text-emerald-700 dark:text-emerald-400',
+          tone === 'good' && 'text-tone-green',
           tone === 'bad' && value > 0 && 'text-destructive',
-          tone === 'warn' && value > 0 && 'text-amber-600 dark:text-amber-400',
+          tone === 'warn' && value > 0 && 'text-tone-amber',
         )}
       >
         {value}
@@ -54,7 +54,7 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
   const [filter, setFilter] = useState<Filter>(
     batch.invalidCount ? 'invalid' : batch.duplicateCount ? 'duplicate' : 'all',
   );
-  const [importAs, setImportAs] = useState<'draft' | 'published'>('draft');
+  const [importAs, setImportAs] = useState<'draft' | 'available'>('draft');
   const [duplicates, setDuplicates] = useState<'skip' | 'update'>('skip');
   const [downloading, setDownloading] = useState(false);
   const imported = batch.status === 'imported';
@@ -167,13 +167,13 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
                       ))}
                     </ul>
                   ) : r.status === 'duplicate' ? (
-                    <span className="text-amber-700 dark:text-amber-400">
+                    <span className="text-tone-amber">
                       {r.duplicateOf?.row
                         ? `Same as row ${r.duplicateOf.row} in this file`
                         : `Already exists as ${r.duplicateOf?.code}`}
                     </span>
                   ) : (
-                    <span className="text-emerald-700 dark:text-emerald-400">Ready</span>
+                    <span className="text-tone-green">Ready</span>
                   )}
                 </TableCell>
               </TableRow>
@@ -194,7 +194,7 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
       {imported && batch.result ? (
         <Card className="grid gap-3 p-5">
           <h2 className="flex items-center gap-2 font-semibold">
-            <CheckCircle2Icon className="size-5 text-emerald-600" /> Import finished
+            <CheckCircle2Icon className="size-5 text-tone-green" /> Import finished
           </h2>
           <p className="text-sm">
             {batch.result.created} created
@@ -202,7 +202,7 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
             {batch.result.skipped} skipped
             {batch.result.failed > 0 && ` · ${batch.result.failed} failed`}
             {batch.result.savedAsDraft > 0 &&
-              ` · ${batch.result.savedAsDraft} saved as Draft instead of Published`}
+              ` · ${batch.result.savedAsDraft} saved as Draft instead of Available`}
             {batch.result.imagesAdded + batch.result.imagesFailed > 0 &&
               ` · photos: ${batch.result.imagesAdded} added${batch.result.imagesFailed ? `, ${batch.result.imagesFailed} failed` : ''}`}
           </p>
@@ -238,19 +238,19 @@ export function BatchReview({ batch }: { batch: ImportBatchDetail }) {
                   className="mt-1"
                 />
                 <span>
-                  Draft <span className="text-muted-foreground">(review before publishing)</span>
+                  Draft <span className="text-muted-foreground">(review before listing)</span>
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm">
                 <input
                   type="radio"
                   name="import-as"
-                  checked={importAs === 'published'}
-                  onChange={() => setImportAs('published')}
+                  checked={importAs === 'available'}
+                  onChange={() => setImportAs('available')}
                   className="mt-1"
                 />
                 <span>
-                  Published{' '}
+                  Available{' '}
                   <span className="text-muted-foreground">
                     (rows missing a photo or required details stay Draft)
                   </span>

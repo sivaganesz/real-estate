@@ -28,6 +28,13 @@ export function formatLastSeen(iso: string | null, now = new Date()): string {
   return date.format(then);
 }
 
+/** Like formatLastSeen without the time, in lower case for use mid-sentence: "today". */
+export function formatAgo(iso: string, now = new Date()): string {
+  const days = Math.round((startOfDay(now) - startOfDay(new Date(iso))) / DAY);
+  if (days <= 0) return 'today';
+  return formatLastSeen(iso, now).toLowerCase();
+}
+
 /** "expires in 2 days" / "expires today" / "expired". */
 export function formatExpiry(iso: string | null, now = new Date()): string | null {
   if (!iso) return null;
@@ -40,3 +47,7 @@ export function formatExpiry(iso: string | null, now = new Date()): string | nul
 
 export const formatDate = (iso: string) => date.format(new Date(iso));
 export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
+
+const monthYear = new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' });
+/** "2027-09" → "Sep 2027" (Month attributes, e.g. Expected possession). */
+export const formatMonth = (yyyyMm: string) => monthYear.format(new Date(`${yyyyMm}-01T00:00:00`));

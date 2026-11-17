@@ -7,7 +7,7 @@ import { CSRF_HEADER, REFRESH_COOKIE_NAME } from './auth.constants';
 import { AuthTokenModel } from './authToken.model';
 import { RefreshTokenModel } from './refreshToken.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 async function createUser(overrides: Record<string, unknown> = {}) {
@@ -71,7 +71,9 @@ describe('auth', () => {
         role: 'admin',
       });
       expect(res.body.data.user.permissions).toContain('settings:edit');
-      expect(res.body.data.user.permissions).not.toContain('users:manage');
+      // Admin is the top role (D4): it includes user and role management.
+      expect(res.body.data.user.permissions).toContain('roles:manage');
+      expect(res.body.data.user.roleName).toBe('Admin');
 
       const cookie = (res.headers['set-cookie'] as unknown as string[]).join(';');
       expect(cookie).toContain(`${REFRESH_COOKIE_NAME}=`);
@@ -143,13 +145,13 @@ describe('auth', () => {
 
   describe('me', () => {
     it('returns the signed-in user', async () => {
-      await createUser({ role: 'super_admin' });
+      await createUser({ role: 'admin' });
       const { body } = await login(ctx.app);
       const res = await request(ctx.app)
         .get('/api/v1/auth/me')
         .set('authorization', `Bearer ${body.data.accessToken}`);
       expect(res.status).toBe(200);
-      expect(res.body.data.role).toBe('super_admin');
+      expect(res.body.data.role).toBe('admin');
       expect(res.body.data.permissions).toContain('users:manage');
     });
 
@@ -188,6 +190,23 @@ describe('auth', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.accessToken).toEqual(expect.any(String));
       expect(refreshCookie(res)).not.toBe(first);
+    });
+
+    it('answers a two-tab refresh race with 409 and keeps the cookie (M3)', async () => {
+      await createUser();
+      const first = refreshCookie(await login(ctx.app));
+      await request(ctx.app)
+        .post('/api/v1/auth/refresh')
+        .set('cookie', first)
+        .set(CSRF_HEADER, '1');
+      // The second tab still sends the old cookie, within the grace window.
+      const race = await request(ctx.app)
+        .post('/api/v1/auth/refresh')
+        .set('cookie', first)
+        .set(CSRF_HEADER, '1');
+      expect(race.status).toBe(409);
+      expect(race.body.error.code).toBe('REFRESH_RACE');
+      expect(race.headers['set-cookie']).toBeUndefined();
     });
 
     it('revokes the whole session when an old refresh token is reused', async () => {
@@ -291,17 +310,17 @@ describe('auth', () => {
 
       const reset = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'brand-new-pass-7' });
+        .send({ token, password: 'Brand-new-pass-7' });
       expect(reset.status).toBe(200);
       expect(ctx.email.sent.at(-1)!.subject).toMatch(/password was changed/);
 
       expect(await RefreshTokenModel.countDocuments({ userId: user._id, revokedAt: null })).toBe(0);
       expect((await login(ctx.app)).status).toBe(401);
-      expect((await login(ctx.app, 'admin@company.com', 'brand-new-pass-7')).status).toBe(200);
+      expect((await login(ctx.app, 'admin@company.com', 'Brand-new-pass-7')).status).toBe(200);
 
       const again = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'another-pass-8' });
+        .send({ token, password: 'Another-pass-8' });
       expect(again.status).toBe(400);
     });
 
@@ -321,7 +340,7 @@ describe('auth', () => {
       await AuthTokenModel.updateMany({}, { expiresAt: new Date(Date.now() - 1000) });
       const expired = await request(ctx.app)
         .post('/api/v1/auth/reset-password')
-        .send({ token, password: 'brand-new-pass-7' });
+        .send({ token, password: 'Brand-new-pass-7' });
       expect(expired.status).toBe(400);
       expect(expired.body.error.message).toMatch(/invalid or has expired/);
     });

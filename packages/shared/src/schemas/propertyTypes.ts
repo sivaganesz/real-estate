@@ -2,6 +2,47 @@ import { z } from 'zod';
 import { idSchema } from './common';
 
 /**
+ * What a property type's main area means (PRD v2 PROP-06): the area field on the form is
+ * labelled with it, and price per sq.ft. is worked out against it.
+ */
+export const MAIN_AREA_MEANINGS = [
+  'plot',
+  'built_up',
+  'super_built_up',
+  'carpet',
+  'land',
+  'usable',
+] as const;
+export type MainAreaMeaning = (typeof MAIN_AREA_MEANINGS)[number];
+export const MAIN_AREA_LABELS: Record<MainAreaMeaning, string> = {
+  plot: 'Plot / land area',
+  built_up: 'Built-up area',
+  super_built_up: 'Super built-up area',
+  carpet: 'Carpet area',
+  land: 'Land area',
+  usable: 'Carpet / usable area',
+};
+
+/** One check of a property type's legal checklist (PRD v2 §6.6, SET-03). */
+export const legalChecklistItemSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-z0-9_]{1,59}$/, 'Use lower-case letters, numbers and _'),
+  label: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
+  verifies: z.string().trim().max(160).default(''),
+  mandatory: z.boolean().default(false),
+});
+export type LegalChecklistItemInput = z.input<typeof legalChecklistItemSchema>;
+
+const legalChecklistSchema = z
+  .array(legalChecklistItemSchema)
+  .max(30)
+  .refine((list) => new Set(list.map((c) => c.key)).size === list.length, {
+    message: 'Each check can appear only once',
+  });
+
+/**
  * Settings → Property types & amenities → Categories & attributes.
  *
  * Category (Residential, …) → Subcategory (Residential Plot, Villa / House, …) → Attributes.
@@ -32,6 +73,7 @@ export const ATTRIBUTE_TYPES = [
   'dropdown',
   'multi_select',
   'date',
+  'month',
 ] as const;
 export type AttributeType = (typeof ATTRIBUTE_TYPES)[number];
 export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
@@ -42,6 +84,7 @@ export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
   dropdown: 'Dropdown',
   multi_select: 'Multi-select',
   date: 'Date',
+  month: 'Month',
 };
 
 /** Types that need a list of options. */
@@ -68,6 +111,16 @@ export const coreAttributeSchema = z.object({
 });
 export type CoreAttribute = z.infer<typeof coreAttributeSchema>;
 
+export const attributeReviewSchema = z.object({
+  status: z.literal('new'),
+  propertyId: idSchema.nullable(),
+  /** Null when it was added while creating a property (no code yet). */
+  propertyCode: z.string().nullable(),
+  addedBy: z.object({ id: idSchema, name: z.string() }).nullable(),
+  at: z.string(),
+});
+export type AttributeReview = z.infer<typeof attributeReviewSchema>;
+
 /** An attribute as used in one place (common or a subcategory). */
 export const placedAttributeSchema = z.object({
   id: idSchema,
@@ -81,6 +134,8 @@ export const placedAttributeSchema = z.object({
   required: z.boolean(),
   /** The other places that use the same attribute, e.g. ["Apartment / Flat"]. */
   usedIn: z.array(z.string()),
+  /** "New — added from property RE-PLT-000004" until an admin reviews it (PROP-20). */
+  review: attributeReviewSchema.nullable(),
 });
 export type PlacedAttribute = z.infer<typeof placedAttributeSchema>;
 
@@ -95,6 +150,10 @@ export const subcategorySchema = z.object({
   /** The code prefix can't change once properties use it (their codes contain it). */
   prefixLocked: z.boolean(),
   attributes: z.array(placedAttributeSchema),
+  mainAreaMeaning: z.enum(MAIN_AREA_MEANINGS),
+  legalChecklist: z.array(
+    z.object({ key: z.string(), label: z.string(), verifies: z.string(), mandatory: z.boolean() }),
+  ),
 });
 export type Subcategory = z.infer<typeof subcategorySchema>;
 
@@ -213,6 +272,17 @@ export function checkAttributeOptions(value: DefinitionShape, ctx: z.RefinementC
   }
 }
 
+/**
+ * Where an attribute is added from (PROP-16–20). From the property form it must be
+ * `confirmed` after the preview (the confirmation summary), and it is tagged for review.
+ */
+const originFields = {
+  origin: z.enum(['settings', 'property']).default('settings'),
+  /** The property being edited, when added from its form (null for a new property). */
+  propertyId: idSchema.nullable().default(null),
+  confirmed: z.boolean().default(false),
+};
+
 /** A new attribute: its definition plus how it behaves in this place. */
 export const newAttributeBodySchema = z
   .object({
@@ -223,6 +293,7 @@ export const newAttributeBodySchema = z
     options: optionsSchema.default([]),
     searchFilter: z.boolean().default(false),
     required: z.boolean().default(false),
+    ...originFields,
   })
   .superRefine(checkAttributeOptions);
 
@@ -231,6 +302,7 @@ export const existingAttributeBodySchema = z.object({
   source: z.literal('existing'),
   attributeId: idSchema,
   required: z.boolean().default(false),
+  ...originFields,
 });
 
 /** POST …/attributes: either a new attribute or an existing one. */
@@ -240,6 +312,22 @@ export const addAttributeBodySchema = z.discriminatedUnion('source', [
 ]);
 export type AddAttributeBody = z.input<typeof addAttributeBodySchema>;
 export type AddAttribute = z.output<typeof addAttributeBodySchema>;
+
+/** POST …/attributes/preview: what "Confirm and add to settings" will do (PROP-18). */
+export const attributePreviewSchema = z.object({
+  label: z.string(),
+  type: z.enum(ATTRIBUTE_TYPES),
+  unit: z.string().nullable(),
+  options: z.array(z.string()),
+  required: z.boolean(),
+  /** "Residential › Residential plot" or "Residential (common)". */
+  targetName: z.string(),
+  /** Existing properties the attribute will appear on (archived included). */
+  existingProperties: z.number().int(),
+  /** Reusing an attribute: where else it is used already. */
+  usedIn: z.array(z.string()),
+});
+export type AttributePreview = z.infer<typeof attributePreviewSchema>;
 
 /**
  * PATCH …/attributes/:attributeId. Name, type, unit, options and search filter change the
@@ -276,6 +364,8 @@ const subcategoryFields = {
     .min(1, 'Choose at least one purpose')
     .transform((list) => PURPOSES.filter((p) => list.includes(p))),
   isActive: z.boolean(),
+  mainAreaMeaning: z.enum(MAIN_AREA_MEANINGS),
+  legalChecklist: legalChecklistSchema,
 };
 
 /** POST /admin/property-types/subcategories */
@@ -283,6 +373,8 @@ export const createSubcategoryBodySchema = z.object({
   categoryKey: z.enum(CATEGORY_KEYS),
   ...subcategoryFields,
   isActive: subcategoryFields.isActive.default(true),
+  mainAreaMeaning: subcategoryFields.mainAreaMeaning.default('built_up'),
+  legalChecklist: subcategoryFields.legalChecklist.default([]),
 });
 export type CreateSubcategoryBody = z.input<typeof createSubcategoryBodySchema>;
 export type CreateSubcategory = z.output<typeof createSubcategoryBodySchema>;

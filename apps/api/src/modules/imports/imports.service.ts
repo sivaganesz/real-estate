@@ -214,9 +214,9 @@ export class ImportsService {
         // "Import as Published" publishes new properties and drafts. Any other status of an
         // updated property is kept: a Sold, Booked or Unpublished property must not go back
         // on the market because of a sheet.
-        if (options.importAs === 'published' && property.status === 'draft') {
+        if (options.importAs === 'available' && property.status === 'draft') {
           try {
-            await this.properties.changeStatus(actorId, property.id, 'published');
+            await this.properties.changeStatus(actorId, property.id, 'available');
           } catch (err) {
             const issue =
               err instanceof AppError

@@ -1,4 +1,11 @@
-import { AMENITY_ICONS, ATTRIBUTE_TYPES, CATEGORY_KEYS, PURPOSES } from '@real-estate/shared';
+import {
+  AMENITY_ICONS,
+  ATTRIBUTE_TYPES,
+  CATEGORY_KEYS,
+  MAIN_AREA_MEANINGS,
+  PURPOSES,
+} from '@real-estate/shared';
+import type { LegalChecklistItem, MainAreaMeaning } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
 import { idField, refField } from '../../db/ids';
@@ -31,6 +38,21 @@ const placementSchema = new Schema(
   {
     attributeId: { ...refField('PropertyAttribute'), required: true },
     required: { type: Boolean, default: false },
+    /** Added from a property form: "New" until an admin reviews it (PRD v2 PROP-20). */
+    review: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ['new'], required: true },
+          propertyId: { type: String, default: null },
+          propertyCode: { type: String, default: null },
+          addedById: { type: String, default: null },
+          addedByName: { type: String, default: null },
+          at: { type: Date, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
   },
   { _id: false },
 );
@@ -64,8 +86,27 @@ const subcategorySchema = new Schema(
     codePrefix: { type: String, required: true },
     purposes: { type: [String], enum: PURPOSES, default: [] },
     isActive: { type: Boolean, default: true },
+    /** Touched by every property save that uses it, so a delete racing a save conflicts (L3). */
+    lastUsedAt: { type: Date, default: null },
     order: { type: Number, default: 0 },
     attributes: { type: [placementSchema], default: [] },
+    /** What the main area means: labels the area field (PRD v2 PROP-06). */
+    mainAreaMeaning: { type: String, enum: MAIN_AREA_MEANINGS, default: 'built_up' },
+    /** Checks every new property of this type gets (PRD v2 §6.6, SET-03). */
+    legalChecklist: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true },
+            verifies: { type: String, default: '' },
+            mandatory: { type: Boolean, default: false },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     ...auditFields,
   },
   { timestamps: true },
@@ -85,6 +126,8 @@ const amenitySchema = new Schema(
     appliesToAll: { type: Boolean, default: true },
     subcategoryIds: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
+    /** Touched by every property save that uses it, so a delete racing a save conflicts (L3). */
+    lastUsedAt: { type: Date, default: null },
     order: { type: Number, default: 0 },
     ...auditFields,
   },
@@ -110,9 +153,19 @@ export interface AmenityDoc {
   order: number;
 }
 
+export interface PlacementReview {
+  status: 'new';
+  propertyId: string | null;
+  propertyCode: string | null;
+  addedById: string | null;
+  addedByName: string | null;
+  at: Date;
+}
+
 export interface Placement {
   attributeId: string;
   required: boolean;
+  review?: PlacementReview | null;
 }
 
 export interface AttributeDoc {
@@ -145,4 +198,6 @@ export interface SubcategoryDoc {
   isActive: boolean;
   order: number;
   attributes: Placement[];
+  mainAreaMeaning?: MainAreaMeaning;
+  legalChecklist?: LegalChecklistItem[];
 }

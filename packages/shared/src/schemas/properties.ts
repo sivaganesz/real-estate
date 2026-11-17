@@ -6,11 +6,18 @@ import type { Purpose } from './propertyTypes';
 import { officeLocationSchema } from './settings';
 
 /** Property status lifecycle (PRD §5.4). Only Published properties reach the AI agent. */
+/**
+ * Property statuses (PRD v2 §6.8, decision D1): the draft → publish workflow controls what
+ * reaches customers, plus the wireframe's sales statuses. "Published" became **Available**
+ * and "Unpublished" became **On hold** (migration 0003).
+ */
 export const PROPERTY_STATUSES = [
   'draft',
-  'published',
-  'unpublished',
+  'available',
+  'under_negotiation',
+  'reserved',
   'booked',
+  'on_hold',
   'sold',
   'rented',
   'leased',
@@ -20,26 +27,57 @@ export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
   draft: 'Draft',
-  published: 'Published',
-  unpublished: 'Unpublished',
+  available: 'Available',
+  under_negotiation: 'Under negotiation',
+  reserved: 'Reserved',
   booked: 'Booked',
+  on_hold: 'On hold',
   sold: 'Sold',
   rented: 'Rented',
   leased: 'Leased',
   archived: 'Archived',
 };
 
-/** Which statuses each status can move to. */
+/** Only Available properties are on the market: visible to customers, AI and matching. */
+export const CUSTOMER_VISIBLE_STATUSES: readonly PropertyStatus[] = ['available'];
+
+/** Statuses that require the publish checklist to stay complete (PROP-42). */
+export const LISTED_STATUSES: readonly PropertyStatus[] = [
+  'available',
+  'under_negotiation',
+  'reserved',
+  'booked',
+];
+
+/** The closed statuses; the one allowed depends on the purpose (CLOSED_STATUS_FOR). */
+export const CLOSED_STATUSES: readonly PropertyStatus[] = ['sold', 'rented', 'leased'];
+
+/** Which statuses each status can move to (PRD v2 PROP-43). */
 export const STATUS_TRANSITIONS: Record<PropertyStatus, readonly PropertyStatus[]> = {
-  draft: ['published', 'archived'],
-  published: ['unpublished', 'booked', 'sold', 'rented', 'leased', 'archived'],
-  unpublished: ['published', 'archived'],
-  booked: ['published', 'sold', 'rented', 'leased', 'archived'],
-  sold: ['published', 'archived'],
-  rented: ['published', 'archived'],
-  leased: ['published', 'archived'],
+  draft: ['available', 'archived'],
+  available: ['under_negotiation', 'reserved', 'booked', 'on_hold', ...CLOSED_STATUSES, 'archived'],
+  under_negotiation: ['available', 'reserved', 'booked', 'on_hold', ...CLOSED_STATUSES, 'archived'],
+  reserved: ['available', 'booked', ...CLOSED_STATUSES, 'archived'],
+  booked: ['available', ...CLOSED_STATUSES, 'archived'],
+  on_hold: ['available', 'archived'],
+  sold: ['available', 'archived'],
+  rented: ['available', 'archived'],
+  leased: ['available', 'archived'],
   archived: ['draft'],
 };
+
+/**
+ * v1 status names, still accepted in list filters and old links for one release
+ * (TRD v2 §18). New code uses the v2 names only.
+ */
+export const LEGACY_STATUS_ALIASES: Record<string, PropertyStatus> = {
+  published: 'available',
+  unpublished: 'on_hold',
+};
+const statusWithAliases = z.preprocess(
+  (v) => (typeof v === 'string' && v in LEGACY_STATUS_ALIASES ? LEGACY_STATUS_ALIASES[v] : v),
+  z.enum(PROPERTY_STATUSES),
+);
 
 /** The closing status that matches each purpose: a sale is Sold, a rental Rented… */
 export const CLOSED_STATUS_FOR: Record<Purpose, PropertyStatus> = {
@@ -55,8 +93,7 @@ export function canChangeStatus(
   purpose: Purpose,
 ): boolean {
   if (!STATUS_TRANSITIONS[from].includes(to)) return false;
-  const closing: readonly PropertyStatus[] = ['sold', 'rented', 'leased'];
-  return !closing.includes(to) || CLOSED_STATUS_FOR[purpose] === to;
+  return !CLOSED_STATUSES.includes(to) || CLOSED_STATUS_FOR[purpose] === to;
 }
 
 export const PRICE_BASES = ['total', 'per_sqft', 'per_month'] as const;
@@ -105,6 +142,99 @@ export const areaInputSchema = z.object({
   unit: z.enum(AREA_UNITS),
 });
 
+/** Road types (wireframe Location; PROP-09): asked once, common to every property type. */
+export const ROAD_TYPES = [
+  'Tar road',
+  'Concrete road',
+  'Gravel road',
+  'Mud road',
+  'Main road',
+  'Highway service road',
+  'Industrial road',
+] as const;
+export type RoadType = (typeof ROAD_TYPES)[number];
+
+/** Places near a property (Location tab, R1.4). */
+export const NEARBY_CATEGORIES = [
+  'School',
+  'Hospital',
+  'Bus stop',
+  'Railway station',
+  'Airport',
+  'Market',
+  'Other',
+] as const;
+/** Planned or proposed infrastructure is never presented as existing (GEN-03). */
+export const INFRA_STATUSES = ['existing', 'under_construction', 'planned', 'proposed'] as const;
+export const INFRA_STATUS_LABELS: Record<(typeof INFRA_STATUSES)[number], string> = {
+  existing: 'Existing',
+  under_construction: 'Under construction',
+  planned: 'Planned',
+  proposed: 'Proposed',
+};
+
+export const nearbyPlaceSchema = z.object({
+  id: idSchema,
+  category: z.enum(NEARBY_CATEGORIES),
+  name: z.string(),
+  distanceKm: z.number().nullable(),
+  /** The distance was measured on the actual route, not a straight line. */
+  routeChecked: z.boolean(),
+  status: z.enum(INFRA_STATUSES),
+});
+export type NearbyPlace = z.infer<typeof nearbyPlaceSchema>;
+
+export const highwaySchema = z.object({
+  name: z.string(),
+  distanceKm: z.number().nullable(),
+  routeNote: z.string(),
+});
+
+export const legalCheckSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  verifies: z.string(),
+  mandatory: z.boolean(),
+  status: z.enum(['not_collected', 'pending', 'verified']),
+  verifiedBy: z.string(),
+  date: z.string().nullable(),
+  mediaId: z.string().nullable(),
+  note: z.string(),
+});
+export const legalSummarySchema = z.object({
+  total: z.number().int(),
+  verified: z.number().int(),
+  pending: z.number().int(),
+  notCollected: z.number().int(),
+  openMandatory: z.array(z.string()),
+});
+
+export const comparableSchema = z.object({
+  id: idSchema,
+  location: z.string(),
+  type: z.string(),
+  areaSqft: z.number().nullable(),
+  pricePerSqft: z.number().nullable(),
+  kind: z.enum(['asking', 'transaction']),
+  date: z.string().nullable(),
+  source: z.string(),
+  differences: z.string(),
+});
+export const valuationSchema = z.object({
+  reviewDate: z.string().nullable(),
+  valuerReport: z.string(),
+  notes: z.string(),
+  comparables: z.array(comparableSchema),
+});
+
+export const archiveInfoSchema = z.object({
+  at: z.string(),
+  by: z.object({ id: idSchema, name: z.string() }).nullable(),
+  reason: z.string(),
+});
+
+export const ROAD_WIDTH_MAX_FT = 500;
+
 export const locationSchema = z.object({
   state: text(60, 'State').default(''),
   city: text(60, 'City').default(''),
@@ -117,6 +247,13 @@ export const locationSchema = z.object({
   address: text(500, 'Address').default(''),
   landmark: text(120, 'Landmark').default(''),
   mapPin: officeLocationSchema.nullable().default(null),
+  roadType: z.enum(['', ...ROAD_TYPES]).default(''),
+  roadWidthFt: z
+    .number()
+    .positive('Road width must be more than 0')
+    .max(ROAD_WIDTH_MAX_FT, 'Road width looks too large')
+    .nullable()
+    .default(null),
 });
 export type PropertyLocation = z.output<typeof locationSchema>;
 
@@ -226,8 +363,18 @@ export const propertySchema = z.object({
   isFeatured: z.boolean(),
   /** What still needs filling before it can be published (empty = ready). */
   publishIssues: z.array(publishIssueSchema),
+  /** First time it became Available (the listing date). */
   publishedAt: z.string().nullable(),
   statusChangedAt: z.string(),
+  /** Total price ÷ area in sq.ft. (sale only), worked out on every save (PROP-07). */
+  pricePerSqft: z.number().nullable(),
+  highway: highwaySchema.nullable(),
+  nearby: z.array(nearbyPlaceSchema),
+  legal: z.array(legalCheckSchema),
+  legalSummary: legalSummarySchema,
+  valuation: valuationSchema,
+  archive: archiveInfoSchema.nullable(),
+  version: z.number().int().meta({ description: 'Send it back in If-Match when saving changes' }),
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: userRefSchema,
@@ -251,6 +398,12 @@ export const propertyListItemSchema = z.object({
   coverUrl: z.string().nullable(),
   status: z.enum(PROPERTY_STATUSES),
   isFeatured: z.boolean(),
+  /** Total price ÷ area in sq.ft. (sale only). */
+  pricePerSqft: z.number().nullable(),
+  /** For the Legal checks chip (PROP-54). */
+  legalSummary: legalSummarySchema,
+  /** First time it became Available (the listing date). */
+  publishedAt: z.string().nullable(),
   updatedAt: z.string(),
 });
 export type PropertyListItem = z.infer<typeof propertyListItemSchema>;
@@ -273,7 +426,8 @@ export type PropertyHistoryEntry = z.infer<typeof propertyHistoryEntrySchema>;
 
 // ------------------------------------------------------------------ inputs
 
-const titleSchema = z
+/** Shared with the admin form so both show the same messages (PROP-63). */
+export const propertyTitleSchema = z
   .string()
   .trim()
   .min(5, 'Property name must be at least 5 characters')
@@ -281,7 +435,7 @@ const titleSchema = z
 
 const propertyFields = {
   subcategoryId: idSchema,
-  title: titleSchema,
+  title: propertyTitleSchema,
   purpose: z.enum(PURPOSES, 'Choose a purpose'),
   price: priceSchema,
   rental: rentalSchema.nullable(),
@@ -318,6 +472,8 @@ export const createPropertyBodySchema = z.object({
     address: '',
     landmark: '',
     mapPin: null,
+    roadType: '',
+    roadWidthFt: null,
   }),
   attributeValues: propertyFields.attributeValues.default({}),
   extraAttributes: propertyFields.extraAttributes.default([]),
@@ -333,9 +489,81 @@ export type CreateProperty = z.output<typeof createPropertyBodySchema>;
  * key by key (null clears a value); `extraAttributes` and `amenityIds` replace the list.
  * Changing `subcategoryId` keeps the code; values the new subcategory doesn't show are hidden.
  */
-export const updatePropertyBodySchema = z.object(propertyFields).partial();
+export const updatePropertyBodySchema = z
+  .object({
+    ...propertyFields,
+    /**
+     * Corrects the listing date (YYYY-MM-DD) of a property that has been listed; it is set
+     * automatically the first time the property becomes Available.
+     */
+    listingDate: z.iso.date('Enter a valid listing date'),
+  })
+  .partial();
 export type UpdatePropertyBody = z.input<typeof updatePropertyBodySchema>;
 export type UpdateProperty = z.output<typeof updatePropertyBodySchema>;
+
+/** Highway access as entered on the Location tab (PROP-23). */
+export const highwayInputSchema = z.object({
+  name: text(120, 'Highway name'),
+  distanceKm: z
+    .number()
+    .min(0, 'Distance cannot be negative')
+    .max(500, 'Distance looks too large')
+    .nullable(),
+  routeNote: text(300, 'How it was measured'),
+});
+
+/** One nearby place (PROP-24). A new row has no id yet. */
+export const nearbyInputSchema = z.object({
+  id: idSchema.optional(),
+  category: z.enum(NEARBY_CATEGORIES),
+  name: text(120, 'Place name'),
+  distanceKm: z
+    .number()
+    .min(0, 'Distance cannot be negative')
+    .max(500, 'Distance looks too large')
+    .nullable(),
+  routeChecked: z.boolean(),
+  status: z.enum(INFRA_STATUSES),
+});
+export type NearbyInput = z.infer<typeof nearbyInputSchema>;
+export const MAX_NEARBY_PLACES = 30;
+
+const { shape: loc } = locationSchema;
+
+/**
+ * PATCH /admin/properties/:id/location (If-Match): the Location tab saves one change at a
+ * time (PROP-22–24, PROP-67). `location` is merged key by key; `highway` replaces the
+ * highway (null clears it); `nearby` replaces the list.
+ */
+export const updateLocationBodySchema = z
+  .object({
+    location: z
+      .object({
+        state: loc.state.unwrap(),
+        city: loc.city.unwrap(),
+        locality: loc.locality.unwrap(),
+        pincode: loc.pincode.unwrap(),
+        address: loc.address.unwrap(),
+        landmark: loc.landmark.unwrap(),
+        mapPin: loc.mapPin.unwrap(),
+        roadType: loc.roadType.unwrap(),
+        roadWidthFt: loc.roadWidthFt.unwrap(),
+      })
+      .partial()
+      .optional(),
+    highway: highwayInputSchema.nullable().optional(),
+    nearby: z
+      .array(nearbyInputSchema)
+      .max(MAX_NEARBY_PLACES, `Up to ${MAX_NEARBY_PLACES} places`)
+      .optional(),
+  })
+  .refine(
+    (b) => [b.location, b.highway, b.nearby].filter((v) => v !== undefined).length === 1,
+    'Send one change at a time: location, highway or nearby',
+  );
+export type UpdateLocationBody = z.input<typeof updateLocationBodySchema>;
+export type UpdateLocation = z.output<typeof updateLocationBodySchema>;
 
 /** POST /admin/properties/:id/status */
 export const changeStatusBodySchema = z.object({ status: z.enum(PROPERTY_STATUSES) });
@@ -357,6 +585,17 @@ const boolQuery = z
   .optional();
 const amountQuery = z.coerce.number().min(0).optional();
 
+export const LEGAL_FILTERS = ['open', 'clean'] as const;
+export const LEGAL_FILTER_LABELS: Record<(typeof LEGAL_FILTERS)[number], string> = {
+  open: 'Mandatory checks open',
+  clean: 'Mandatory checks verified',
+};
+export const ARCHIVE_VIEWS = ['only', 'include'] as const;
+export const ARCHIVE_VIEW_LABELS: Record<(typeof ARCHIVE_VIEWS)[number], string> = {
+  only: 'Archived only',
+  include: 'Active + archived',
+};
+
 /** GET /admin/properties */
 export const listPropertiesQuerySchema = paginationQuerySchema.extend({
   /** Code, name, city, area / locality or pincode. */
@@ -369,9 +608,13 @@ export const listPropertiesQuerySchema = paginationQuerySchema.extend({
   pincode: z.string().trim().max(6).optional(),
   minPrice: amountQuery,
   maxPrice: amountQuery,
-  /** Without a status, archived properties are left out. */
-  status: z.enum(PROPERTY_STATUSES).optional(),
+  /** v1 names (published…) still work. A status filter overrides `archived`. */
+  status: statusWithAliases.optional(),
   featured: boolQuery,
+  /** open: a mandatory legal check is not verified yet; clean: all mandatory checks verified. */
+  legal: z.enum(LEGAL_FILTERS).optional(),
+  /** Archived properties are left out unless asked for (PROP-51). */
+  archived: z.enum(ARCHIVE_VIEWS).optional(),
 });
 export type ListPropertiesQuery = z.infer<typeof listPropertiesQuerySchema>;
 
@@ -382,6 +625,8 @@ export const locationSuggestionsQuerySchema = z.object({
   q: z.string().trim().max(100).default(''),
   /** Narrows locality / pincode suggestions to one city. */
   city: z.string().trim().max(60).optional(),
+  /** How many to return (most used first); the list's city filter asks for all. */
+  limit: z.coerce.number().int().min(1).max(200).default(10),
 });
 export const locationSuggestionSchema = z.object({ value: z.string(), count: z.number().int() });
 export type LocationSuggestion = z.infer<typeof locationSuggestionSchema>;

@@ -1,5 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createSubcategoryBodySchema, PURPOSE_LABELS, PURPOSES } from '@real-estate/shared';
+import {
+  createSubcategoryBodySchema,
+  MAIN_AREA_LABELS,
+  MAIN_AREA_MEANINGS,
+  PURPOSE_LABELS,
+  PURPOSES,
+} from '@real-estate/shared';
 import type { CategoryKey, Purpose, Subcategory } from '@real-estate/shared';
 import { Loader2Icon } from 'lucide-react';
 import { useState } from 'react';
@@ -23,6 +29,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -33,6 +46,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { errorMessage } from '@/lib/errors';
 import { useCreateSubcategory, useDeleteSubcategory, useUpdateSubcategory } from './api';
+import { LegalChecklistEditor } from './LegalChecklistEditor';
 
 const formSchema = createSubcategoryBodySchema.omit({ categoryKey: true }).extend({
   isActive: z.boolean(),
@@ -70,8 +84,17 @@ export function SubcategorySheet({
           codePrefix: subcategory.codePrefix,
           purposes: subcategory.purposes,
           isActive: subcategory.isActive,
+          mainAreaMeaning: subcategory.mainAreaMeaning,
+          legalChecklist: subcategory.legalChecklist,
         }
-      : { name: '', codePrefix: '', purposes: ['sale'], isActive: true },
+      : {
+          name: '',
+          codePrefix: '',
+          purposes: ['sale'],
+          isActive: true,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
+        },
   });
   const { errors, isSubmitting, isDirty } = form.formState;
   const error = create.error ?? update.error;
@@ -113,7 +136,7 @@ export function SubcategorySheet({
   return (
     <>
       <Sheet open onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent className="w-full overflow-x-hidden overflow-y-auto data-[side=right]:sm:max-w-lg">
           <SheetHeader className="border-b pb-4">
             <SheetTitle>{subcategory ? `Edit ${subcategory.name}` : 'Add subcategory'}</SheetTitle>
             <SheetDescription>
@@ -123,7 +146,12 @@ export function SubcategorySheet({
             </SheetDescription>
           </SheetHeader>
 
-          <form id="subcategory-form" onSubmit={onSubmit} className="grid gap-4 px-4" noValidate>
+          <form
+            id="subcategory-form"
+            onSubmit={onSubmit}
+            className="grid grid-cols-1 gap-4 px-4"
+            noValidate
+          >
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{errorMessage(error)}</AlertDescription>
@@ -192,6 +220,49 @@ export function SubcategorySheet({
                   {errors.purposes.message}
                 </p>
               )}
+            </fieldset>
+
+            <FormField
+              id="sub-area"
+              label="Main area means"
+              hint="Labels the area field on the property form, and price per sq.ft. uses it."
+            >
+              <Controller
+                control={form.control}
+                name="mainAreaMeaning"
+                render={({ field }) => (
+                  <Select
+                    items={MAIN_AREA_MEANINGS.map((m) => ({
+                      value: m,
+                      label: MAIN_AREA_LABELS[m],
+                    }))}
+                    value={field.value}
+                    onValueChange={(v) => v && field.onChange(v)}
+                  >
+                    <SelectTrigger id="sub-area" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MAIN_AREA_MEANINGS.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {MAIN_AREA_LABELS[m]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+
+            <fieldset className="grid gap-2">
+              <legend className="mb-1 text-sm font-medium">Legal checklist</legend>
+              <Controller
+                control={form.control}
+                name="legalChecklist"
+                render={({ field }) => (
+                  <LegalChecklistEditor value={field.value ?? []} onChange={field.onChange} />
+                )}
+              />
             </fieldset>
 
             <Controller

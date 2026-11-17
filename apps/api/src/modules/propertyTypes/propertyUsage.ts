@@ -15,4 +15,6 @@ export interface PropertyUsage {
   isAttributeUsed(attributeKey: string): Promise<boolean>;
   /** Number of properties per amenity id (missing ids = 0). */
   countByAmenity(amenityIds: string[]): Promise<Map<string, number>>;
+  /** A property's code, for "added from property RE-PLT-000004" (null if not found). */
+  codeOf?(propertyId: string): Promise<string | null>;
 }

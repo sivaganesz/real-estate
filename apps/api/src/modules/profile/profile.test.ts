@@ -7,7 +7,7 @@ import { RefreshTokenModel } from '../auth/refreshToken.model';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 
 describe('profile', () => {
   let db: Awaited<ReturnType<typeof startTestDatabase>>;
@@ -36,7 +36,7 @@ describe('profile', () => {
       name: 'Agent Ravi',
       email: 'ravi@company.com',
       phone: '+919876543210',
-      role: 'sales_agent',
+      role: 'sales_executive',
       status: 'active',
       passwordHash: await hashPassword(PASSWORD),
     });
@@ -56,7 +56,7 @@ describe('profile', () => {
       name: 'Agent Ravi',
       email: 'ravi@company.com',
       phone: '+919876543210',
-      role: 'sales_agent',
+      role: 'sales_executive',
     });
     expect(res.body.data.lastLoginAt).toEqual(expect.any(String));
     expect(JSON.stringify(res.body)).not.toContain('passwordHash');
@@ -74,14 +74,14 @@ describe('profile', () => {
       name: 'Ravi Kumar',
       phone: '',
       email: 'hacker@company.com',
-      role: 'super_admin',
+      role: 'admin',
     });
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
       name: 'Ravi Kumar',
       phone: null,
       email: 'ravi@company.com',
-      role: 'sales_agent',
+      role: 'sales_executive',
     });
     const log = await ChangeLogModel.findOne({
       entityId: userId,
@@ -100,7 +100,7 @@ describe('profile', () => {
       const res = await authed(request(ctx.app).post('/api/v1/admin/profile/change-password')).send(
         {
           currentPassword: 'wrong-password-1',
-          newPassword: 'brand-new-pass-7',
+          newPassword: 'Brand-new-pass-7',
         },
       );
       expect(res.status).toBe(400);
@@ -130,7 +130,7 @@ describe('profile', () => {
       const res = await authed(request(ctx.app).post('/api/v1/admin/profile/change-password')).send(
         {
           currentPassword: PASSWORD,
-          newPassword: 'brand-new-pass-7',
+          newPassword: 'Brand-new-pass-7',
         },
       );
       expect(res.status).toBe(200);
@@ -152,7 +152,7 @@ describe('profile', () => {
 
       const login = await request(ctx.app)
         .post('/api/v1/auth/login')
-        .send({ email: 'ravi@company.com', password: 'brand-new-pass-7' });
+        .send({ email: 'ravi@company.com', password: 'Brand-new-pass-7' });
       expect(login.status).toBe(200);
       expect(ctx.email.sent.at(-1)).toMatchObject({ to: 'ravi@company.com' });
       expect(ctx.email.sent.at(-1)!.subject).toMatch(/password was changed/);

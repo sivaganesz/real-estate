@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ROLES } from '../roles';
 import {
   emailSchema,
   idSchema,
@@ -7,6 +6,7 @@ import {
   passwordSchema,
   phoneSchema,
 } from './common';
+import { roleKeySchema } from './roles';
 
 export const USER_STATUSES = ['invited', 'active', 'inactive'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
@@ -25,7 +25,7 @@ const optionalPhoneSchema = z.preprocess(
 /** GET /admin/users */
 export const listUsersQuerySchema = paginationQuerySchema.extend({
   q: z.string().trim().max(100).optional(),
-  role: z.enum(ROLES).optional(),
+  role: roleKeySchema.optional(),
   status: z.enum(USER_STATUS_FILTERS).optional(),
 });
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
@@ -35,7 +35,7 @@ export const inviteUserBodySchema = z.object({
   name: nameSchema,
   email: emailSchema,
   phone: optionalPhoneSchema,
-  role: z.enum(ROLES, 'Choose a role'),
+  role: roleKeySchema,
 });
 export type InviteUserBody = z.input<typeof inviteUserBodySchema>;
 
@@ -48,7 +48,7 @@ export const updateUserBodySchema = z.object({
       z.union([z.null(), phoneSchema]),
     )
     .optional(),
-  role: z.enum(ROLES).optional(),
+  role: roleKeySchema.optional(),
 });
 export type UpdateUserBody = z.input<typeof updateUserBodySchema>;
 
@@ -65,7 +65,8 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
-  role: z.enum(ROLES),
+  role: roleKeySchema,
+  roleName: z.string(),
   status: z.enum(USER_STATUSES),
   locked: z.boolean().meta({ description: 'Active but locked after too many failed logins' }),
   lockedUntil: z.string().nullable(),
@@ -96,11 +97,12 @@ export const emailResultSchema = z.object({
     .meta({ description: 'False if the email provider failed; offer to resend' }),
 });
 
-/** GET /auth/invite?token= */
+/** POST /auth/invite/info */
 export const inviteInfoSchema = z.object({
   name: z.string(),
   email: z.string(),
-  role: z.enum(ROLES),
+  role: roleKeySchema,
+  roleName: z.string(),
   invitedBy: z.string().nullable(),
 });
 export type InviteInfo = z.infer<typeof inviteInfoSchema>;

@@ -6,6 +6,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { ensureStartingPropertyTypes } from '../propertyTypes/propertyTypes.defaults';
 import {
@@ -17,7 +18,7 @@ import {
 import { UserModel } from '../users/user.model';
 import { CounterModel, PropertyModel } from './property.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/properties';
 const MODELS = [
   UserModel,
@@ -83,10 +84,10 @@ describe('property media', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       await UserModel.create({
         name: role,
         email: `${role}@company.com`,
@@ -181,7 +182,7 @@ describe('property media', () => {
     });
     const none = await as('admin', request(ctx.app).post(`${BASE}/${p.id}/media`));
     expect(none.body.error.code).toBe('FILE_REQUIRED');
-    expect((await upload(p.id, PDF, 'x.pdf', 'brochure', 'sales_agent')).status).toBe(403);
+    expect((await upload(p.id, PDF, 'x.pdf', 'brochure', 'sales_executive')).status).toBe(403);
   });
 
   it('sets the cover, reorders, and records each change', async () => {
@@ -234,10 +235,10 @@ describe('property media', () => {
     expect(log!.changes).toEqual({ media: ['Photo: a.jpg', null] });
   });
 
-  it('a published property keeps at least one photo; archived ones are locked', async () => {
+  it('a listed property keeps at least one photo; archived ones are locked', async () => {
     const p = await newVilla(COMPLETE);
     const blocked = await as('admin', request(ctx.app).post(`${BASE}/${p.id}/status`)).send({
-      status: 'published',
+      status: 'available',
     });
     expect(blocked.body.error.details).toEqual([
       { path: 'media', message: 'Add at least one photo' },
@@ -245,9 +246,9 @@ describe('property media', () => {
 
     const only = (await upload(p.id, await photo('#c33'), 'a.jpg')).body.data.media[0];
     const published = await as('admin', request(ctx.app).post(`${BASE}/${p.id}/status`)).send({
-      status: 'published',
+      status: 'available',
     });
-    expect(published.body.data.status).toBe('published');
+    expect(published.body.data.status).toBe('available');
     const del = await as('admin', request(ctx.app).delete(`${BASE}/${p.id}/media/${only.id}`));
     expect(del.status).toBe(422);
     expect(del.body.error.message).toMatch(/needs at least one photo/);

@@ -8,7 +8,7 @@ import { headerKey } from './columns';
 export const DATA_SHEET = 'Properties';
 const NEED_LABEL = {
   import: 'Needed to import',
-  publish: 'Needed to publish',
+  publish: 'Needed to mark Available',
   optional: 'Optional',
 } as const;
 

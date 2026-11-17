@@ -3,7 +3,11 @@ import {
   EXTRA_ATTRIBUTE_TYPES,
   PINCODE_PATTERN,
   PRICE_BASES,
+  PROPERTY_STATUSES,
+  propertyTitleSchema,
   PURPOSES,
+  ROAD_TYPES,
+  ROAD_WIDTH_MAX_FT,
 } from '@real-estate/shared';
 import type {
   AttributeType,
@@ -41,11 +45,7 @@ const coordinate = (limit: number) =>
 export const propertyFormSchema = z
   .object({
     subcategoryId: z.string().min(1, 'Choose a subcategory'),
-    title: z
-      .string()
-      .trim()
-      .min(5, 'Property name must be at least 5 characters')
-      .max(150, 'Property name must be at most 150 characters'),
+    title: propertyTitleSchema,
     purpose: z.enum(PURPOSES, 'Choose a purpose'),
     priceAmount: optionalNumber('Enter the price in rupees, e.g. 4500000').refine(
       (v) => v === '' || Number(v) > 0,
@@ -73,6 +73,11 @@ export const propertyFormSchema = z
       landmark: z.string().trim().max(120),
       lat: coordinate(90),
       lng: coordinate(180),
+      roadType: z.enum(['', ...ROAD_TYPES]),
+      roadWidthFt: optionalNumber('Enter the road width in feet').refine(
+        (v) => v === '' || (Number(v) > 0 && Number(v) <= ROAD_WIDTH_MAX_FT),
+        `Road width must be between 1 and ${ROAD_WIDTH_MAX_FT} ft`,
+      ),
     }),
     // Untouched fields are undefined (= empty); the API checks the values against their types.
     attributeValues: z.record(z.string(), z.union([z.string(), z.array(z.string())]).optional()),
@@ -86,6 +91,10 @@ export const propertyFormSchema = z
     removedAttributeKeys: z.array(z.string()),
     amenityIds: z.array(z.string()),
     isFeatured: z.boolean(),
+    /** Changed through the status rules after saving (not part of the save body). */
+    status: z.enum(PROPERTY_STATUSES),
+    /** YYYY-MM-DD; editable once the property has been listed. */
+    listingDate: z.string(),
   })
   .refine((v) => !(v.location.lat === '' && v.location.lng !== ''), {
     path: ['location', 'lat'],
@@ -145,6 +154,10 @@ function fromField(
   return text;
 }
 
+/** The calendar date in India of an ISO time: "2026-11-16". */
+export const indiaDate = (iso: string) =>
+  new Date(new Date(iso).getTime() + 330 * 60_000).toISOString().slice(0, 10);
+
 export function emptyValues(): PropertyFormValues {
   return {
     subcategoryId: '',
@@ -167,12 +180,16 @@ export function emptyValues(): PropertyFormValues {
       landmark: '',
       lat: '',
       lng: '',
+      roadType: '',
+      roadWidthFt: '',
     },
     attributeValues: {},
     extraAttributes: [],
     removedAttributeKeys: [],
     amenityIds: [],
     isFeatured: false,
+    status: 'draft',
+    listingDate: '',
   };
 }
 
@@ -202,6 +219,8 @@ export function valuesFromProperty(p: Property, layout: FormLayout | null): Prop
       landmark: p.location.landmark,
       lat: p.location.mapPin ? String(p.location.mapPin.lat) : '',
       lng: p.location.mapPin ? String(p.location.mapPin.lng) : '',
+      roadType: p.location.roadType,
+      roadWidthFt: p.location.roadWidthFt === null ? '' : String(p.location.roadWidthFt),
     },
     attributeValues,
     extraAttributes: p.extraAttributes.map((e) => ({
@@ -212,6 +231,8 @@ export function valuesFromProperty(p: Property, layout: FormLayout | null): Prop
     removedAttributeKeys: p.removedAttributeKeys,
     amenityIds: p.amenityIds,
     isFeatured: p.isFeatured,
+    status: p.status,
+    listingDate: p.publishedAt ? indiaDate(p.publishedAt) : '',
   };
 }
 
@@ -256,6 +277,9 @@ export function bodyFromValues(v: PropertyFormValues, layout: FormLayout): Creat
         v.location.lat.trim() !== '' && v.location.lng.trim() !== ''
           ? { lat: Number(v.location.lat), lng: Number(v.location.lng) }
           : null,
+      // The whole location is saved, so road details must always be sent back.
+      roadType: v.location.roadType,
+      roadWidthFt: num(v.location.roadWidthFt),
     },
     attributeValues,
     extraAttributes,
@@ -281,7 +305,8 @@ export function fieldForErrorPath(path: string): string | null {
     amenityIds: 'amenityIds',
   };
   if (direct[p]) return direct[p];
-  if (/^location\.(state|city|locality|pincode|address|landmark)$/.test(p)) return p;
+  if (/^location\.(state|city|locality|pincode|address|landmark|roadType|roadWidthFt)$/.test(p))
+    return p;
   const attr = /^attributeValues\.(.+)$/.exec(p);
   if (attr) return `attributeValues.${attr[1]}`;
   const extra = /^extraAttributes\.(\d+)/.exec(p);

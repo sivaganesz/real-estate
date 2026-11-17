@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { nationalNumber, ROLE_LABELS, ROLES, updateUserBodySchema } from '@real-estate/shared';
+import { nationalNumber, roleKeySchema, updateUserBodySchema } from '@real-estate/shared';
 import type { User } from '@real-estate/shared';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
 import { useAuth } from '@/auth/auth-context';
 import { FormField } from '@/components/forms/FormField';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -31,15 +30,14 @@ import {
 } from '@/components/ui/sheet';
 import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
-import { useUpdateUser, useUser } from './api';
+import { useRoleOptions, useUpdateUser, useUser } from './api';
 import { DeactivateUserDialog } from './DeactivateUserDialog';
 import { RoleBadge, StatusCell } from './UserBadges';
 import { useUserActions } from './useUserActions';
 
-const ROLE_ITEMS = ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
 const editFormSchema = updateUserBodySchema.extend({
   name: updateUserBodySchema.shape.name.unwrap(),
-  role: z.enum(ROLES),
+  role: roleKeySchema,
 });
 
 function formValues(user: User) {
@@ -63,12 +61,14 @@ export function EditUserSheet({
   const { data: user } = useUser(userId, initialUser);
   const isSelf = user?.id === me?.id;
   const update = useUpdateUser();
+  const roleOptions = useRoleOptions();
+  const ROLE_ITEMS = (roleOptions.data ?? []).map((r) => ({ value: r.key, label: r.name }));
   const actions = useUserActions();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(editFormSchema),
-    defaultValues: user ? formValues(user) : { name: '', phone: '', role: 'admin' as const },
+    defaultValues: user ? formValues(user) : { name: '', phone: '', role: '' },
   });
   const { errors, isSubmitting, isDirty } = form.formState;
 
@@ -103,7 +103,7 @@ export function EditUserSheet({
               <div className="min-w-0">
                 <SheetTitle className="flex flex-wrap items-center gap-2">
                   <span className="truncate">{user.name}</span>
-                  <RoleBadge role={user.role} />
+                  <RoleBadge role={user.role} name={user.roleName} />
                 </SheetTitle>
                 <SheetDescription className="truncate">{user.email}</SheetDescription>
               </div>

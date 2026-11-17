@@ -1,4 +1,5 @@
-import type { Profile, Role } from '@real-estate/shared';
+import type { Profile } from '@real-estate/shared';
+import { roleNameOf } from '../users/users.service';
 import type { EmailProvider } from '../../lib/email';
 import { passwordChangedEmail, trySendEmail } from '../../lib/email';
 import { AppError, notFound } from '../../lib/errors';
@@ -21,13 +22,14 @@ interface StoredUser {
   passwordHash?: string | null;
 }
 
-function toProfile(user: StoredUser): Profile {
+async function toProfile(user: StoredUser): Promise<Profile> {
   return {
     id: user._id,
     name: user.name,
     email: user.email,
     phone: user.phone ?? null,
-    role: user.role as Role,
+    role: user.role,
+    roleName: await roleNameOf(user.role),
     lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
     createdAt: user.createdAt.toISOString(),
   };

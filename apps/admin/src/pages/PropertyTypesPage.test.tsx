@@ -22,6 +22,7 @@ const attr = (n: number, label: string, extra: Partial<PlacedAttribute> = {}): P
   searchFilter: false,
   required: false,
   usedIn: [],
+  review: null,
   ...extra,
 });
 
@@ -57,6 +58,8 @@ const SETUP: PropertyTypes = {
           isActive: true,
           propertyCount: 0,
           prefixLocked: false,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
           attributes: [
             attr(10, 'Road width', { type: 'number', unit: 'ft', searchFilter: true }),
             attr(11, 'Corner plot', { type: 'yes_no' }),
@@ -71,6 +74,8 @@ const SETUP: PropertyTypes = {
           isActive: true,
           propertyCount: 0,
           prefixLocked: false,
+          mainAreaMeaning: 'built_up',
+          legalChecklist: [],
           attributes: [bhk(['Apartment / Flat'])],
         },
       ],
@@ -266,6 +271,34 @@ describe('PropertyTypesPage', () => {
     expect(url).toBe(`/api/v1/admin/property-types/subcategories/${ID(101)}/attributes/${ID(11)}`);
   });
 
+  it('lists attributes added from property forms: Mark reviewed, Edit or Remove (PROP-20)', async () => {
+    const review = {
+      status: 'new' as const,
+      propertyId: ID(500),
+      propertyCode: 'RE-VIL-000004',
+      addedBy: { id: ID(9), name: 'Meena' },
+      at: '2026-11-17T05:00:00.000Z',
+    };
+    const withNew = structuredClone(SETUP);
+    withNew.categories[0]!.subcategories[1]!.attributes.push(
+      attr(30, 'Servant room', { type: 'yes_no', review }),
+    );
+    fetchMock.mockImplementation(async () => json(200, { data: withNew }));
+    renderPage();
+    const region = await screen.findByRole('region', { name: 'New attributes to review' });
+    expect(within(region).getByText('Servant room')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Added from property RE-VIL-000004 by Meena on 17 Nov 2026'),
+    ).toBeInTheDocument();
+    expect(within(region).getByText(/Yes \/ No · Villa \/ House/)).toBeInTheDocument();
+
+    await userEvent.click(within(region).getByRole('button', { name: 'Mark reviewed' }));
+    const [url] = callsTo('POST')[0]!;
+    expect(url).toBe(
+      `/api/v1/admin/property-types/subcategories/${ID(102)}/attributes/${ID(30)}/review`,
+    );
+  });
+
   it('adds a subcategory and checks its fields first', async () => {
     const updated = structuredClone(SETUP);
     updated.categories[0]!.subcategories.push({
@@ -299,6 +332,8 @@ describe('PropertyTypesPage', () => {
       codePrefix: 'FRM',
       purposes: ['sale', 'lease'],
       isActive: true,
+      mainAreaMeaning: 'built_up',
+      legalChecklist: [],
     });
     // The new subcategory is selected.
     expect(await screen.findByText('No attributes yet.', { exact: false })).toBeInTheDocument();

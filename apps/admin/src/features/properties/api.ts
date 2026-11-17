@@ -10,6 +10,7 @@ import type {
   PropertyListItem,
   PropertyStatus,
   PropertyStatusCounts,
+  UpdateLocationBody,
   UpdatePropertyBody,
 } from '@real-estate/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,8 +45,9 @@ export function useProperties(query: Partial<ListPropertiesQuery>) {
   });
 }
 
-export function useStatusCounts() {
+export function useStatusCounts({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled,
     queryKey: propertiesKeys.counts,
     queryFn: () => api.get<PropertyStatusCounts>(`${PATH}/status-counts`),
   });
@@ -71,12 +73,13 @@ export function useLocationSuggestions(
   field: 'state' | 'city' | 'locality' | 'pincode',
   q: string,
   city?: string,
+  limit?: number,
 ) {
   return useQuery({
-    queryKey: propertiesKeys.suggestions(field, q, city),
+    queryKey: [...propertiesKeys.suggestions(field, q, city), limit ?? 10],
     queryFn: () =>
       api.get<LocationSuggestion[]>(
-        `${PATH}/location-suggestions${toQueryString({ field, q: q.trim(), city })}`,
+        `${PATH}/location-suggestions${toQueryString({ field, q: q.trim(), city, limit })}`,
       ),
     staleTime: 60_000,
   });
@@ -108,8 +111,16 @@ export function useCreateProperty() {
 export function useUpdateProperty() {
   const after = useAfterChange();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdatePropertyBody }) =>
-      api.patch<Property>(`${PATH}/${id}`, body),
+    // `version` is the one the user loaded: a newer save by someone else gets 409, not lost.
+    mutationFn: ({
+      id,
+      version,
+      body,
+    }: {
+      id: string;
+      version: number;
+      body: UpdatePropertyBody;
+    }) => api.patch<Property>(`${PATH}/${id}`, body, { ifMatch: version }),
     onSuccess: after,
   });
 }
@@ -222,5 +233,36 @@ export function useGeoReverse(pin: { lat: number; lng: number } | null) {
     enabled: lat !== null && lng !== null,
     staleTime: Infinity,
     retry: false,
+  });
+}
+
+/** Location tab saves, one at a time per property, so each uses the latest version. */
+const locationQueues = new Map<string, Promise<unknown>>();
+
+/**
+ * The Location tab saves field by field (PROP-67). Saves are queued: a second edit waits
+ * for the first and is sent with the version the first one returned, so quick edits to
+ * several fields never conflict with each other. A change by someone else still gets 409.
+ */
+export function useUpdateLocation(id: string) {
+  const queryClient = useQueryClient();
+  const after = useAfterChange();
+  return useMutation({
+    mutationFn: (body: UpdateLocationBody) => {
+      const run = (locationQueues.get(id) ?? Promise.resolve())
+        .catch(() => undefined)
+        .then(async () => {
+          const version =
+            queryClient.getQueryData<Property>(propertiesKeys.detail(id))?.version ?? 0;
+          const saved = await api.patch<Property>(`${PATH}/${id}/location`, body, {
+            ifMatch: version,
+          });
+          queryClient.setQueryData(propertiesKeys.detail(id), saved);
+          return saved;
+        });
+      locationQueues.set(id, run);
+      return run;
+    },
+    onSuccess: after,
   });
 }

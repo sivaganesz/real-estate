@@ -6,6 +6,7 @@ export const CHANGE_ENTITIES = [
   'settings',
   'property',
   'propertyType',
+  'role',
   'appointment',
 ] as const;
 export type ChangeEntity = (typeof CHANGE_ENTITIES)[number];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TEST_ENV_VARS } from '../test/helpers';
+import { PRODUCTION_ENV_VARS, TEST_ENV_VARS } from '../test/helpers';
 import { parseEnv } from './env';
 
 describe('parseEnv', () => {
@@ -36,5 +36,17 @@ describe('parseEnv', () => {
       parseEnv({ ...TEST_ENV_VARS, EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_123' })
         .RESEND_API_KEY,
     ).toBe('re_123');
+  });
+
+  it('refuses unsafe development defaults in production (M5)', () => {
+    let message = '';
+    try {
+      parseEnv({ ...TEST_ENV_VARS, NODE_ENV: 'production' });
+    } catch (err) {
+      message = (err as Error).message;
+    }
+    expect(message).toContain('EMAIL_PROVIDER must be "resend" in production');
+    expect(message).toContain('ADMIN_ORIGIN must use https in production');
+    expect(parseEnv({ ...TEST_ENV_VARS, ...PRODUCTION_ENV_VARS }).NODE_ENV).toBe('production');
   });
 });

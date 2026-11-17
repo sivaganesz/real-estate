@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { UserModel } from '../users/user.model';
 import { ensureStartingAmenities, ensureStartingPropertyTypes } from './propertyTypes.defaults';
@@ -15,7 +16,7 @@ import {
 import { PropertyTypesService } from './propertyTypes.service';
 import type { PropertyUsage } from './propertyUsage';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/property-types';
 const MODELS = [
   PropertyAttributeModel,
@@ -49,10 +50,10 @@ describe('settings → property types → amenities', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       await UserModel.create({
         name: role,
         email: `${role}@company.com`,
@@ -131,11 +132,11 @@ describe('settings → property types → amenities', () => {
       { key: 'residential' },
       { $set: { amenitiesSeededAt: null } },
     );
-    expect(await ensureStartingAmenities()).toBe('created');
+    expect(await ensureStartingAmenities(TEST_CATALOGUE)).toBe('created');
     const gym = amenity(await read(), 'Gym');
     await as('admin', request(ctx.app).delete(`${BASE}/amenities/${gym.id}`));
-    expect(await ensureStartingAmenities()).toBe('exists');
-    expect(await ensureStartingPropertyTypes()).toBe('exists');
+    expect(await ensureStartingAmenities(TEST_CATALOGUE)).toBe('exists');
+    expect(await ensureStartingPropertyTypes(TEST_CATALOGUE)).toBe('exists');
     expect(residential(await read()).amenities.map((a) => a.name)).not.toContain('Gym');
   });
 
@@ -149,7 +150,7 @@ describe('settings → property types → amenities', () => {
         .put(`${BASE}/categories/residential/amenities/order`)
         .send({ ids: [gym.id] }),
     ];
-    for (const attempt of attempts) expect((await as('sales_agent', attempt)).status).toBe(403);
+    for (const attempt of attempts) expect((await as('sales_executive', attempt)).status).toBe(403);
   });
 
   it('adds an amenity for some subcategories and checks names and choices', async () => {
@@ -269,7 +270,7 @@ describe('amenity rules that depend on existing properties', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
   });
 
   it("shows how many properties use an amenity, and won't delete a used one", async () => {

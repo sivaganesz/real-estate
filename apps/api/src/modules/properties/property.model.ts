@@ -2,6 +2,9 @@ import {
   AREA_UNITS,
   CATEGORY_KEYS,
   EXTRA_ATTRIBUTE_TYPES,
+  INFRA_STATUSES,
+  LEGAL_STATUSES,
+  NEARBY_CATEGORIES,
   MEDIA_KINDS,
   PRICE_BASES,
   PROPERTY_STATUSES,
@@ -12,6 +15,9 @@ import type {
   AttributeValue,
   CategoryKey,
   ExtraAttribute,
+  LegalSummary,
+  PropertyLegalCheck,
+  RoadType,
   MediaKind,
   PriceBasis,
   PropertyStatus,
@@ -19,7 +25,8 @@ import type {
 } from '@real-estate/shared';
 import { model, Schema } from 'mongoose';
 import { auditFields } from '../../db/auditPlugin';
-import { idField } from '../../db/ids';
+import { idField, refField } from '../../db/ids';
+import { versionPlugin } from '../../db/versionPlugin';
 
 /** Uploaded files (filled by the media endpoints in Phase 2.2b). Paths are relative to uploads/. */
 const mediaSchema = new Schema(
@@ -86,7 +93,97 @@ const propertySchema = new Schema(
         type: new Schema({ lat: Number, lng: Number }, { _id: false }),
         default: null,
       },
+      /** Common to every type, asked once (PROP-09). */
+      roadType: { type: String, default: '' },
+      roadWidthFt: { type: Number, default: null },
     },
+    /** Nearest highway or main road (Location tab, R1.4). */
+    highway: {
+      type: new Schema(
+        { name: String, distanceKm: { type: Number, default: null }, routeNote: String },
+        { _id: false },
+      ),
+      default: null,
+    },
+    /** Places nearby with measured distances and infrastructure status (R1.4). */
+    nearby: {
+      type: [
+        new Schema({
+          _id: idField,
+          category: { type: String, enum: NEARBY_CATEGORIES, required: true },
+          // May be blank while a new row is being filled in on the Location tab.
+          name: { type: String, default: '' },
+          distanceKm: { type: Number, default: null },
+          routeChecked: { type: Boolean, default: false },
+          status: { type: String, enum: INFRA_STATUSES, default: 'existing' },
+        }),
+      ],
+      default: [],
+    },
+    /** Legal & documentation checks, copied from the type's checklist on create (R1.5). */
+    legal: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true },
+            verifies: { type: String, default: '' },
+            mandatory: { type: Boolean, default: false },
+            status: { type: String, enum: LEGAL_STATUSES, default: 'not_collected' },
+            verifiedBy: { type: String, default: '' },
+            date: { type: String, default: null },
+            mediaId: { type: String, default: null },
+            note: { type: String, default: '' },
+            updatedAt: { type: Date, default: null },
+            updatedBy: refField('User'),
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    /** Derived from `legal` on every write (shared legalSummary). */
+    legalSummary: {
+      total: { type: Number, default: 0 },
+      verified: { type: Number, default: 0 },
+      pending: { type: Number, default: 0 },
+      notCollected: { type: Number, default: 0 },
+      openMandatory: { type: [String], default: [] },
+    },
+    /** Pricing & valuation tab (R1.6). */
+    valuation: {
+      reviewDate: { type: String, default: null },
+      valuerReport: { type: String, default: '' },
+      notes: { type: String, default: '' },
+      comparables: {
+        type: [
+          new Schema({
+            _id: idField,
+            location: { type: String, default: '' },
+            type: { type: String, default: '' },
+            areaSqft: { type: Number, default: null },
+            pricePerSqft: { type: Number, default: null },
+            kind: { type: String, enum: ['asking', 'transaction'], default: 'asking' },
+            date: { type: String, default: null },
+            source: { type: String, default: '' },
+            differences: { type: String, default: '' },
+          }),
+        ],
+        default: [],
+      },
+    },
+    /** Derived on every write: total price ÷ area (sale only, PROP-07). */
+    pricePerSqft: { type: Number, default: null },
+    /** Set when archived (R1.7). */
+    archive: {
+      type: new Schema(
+        { at: Date, by: refField('User'), reason: { type: String, default: '' } },
+        { _id: false },
+      ),
+      default: null,
+    },
+    /** Lower-case code, title and place, for indexed prefix search (M7). */
+    searchText: { type: String, default: '' },
     /** By attribute key. Values for attributes the subcategory no longer shows are kept. */
     attributeValues: { type: Schema.Types.Mixed, default: {} },
     /** "This property only" attributes. */
@@ -116,12 +213,20 @@ const propertySchema = new Schema(
   { timestamps: true, minimize: false },
 );
 
+propertySchema.plugin(versionPlugin);
 propertySchema.index({ code: 1 }, { unique: true });
 propertySchema.index({ status: 1, subcategoryId: 1, 'location.city': 1, 'price.amount': 1 });
 propertySchema.index({ 'location.locality': 1 });
 propertySchema.index({ 'location.pincode': 1 });
 propertySchema.index({ amenityIds: 1 });
 propertySchema.index({ updatedAt: -1 });
+// List sorts and filters (TRD v2 §7.12, M7).
+propertySchema.index({ status: 1, updatedAt: -1, _id: -1 });
+propertySchema.index({ status: 1, createdAt: -1, _id: -1 });
+propertySchema.index({ status: 1, 'area.sqft': -1 });
+propertySchema.index({ subcategoryId: 1, status: 1 });
+propertySchema.index({ 'legalSummary.openMandatory': 1 });
+propertySchema.index({ searchText: 1 });
 
 export const PropertyModel = model('Property', propertySchema);
 
@@ -157,6 +262,8 @@ export interface PropertyDoc {
     address: string;
     landmark: string;
     mapPin: { lat: number; lng: number } | null;
+    roadType?: RoadType | '';
+    roadWidthFt?: number | null;
   };
   attributeValues: Record<string, AttributeValue>;
   extraAttributes: ExtraAttribute[];
@@ -165,8 +272,40 @@ export interface PropertyDoc {
   media: MediaDoc[];
   status: PropertyStatus;
   isFeatured: boolean;
+  highway?: { name: string; distanceKm: number | null; routeNote: string } | null;
+  nearby?: {
+    _id: string;
+    category: (typeof NEARBY_CATEGORIES)[number];
+    name: string;
+    distanceKm: number | null;
+    routeChecked: boolean;
+    status: (typeof INFRA_STATUSES)[number];
+  }[];
+  legal?: (PropertyLegalCheck & { updatedAt?: Date | null; updatedBy?: string | null })[];
+  legalSummary?: LegalSummary;
+  valuation?: {
+    reviewDate: string | null;
+    valuerReport: string;
+    notes: string;
+    comparables: {
+      _id: string;
+      location: string;
+      type: string;
+      areaSqft: number | null;
+      pricePerSqft: number | null;
+      kind: 'asking' | 'transaction';
+      date: string | null;
+      source: string;
+      differences: string;
+    }[];
+  };
+  pricePerSqft?: number | null;
+  archive?: { at: Date; by?: string | null; reason: string } | null;
+  searchText?: string;
   publishedAt: Date | null;
   statusChangedAt: Date;
+  /** Incremented on every write (versionPlugin); clients send it back in If-Match. */
+  version?: number;
   createdBy?: string | null;
   updatedBy?: string | null;
   createdAt: Date;

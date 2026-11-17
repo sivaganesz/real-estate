@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { ChangeLogModel } from '../changeLogs/changeLog.model';
 import { ensureStartingPropertyTypes } from '../propertyTypes/propertyTypes.defaults';
 import {
@@ -14,7 +15,7 @@ import {
 import { UserModel } from '../users/user.model';
 import { CounterModel, PropertyModel } from './property.model';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/properties';
 const TYPES = '/api/v1/admin/property-types';
 const MODELS = [
@@ -53,8 +54,13 @@ describe('properties API', () => {
   const amenityId = (name: string, category = 'residential') =>
     types.categories.find((c) => c.key === category)!.amenities.find((a) => a.name === name)!.id;
   const create = (body: object) => as('admin', request(ctx.app).post(BASE)).send(body);
-  const patch = (id: string, body: object) =>
-    as('admin', request(ctx.app).patch(`${BASE}/${id}`)).send(body);
+  /** PATCH with If-Match set to the version currently stored (a client that just reloaded). */
+  const patch = async (id: string, body: object) => {
+    const current = await PropertyModel.findById(id).select('version').lean<{ version?: number }>();
+    return as('admin', request(ctx.app).patch(`${BASE}/${id}`))
+      .set('if-match', `"${current?.version ?? 0}"`)
+      .send(body);
+  };
   const setStatus = (id: string, status: string) =>
     as('admin', request(ctx.app).post(`${BASE}/${id}/status`)).send({ status });
   const addPhoto = (id: string) =>
@@ -79,10 +85,10 @@ describe('properties API', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       const user = await UserModel.create({
         name: role === 'admin' ? 'Asha Admin' : 'Ravi Agent',
         email: `${role}@company.com`,
@@ -200,18 +206,18 @@ describe('properties API', () => {
 
   it('only roles with properties:write can create or change; agents can view', async () => {
     const id = (await villa()).body.data.id;
-    expect((await as('sales_agent', request(ctx.app).get(BASE))).status).toBe(200);
-    expect((await as('sales_agent', request(ctx.app).get(`${BASE}/${id}`))).status).toBe(200);
-    expect((await as('sales_agent', request(ctx.app).get(`${BASE}/${id}/history`))).status).toBe(
-      200,
-    );
+    expect((await as('sales_executive', request(ctx.app).get(BASE))).status).toBe(200);
+    expect((await as('sales_executive', request(ctx.app).get(`${BASE}/${id}`))).status).toBe(200);
+    expect(
+      (await as('sales_executive', request(ctx.app).get(`${BASE}/${id}/history`))).status,
+    ).toBe(200);
     for (const attempt of [
       request(ctx.app).post(BASE).send({}),
       request(ctx.app).patch(`${BASE}/${id}`).send({ title: 'Changed title' }),
       request(ctx.app).post(`${BASE}/${id}/status`).send({ status: 'archived' }),
       request(ctx.app).delete(`${BASE}/${id}`),
     ]) {
-      expect((await as('sales_agent', attempt)).status).toBe(403);
+      expect((await as('sales_executive', attempt)).status).toBe(403);
     }
   });
 
@@ -256,9 +262,112 @@ describe('properties API', () => {
     expect(history[0].by).toEqual({ id: adminId, name: 'Asha Admin' });
   });
 
-  it('publishes only when complete, and a published property stays complete', async () => {
+  it('copies the type legal checklist, works out price per sq.ft., and keeps checks on a type change', async () => {
+    const villaId = sub('Villa / House').id;
+    const setChecklist = (id: string, legalChecklist: object[]) =>
+      as('admin', request(ctx.app).patch(`${TYPES}/subcategories/${id}`)).send({ legalChecklist });
+    await setChecklist(villaId, [
+      { key: 'sale_deed', label: 'Sale deed', mandatory: true },
+      { key: 'tax_receipts', label: 'Tax receipts' },
+    ]);
+    const created = await create({
+      subcategoryId: villaId,
+      title: '3 BHK villa with garden',
+      purpose: 'sale',
+      price: { amount: 2_800_000, basis: 'total', negotiable: false, onRequest: false },
+      area: { value: 1200, unit: 'sqft' },
+      location: { city: 'Madurai', locality: 'Vilangudi', roadType: 'Tar road', roadWidthFt: 30 },
+    });
+    expect(created.status).toBe(201);
+    const p = created.body.data;
+    expect(p.pricePerSqft).toBe(2333);
+    expect(p.location).toMatchObject({ roadType: 'Tar road', roadWidthFt: 30 });
+    expect(p.legal.map((c: { key: string; status: string }) => [c.key, c.status])).toEqual([
+      ['sale_deed', 'not_collected'],
+      ['tax_receipts', 'not_collected'],
+    ]);
+    expect(p.legalSummary).toMatchObject({ total: 2, openMandatory: ['sale_deed'] });
+    expect((await PropertyModel.findById(p.id).lean())!.searchText).toContain('vilangudi');
+
+    // Moving to a type with another checklist: its checks are added, none is lost.
+    const flatId = sub('Apartment / Flat').id;
+    await setChecklist(flatId, [{ key: 'rera', label: 'RERA registration', mandatory: true }]);
+    const moved = (await patch(p.id, { subcategoryId: flatId })).body.data;
+    expect(moved.legal.map((c: { key: string }) => c.key)).toEqual([
+      'rera',
+      'sale_deed',
+      'tax_receipts',
+    ]);
+    // A price change is reflected immediately.
+    const repriced = (
+      await patch(p.id, {
+        price: { amount: 3_000_000, basis: 'total', negotiable: false, onRequest: false },
+      })
+    ).body.data;
+    expect(repriced.pricePerSqft).toBe(2500);
+  });
+
+  it('never lets a stale edit overwrite a newer one (If-Match, H4)', async () => {
+    const created = (await villa()).body.data;
+    expect(created.version).toBe(0);
+    const edit = (version: string | null, title: string) => {
+      const req = as('admin', request(ctx.app).patch(`${BASE}/${created.id}`));
+      return (version === null ? req : req.set('if-match', version)).send({ title });
+    };
+
+    // Two people opened version 0. The first save wins and bumps the version...
+    const first = await edit('"0"', 'Villa edited by the first user');
+    expect(first.status).toBe(200);
+    expect(first.body.data.version).toBe(1);
+    expect(first.headers.etag).toBe('"1"');
+    // ...the second gets 409 with the current version instead of overwriting.
+    const stale = await edit('"0"', 'Villa edited by the second user');
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.code).toBe('VERSION_CONFLICT');
+    expect(stale.body.error.details[0].message).toBe('1');
+    // Without If-Match the API can't know which version was edited.
+    expect((await edit(null, 'No version')).status).toBe(428);
+    // A status change also counts as a change.
+    await setStatus(created.id, 'archived');
+    await setStatus(created.id, 'draft');
+    expect((await edit('"1"', 'Old version')).status).toBe(409);
+    expect((await PropertyModel.findById(created.id).lean())!.title).toBe(
+      'Villa edited by the first user',
+    );
+  });
+
+  it('a property type deleted while a property is being saved never leaves an orphan (L3)', async () => {
+    for (let round = 0; round < 4; round++) {
+      const types = await as('admin', request(ctx.app).post(`${TYPES}/subcategories`)).send({
+        categoryKey: 'residential',
+        name: `Race type ${round}`,
+        codePrefix: `RC${'ABCD'[round]}`,
+        purposes: ['sale'],
+      });
+      const raceSub = types.body.data.categories
+        .flatMap((c: { subcategories: { id: string; name: string }[] }) => c.subcategories)
+        .find((s: { name: string }) => s.name === `Race type ${round}`);
+      const [created, deleted] = await Promise.all([
+        create({ subcategoryId: raceSub.id, title: 'Racing property', purpose: 'sale' }),
+        as('admin', request(ctx.app).delete(`${TYPES}/subcategories/${raceSub.id}`)),
+      ]);
+      // Exactly one wins: either the property exists and the type stays, or the type is gone
+      // and no property points at it.
+      const typeExists = await PropertySubcategoryModel.exists({ _id: raceSub.id });
+      const orphans = await PropertyModel.countDocuments({ subcategoryId: raceSub.id });
+      if (typeExists) {
+        expect(created.status).toBe(201);
+        expect(deleted.status).toBe(422);
+      } else {
+        expect(deleted.status).toBe(200);
+        expect(orphans).toBe(0);
+      }
+    }
+  });
+
+  it('lists as Available only when complete, and a listed property stays complete', async () => {
     const id = (await villa()).body.data.id;
-    const blocked = await setStatus(id, 'published');
+    const blocked = await setStatus(id, 'available');
     expect(blocked.status).toBe(422);
     expect(blocked.body.error.code).toBe('PUBLISH_BLOCKED');
     expect(blocked.body.error.details).toContainEqual({
@@ -276,15 +385,15 @@ describe('properties API', () => {
     ).send({ required: true });
     await patch(id, COMPLETE);
     await addPhoto(id);
-    const stillBlocked = await setStatus(id, 'published');
+    const stillBlocked = await setStatus(id, 'available');
     expect(stillBlocked.body.error.details).toEqual([
       { path: 'attributeValues.bhk', message: 'Fill in BHK' },
     ]);
 
     await patch(id, { attributeValues: { bhk: '3 BHK' } });
-    const published = await setStatus(id, 'published');
+    const published = await setStatus(id, 'available');
     expect(published.status).toBe(200);
-    expect(published.body.data).toMatchObject({ status: 'published', publishIssues: [] });
+    expect(published.body.data).toMatchObject({ status: 'available', publishIssues: [] });
     expect(published.body.data.publishedAt).toEqual(expect.any(String));
 
     const clearPrice = await patch(id, { price: { amount: null } });
@@ -299,7 +408,7 @@ describe('properties API', () => {
     expect((await setStatus(id, 'booked')).body.error.message).toBe(
       "A Draft property can't be marked Booked.",
     );
-    await setStatus(id, 'published');
+    await setStatus(id, 'available');
     expect((await setStatus(id, 'rented')).body.error.message).toBe(
       'A property for Sale is marked Sold, not Rented.',
     );
@@ -319,7 +428,7 @@ describe('properties API', () => {
       .sort({ at: 1 })
       .lean();
     expect(statuses.map((l) => (l.changes as { status: string[] }).status[1])).toEqual([
-      'published',
+      'available',
       'booked',
       'sold',
       'archived',
@@ -333,7 +442,7 @@ describe('properties API', () => {
     const notReady = (await villa()).body.data;
     const res = await as('admin', request(ctx.app).post(`${BASE}/bulk-status`)).send({
       ids: [ready.id, notReady.id],
-      status: 'published',
+      status: 'available',
     });
     expect(res.body.data.updated).toEqual([{ id: ready.id, code: ready.code }]);
     expect(res.body.data.failed).toHaveLength(1);
@@ -380,8 +489,118 @@ describe('properties API', () => {
     });
 
     const counts = (await as('admin', request(ctx.app).get(`${BASE}/status-counts`))).body.data;
-    expect(counts).toMatchObject({ all: 2, draft: 2, archived: 1, published: 0 });
+    expect(counts).toMatchObject({ all: 2, draft: 2, archived: 1, available: 0 });
     expect((await list('sort=password')).status).toBe(400);
+
+    // Search: every word must start a word (code parts included); no match mid-word.
+    expect(codes(await list('q=villa%20vel'))).toEqual([b.code]);
+    expect(codes(await list('q=lachery'))).toEqual([]);
+    expect(codes(await list(`q=${a.code.slice(-6)}`))).toEqual([a.code]);
+    expect(codes(await list('q=600042'))).toEqual([b.code]);
+
+    // Archive view (PROP-51): a status filter wins over it.
+    expect(codes(await list('archived=only'))).toEqual([c.code]);
+    expect(codes(await list('archived=include'))).toEqual([c.code, b.code, a.code]);
+    expect(codes(await list('archived=include&status=draft'))).toEqual([b.code, a.code]);
+
+    // Legal filter (PROP-55): "open" = a mandatory check not verified yet.
+    await PropertyModel.updateOne(
+      { _id: a.id },
+      { $set: { 'legalSummary.openMandatory': ['Encumbrance certificate'] } },
+    );
+    expect(codes(await list('legal=open'))).toEqual([a.code]);
+    expect(codes(await list('legal=clean'))).toEqual([b.code]);
+    expect((await list('legal=maybe')).status).toBe(400);
+
+    // Rows carry what the list columns show, and nothing heavy.
+    const row = (await list(`q=${b.code}`)).body.data[0];
+    expect(row).toMatchObject({
+      pricePerSqft: Math.round(15_000_000 / 2100),
+      legalSummary: { openMandatory: [] },
+      publishedAt: null,
+    });
+    expect(row).not.toHaveProperty('attributeValues');
+  });
+
+  it('Location tab: one change at a time, versioned, logged, and complete while listed', async () => {
+    const p = (await villa(COMPLETE)).body.data as Property;
+    const location = async (body: object, version?: number) => {
+      const current =
+        version ??
+        (await PropertyModel.findById(p.id).select('version').lean<{ version?: number }>())
+          ?.version ??
+        0;
+      return as('admin', request(ctx.app).patch(`${BASE}/${p.id}/location`))
+        .set('if-match', `"${current}"`)
+        .send(body);
+    };
+
+    // An address field is merged; the rest of the location stays.
+    const road = await location({ location: { roadType: 'Tar road', roadWidthFt: 30 } });
+    expect(road.status).toBe(200);
+    expect(road.body.data.location).toMatchObject({
+      city: COMPLETE.location.city,
+      pincode: COMPLETE.location.pincode,
+      roadType: 'Tar road',
+      roadWidthFt: 30,
+    });
+
+    // Highway and nearby places (a new row gets an id; blank names are allowed while editing).
+    const highway = await location({
+      highway: { name: 'NH 44', distanceKm: 4.5, routeNote: 'Route driven 02 Nov 2026' },
+    });
+    expect(highway.body.data.highway).toEqual({
+      name: 'NH 44',
+      distanceKm: 4.5,
+      routeNote: 'Route driven 02 Nov 2026',
+    });
+    const school = {
+      category: 'School',
+      name: 'Kendriya Vidyalaya',
+      distanceKm: 1.2,
+      routeChecked: true,
+      status: 'existing',
+    };
+    const nearby = await location({
+      nearby: [school, { ...school, name: '', status: 'planned', routeChecked: false }],
+    });
+    expect(nearby.body.data.nearby).toHaveLength(2);
+    const [first] = nearby.body.data.nearby;
+    expect(first).toMatchObject({ ...school, id: expect.any(String) });
+    // Editing keeps the row id.
+    const edited = await location({ nearby: [{ ...first, distanceKm: 1.4 }] });
+    expect(edited.body.data.nearby).toEqual([{ ...first, distanceKm: 1.4 }]);
+
+    // Each save is in the history; a stale version is refused; one change at a time.
+    const logs = await ChangeLogModel.find({ entityId: p.id, action: 'updated' }).lean();
+    expect(logs.map((l) => Object.keys(l.changes ?? {})).flat()).toEqual(
+      expect.arrayContaining(['location', 'highway', 'nearby']),
+    );
+    expect((await location({ highway: null }, 0)).status).toBe(409);
+    expect((await location({ highway: null, nearby: [] })).status).toBe(400);
+    expect(
+      (await location({ nearby: [{ ...school, distanceKm: -1 }] })).body.error.details[0].message,
+    ).toBe('Distance cannot be negative');
+
+    // A listed property keeps what it needs to be Available.
+    await addPhoto(p.id);
+    expect((await setStatus(p.id, 'available')).status).toBe(200);
+    // Once listed, the listing date can be corrected (and the change is logged).
+    const listed = await patch(p.id, { listingDate: '2026-11-01' });
+    expect(listed.status).toBe(200);
+    expect(listed.body.data.publishedAt.slice(0, 10)).toBe('2026-11-01');
+    expect(
+      await ChangeLogModel.exists({ entityId: p.id, 'changes.listingDate': { $exists: true } }),
+    ).toBeTruthy();
+    const draft = (await villa(COMPLETE)).body.data as Property;
+    expect((await patch(draft.id, { listingDate: '2026-11-01' })).status).toBe(422);
+
+    const cleared = await location({ location: { pincode: '' } });
+    expect(cleared.status).toBe(422);
+    expect(cleared.body.error.code).toBe('PUBLISH_BLOCKED');
+    expect(
+      (await as('sales_executive', request(ctx.app).patch(`${BASE}/${p.id}/location`))).status,
+    ).toBe(403);
   });
 
   it('suggests existing city and locality spellings, most used first', async () => {
@@ -397,7 +616,7 @@ describe('properties API', () => {
     });
 
     const suggest = (qs: string) =>
-      as('sales_agent', request(ctx.app).get(`${BASE}/location-suggestions?${qs}`)).then(
+      as('sales_executive', request(ctx.app).get(`${BASE}/location-suggestions?${qs}`)).then(
         (r) => r.body.data,
       );
     expect(await suggest('field=city&q=chen')).toEqual([
@@ -408,6 +627,11 @@ describe('properties API', () => {
       { value: 'Tambaram', count: 2 },
       { value: 'Tambaram West', count: 1 },
     ]);
+    expect(await suggest('field=city&limit=1')).toEqual([{ value: 'Chennai', count: 3 }]);
+    expect(
+      (await as('admin', request(ctx.app).get(`${BASE}/location-suggestions?field=city&limit=500`)))
+        .status,
+    ).toBe(400);
   });
 
   it('duplicates a property as a new Draft without photos', async () => {

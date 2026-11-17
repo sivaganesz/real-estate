@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createLogger } from '../../lib/logger';
 import { hashPassword } from '../../lib/password';
 import { buildTestApp, startTestDatabase } from '../../test/helpers';
+import { TEST_CATALOGUE } from '../../test/testCatalogue';
 import { PropertyMediaService } from '../properties/media.service';
 import { PropertiesService } from '../properties/properties.service';
 import { CounterModel, PropertyModel } from '../properties/property.model';
@@ -22,7 +23,7 @@ import { UserModel } from '../users/user.model';
 import { ImportBatchModel } from './importBatch.model';
 import { ImportsService } from './imports.service';
 
-const PASSWORD = 'correct-horse-9';
+const PASSWORD = 'Correct-horse-9';
 const BASE = '/api/v1/admin/imports';
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const MODELS = [
@@ -110,10 +111,10 @@ describe('bulk import', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
     const passwordHash = await hashPassword(PASSWORD);
-    for (const role of ['admin', 'sales_agent'] as const) {
+    for (const role of ['admin', 'sales_executive'] as const) {
       const user = await UserModel.create({
         name: role === 'admin' ? 'Asha Admin' : 'Ravi Agent',
         email: `${role}@company.com`,
@@ -299,7 +300,7 @@ describe('bulk import', () => {
     expect(history.body.meta.total).toBe(1);
   });
 
-  it('updates duplicates when asked; Published without a photo is saved as Draft with a reason', async () => {
+  it('updates duplicates when asked; Available without a photo is saved as Draft with a reason', async () => {
     const first = await fill((await template()).body, [VALID]);
     const b1: ImportBatchDetail = (await upload(first)).body.data;
     await as('admin', request(ctx.app).post(`${BASE}/${b1.id}/commit`)).send({
@@ -311,7 +312,7 @@ describe('bulk import', () => {
     const b2: ImportBatchDetail = (await upload(second)).body.data;
     expect(b2.rows[0]!.status).toBe('duplicate');
     const res = await as('admin', request(ctx.app).post(`${BASE}/${b2.id}/commit`)).send({
-      importAs: 'published',
+      importAs: 'available',
       duplicates: 'update',
     });
     expect(res.body.data.result).toMatchObject({ updated: 1, created: 0, savedAsDraft: 1 });
@@ -383,7 +384,7 @@ describe('bulk import', () => {
     expect(after.amenityIds).toEqual([amenity]);
   });
 
-  it('an updated Sold property stays Sold, even when importing as Published', async () => {
+  it('an updated Sold property stays Sold, even when importing as Available', async () => {
     const created = await as('admin', request(ctx.app).post('/api/v1/admin/properties')).send({
       subcategoryId: villaId,
       title: 'Sold villa',
@@ -410,7 +411,7 @@ describe('bulk import', () => {
     expect(batch.rows[0]!.status).toBe('duplicate');
     const done: ImportBatchDetail = (
       await as('admin', request(ctx.app).post(`${BASE}/${batch.id}/commit`)).send({
-        importAs: 'published',
+        importAs: 'available',
         duplicates: 'update',
       })
     ).body.data;
@@ -459,10 +460,14 @@ describe('bulk import', () => {
     const empty = await upload((await template()).body);
     expect(empty.body.error.code).toBe('EMPTY_FILE');
     expect(
-      (await as('sales_agent', request(ctx.app).get(`${BASE}/template?subcategoryId=${villaId}`)))
-        .status,
+      (
+        await as(
+          'sales_executive',
+          request(ctx.app).get(`${BASE}/template?subcategoryId=${villaId}`),
+        )
+      ).status,
     ).toBe(403);
-    expect((await upload((await template()).body, 'sales_agent')).status).toBe(403);
+    expect((await upload((await template()).body, 'sales_executive')).status).toBe(403);
   });
 });
 
@@ -479,7 +484,7 @@ describe('bulk import photos', () => {
   });
   beforeEach(async () => {
     await db.clear();
-    await ensureStartingPropertyTypes();
+    await ensureStartingPropertyTypes(TEST_CATALOGUE);
     ctx = await buildTestApp();
   });
   afterEach(async () => {
@@ -522,7 +527,7 @@ describe('bulk import photos', () => {
       originalname: 'villas.xlsx',
     });
     const done = await imports.commit(actor, batch.id, {
-      importAs: 'published',
+      importAs: 'available',
       duplicates: 'skip',
     });
 
@@ -536,7 +541,7 @@ describe('bulk import photos', () => {
       'Created RE-VIL-000001 (photo 2 skipped: the link answered 404)',
     );
     const p = (await PropertyModel.findOne({ code: 'RE-VIL-000001' }).lean())!;
-    expect(p.status).toBe('published');
+    expect(p.status).toBe('available');
     expect(p.media).toHaveLength(1);
     expect(p.media[0]).toMatchObject({ kind: 'image', isCover: true, originalName: 'front.jpg' });
   });

@@ -27,13 +27,22 @@ export function requestLogger(logger: Logger) {
       return 'info';
     },
     serializers: {
+      // Path only: query strings can carry tokens or personal data and are never logged (H3).
       req: (req: { id: unknown; method: string; url: string }) => ({
         id: req.id,
         method: req.method,
-        url: req.url,
+        path: pathOnly(req.url),
       }),
       res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
     },
-    autoLogging: { ignore: (req) => req.url === '/health' },
+    autoLogging: { ignore: (req) => HEALTH_PATHS.has(pathOnly(req.url ?? '')) },
   });
+}
+
+const HEALTH_PATHS = new Set(['/health', '/live', '/ready']);
+
+/** `/a/b?token=x` → `/a/b`. */
+export function pathOnly(url: string): string {
+  const q = url.indexOf('?');
+  return q === -1 ? url : url.slice(0, q);
 }

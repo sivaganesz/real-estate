@@ -1,9 +1,13 @@
 import type {
+  CreateRoleBody,
   InviteUserBody,
   ListUsersQuery,
   PageMeta,
+  PermissionCatalog,
+  RoleInfo,
   RoleMatrixRow,
-  Role,
+  RoleOption,
+  UpdateRoleBody,
   UpdateUserBody,
   User,
   UserStats,
@@ -12,7 +16,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/lib/api';
 
 export interface RolesResponse {
-  roles: { role: Role; label: string; description: string }[];
+  roles: RoleInfo[];
   matrix: RoleMatrixRow[];
 }
 
@@ -22,6 +26,8 @@ export const usersKeys = {
   stats: ['users', 'stats'] as const,
   detail: (id: string) => ['users', 'detail', id] as const,
   roles: ['roles'] as const,
+  roleOptions: ['roles', 'options'] as const,
+  permissions: ['permissions'] as const,
 };
 
 function toQueryString(query: Partial<ListUsersQuery>): string {
@@ -61,13 +67,64 @@ export function useUserStats() {
   });
 }
 
+/** Roles with user counts and the permission matrix (Users & Roles → Roles). */
 export function useRoles() {
   return useQuery({
     queryKey: usersKeys.roles,
     queryFn: () => api.get<RolesResponse>('/admin/roles'),
+  });
+}
+
+/** Role choices for Invite user, Edit user and the role filter. */
+export function useRoleOptions() {
+  return useQuery({
+    queryKey: usersKeys.roleOptions,
+    queryFn: () => api.get<RoleOption[]>('/admin/roles/options'),
+    staleTime: 60_000,
+  });
+}
+
+/** The fixed permission catalogue the role editor offers. */
+export function usePermissionCatalog() {
+  return useQuery({
+    queryKey: usersKeys.permissions,
+    queryFn: () => api.get<PermissionCatalog>('/admin/permissions'),
     staleTime: Infinity,
   });
 }
+
+/** Role changes refresh the roles, the pickers and the users list (role names, counts). */
+function useRolesMutation<TVars, TResult>(fn: (vars: TVars) => Promise<TResult>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersKeys.roles }),
+        queryClient.invalidateQueries({ queryKey: usersKeys.all }),
+      ]),
+  });
+}
+
+export const useCreateRole = () =>
+  useRolesMutation((body: CreateRoleBody) => api.post<RoleInfo>('/admin/roles', body));
+
+export const useUpdateRole = () =>
+  useRolesMutation(
+    ({ key, version, body }: { key: string; version: number; body: UpdateRoleBody }) =>
+      api.patch<RoleInfo>(`/admin/roles/${key}`, body, { ifMatch: version }),
+  );
+
+export const useResetRole = () =>
+  useRolesMutation((key: string) => api.post<RoleInfo>(`/admin/roles/${key}/reset`));
+
+export const useDeleteRole = () =>
+  useRolesMutation((key: string) => api.delete<void>(`/admin/roles/${key}`));
+
+export const useMoveRoleUsers = () =>
+  useRolesMutation(({ from, to }: { from: string; to: string }) =>
+    api.post<{ moved: number }>(`/admin/roles/${from}/move-users`, { toRole: to }),
+  );
 
 /** The updated user returned by a mutation, if any (some return { user, emailSent }). */
 function updatedUser(result: unknown): User | undefined {

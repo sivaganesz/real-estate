@@ -1,5 +1,13 @@
-import type { AmenityIcon, AttributeType, CategoryKey, Purpose } from '@real-estate/shared';
-import { normalizeLabel } from '@real-estate/shared';
+import { legalChecklist, normalizeLabel } from '@real-estate/shared';
+import type {
+  AmenityIcon,
+  AttributeType,
+  CategoryKey,
+  LegalCheckKey,
+  LegalChecklistItem,
+  MainAreaMeaning,
+  Purpose,
+} from '@real-estate/shared';
 import {
   AmenityModel,
   PropertyAttributeModel,
@@ -7,7 +15,13 @@ import {
   PropertySubcategoryModel,
 } from './propertyTypes.model';
 
-interface StartingAttribute {
+/**
+ * The starting property catalogue v2, approved 2026-11-16 (docs/v2/PROPERTY-CATALOGUE.md),
+ * from the wireframe's property types. Attributes that suit every type are common; the
+ * rest belong to one type. Admins change all of it later in Settings.
+ */
+
+export interface StartingAttribute {
   key: string;
   label: string;
   type: AttributeType;
@@ -18,154 +32,271 @@ interface StartingAttribute {
 
 const FACING = [
   'East',
-  'West',
   'North',
+  'West',
   'South',
   'North-East',
   'North-West',
   'South-East',
   'South-West',
 ];
-const BHK = ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK', '5+ BHK'];
-const FURNISHING = ['Unfurnished', 'Semi-furnished', 'Fully furnished'];
-const POSSESSION = ['Ready to move', 'Under construction'];
+const WATER_SUPPLY = [
+  'Municipal supply',
+  'Borewell',
+  'Municipal + borewell',
+  'Tanker dependent',
+  'Not available',
+];
 
-/**
- * The starting attribute library. Each attribute is defined once and can be placed in
- * several categories and subcategories (e.g. "Carpet area" for flats and offices). All optional.
- */
+/** Each attribute is defined once; shared ones (water supply, maintenance) are placed twice. */
 const ATTRIBUTES: StartingAttribute[] = [
-  // Common attributes (Residential and Commercial)
+  // Common: every property type
   { key: 'facing', label: 'Facing', type: 'dropdown', options: FACING, searchFilter: true },
-  {
-    key: 'ownership_type',
-    label: 'Ownership type',
-    type: 'dropdown',
-    options: ['Freehold', 'Leasehold'],
-  },
   { key: 'description', label: 'Description', type: 'long_text' },
-  // Plots and land
-  { key: 'plot_dimensions', label: 'Plot dimensions', type: 'text' },
-  { key: 'road_width', label: 'Road width', type: 'number', unit: 'ft', searchFilter: true },
-  { key: 'corner_plot', label: 'Corner plot', type: 'yes_no', searchFilter: true },
-  {
-    key: 'approval_type',
-    label: 'Approval type',
-    type: 'dropdown',
-    options: ['DTCP', 'CMDA', 'Panchayat', 'Unapproved'],
-    searchFilter: true,
-  },
-  { key: 'boundary_wall', label: 'Boundary wall', type: 'yes_no' },
-  { key: 'layout_name', label: 'Layout name', type: 'text' },
-  { key: 'plot_number', label: 'Plot number', type: 'text' },
-  // Villa / House and Apartment / Flat (several are shared by both)
-  { key: 'bhk', label: 'BHK', type: 'dropdown', options: BHK, searchFilter: true },
-  { key: 'bathrooms', label: 'Bathrooms', type: 'number', searchFilter: true },
-  { key: 'built_up_area', label: 'Built-up area', type: 'number', unit: 'sq.ft' },
-  { key: 'floors', label: 'Floors', type: 'number' },
-  { key: 'car_parking', label: 'Car parking', type: 'number', unit: 'slots' },
-  {
-    key: 'furnishing',
-    label: 'Furnishing',
-    type: 'dropdown',
-    options: FURNISHING,
-    searchFilter: true,
-  },
-  {
-    key: 'possession',
-    label: 'Possession',
-    type: 'dropdown',
-    options: POSSESSION,
-    searchFilter: true,
-  },
-  {
-    key: 'age_of_property',
-    label: 'Age of property',
-    type: 'dropdown',
-    options: ['New', '1–5 years', '5–10 years', '10+ years'],
-  },
-  { key: 'carpet_area', label: 'Carpet area', type: 'number', unit: 'sq.ft' },
-  { key: 'floor_number', label: 'Floor number', type: 'number' },
-  { key: 'total_floors', label: 'Total floors', type: 'number' },
-  { key: 'lift', label: 'Lift', type: 'yes_no', searchFilter: true },
+  // Shared by several types
+  { key: 'water_supply', label: 'Water supply', type: 'dropdown', options: WATER_SUPPLY },
   { key: 'maintenance', label: 'Maintenance', type: 'number', unit: '₹ / month' },
-  { key: 'rera_number', label: 'RERA number', type: 'text' },
-  // Commercial
+  // Residential plot
+  { key: 'length', label: 'Length', type: 'number', unit: 'ft' },
+  { key: 'width', label: 'Width', type: 'number', unit: 'ft' },
   {
-    key: 'office_fit_out',
-    label: 'Office fit-out',
+    key: 'road_access',
+    label: 'Road access',
     type: 'dropdown',
-    options: ['Bare shell', 'Warm shell', 'Plug and play'],
+    options: ['Public road', 'Layout road', 'Private / pathway access'],
     searchFilter: true,
   },
-  { key: 'cabins', label: 'Cabins', type: 'number' },
-  { key: 'workstations', label: 'Workstations', type: 'number', searchFilter: true },
-  { key: 'washrooms', label: 'Washrooms', type: 'number' },
-  { key: 'frontage', label: 'Frontage', type: 'number', unit: 'ft' },
-  { key: 'ceiling_height', label: 'Ceiling height', type: 'number', unit: 'ft' },
-  { key: 'main_road_facing', label: 'Main road facing', type: 'yes_no', searchFilter: true },
   {
-    key: 'suitable_for',
-    label: 'Suitable for',
-    type: 'multi_select',
-    options: ['Retail', 'Showroom', 'Restaurant / Café', 'Clinic', 'Bank / ATM', 'Office'],
+    key: 'corner',
+    label: 'Corner / non-corner',
+    type: 'dropdown',
+    options: ['Non-corner', 'Corner'],
     searchFilter: true,
   },
+  {
+    key: 'topography',
+    label: 'Topography',
+    type: 'dropdown',
+    options: ['Level', 'Gentle slope', 'Elevated', 'Low-lying'],
+  },
+  { key: 'survey_number', label: 'Survey number', type: 'text' },
+  { key: 'subdivision', label: 'Subdivision', type: 'text' },
+  { key: 'layout_approval', label: 'Layout approval details', type: 'text' },
   {
     key: 'land_use',
-    label: 'Land use',
+    label: 'Land-use classification',
     type: 'dropdown',
-    options: ['Commercial', 'Mixed use', 'Industrial'],
-    searchFilter: true,
-  },
-  { key: 'loading_docks', label: 'Loading docks', type: 'number' },
-  { key: 'truck_access', label: 'Truck access', type: 'yes_no', searchFilter: true },
-  { key: 'power_load', label: 'Power load', type: 'number', unit: 'kVA' },
-  // Other (agricultural and industrial land)
-  { key: 'survey_number', label: 'Survey number', type: 'text' },
-  {
-    key: 'water_source',
-    label: 'Water source',
-    type: 'multi_select',
-    options: ['Borewell', 'Open well', 'Canal', 'River', 'Rain-fed'],
+    options: [
+      'Residential',
+      'Mixed residential',
+      'Commercial',
+      'Agricultural (conversion required)',
+    ],
     searchFilter: true,
   },
   {
-    key: 'soil_type',
-    label: 'Soil type',
+    key: 'electricity',
+    label: 'Electricity',
     type: 'dropdown',
-    options: ['Red soil', 'Black soil', 'Alluvial', 'Sandy', 'Clay', 'Loamy'],
+    options: ['Available at site', 'Line nearby — connection to apply', 'Not available'],
+  },
+  {
+    key: 'drainage',
+    label: 'Drainage',
+    type: 'dropdown',
+    options: ['Underground drainage', 'Open drain', 'Not available'],
+  },
+  // Flat / Apartment
+  {
+    key: 'bhk',
+    label: 'BHK configuration',
+    type: 'dropdown',
+    options: ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '4+ BHK'],
     searchFilter: true,
   },
-  { key: 'road_access', label: 'Road access', type: 'yes_no', searchFilter: true },
-  { key: 'electricity_connection', label: 'Electricity connection', type: 'yes_no' },
-  { key: 'fencing', label: 'Fencing', type: 'yes_no' },
-  { key: 'water_connection', label: 'Water connection', type: 'yes_no' },
+  { key: 'carpet_area', label: 'Carpet area', type: 'number', unit: 'sq.ft' },
+  { key: 'super_built_up_area', label: 'Super built-up area', type: 'number', unit: 'sq.ft' },
+  { key: 'floor_number', label: 'Floor number', type: 'number' },
+  { key: 'total_floors', label: 'Total floors', type: 'number' },
+  { key: 'lifts', label: 'Number of lifts', type: 'number' },
+  {
+    key: 'parking_allocation',
+    label: 'Parking allocation',
+    type: 'dropdown',
+    options: ['None', '1 covered', '2 covered', '1 open', 'Shared'],
+    searchFilter: true,
+  },
+  { key: 'uds', label: 'UDS (undivided share of land)', type: 'number', unit: 'sq.ft' },
+  {
+    key: 'possession_status',
+    label: 'Possession status',
+    type: 'dropdown',
+    options: ['Ready to move', 'Under construction'],
+    searchFilter: true,
+  },
+  { key: 'expected_possession', label: 'Expected possession', type: 'month' },
+  // Independent house / Villa
+  {
+    key: 'house_type',
+    label: 'House or villa',
+    type: 'dropdown',
+    options: ['Independent house', 'Villa (gated community)', 'Row house'],
+    searchFilter: true,
+  },
+  { key: 'land_area', label: 'Land area', type: 'number', unit: 'sq.ft' },
+  { key: 'floors', label: 'Number of floors', type: 'number' },
+  { key: 'bedrooms', label: 'Bedrooms', type: 'number', searchFilter: true },
+  { key: 'bathrooms', label: 'Bathrooms', type: 'number' },
+  {
+    key: 'car_parking',
+    label: 'Car parking',
+    type: 'dropdown',
+    options: ['None', '1 car', '2 cars', '3+ cars'],
+    searchFilter: true,
+  },
+  { key: 'construction_year', label: 'Construction year', type: 'number' },
+  {
+    key: 'construction_quality',
+    label: 'Construction quality',
+    type: 'dropdown',
+    options: ['Premium', 'Standard', 'Basic'],
+  },
+  {
+    key: 'condition',
+    label: 'Condition',
+    type: 'dropdown',
+    options: ['New', 'Good', 'Needs minor repair', 'Needs major repair'],
+  },
+  { key: 'garden', label: 'Private garden / amenities', type: 'text' },
+  {
+    key: 'power_arrangement',
+    label: 'Power arrangement',
+    type: 'dropdown',
+    options: ['EB connection', 'EB + inverter', 'EB + generator backup', 'EB + solar'],
+  },
+  {
+    key: 'approval_docs',
+    label: 'Approval & completion documents',
+    type: 'dropdown',
+    options: ['Approval + completion available', 'Approval only', 'Not available'],
+  },
+  // Commercial (all commercial types)
+  { key: 'floor', label: 'Floor', type: 'text' },
+  { key: 'frontage', label: 'Frontage', type: 'number', unit: 'ft' },
+  {
+    key: 'parking',
+    label: 'Parking',
+    type: 'dropdown',
+    options: ['None', 'Street parking', 'Dedicated 1–5', 'Dedicated 5+'],
+    searchFilter: true,
+  },
+  { key: 'permitted_usage', label: 'Permitted usage', type: 'text' },
+  {
+    key: 'occupancy',
+    label: 'Occupancy status',
+    type: 'dropdown',
+    options: ['Vacant', 'Tenanted', 'Owner-occupied'],
+    searchFilter: true,
+  },
+  { key: 'rental_income', label: 'Rental income', type: 'number', unit: '₹ / month' },
+  { key: 'lease_duration', label: 'Lease duration', type: 'text' },
+  { key: 'lease_terms', label: 'Lease terms', type: 'text' },
+  { key: 'operating_expenses', label: 'Operating expenses', type: 'number', unit: '₹ / year' },
 ];
 
 /** An attribute placed in a category or subcategory: its key, or `{ key, required }`. */
-type Place = string | { key: string; required: boolean };
+export type Place = string | { key: string; required: boolean };
 
-interface StartingSubcategory {
+export interface StartingSubcategory {
   name: string;
   codePrefix: string;
   purposes: Purpose[];
+  mainAreaMeaning: MainAreaMeaning;
+  legalChecklist: LegalChecklistItem[];
   attributes: Place[];
 }
 
-interface StartingAmenity {
+export interface StartingAmenity {
   name: string;
   icon: AmenityIcon;
   /** Subcategory code prefixes, or 'all'. */
   for: 'all' | string[];
 }
 
-interface StartingCategory {
+export interface StartingCategory {
   name: string;
   attributes: Place[];
   subcategories: StartingSubcategory[];
   amenities: StartingAmenity[];
 }
+
+/** Legal checklists from the wireframe (PRD v2 §6.6); mandatory checks are listed second. */
+const LEGAL: Record<'plot' | 'flat' | 'house' | 'commercial', LegalChecklistItem[]> = {
+  plot: legalChecklist(
+    [
+      'parent_documents',
+      'sale_deed',
+      'encumbrance_certificate',
+      'patta',
+      'fmb_survey',
+      'land_use',
+      'layout_approval',
+      'rera',
+      'tax_receipts',
+    ],
+    ['sale_deed', 'encumbrance_certificate', 'layout_approval'],
+  ),
+  flat: legalChecklist(
+    [
+      'parent_documents',
+      'sale_deed',
+      'encumbrance_certificate',
+      'patta',
+      'building_plan',
+      'completion_certificate',
+      'rera',
+      'tax_receipts',
+    ],
+    ['sale_deed', 'encumbrance_certificate', 'building_plan', 'rera'],
+  ),
+  house: legalChecklist(
+    [
+      'parent_documents',
+      'sale_deed',
+      'encumbrance_certificate',
+      'patta',
+      'fmb_survey',
+      'building_plan',
+      'completion_certificate',
+      'tax_receipts',
+    ],
+    ['sale_deed', 'encumbrance_certificate', 'building_plan'],
+  ),
+  commercial: legalChecklist(
+    [
+      'parent_documents',
+      'sale_deed',
+      'encumbrance_certificate',
+      'patta',
+      'land_use',
+      'building_plan',
+      'completion_certificate',
+      'fire_noc',
+      'tax_receipts',
+    ] satisfies LegalCheckKey[],
+    ['sale_deed', 'encumbrance_certificate', 'building_plan'],
+  ),
+};
+
+const COMMERCIAL_TYPE = (name: string, codePrefix: string): StartingSubcategory => ({
+  name,
+  codePrefix,
+  purposes: ['sale', 'rent', 'lease'],
+  mainAreaMeaning: 'usable',
+  legalChecklist: LEGAL.commercial,
+  // The commercial specification is common to all five types (category level).
+  attributes: [],
+});
 
 /** The categories in display order. A category without a starting setup stays inactive. */
 const CATEGORY_ORDER: { key: CategoryKey; name: string }[] = [
@@ -174,202 +305,133 @@ const CATEGORY_ORDER: { key: CategoryKey; name: string }[] = [
   { key: 'other', name: 'Other' },
 ];
 
-/** What each category starts with. A category with a setup here becomes active. */
+/** What each category starts with. "Other" has no setup, so it stays inactive. */
 const SETUPS: Partial<Record<CategoryKey, StartingCategory>> = {
   residential: {
     name: 'Residential',
-    attributes: ['facing', 'ownership_type', 'description'],
+    attributes: ['facing', 'description'],
     subcategories: [
       {
-        name: 'Residential Plot',
+        name: 'Residential plot',
         codePrefix: 'PLT',
         purposes: ['sale', 'lease'],
+        mainAreaMeaning: 'plot',
+        legalChecklist: LEGAL.plot,
         attributes: [
-          'plot_dimensions',
-          'road_width',
-          'corner_plot',
-          'approval_type',
-          'boundary_wall',
-          'layout_name',
-          'plot_number',
+          'length',
+          'width',
+          'road_access',
+          'corner',
+          'topography',
+          'survey_number',
+          'subdivision',
+          'layout_approval',
+          'land_use',
+          'water_supply',
+          'electricity',
+          'drainage',
         ],
       },
       {
-        name: 'Villa / House',
-        codePrefix: 'VIL',
-        purposes: ['sale', 'rent', 'lease'],
-        attributes: [
-          'bhk',
-          'bathrooms',
-          'built_up_area',
-          'floors',
-          'car_parking',
-          'furnishing',
-          'possession',
-          'age_of_property',
-        ],
-      },
-      {
-        name: 'Apartment / Flat',
+        name: 'Flat / Apartment',
         codePrefix: 'APT',
         purposes: ['sale', 'rent', 'lease'],
+        mainAreaMeaning: 'built_up',
+        legalChecklist: LEGAL.flat,
         attributes: [
           'bhk',
-          'bathrooms',
           'carpet_area',
+          'super_built_up_area',
           'floor_number',
           'total_floors',
-          'lift',
-          'car_parking',
-          'furnishing',
-          'possession',
+          'lifts',
+          'parking_allocation',
+          'uds',
           'maintenance',
-          'rera_number',
+          'possession_status',
+          'expected_possession',
+        ],
+      },
+      {
+        name: 'Independent house / Villa',
+        codePrefix: 'VIL',
+        purposes: ['sale', 'rent', 'lease'],
+        mainAreaMeaning: 'built_up',
+        legalChecklist: LEGAL.house,
+        attributes: [
+          'house_type',
+          'land_area',
+          'floors',
+          'bedrooms',
+          'bathrooms',
+          'car_parking',
+          'construction_year',
+          'construction_quality',
+          'condition',
+          'garden',
+          'water_supply',
+          'power_arrangement',
+          'approval_docs',
         ],
       },
     ],
     amenities: [
       { name: 'Gated community', icon: 'fence', for: 'all' },
-      { name: '24×7 security', icon: 'shield-check', for: 'all' },
-      { name: 'CCTV surveillance', icon: 'cctv', for: 'all' },
-      { name: 'Park / Garden', icon: 'trees', for: 'all' },
-      { name: "Children's play area", icon: 'baby', for: 'all' },
-      { name: 'Street lights', icon: 'lightbulb', for: ['PLT'] },
-      { name: 'Tar roads', icon: 'route', for: ['PLT'] },
-      { name: 'Covered car parking', icon: 'car', for: ['VIL', 'APT'] },
-      { name: 'Power backup', icon: 'zap', for: ['VIL', 'APT'] },
-      { name: 'Rainwater harvesting', icon: 'cloud-rain', for: ['VIL', 'APT'] },
-      { name: 'Swimming pool', icon: 'waves', for: ['VIL', 'APT'] },
-      { name: 'Club house', icon: 'building-2', for: ['VIL', 'APT'] },
-      { name: 'Gym', icon: 'dumbbell', for: ['VIL', 'APT'] },
-      { name: 'Lift', icon: 'arrow-up-down', for: ['APT'] },
+      { name: 'Security', icon: 'shield-check', for: 'all' },
+      { name: 'Park / open space', icon: 'trees', for: 'all' },
+      { name: 'Power backup', icon: 'zap', for: 'all' },
+      { name: 'Lift', icon: 'arrow-up-down', for: ['APT', 'VIL'] },
+      { name: 'Gym', icon: 'dumbbell', for: ['APT', 'VIL'] },
+      { name: 'Swimming pool', icon: 'waves', for: ['APT', 'VIL'] },
+      { name: 'Clubhouse', icon: 'building-2', for: ['APT', 'VIL'] },
+      { name: 'Rainwater harvesting', icon: 'cloud-rain', for: 'all' },
+      { name: 'CCTV', icon: 'cctv', for: 'all' },
+      { name: 'Visitor parking', icon: 'square-parking', for: ['APT', 'VIL'] },
     ],
   },
   commercial: {
     name: 'Commercial',
-    attributes: ['facing', 'ownership_type', 'description'],
+    attributes: [
+      'facing',
+      'description',
+      'floor',
+      'frontage',
+      'parking',
+      'permitted_usage',
+      'occupancy',
+      'rental_income',
+      'lease_duration',
+      'lease_terms',
+      'maintenance',
+      'operating_expenses',
+    ],
     subcategories: [
-      {
-        name: 'Office space',
-        codePrefix: 'OFC',
-        purposes: ['sale', 'rent', 'lease'],
-        attributes: [
-          'carpet_area',
-          'floor_number',
-          'total_floors',
-          'office_fit_out',
-          'cabins',
-          'workstations',
-          'washrooms',
-          'car_parking',
-          'lift',
-          'maintenance',
-        ],
-      },
-      {
-        name: 'Shop / Showroom',
-        codePrefix: 'SHP',
-        purposes: ['sale', 'rent', 'lease'],
-        attributes: [
-          'carpet_area',
-          'floor_number',
-          'frontage',
-          'ceiling_height',
-          'washrooms',
-          'car_parking',
-          'main_road_facing',
-          'suitable_for',
-        ],
-      },
-      {
-        name: 'Commercial land',
-        codePrefix: 'CLD',
-        purposes: ['sale', 'lease'],
-        attributes: [
-          { key: 'plot_dimensions', required: true },
-          'road_width',
-          'corner_plot',
-          'approval_type',
-          'land_use',
-          'plot_number',
-        ],
-      },
-      {
-        name: 'Warehouse / Godown',
-        codePrefix: 'WHS',
-        purposes: ['sale', 'rent', 'lease'],
-        attributes: [
-          'built_up_area',
-          'ceiling_height',
-          'loading_docks',
-          'truck_access',
-          'power_load',
-          'approval_type',
-        ],
-      },
+      COMMERCIAL_TYPE('Office space', 'OFC'),
+      COMMERCIAL_TYPE('Shop / Showroom', 'SHP'),
+      COMMERCIAL_TYPE('Warehouse / Godown', 'WHS'),
+      COMMERCIAL_TYPE('Commercial building', 'CBD'),
+      COMMERCIAL_TYPE('Industrial shed', 'ISH'),
     ],
     amenities: [
-      { name: '24×7 security', icon: 'shield-check', for: 'all' },
-      { name: 'CCTV surveillance', icon: 'cctv', for: 'all' },
+      { name: 'Security', icon: 'shield-check', for: 'all' },
       { name: 'Power backup', icon: 'zap', for: 'all' },
-      { name: 'Fire safety', icon: 'flame', for: 'all' },
-      { name: 'Water supply', icon: 'droplets', for: 'all' },
-      { name: 'Lift', icon: 'arrow-up-down', for: ['OFC', 'SHP'] },
-      { name: 'Visitor parking', icon: 'square-parking', for: ['OFC', 'SHP'] },
-      { name: 'Air conditioning', icon: 'snowflake', for: ['OFC', 'SHP'] },
-      { name: 'Cafeteria', icon: 'coffee', for: ['OFC'] },
-      { name: 'Conference room', icon: 'presentation', for: ['OFC'] },
-      { name: 'Loading bay', icon: 'truck', for: ['WHS'] },
-      { name: 'Compound wall', icon: 'fence', for: ['CLD', 'WHS'] },
-    ],
-  },
-  other: {
-    name: 'Other',
-    attributes: ['ownership_type', 'description'],
-    subcategories: [
-      {
-        name: 'Agricultural land',
-        codePrefix: 'AGR',
-        purposes: ['sale', 'lease'],
-        attributes: [
-          'survey_number',
-          'water_source',
-          'soil_type',
-          'road_access',
-          'road_width',
-          'electricity_connection',
-          'fencing',
-        ],
-      },
-      {
-        name: 'Industrial land',
-        codePrefix: 'IND',
-        purposes: ['sale', 'lease'],
-        attributes: [
-          'plot_dimensions',
-          'road_width',
-          'land_use',
-          'approval_type',
-          'power_load',
-          'water_connection',
-          'truck_access',
-          'survey_number',
-        ],
-      },
-    ],
-    amenities: [
-      { name: 'Compound wall', icon: 'fence', for: 'all' },
-      { name: '24×7 security', icon: 'shield-check', for: 'all' },
-      { name: 'Tar roads', icon: 'route', for: 'all' },
-      { name: 'Storage shed', icon: 'store', for: 'all' },
-      { name: 'Farm house', icon: 'building-2', for: ['AGR'] },
-      { name: 'Drip irrigation', icon: 'droplets', for: ['AGR'] },
-      { name: 'Solar power', icon: 'sun', for: ['AGR'] },
-      { name: 'CCTV surveillance', icon: 'cctv', for: ['IND'] },
-      { name: 'Street lights', icon: 'lightbulb', for: ['IND'] },
+      { name: 'Lift', icon: 'arrow-up-down', for: 'all' },
+      { name: 'Rainwater harvesting', icon: 'cloud-rain', for: 'all' },
+      { name: 'CCTV', icon: 'cctv', for: 'all' },
+      { name: 'Visitor parking', icon: 'square-parking', for: 'all' },
+      { name: 'Loading bay', icon: 'truck', for: ['WHS', 'ISH'] },
     ],
   },
 };
+
+/** A starting catalogue: the attribute library and what each category starts with. */
+export interface Catalogue {
+  attributes: StartingAttribute[];
+  setups: Partial<Record<CategoryKey, StartingCategory>>;
+}
+
+/** The product's catalogue (v2). Tests of general behaviour pass a fixed catalogue instead. */
+export const STARTING_CATALOGUE: Catalogue = { attributes: ATTRIBUTES, setups: SETUPS };
 
 const placeKey = (p: Place) => (typeof p === 'string' ? p : p.key);
 
@@ -377,9 +439,12 @@ const placeKey = (p: Place) => (typeof p === 'string' ? p : p.key);
  * Finds or creates the starting attributes with these keys and returns key → id.
  * An attribute an admin already made with the same name is reused instead of duplicated.
  */
-async function ensureAttributes(keys: string[]): Promise<Map<string, string>> {
+async function ensureAttributes(
+  keys: string[],
+  library: StartingAttribute[],
+): Promise<Map<string, string>> {
   const ids = new Map<string, string>();
-  for (const attr of ATTRIBUTES.filter((a) => keys.includes(a.key))) {
+  for (const attr of library.filter((a) => keys.includes(a.key))) {
     const labelKey = normalizeLabel(attr.label);
     const existing = await PropertyAttributeModel.findOne({
       $or: [{ key: attr.key }, { labelKey }],
@@ -405,13 +470,13 @@ async function ensureAttributes(keys: string[]): Promise<Map<string, string>> {
 }
 
 /**
- * Sets up one category the first time: its attributes, subcategories and common attributes,
- * then marks it active. A marker (`setupSeededAt`) makes sure this happens only once, so
- * anything an admin later deletes never comes back. Subcategories whose name or code prefix
- * is already taken are skipped.
+ * Sets up one category the first time: its attributes, subcategories (with their main-area
+ * meaning and legal checklist) and common attributes, then marks it active. A marker
+ * (`setupSeededAt`) makes sure this happens only once, so anything an admin later deletes
+ * never comes back. Subcategories whose name or code prefix is already taken are skipped.
  */
-async function ensureCategorySetup(key: CategoryKey): Promise<boolean> {
-  const setup = SETUPS[key];
+async function ensureCategorySetup(key: CategoryKey, catalogue: Catalogue): Promise<boolean> {
+  const setup = catalogue.setups[key];
   const category = await PropertyCategoryModel.findOne({ key }).lean<{
     attributes: unknown[];
     setupSeededAt?: Date | null;
@@ -422,7 +487,7 @@ async function ensureCategorySetup(key: CategoryKey): Promise<boolean> {
     ...setup.attributes.map(placeKey),
     ...setup.subcategories.flatMap((s) => s.attributes.map(placeKey)),
   ];
-  const ids = await ensureAttributes([...new Set(keys)]);
+  const ids = await ensureAttributes([...new Set(keys)], catalogue.attributes);
   const place = (places: Place[]) =>
     places.flatMap((p) => {
       const id = ids.get(placeKey(p));
@@ -445,6 +510,8 @@ async function ensureCategorySetup(key: CategoryKey): Promise<boolean> {
       isActive: true,
       order: existingCount + i,
       attributes: place(sub.attributes),
+      mainAreaMeaning: sub.mainAreaMeaning,
+      legalChecklist: sub.legalChecklist,
     });
   }
   await PropertyCategoryModel.updateOne(
@@ -463,11 +530,12 @@ async function ensureCategorySetup(key: CategoryKey): Promise<boolean> {
 
 /**
  * Creates the categories the first time, then sets up every category that has a starting
- * setup (Residential, Commercial, Other) and their amenities. Runs at startup and from the seed
- * script. Each step runs once, so databases set up earlier get new categories (e.g.
- * Commercial) without anything an admin deleted coming back.
+ * setup (Residential, Commercial) and their amenities. Runs from migration 0001, the seed
+ * script and `db:reset-catalogue`. Each step runs once per database.
  */
-export async function ensureStartingPropertyTypes(): Promise<'created' | 'exists'> {
+export async function ensureStartingPropertyTypes(
+  catalogue: Catalogue = STARTING_CATALOGUE,
+): Promise<'created' | 'exists'> {
   const fresh = !(await PropertyCategoryModel.exists({}));
   if (fresh) {
     for (const [order, cat] of CATEGORY_ORDER.entries()) {
@@ -486,20 +554,21 @@ export async function ensureStartingPropertyTypes(): Promise<'created' | 'exists
       { $set: { setupSeededAt: new Date() } },
     );
   }
-  for (const { key } of CATEGORY_ORDER) await ensureCategorySetup(key);
-  await ensureStartingAmenities();
+  for (const { key } of CATEGORY_ORDER) await ensureCategorySetup(key, catalogue);
+  await ensureStartingAmenities(catalogue);
   return fresh ? 'created' : 'exists';
 }
 
 /**
- * Adds each category's starting amenities once (also to databases set up before amenities
- * existed). A marker on the category makes sure deleted amenities never come back. Only
- * active categories get amenities.
+ * Adds each category's starting amenities once. A marker on the category makes sure deleted
+ * amenities never come back. Only active categories get amenities.
  */
-export async function ensureStartingAmenities(): Promise<'created' | 'exists'> {
+export async function ensureStartingAmenities(
+  catalogue: Catalogue = STARTING_CATALOGUE,
+): Promise<'created' | 'exists'> {
   let created = false;
   for (const { key } of CATEGORY_ORDER) {
-    const setup = SETUPS[key];
+    const setup = catalogue.setups[key];
     const category = await PropertyCategoryModel.findOne({ key }).lean<{
       isActive: boolean;
       amenitiesSeededAt?: Date | null;

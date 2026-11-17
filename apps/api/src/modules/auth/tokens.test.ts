@@ -27,13 +27,13 @@ describe('access tokens', () => {
   afterEach(() => vi.useRealTimers());
 
   it('signs a token that verifies back to the same user', async () => {
-    const token = await tokens.sign(USER_ID, 'admin');
+    const token = await tokens.sign(USER_ID);
     await expect(tokens.verify(token)).resolves.toEqual({ userId: USER_ID });
   });
 
   it('expires after 15 minutes', async () => {
     vi.useFakeTimers({ now: new Date('2026-11-12T10:00:00Z') });
-    const token = await tokens.sign(USER_ID, 'admin');
+    const token = await tokens.sign(USER_ID);
     vi.setSystemTime(new Date(Date.now() + (ACCESS_TOKEN_TTL_SECONDS - 5) * 1000));
     await expect(tokens.verify(token)).resolves.toEqual({ userId: USER_ID });
     vi.setSystemTime(new Date(Date.now() + 10 * 1000));
@@ -41,21 +41,18 @@ describe('access tokens', () => {
   });
 
   it('rejects tokens signed with another secret or edited after signing', async () => {
-    const other = await new AccessTokens('another-secret-another-secret-0002').sign(
-      USER_ID,
-      'admin',
-    );
+    const other = await new AccessTokens('another-secret-another-secret-0002').sign(USER_ID);
     await expect(tokens.verify(other)).rejects.toBeInstanceOf(AccessTokenInvalidError);
 
-    const [header, payload, signature] = (await tokens.sign(USER_ID, 'sales_agent')).split('.');
+    const [header, payload, signature] = (await tokens.sign(USER_ID)).split('.');
     const edited = JSON.parse(Buffer.from(payload!, 'base64url').toString());
-    edited.role = 'super_admin';
+    edited.sub = '0192f3a4-0000-7000-8000-000000000000';
     const forged = [header, Buffer.from(JSON.stringify(edited)).toString('base64url'), signature];
     await expect(tokens.verify(forged.join('.'))).rejects.toBeInstanceOf(AccessTokenInvalidError);
   });
 
   it('rejects unsigned ("alg: none") tokens and garbage', async () => {
-    const unsigned = new UnsecuredJWT({ role: 'super_admin' })
+    const unsigned = new UnsecuredJWT({ role: 'admin' })
       .setSubject(USER_ID)
       .setIssuer(TOKEN_ISSUER)
       .setAudience(TOKEN_AUDIENCE)

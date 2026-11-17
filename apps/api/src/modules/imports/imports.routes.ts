@@ -94,7 +94,7 @@ registry.registerPath({
   ...secured,
   method: 'post',
   path: `${BASE}/{id}/commit`,
-  summary: 'Import the valid rows as Draft or Published; skip or update duplicates',
+  summary: 'Import the valid rows as Draft or Available; skip or update duplicates',
   request: { params: idParams, body: { content: json(commitImportBodySchema) } },
   responses: { 200: data(importBatchDetailSchema), ...errors, 409: err('Already imported') },
 });

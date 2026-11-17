@@ -112,7 +112,7 @@ function DetailsCard({ profile }: { profile: Profile }) {
           <div className="grid gap-2">
             <span className="text-sm font-medium">Role</span>
             <div>
-              <RoleBadge role={profile.role} />
+              <RoleBadge role={profile.role} name={profile.roleName} />
             </div>
           </div>
           <div className="flex justify-end">

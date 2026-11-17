@@ -1,4 +1,4 @@
-import { PROPERTY_STATUSES, PURPOSES } from '@real-estate/shared';
+import { ARCHIVE_VIEWS, LEGAL_FILTERS, PROPERTY_STATUSES, PURPOSES } from '@real-estate/shared';
 import type { ListPropertiesQuery, PropertyStatus, Purpose } from '@real-estate/shared';
 import { useSearchParams } from 'react-router';
 
@@ -21,7 +21,23 @@ export const SORTS = [
 
 export const PAGE_SIZE = 20;
 
-/** Property list filters live in the URL, so a filtered list can be bookmarked or shared. */
+/** Keys this hook owns in the URL (everything except page and sort is a filter). */
+const FILTER_KEYS = [
+  'q',
+  'type',
+  'city',
+  'status',
+  'legal',
+  'view',
+  'purpose',
+  'price',
+  'featured',
+];
+
+/**
+ * Property list filters live in the URL, so a filtered list can be bookmarked or shared
+ * (PROP-55). Archived properties are hidden unless the archive view asks for them (PROP-51).
+ */
 export function usePropertyFilters() {
   const [params, setParams] = useSearchParams();
   const update = (changes: Record<string, string | undefined>) =>
@@ -42,13 +58,19 @@ export function usePropertyFilters() {
     const value = params.get(key);
     return value && (allowed as readonly string[]).includes(value) ? (value as T) : 'all';
   };
-  const status = pick<PropertyStatus>('status', PROPERTY_STATUSES);
+  // Archived is chosen with the archive view, not the status filter.
+  const status = pick<PropertyStatus>(
+    'status',
+    PROPERTY_STATUSES.filter((s) => s !== 'archived'),
+  );
   const purpose = pick<Purpose>('purpose', PURPOSES);
+  const legal = pick('legal', LEGAL_FILTERS);
+  const view = pick('view', ARCHIVE_VIEWS);
   const price = PRICE_RANGES.find((r) => r.value === params.get('price')) ?? PRICE_RANGES[0];
   const sort = SORTS.find((s) => s.value === params.get('sort')) ?? SORTS[0];
   const q = params.get('q') ?? '';
   const subcategoryId = params.get('type') ?? 'all';
-  const city = params.get('city') ?? '';
+  const city = params.get('city') ?? 'all';
   const featured = params.get('featured') === '1';
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1);
 
@@ -58,9 +80,11 @@ export function usePropertyFilters() {
     sort: sort.value,
     ...(status !== 'all' && { status }),
     ...(purpose !== 'all' && { purpose }),
+    ...(legal !== 'all' && { legal }),
+    ...(view !== 'all' && { archived: view }),
     ...(subcategoryId !== 'all' && { subcategoryId }),
     ...(q && { q }),
-    ...(city && { city }),
+    ...(city !== 'all' && { city }),
     ...(featured && { featured: true }),
     ...('min' in price && { minPrice: price.min }),
     ...('max' in price && { maxPrice: price.max }),
@@ -69,6 +93,8 @@ export function usePropertyFilters() {
   return {
     status,
     purpose,
+    legal,
+    view,
     price: price.value,
     sort: sort.value,
     q,
@@ -77,20 +103,8 @@ export function usePropertyFilters() {
     featured,
     page,
     query,
-    hasFilters:
-      Boolean(q || city || featured) ||
-      purpose !== 'all' ||
-      subcategoryId !== 'all' ||
-      price.value !== 'any',
+    hasFilters: FILTER_KEYS.some((key) => params.has(key)),
     update,
-    clear: () =>
-      update({
-        q: undefined,
-        purpose: undefined,
-        type: undefined,
-        city: undefined,
-        price: undefined,
-        featured: undefined,
-      }),
+    clear: () => update(Object.fromEntries(FILTER_KEYS.map((key) => [key, undefined]))),
   };
 }

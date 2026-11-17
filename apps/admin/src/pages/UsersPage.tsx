@@ -11,7 +11,7 @@ import { UsersFilters } from '@/features/users/UsersFilters';
 import { UsersList } from '@/features/users/UsersList';
 
 /**
- * Users & Roles (Super Admin only). `tab` comes from the route: /users or /users/roles.
+ * Users & Roles (Admin only). `tab` comes from the route: /users or /users/roles.
  * No page title: the sidebar and breadcrumbs already say where you are.
  */
 export function UsersPage({ tab }: { tab: 'users' | 'roles' }) {
@@ -46,7 +46,7 @@ export function UsersPage({ tab }: { tab: 'users' | 'roles' }) {
           <p className="mt-5 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
             Users are never deleted. Deactivate them instead, so their history is kept. You
             can&apos;t deactivate or change your own role, and there is always at least one active
-            Super Admin.
+            Admin.
           </p>
         </>
       ) : (

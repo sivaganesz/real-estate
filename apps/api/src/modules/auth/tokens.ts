@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { errors, jwtVerify, SignJWT } from 'jose';
-import type { Role } from '@real-estate/shared';
 import { ACCESS_TOKEN_TTL_SECONDS, TOKEN_AUDIENCE, TOKEN_ISSUER } from './auth.constants';
 
 export class AccessTokenExpiredError extends Error {}
@@ -14,8 +13,9 @@ export class AccessTokens {
     this.key = new TextEncoder().encode(secret);
   }
 
-  sign(userId: string, role: Role): Promise<string> {
-    return new SignJWT({ role })
+  /** Only the user id: role and permissions are read fresh on every request (TRD §6.1). */
+  sign(userId: string): Promise<string> {
+    return new SignJWT({})
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(userId)
       .setIssuer(TOKEN_ISSUER)

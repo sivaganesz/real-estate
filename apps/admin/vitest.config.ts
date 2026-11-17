@@ -9,6 +9,9 @@ export default mergeConfig(
       environment: 'jsdom',
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['./src/test/setup.ts'],
+      // Click-through tests take a few seconds when every package's tests run at once
+      // (the API suite starts in-memory databases in parallel). Same limit as the API suite.
+      testTimeout: 20_000,
     },
   }),
 );

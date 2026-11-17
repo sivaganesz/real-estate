@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
+import { linkToken } from '@/lib/linkToken';
 
 const resetFormSchema = z
   .object({ password: passwordSchema, confirmPassword: z.string() })
@@ -23,7 +24,7 @@ const resetFormSchema = z
 
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
-  const token = params.get('token');
+  const token = linkToken(params);
   const navigate = useNavigate();
   const [apiError, setApiError] = useState<string | null>(null);
 

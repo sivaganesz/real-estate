@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>Real Estate Specification System — Project Specification</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 16mm 14mm;
+    @bottom-left { content: "Real Estate Specification System · Project specification · 16 Nov 2026"; font: 8pt "Segoe UI", sans-serif; color: #8a92a3; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "Segoe UI", sans-serif; color: #8a92a3; } }
+  :root { --ink:#1b2130; --ink2:#3a4254; --muted:#6b7385; --line:#dfe3ea; --soft:#f5f7fa; --brand:#2f5bea; --brand-soft:#eaf0ff;
+    --green:#11743f; --green-soft:#e5f5ec; --amber:#995400; --amber-soft:#fff3dd; --red:#b42318; --red-soft:#fdecea; --purple:#6a3fc4; --purple-soft:#f1ebff; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; color: var(--ink); font: 9.6pt/1.45 "Segoe UI", system-ui, sans-serif; }
+  h1 { font-size: 21pt; margin: 0; letter-spacing: -.01em; }
+  h2 { font-size: 13.5pt; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; break-after: avoid; }
+  h2 .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--brand); color: #fff; font-size: 10pt; flex: none; }
+  h3 { font-size: 9pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 6px; break-after: avoid; }
+  p { margin: 0 0 7px; }
+  ul, ol { margin: 0 0 7px; padding-left: 17px; }
+  li { margin: 1.5px 0; }
+  b, strong { font-weight: 600; }
+  code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 8.8pt; }
+  .page-break { break-before: page; }
+  .avoid { break-inside: avoid; }
+
+  .cover { background: linear-gradient(135deg, #1b2a5c, #2f5bea); color: #fff; border-radius: 10px; padding: 20px 22px; }
+  .cover .kicker { font-size: 8pt; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+  .cover p { margin: 6px 0 0; opacity: .92; font-size: 10.5pt; }
+  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .meta div { background: var(--soft); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 8.6pt; }
+  .meta span { display: block; color: var(--muted); font-size: 7.6pt; text-transform: uppercase; letter-spacing: .04em; }
+
+  .callout { border-left: 4px solid var(--brand); background: var(--brand-soft); border-radius: 6px; padding: 8px 11px; margin: 9px 0; break-inside: avoid; }
+  .callout.amber { border-color: #e0a043; background: var(--amber-soft); }
+  .callout.red { border-color: #e0786f; background: var(--red-soft); }
+  .callout.green { border-color: #4fae7c; background: var(--green-soft); }
+  .callout.purple { border-color: #9b7be0; background: var(--purple-soft); }
+  .callout .t { font-weight: 700; font-size: 8.4pt; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; font-size: 8.9pt; }
+  th { text-align: left; background: var(--soft); color: var(--ink2); font-weight: 600; padding: 5px 7px; border-bottom: 1px solid var(--line); }
+  td { padding: 5px 7px; border-bottom: 1px solid #eceff4; vertical-align: top; }
+  tr { break-inside: avoid; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; break-inside: avoid; background: #fff; }
+  .card h4 { margin: 0 0 4px; font-size: 10pt; }
+  .card.blue { border-top: 3px solid var(--brand); } .card.green { border-top: 3px solid var(--green); }
+  .card.amber { border-top: 3px solid #d68b1f; } .card.purple { border-top: 3px solid var(--purple); }
+  .chip { display: inline-block; padding: 0 7px; border-radius: 99px; font-size: 8pt; font-weight: 600; background: #eef0f4; color: #4b5363; white-space: nowrap; }
+  .chip.g { background: var(--green-soft); color: var(--green); } .chip.a { background: var(--amber-soft); color: var(--amber); }
+  .chip.r { background: var(--red-soft); color: var(--red); } .chip.b { background: var(--brand-soft); color: var(--brand); } .chip.p { background: var(--purple-soft); color: var(--purple); }
+  .formula { font-family: Consolas, monospace; background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; text-align: center; font-size: 10pt; margin: 5px 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.4pt; }
+
+  /* architecture diagram */
+  .arch { display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 8px; align-items: stretch; margin: 6px 0 4px; }
+  .arch .box { border: 1.5px solid; border-radius: 8px; padding: 8px 10px; font-size: 8.6pt; }
+  .arch .box b { display: block; font-size: 9.4pt; margin-bottom: 3px; }
+  .arch .p { border-color: var(--brand); background: #f4f7ff; } .arch .c { border-color: var(--purple); background: #f8f5ff; }
+  .arch .e { border-color: var(--green); background: #f3fbf6; }
+  .arch-out { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .arch-out div { border: 1.5px dashed #9aa2b1; border-radius: 8px; padding: 6px 10px; font-size: 8.6pt; text-align: center; }
+  .arrow { text-align: center; color: var(--muted); font-size: 11pt; line-height: 1; margin: 3px 0; }
+  .pipe { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+  .pipe span { flex: 1; min-width: 70px; text-align: center; font-size: 8pt; font-weight: 600; padding: 5px 4px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); }
+  .pipe span.lost { background: var(--red-soft); color: var(--red); flex: .7; }
+  .pipe span.won { background: var(--green-soft); color: var(--green); }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding: 4px 0 4px 30px; border-bottom: 1px dashed #e6e9ef; break-inside: avoid; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 8.5pt; font-weight: 700; display: grid; place-items: center; }
+
+  /* fixed pagination: every .page is exactly one printed A4 page */
+  .page { height: 263mm; overflow: hidden; break-after: page; }
+  .page:last-of-type { height: auto; break-after: auto; }
+  .page > :first-child, .page > .cont + * { margin-top: 0 !important; }
+  .cont { font-size: 7.8pt; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding-bottom: 3px; margin-bottom: 9px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid4 .card h4 { font-size: 9.4pt; }
+  .cover { padding: 16px 20px; }
+  .cover-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.25); font-size: 8.4pt; opacity: .95; }
+  .steps li { padding-top: 3px; padding-bottom: 3px; }
+  /* page 1 fit */
+  .cover h1 { font-size: 18.5pt; line-height: 1.2; }
+  .cover p { font-size: 9.8pt; }
+  .grid4 .card { padding: 7px 9px; }
+  .grid4 .card .small { font-size: 8.1pt; line-height: 1.35; display: block; }
+  .arrow { margin: 1px 0; }
+  .arch .box { padding: 7px 9px; }
+</style>
+</head>
+<body>
+
+<section class="page"><div class="cover">
+  <div class="kicker">Project specification</div>
+  <h1>Real Estate Specification System: Property + Customer</h1>
+  <p>A practical platform for an Indian real estate business that understands what is being sold, what each customer needs, whether a property suits them, and how ready they are to buy.</p>
+<div class="cover-meta"><span><b>Stage:</b> Clickable wireframe (V1 MVP scope)</span><span><b>Data:</b> Fictional mock data only</span><span><b>Audience:</b> Sales, management &amp; tech team</span></div></div><div class="callout amber">
+  <div class="t">Core principle</div>
+  <b>A high-budget customer is not automatically an HNI, and an expensive property is not automatically a high-value investment.</b>
+  Property value, customer purchasing capacity and sales priority are kept as <b>separate assessments</b>. The system never merges them into one number.
+</div><h2><span class="n">1</span>What we are building</h2><p>More than a listing website. The platform has four jobs:</p><div class="grid4">
+  <div class="card blue"><h4>1 · Collect accurate property specifications</h4><span class="small">One standard record per property, with fields that change by property type, plus location, legal and pricing evidence.</span></div>
+  <div class="card blue"><h4>2 · Evaluate and communicate property value</h4><span class="small">Price per sq.ft. backed by comparable properties, with neutral wording. No unsupported “bargain” claims.</span></div>
+  <div class="card purple"><h4>3 · Understand and qualify customers</h4><span class="small">Purpose, budget range, requirements, timeline, funding and decision-making (BANT), with consent.</span></div>
+  <div class="card green"><h4>4 · Match and convert</h4><span class="small">Recommend the right property to the right customer with an explanation, then manage follow-ups to booking.</span></div>
+</div><h3>Three independent assessments per customer</h3><table class="avoid">
+  <tbody><tr><th style="width:26%">Assessment</th><th>Question it answers</th><th style="width:26%">Shown as</th></tr>
+  <tr><td><b>1. Property fit score</b></td><td>How well does a property meet this customer’s requirements?</td><td>Score out of 100 (e.g. 95/100)</td></tr>
+  <tr><td><b>2. Purchase readiness score</b></td><td>How ready is the customer to buy?</td><td>Score out of 100 + lead band</td></tr>
+  <tr><td><b>3. HNI verification status</b></td><td>Has high-net-worth status been verified through a consent-based process?</td><td><b>A status, never a score</b></td></tr>
+</tbody></table><h2><span class="n">2</span>Overall system architecture</h2><div class="avoid">
+  <div class="arch">
+    <div class="box p"><b>PROPERTY DATA · Module A</b>Property details · type-specific specs · location · legal documents · price &amp; comparables · features</div>
+    <div class="box e"><b>MATCHING + QUALIFICATION ENGINE · Modules C &amp; D</b>Step 1 hard filters → Step 2 weighted fit score (M)<br>Purchase readiness (100 points)<br>HNI status kept separate and restricted</div>
+    <div class="box c"><b>CUSTOMER DATA · Module B</b>Purpose · budget range &amp; flexibility · requirements · timeline · funding readiness · consent</div>
+  </div>
+  <div class="arrow">▼ ▼</div>
+  <div class="arch-out"><div><b>Property recommendations</b><br>best-fit properties, each with the reasons</div><div><b>Sales CRM · Module E</b><br>pipeline · follow-ups · appointments · reports</div></div>
+  <p class="muted small" style="margin-top:5px">Figure 1. Property and customer data feed the engine; its outputs drive recommendations and the sales CRM.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ================= MODULE A ================= -->
+<section class="page"><h2 class=""><span class="n">3</span>Module A — Property specification database</h2><p>The foundation. Every property gets a <b>unique system-generated ID</b> and a standard specification, whether it is a plot, flat, house, villa or commercial building.</p><h3>A. Main property information (every property)</h3><table>
+  <tbody><tr><th style="width:24%">Field</th><th style="width:30%">Example (PROP-1001)</th><th>Rule</th></tr>
+  <tr><td>Property ID</td><td class="mono">PROP-1001</td><td>Generated by the system. Never rely on the property name; several properties can have similar names.</td></tr>
+  <tr><td>Title</td><td>Premium residential plot</td><td>Free text for display.</td></tr>
+  <tr><td>Category / Type</td><td>Residential · Residential plot</td><td>Category is derived from type. Types: Residential plot, Flat / Apartment, Independent house / Villa (Residential); Commercial property (Commercial).</td></tr>
+  <tr><td>Listing purpose</td><td>Sale</td><td>Sale, Lease or Rent.</td></tr>
+  <tr><td>Location / Locality</td><td>Madurai, Tamil Nadu · Vilangudi</td><td>City/district from a list; actual locality name.</td></tr>
+  <tr><td>Area / Facing</td><td>1,200 sq.ft. · East</td><td>The area label follows the type (plot area, built-up area, usable area).</td></tr>
+  <tr><td>Status / Listing date</td><td>Available · 16 Nov 2026</td><td>Available, Reserved, On hold or Sold. Only “Available” properties can be matched.</td></tr>
+  <tr><td>Asking price</td><td>₹28,00,000</td><td>Price per sq.ft. is calculated automatically.</td></tr>
+</tbody></table><h3>B. Type-specific specifications: the form changes with the type</h3><div class="grid2">
+  <div class="card blue"><h4>Residential plot</h4><ul class="small">
+    <li>Length × width; road width and road access</li><li>Corner / non-corner; topography</li>
+    <li>Survey number and subdivision</li><li>Layout approval details (authority + number as stated)</li>
+    <li>Land-use classification</li><li>Water, electricity, drainage, road infrastructure</li></ul></div>
+  <div class="card blue"><h4>Flat / Apartment</h4><ul class="small">
+    <li>BHK configuration</li><li>Carpet, built-up and super built-up area (if applicable)</li>
+    <li>Floor number, total floors, number of lifts</li><li>Parking allocation</li>
+    <li>UDS (undivided share of land)</li><li>Monthly maintenance; possession status and expected date</li></ul></div>
+  <div class="card green"><h4>Independent house / Villa</h4><ul class="small">
+    <li>House, villa or row house; land area and built-up area</li><li>Floors, bedrooms, bathrooms, parking</li>
+    <li>Construction year, quality and condition</li><li>Private garden / amenities</li>
+    <li>Water and power arrangements</li><li>Approval and completion documentation</li></ul></div>
+  <div class="card amber"><h4>Commercial property</h4><ul class="small">
+    <li>Category: office, shop/showroom, warehouse, commercial building, industrial shed</li>
+    <li>Carpet / usable area; floor and frontage; road access</li><li>Parking; permitted usage</li>
+    <li>Occupancy (vacant, tenanted, owner-occupied)</li><li>Rental income, lease duration and terms</li><li>Maintenance and operating expenses</li></ul></div>
+</div><p class="small muted" style="margin-top:6px">A plot never asks for BHK; a flat never asks for a survey subdivision. Amenities (security, lift, park, power backup, etc.) are common to all types.</p></section>
+
+
+
+
+
+
+
+
+
+<section class="page"><div class="cont">Module A — Property specification (continued)</div><h3>C. Location specification: honest distances</h3><table>
+  <tbody><tr><th style="width:24%">Item</th><th>What is recorded</th></tr>
+  <tr><td>State, district, locality</td><td>Tamil Nadu · Madurai · actual locality name</td></tr>
+  <tr><td>GPS &amp; road</td><td>Latitude / longitude; road type and width</td></tr>
+  <tr><td>Highway access</td><td>Name, distance by road, and <b>how it was measured</b> (e.g. “route driven 02 Nov 2026”)</td></tr>
+  <tr><td>Schools, hospitals, transport, other places</td><td>Name, <b>measured road distance</b>, a “route checked” tick, and status: <b>Existing / Under construction / Planned / Proposed</b></td></tr>
+</tbody></table><div class="callout amber">Customer-facing text is generated from these rules. Only <b>existing</b> places with a <b>checked route</b> are advertised. Planned and proposed items appear under “Future infrastructure — not yet existing”. Never say “5 minutes away” without checking the actual route.</div><h3>D. Legal &amp; documentation specification (Tamil Nadu context)</h3><p>The checklist depends on the property type. Each check verifies something different; for example, a DTCP or other planning approval <b>does not by itself prove clear ownership</b>.</p><table>
+  <tbody><tr><th style="width:27%">Document / check</th><th>What it verifies</th><th class="num" style="width:7%">Plot</th><th class="num" style="width:7%">Flat</th><th class="num" style="width:9%">House</th><th class="num" style="width:12%">Commercial</th></tr>
+  <tr><td>Parent documents</td><td>Ownership history</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+  <tr><td>Sale deed</td><td>Current ownership and transaction</td><td class="num"><b>M</b></td><td class="num"><b>M</b></td><td class="num"><b>M</b></td><td class="num"><b>M</b></td></tr>
+  <tr><td>Encumbrance Certificate</td><td>Registered encumbrances within the searched period</td><td class="num"><b>M</b></td><td class="num"><b>M</b></td><td class="num"><b>M</b></td><td class="num"><b>M</b></td></tr>
+  <tr><td>Patta / revenue records</td><td>Relevant revenue records</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+  <tr><td>FMB / survey records</td><td>Survey boundaries and measurements</td><td class="num">✓</td><td class="num">–</td><td class="num">✓</td><td class="num">–</td></tr>
+  <tr><td>Land-use classification</td><td>Permitted land use</td><td class="num">✓</td><td class="num">–</td><td class="num">–</td><td class="num">✓</td></tr>
+  <tr><td>Layout approval</td><td>Applicable planning approval</td><td class="num"><b>M</b></td><td class="num">–</td><td class="num">–</td><td class="num">–</td></tr>
+  <tr><td>Building plan approval</td><td>Sanctioned building plan</td><td class="num">–</td><td class="num"><b>M</b></td><td class="num"><b>M</b></td><td class="num"><b>M</b></td></tr>
+  <tr><td>Completion / occupancy certificate</td><td>Built as per approval</td><td class="num">–</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+  <tr><td>RERA registration</td><td>Registration or exemption status, as applicable</td><td class="num">✓</td><td class="num"><b>M</b></td><td class="num">–</td><td class="num">–</td></tr>
+  <tr><td>Fire NOC</td><td>Fire safety clearance, where applicable</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">✓</td></tr>
+  <tr><td>Tax receipts</td><td>Property tax / land revenue records</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+</tbody></table><p class="small muted">✓ = on the checklist · <b>M</b> = mandatory check (used by the matching engine) · – = not on this type’s checklist</p><div class="grid2">
+  <div class="callout green" style="margin:0"><div class="t">Three statuses only</div><span class="chip">Not collected</span> <span class="chip a">Collected, pending verification</span> <span class="chip g">Verified by authorised legal professional</span><br><span class="small">Uploading a file moves a check to “pending”, never to “verified”.</span></div>
+  <div class="callout red" style="margin:0"><div class="t">Never “100% legally clear”</div><span class="small">Listings say, for example: “8 of 9 document checks verified by an authorised legal professional; 1 pending.” Open mandatory checks block a property from being a top recommendation.</span></div>
+</div></section>
+
+
+
+
+
+
+
+
+
+<section class="page"><div class="cont">Module A — Property specification (continued)</div><h3>E. Pricing &amp; value specification: evidence-based</h3><div class="grid2">
+  <div class="card blue"><h4>Price per sq.ft.</h4>
+    <div class="formula">Price per sq.ft. = Total property price ÷ Area in sq.ft.</div>
+    <p class="small" style="margin:0">Spec example: ₹30,00,000 ÷ 1,200 = <b>₹2,500 per sq.ft.</b> In the wireframe, PROP-1001 is ₹28,00,000 ÷ 1,200 = ₹2,333.</p></div>
+  <div class="card"><h4>Valuation record</h4><ul class="small" style="margin:0">
+    <li>Comparables: location, type, area, ₹/sq.ft., <b>asking or transaction</b>, date, source, differences affecting price</li>
+    <li>Price review date; valuation professional’s report, if any</li>
+    <li>Neutral positioning: <i>within / below / above comparable range</i></li>
+    <li>Estimated transaction costs and all-in cost</li></ul></div>
+</div><div class="callout amber">Do not call ₹2,500 a bargain just because another seller asks ₹2,600. Compare similar properties in the same micro-market with similar approvals, access, dimensions and condition. Stamp duty and registration percentages in the system are <b>editable assumptions</b>; confirm current rates and the guideline value before quoting.</div><h2 class=""><span class="n">4</span>Module B — Customer specification database</h2><p>Each customer record answers: <i>What does this person want? Why? What can they realistically buy? When? What must the property satisfy?</i></p><div class="grid2">
+  <div class="card blue"><h4>A. Basic information</h4><ul class="small" style="margin:0">
+    <li>Customer ID (system-generated, e.g. <span class="mono">CUST-1001</span>)</li><li>Name, mobile (with consent), email (optional)</li>
+    <li>Preferred contact method (WhatsApp, phone, email, SMS)</li><li>Lead source and enquiry date</li><li>Assigned sales executive</li>
+    <li><b>Consent for follow-up</b>, with the reason explained. Without consent, no follow-up can be scheduled.</li></ul></div>
+  <div class="card purple"><h4>B. Purchase purpose <span class="mono">purchase_purpose</span></h4>
+    <p class="small" style="margin:0 0 3px">The first question on the enquiry form. Values: Own use · Investment · Rental income · Business use · Second home · Other.</p>
+    <ul class="small" style="margin:0"><li><b>Own use:</b> road access, schools, water, construction permission</li>
+    <li><b>Investment:</b> entry price, comparable transactions, resale liquidity, future demand</li></ul></div>
+</div><h3>C. Budget specification: a range, not one number</h3><table>
+  <tbody><tr><th style="width:24%">Field</th><th style="width:28%">Example (Arun)</th><th>Why it matters</th></tr>
+  <tr><td>Minimum / preferred / maximum</td><td>₹20 L / ₹25 L / ₹30 L</td><td>Defines the search range. Price at or below “preferred” scores best.</td></tr>
+  <tr><td>Budget flexibility</td><td>Up to 5% → ceiling ₹31.5 L</td><td>The hard-filter price ceiling is maximum × (1 + flexibility).</td></tr>
+  <tr><td>What the budget includes</td><td>Property price only</td><td>₹30 L may mean property only, all-in with registration, or including a loan. <b>Clarify before recommending</b>; the system flags “Not clarified yet”.</td></tr>
+  <tr><td>Funding preference / readiness</td><td>Combination · Arranging</td><td>Own funds / Loan / Combination; Ready / Arranging / Not decided.</td></tr>
+</tbody></table></section>
+
+
+
+<!-- ================= MODULE B ================= -->
+
+
+
+
+
+
+
+<section class="page"><div class="cont">Module B — Customer specification (continued)</div><h3>D. Property requirements (fields change by type)</h3><table>
+  <tbody><tr><th style="width:24%">All types</th><td>Preferred type, preferred cities and localities, preferred size, must-have amenities, “approvals must be verified”, “site visit required”</td></tr>
+  <tr><th>Plot</th><td>Facing, minimum road width, corner preference, construction plan</td></tr>
+  <tr><th>Flat</th><td>BHK, parking, possession requirement</td></tr>
+  <tr><th>House / Villa</th><td>Bedrooms (BHK), minimum land area, parking, possession requirement</td></tr>
+  <tr><th>Commercial</th><td>Commercial category, occupancy preference (vacant / tenanted)</td></tr>
+</tbody></table><h3>E. Purchase readiness inputs: BANT + funding + engagement</h3><div class="grid3">
+  <div class="card"><h4>Budget</h4><span class="small">What budget range are you comfortable with?</span></div>
+  <div class="card"><h4>Authority</h4><span class="small">Deciding yourself, or with family / business partners?</span></div>
+  <div class="card"><h4>Need</h4><span class="small">What is your actual requirement? (clear / partly defined / exploring)</span></div>
+  <div class="card"><h4>Timeline</h4><span class="small">When are you planning to purchase?</span></div>
+  <div class="card"><h4>Funding readiness</h4><span class="small">Have you arranged funds or financing?</span></div>
+  <div class="card"><h4>Engagement</h4><span class="small">Responded? Requested documents? Attended a site visit?</span></div>
+</div><h2><span class="n">5</span>Module C — Qualification: readiness score &amp; HNI</h2><h3>Purchase readiness score: transparent 100-point model</h3><table>
+  <tbody><tr><th style="width:30%">Criterion</th><th class="num" style="width:9%">Max</th><th>How points are given (initial rules)</th></tr>
+  <tr><td>Budget fits property</td><td class="num">25</td><td>25 if an eligible property fits within the maximum budget · 13 if it fits only with flexibility · 0 if none fits</td></tr>
+  <tr><td>Clear purchase requirement</td><td class="num">20</td><td>Clear and specific 20 · Partly defined 10 · Just exploring 4</td></tr>
+  <tr><td>Purchase timeline</td><td class="num">20</td><td>Within 1 month 20 · 1–3 months 16 · 3–6 months 10 · 6–12 months 5 · Not decided 0</td></tr>
+  <tr><td>Funding readiness</td><td class="num">15</td><td>Ready 15 · Arranging 8 · Not decided 0</td></tr>
+  <tr><td>Decision-making authority</td><td class="num">10</td><td>Sole decision-maker 10 · Joint with family/partners 7 · Needs others’ approval 4 · Not known 0</td></tr>
+  <tr><td>Engagement and follow-up</td><td class="num">10</td><td>Responded 3 · Requested documents 3 · Attended site visit 4</td></tr>
+  <tr><td><b>Total</b></td><td class="num"><b>100</b></td><td><span class="chip g">80–100 High-priority lead</span> <span class="chip b">60–79 Qualified lead</span> <span class="chip a">40–59 Developing lead</span> <span class="chip">&lt; 40 Early-stage enquiry</span></td></tr>
+</tbody></table><p class="small muted">These are initial business rules, not industry-standard thresholds. Points, bands and weights are editable in Settings and should be tuned after analysing actual conversion data. Example: Arun scores 25 + 20 + 16 + 8 + 7 + 3 = <b>79 (Qualified lead)</b>.</p></section>
+
+
+
+
+
+<!-- ================= MODULE C ================= -->
+
+
+
+
+
+<section class="page"><div class="cont">Module C — Qualification (continued)</div><h3>Customer classification: separate from lead scoring</h3><table>
+  <tbody><tr><th style="width:20%">Classification</th><th style="width:38%">Meaning</th><th>How the system assigns it</th></tr>
+  <tr><td><b>General lead</b></td><td>Has enquired about a property</td><td>Default</td></tr>
+  <tr><td><b>Qualified buyer</b></td><td>Has a clear requirement and a realistic budget</td><td>Suggested when the need is clear and at least one available property fits</td></tr>
+  <tr><td><b>Investor</b></td><td>Has an investment objective</td><td>Suggested when the purpose is Investment or Rental income</td></tr>
+  <tr><td><b>High-value prospect</b></td><td>Considering a high-ticket property</td><td>Suggested when the maximum budget ≥ ₹1.5 Cr (configurable). <b>Never implies HNI.</b></td></tr>
+  <tr><td><b>Potential HNI</b></td><td>Has indicators of substantial wealth or investment capacity</td><td>Only when a manager records indicators and marks it</td></tr>
+  <tr><td><b>Verified HNI</b></td><td>Verified through an appropriate, consent-based process</td><td>Only after the customer’s consent for verification is recorded</td></tr>
+</tbody></table><p class="small muted">The system suggests a classification; a sales manager can override it.</p><div class="grid2">
+  <div class="callout purple" style="margin:0"><div class="t">HNI assessment (restricted)</div><span class="small">
+    Visible to sales managers and admins only. Records voluntarily stated signals: previous investment, portfolio, objective, purchase range, funding readiness, decision process, timeline.
+    Status values: Not determined · Not verified · Potential (indicators recorded) · Consent obtained (verification in progress) · Verified · Customer declined.
+    A ₹30 L buyer may be a serious investor; a ₹5 Cr enquiry may have no immediate purchase capacity.</span></div>
+  <div class="callout red" style="margin:0"><div class="t">Ethics &amp; privacy rules</div><ul class="small" style="margin:0">
+    <li>No bank statements, tax returns or account balances during lead generation.</li>
+    <li>Financial verification only through a lawful, consent-based process with restricted access.</li>
+    <li>Never award points for name, appearance, occupation, caste, religion or other personal characteristics.</li>
+    <li>Collect only necessary information; explain why; record consent before follow-up.</li></ul></div>
+</div><h2 class=""><span class="n">6</span>Module D — Property matching engine</h2><div class="grid2">
+  <div class="card blue"><h4>Step 1 · Hard filters (pass / fail)</h4><ul class="small" style="margin:0">
+    <li>Property must be <b>Available</b> (not Reserved, On hold or Sold)</li>
+    <li>Property <b>type</b> must match</li><li><b>Location</b> must be in the customer’s preferred cities</li>
+    <li><b>Price ≤ maximum budget × (1 + flexibility)</b></li></ul>
+    <p class="small" style="margin:5px 0 0">Any failure excludes the property: “Budget mismatch” if price is the only reason, otherwise “Excluded”.</p></div>
+  <div class="card green"><h4>Step 2 · Weighted fit score</h4>
+    <div class="formula">M = 0.30B + 0.25L + 0.20S + 0.15A + 0.10P</div>
+    <ul class="small" style="margin:0">
+      <li><b>B Budget:</b> 100 at/below preferred, down to 70 at maximum, 55 within flexibility</li>
+      <li><b>L Location:</b> 100 in a preferred locality (or no preference), 70 if only the city matches</li>
+      <li><b>S Size:</b> 100 for an exact match, minus 2 points per 1% difference</li>
+      <li><b>A Amenities:</b> infrastructure (water, power, drainage, road…) + must-have amenities</li>
+      <li><b>P Preferences:</b> facing, road width, BHK, parking, possession, occupancy…</li></ul></div>
+</div></section>
+
+
+
+
+
+<!-- ================= MODULE D ================= -->
+
+
+<section class="page"><div class="cont">Module D — Property matching engine (continued)</div><div class="callout red"><div class="t">Critical legal rule</div>A property with any <b>unresolved mandatory legal check</b> is labelled <span class="chip a">Conditional match</span> and is <b>never the top recommendation</b>, however high its score. Clean properties are always ranked above conditional ones.</div><p class="small"><b>Labels:</b> <span class="chip g">Strong match ≥ 80</span> <span class="chip b">Good match 65–79</span> <span class="chip">Weak match &lt; 65</span> <span class="chip a">Conditional match</span> (legal check open or size off by more than 20%) <span class="chip r">Budget mismatch / Excluded</span>. Weights are starting assumptions, to be tuned with site-visit and sales results.</p><h3>Worked example: Arun, residential plot in Madurai (as shown in the wireframe)</h3><p class="small"><b>Requirement:</b> own house · Madurai (prefers Vilangudi / Thirunagar) · ₹20–30 L (+5% → ₹31.5 L) · 1,200 sq.ft. · East facing · road ≥ 30 ft · approvals must be verified · 1–3 months.</p><table>
+  <tbody><tr><th style="width:21%">Property</th><th style="width:27%">Key facts</th><th>Engine evaluation</th><th style="width:20%">Result</th></tr>
+  <tr><td><b>A · PROP-1001</b><br><span class="small muted">Vilangudi</span></td><td>₹28 L · 1,200 sq.ft. · East · 30 ft road · layout approval verified</td><td>Passes all filters. B 82 · L 100 · S 100 · A 100 · P 100</td><td><span class="chip g">Strong match · 95</span><br><span class="small">★ Top recommendation</span></td></tr>
+  <tr><td><b>B · PROP-1002</b><br><span class="small muted">Thiruparankundram</span></td><td>₹30 L · 1,500 sq.ft. · layout approval pending verification</td><td>Passes filters, but a mandatory check is open and the size is 25% larger. B 70 · L 70 · S 50 · A 50 · P 100</td><td><span class="chip a">Conditional · 66</span><br><span class="small">Only after approval is verified and the size is discussed</span></td></tr>
+  <tr><td><b>C · PROP-1003</b><br><span class="small muted">K.K. Nagar</span></td><td>₹35 L · 1,200 sq.ft. · approvals verified</td><td>Fails the price ceiling: ₹5 L above the maximum, ₹3.5 L above the ₹31.5 L flexibility ceiling</td><td><span class="chip r">Budget mismatch</span><br><span class="small">Discuss the budget gap first</span></td></tr>
+  <tr><td><b>PROP-1004</b><br><span class="small muted">Othakadai</span></td><td>₹26 L · 1,200 sq.ft. · status Sold</td><td>Fails “Available”</td><td><span class="chip r">Excluded</span></td></tr>
+</tbody></table><p class="small muted">All properties are fictional examples used to demonstrate the matching logic.</p><h2><span class="n">7</span>Module E — Sales CRM</h2><div class="pipe"><span>New enquiry</span><span>Contacted</span><span>Qualified</span><span>Property recommended</span><span>Site visit scheduled</span><span>Negotiation</span><span class="won">Booking / Closed</span><span class="lost">Lost (reason)</span></div><div class="grid2">
+  <div class="card"><h4>Every customer record holds</h4><ul class="small" style="margin:0">
+    <li>Lead owner; last contact and next follow-up dates</li><li>Customer requirements and recommended properties</li>
+    <li>Site visit feedback and interest level</li><li>Negotiation details (offer vs. counter)</li>
+    <li>Current stage and days in stage; reason lost, if unsuccessful</li><li>Full activity timeline</li></ul></div>
+  <div class="card"><h4>Manager views</h4><ul class="small" style="margin:0">
+    <li><b>Dashboard:</b> total / qualified leads, site visits, bookings, follow-ups due, leads stuck more than 14 days, priority leads, today’s appointments</li>
+    <li><b>Pipeline board:</b> drag leads between stages; “Lost” requires a reason</li>
+    <li><b>Reports:</b> conversion funnel, where leads are stuck, source, purpose, reasons lost, unmet demand, executive performance</li></ul></div>
+</div><div class="card" style="margin-top:9px"><h4>Appointments: Teams-style calendar</h4>
+  <p class="small" style="margin:0">Day, work week (Mon–Sat), week, month and list views. Site visits, office meetings and phone calls are blocks sized to their duration. Click an empty slot to book. The system warns about <b>time clashes</b> (same executive, or the same property for site visits). Reschedule, cancel (with reason), mark completed (with feedback) or no-show. Site visits stay in sync with the customer record; booking one moves the lead to “Site visit scheduled”.</p></div></section>
+
+
+
+
+
+
+
+<!-- ================= MODULE E ================= -->
+
+
+
+
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="page"><h2 class=""><span class="n">8</span>How everything works: end to end</h2><ol class="steps">
+  <li><b>Property team lists inventory.</b> Add properties one by one (type-specific form) or via <b>Bulk import</b>. Then complete location, legal and valuation details.</li>
+  <li><b>Customer submits an enquiry.</b> The 5-step public form asks purpose first, then type and location, budget, requirements and timeline, then contact details with consent.</li>
+  <li><b>System saves and assigns.</b> A customer ID is created and the lead goes to the least-loaded sales executive. A follow-up is scheduled for the next day <b>only if consent was given</b>.</li>
+  <li><b>Matching runs instantly.</b> Hard filters, then the fit score with plain-language reasons. Properties with open legal checks are flagged as Conditional.</li>
+  <li><b>Executive qualifies the lead.</b> BANT questions, funding and engagement update the readiness score and band. Classification is suggested; HNI stays a separate, restricted status.</li>
+  <li><b>Recommend and visit.</b> The executive recommends best-fit properties and books site visits in the calendar. Feedback and interest are recorded after each visit.</li>
+  <li><b>Negotiate and close.</b> Offer and counter are tracked through to Booking / Closed, or Lost with a reason.</li>
+  <li><b>Managers monitor and tune.</b> Dashboard and reports show where leads get stuck. Weights, points and thresholds are adjusted in Settings using real results.</li>
+</ol><h3>Supporting features</h3><table>
+  <tbody><tr><th style="width:22%">Feature</th><th>What it does</th></tr>
+  <tr><td><b>Bulk import</b></td><td>One CSV template per property type. Every row is validated before saving: required fields, allowed values, numbers (Indian commas accepted), duplicate and unknown IDs. Blank ID = new property; existing ID = update only the filled cells. <b>Legal checks are never imported as verified.</b> Error report download and import history.</td></tr>
+  <tr><td><b>Settings &amp; rules</b></td><td>Matching weights (must total 1.00), readiness points (must total 100), lead bands, high-value threshold, “stuck” days, transaction cost assumptions, sales executives.</td></tr>
+  <tr><td><b>Roles</b></td><td><b>Admin</b> and <b>Sales manager</b>: full access including HNI and Settings. <b>Sales executive</b>: no HNI access; Settings read-only.</td></tr>
+  <tr><td><b>Test scenario 001</b></td><td>Runs the acceptance test below against the live data and reports pass / fail for each expected behaviour.</td></tr>
+</tbody></table></section>
+
+
+
+
+
+
+
+
+<!-- ================= ROADMAP ================= -->
+<section class="page"><h2><span class="n">9</span>Acceptance test: scenario 001 (residential plot buyer)</h2><div class="grid2">
+  <div class="card"><h4>Customer requirements</h4><ul class="small" style="margin:0">
+    <li>Location: Madurai · Purpose: construct own house</li><li>Budget: ₹30 lakhs · Plot size: 1,200 sq.ft.</li>
+    <li>Timeline: 3 months · Wants applicable approvals verified</li></ul>
+    <h4 style="margin-top:8px">Expected output</h4>
+    <p class="small" style="margin:0"><span class="chip g">Qualified buyer</span> · HNI status: <b>Not determined</b>. Budget and purchase purpose do not establish HNI status.</p></div>
+  <div class="card"><h4>Expected system behaviour</h4><ol class="small" style="margin:0">
+    <li>Save the customer’s enquiry</li><li>Identify residential plots matching location and budget</li><li>Exclude unavailable properties</li>
+    <li>Flag unresolved approval verification</li><li>Recommend suitable verified listings</li><li>Assign the lead to a sales executive</li>
+    <li>Schedule a follow-up after customer consent</li></ol>
+    <p class="small" style="margin:5px 0 0"><span class="chip g">Wireframe result: 9 / 9 checks pass</span> (also passes when run without consent: no follow-up is scheduled)</p></div>
+</div><h2><span class="n">10</span>Implementation phases</h2><table>
+  <tbody><tr><th style="width:11%">Phase</th><th style="width:25%">Focus</th><th>Scope</th></tr>
+  <tr><td><span class="chip g">Phase 1</span></td><td><b>Property management</b> · build first</td><td>Property registration, type-specific specifications, image uploads, pricing and availability management</td></tr>
+  <tr><td><span class="chip b">Phase 2</span></td><td><b>Customer enquiry system</b></td><td>Enquiry forms for purpose, budget, location, property type and purchase timeline</td></tr>
+  <tr><td><span class="chip b">Phase 3</span></td><td><b>Customer qualification</b></td><td>BANT questions, lead stages, purchase readiness scoring and sales follow-ups</td></tr>
+  <tr><td><span class="chip b">Phase 4</span></td><td><b>Property matching</b></td><td>Match requirements against actually available properties, with an explanation for each recommendation</td></tr>
+  <tr><td><span class="chip p">Phase 5</span></td><td><b>HNI assessment</b></td><td>Potential-HNI indicators and a separate consent-based verification workflow; restricted access to sensitive information</td></tr>
+  <tr><td><span class="chip a">Phase 6</span></td><td><b>AI integration</b></td><td>An AI assistant to ask initial questions, explain property specifications and help sales executives prepare for calls (not part of the wireframe)</td></tr>
+</tbody></table><div class="callout green"><div class="t">Version 1: recommended MVP</div>
+  Admin can add plots, flats, houses and commercial properties, each with a detailed specification form · customers submit buying requirements · sales executives qualify and manage leads · the system recommends matching properties · managers view the pipeline and reports.</div></section>
+
+
+
+
+
+</body></html>

@@ -353,7 +353,7 @@ function ImportHistory() {
                     {b.result.created + b.result.updated}
                     <span className="text-muted-foreground">
                       {' '}
-                      as {b.importAs === 'published' ? 'Published' : 'Draft'}
+                      as {b.importAs === 'available' ? 'Available' : 'Draft'}
                     </span>
                   </>
                 ) : (

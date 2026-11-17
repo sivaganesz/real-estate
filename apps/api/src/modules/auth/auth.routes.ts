@@ -12,12 +12,14 @@ import type { Request } from 'express';
 import { z } from 'zod';
 import type { Env } from '../../config/env';
 import { ErrorResponseSchema, registry } from '../../docs/openapi';
+import { AppError } from '../../lib/errors';
 import { sendData } from '../../lib/http';
 import { authenticate, requireCsrfHeader } from '../../middleware/auth';
 import { authRateLimiter, passwordResetRateLimiter } from '../../middleware/rateLimit';
 import { endpoint } from '../../middleware/validate';
 import { CSRF_HEADER, REFRESH_COOKIE_NAME } from './auth.constants';
 import type { UsersService } from '../users/users.service';
+import { REFRESH_RACE } from './auth.service';
 import type { AuthService } from './auth.service';
 import { clientInfo, createSessionResponder } from './session-response';
 
@@ -110,12 +112,14 @@ registry.registerPath({
   },
 });
 
+const inviteInfoBodySchema = z.object({ token: z.string().min(20).max(200) });
+
 registry.registerPath({
-  method: 'get',
-  path: '/api/v1/auth/invite',
+  method: 'post',
+  path: '/api/v1/auth/invite/info',
   tags: ['Auth'],
   summary: 'Details of an invite link (for the accept-invite screen)',
-  request: { query: z.object({ token: z.string() }) },
+  request: { body: { content: json(inviteInfoBodySchema) } },
   responses: {
     200: { description: 'Invite is valid', content: json(z.object({ data: inviteInfoSchema })) },
     400: errorResponse('The link is invalid or has expired'),
@@ -162,7 +166,8 @@ export function createAuthRouter(deps: {
     try {
       sendSession(res, await auth.refresh(readRefreshCookie(req), clientInfo(req)));
     } catch (err) {
-      clearSession(res);
+      // A refresh race means another tab holds the new cookie: keep it (M3).
+      if (!(err instanceof AppError && err.code === REFRESH_RACE)) clearSession(res);
       throw err;
     }
   });
@@ -197,15 +202,13 @@ export function createAuthRouter(deps: {
     }),
   );
 
-  router.get(
-    '/invite',
+  // POST, not GET: tokens never travel in URLs, where proxies and logs keep them (H3).
+  router.post(
+    '/invite/info',
     authRateLimiter(),
-    endpoint(
-      { query: z.object({ token: z.string().min(20).max(200) }) },
-      async ({ query }, _req, res) => {
-        sendData(res, await users.getInviteInfo(query.token));
-      },
-    ),
+    endpoint({ body: inviteInfoBodySchema }, async ({ body }, _req, res) => {
+      sendData(res, await users.getInviteInfo(body.token));
+    }),
   );
 
   router.post(

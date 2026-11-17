@@ -31,12 +31,29 @@ async function fillForm(email = 'priya@company.com') {
   await userEvent.type(screen.getByLabelText('Email *'), email);
   // Spaces and letters are ignored by the phone field; only digits are kept.
   await userEvent.type(screen.getByLabelText('Phone'), '98765 abc43210');
-  await userEvent.click(screen.getByRole('radio', { name: /Sales Agent/ }));
+  await userEvent.click(await screen.findByRole('radio', { name: /Sales Executive/ }));
 }
+
+const ROLE_OPTIONS = [
+  { key: 'admin', name: 'Admin', description: 'Everything', system: true },
+  { key: 'sales_manager', name: 'Sales Manager', description: 'Sales head', system: true },
+  { key: 'sales_executive', name: 'Sales Executive', description: 'Own leads', system: true },
+];
 
 describe('InviteUserSheet', () => {
   const fetchMock = vi.fn<typeof fetch>();
+  /** Responses for /admin/users, in order; role options are always answered. */
+  const queue: Response[] = [];
+  const respondWith = (res: Response) => queue.push(res);
+  const userCalls = () =>
+    fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/admin/users'));
   beforeEach(() => {
+    queue.length = 0;
+    fetchMock.mockImplementation(async (input) =>
+      String(input).includes('/admin/roles/options')
+        ? json(200, { data: ROLE_OPTIONS })
+        : queue.shift()!,
+    );
     vi.stubGlobal('fetch', fetchMock);
     tokenStore.set('token');
   });
@@ -52,11 +69,11 @@ describe('InviteUserSheet', () => {
     expect(await screen.findByText('Name must be at least 2 characters')).toBeInTheDocument();
     expect(screen.getByText('Enter a valid email address')).toBeInTheDocument();
     expect(screen.getByText('Choose a role')).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(userCalls()).toHaveLength(0);
   });
 
   it('sends the invite and closes', async () => {
-    fetchMock.mockResolvedValueOnce(
+    respondWith(
       json(201, {
         data: {
           emailSent: true,
@@ -69,19 +86,19 @@ describe('InviteUserSheet', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send invite' }));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
-    const [url, init] = fetchMock.mock.calls[0]!;
+    const [url, init] = userCalls()[0]!;
     expect(url).toBe('/api/v1/admin/users');
     expect(JSON.parse(String(init?.body))).toEqual({
       name: 'Priya Kumar',
       email: 'priya@company.com',
       phone: '+919876543210',
-      role: 'sales_agent',
+      role: 'sales_executive',
     });
     expect(toastMock.success).toHaveBeenCalledWith('Invite sent to priya@company.com');
   });
 
   it('shows a duplicate email next to the email field', async () => {
-    fetchMock.mockResolvedValueOnce(
+    respondWith(
       json(409, {
         error: { code: 'DUPLICATE', message: 'A user with this email already exists.' },
       }),

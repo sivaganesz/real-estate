@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { passwordSchema, ROLE_LABELS } from '@real-estate/shared';
+import { passwordSchema } from '@real-estate/shared';
 import type { InviteInfo, SessionResponse } from '@real-estate/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
+import { linkToken } from '@/lib/linkToken';
 
 const acceptFormSchema = z
   .object({ password: passwordSchema, confirmPassword: z.string() })
@@ -27,13 +28,14 @@ const acceptFormSchema = z
 
 export function AcceptInvitePage() {
   const [params] = useSearchParams();
-  const token = params.get('token') ?? '';
+  const token = linkToken(params);
   const navigate = useNavigate();
   const { startSession } = useAuth();
 
   const invite = useQuery({
     queryKey: ['invite', token],
-    queryFn: () => api.get<InviteInfo>(`/auth/invite?token=${encodeURIComponent(token)}`),
+    // The token goes in the body, never in a URL (TRD H3).
+    queryFn: () => api.post<InviteInfo>('/auth/invite/info', { token }, { auth: false }),
     enabled: token.length > 0,
     retry: false,
   });
@@ -92,7 +94,7 @@ export function AcceptInvitePage() {
       description={
         <>
           {info.invitedBy ? `${info.invitedBy} invited you` : "You've been invited"} to join as{' '}
-          <strong>{ROLE_LABELS[info.role]}</strong>. Set a password to activate your account.
+          <strong>{info.roleName}</strong>. Set a password to activate your account.
         </>
       }
     >

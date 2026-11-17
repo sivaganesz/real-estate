@@ -83,6 +83,18 @@ export function AttributeInput({
         />
       );
       break;
+    case 'month':
+      control = (
+        <Input
+          id={id}
+          type="month"
+          value={text}
+          aria-invalid={!!error}
+          aria-describedby={describedBy}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      );
+      break;
     case 'date':
       control = (
         <Input
@@ -168,12 +180,16 @@ export function AttributeInput({
     <div
       className={
         wide || type === 'long_text' || type === 'multi_select'
-          ? 'grid gap-2 sm:col-span-2 lg:col-span-3'
-          : 'grid gap-2'
+          ? 'grid content-start gap-1.5 sm:col-span-2 lg:col-span-3'
+          : 'grid content-start gap-1.5'
       }
     >
-      <div className="flex min-h-5 items-center justify-between gap-2">
-        <Label htmlFor={id} className="flex flex-wrap items-center gap-1.5">
+      {/* Small label like the wireframe's `fld`; the ✕ stays quiet until hovered. */}
+      <div className="flex min-h-4 items-center justify-between gap-2">
+        <Label
+          htmlFor={id}
+          className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-ink-2"
+        >
           {fullLabel}
           {badge}
         </Label>
@@ -181,17 +197,17 @@ export function AttributeInput({
           <button
             type="button"
             onClick={onRemove}
-            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded p-0.5 text-muted-foreground/50 hover:bg-muted hover:text-foreground"
             aria-label={`${removeLabel}: ${label}`}
             title={removeLabel}
           >
-            <XIcon className="size-3.5" />
+            <XIcon className="size-3" />
           </button>
         )}
       </div>
       {control}
       {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive" role="alert">
+        <p id={`${id}-error`} className="text-xs text-destructive" role="alert">
           {error}
         </p>
       )}

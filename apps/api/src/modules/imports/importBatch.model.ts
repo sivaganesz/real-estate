@@ -24,7 +24,8 @@ const rowSchema = new Schema(
     filled: { type: [String], default: [] },
     outcome: { type: String, default: null },
   },
-  { _id: false },
+  // "errors" is a Mongoose reserved name, but here it's only a plain field (L10).
+  { _id: false, suppressReservedKeysWarning: true },
 );
 
 /** One uploaded spreadsheet: its checked rows, then the import result (TRD §7.10). */
@@ -39,7 +40,7 @@ const importBatchSchema = new Schema(
     status: { type: String, required: true, enum: IMPORT_BATCH_STATUSES, default: 'checked' },
     unknownColumns: { type: [String], default: [] },
     rows: { type: [rowSchema], default: [] },
-    importAs: { type: String, enum: ['draft', 'published', null], default: null },
+    importAs: { type: String, enum: ['draft', 'available', null], default: null },
     duplicates: { type: String, enum: ['skip', 'update', null], default: null },
     result: { type: Schema.Types.Mixed, default: null },
     createdBy: refField('User'),
@@ -72,7 +73,7 @@ export interface ImportBatchDoc {
   status: ImportBatchStatus;
   unknownColumns: string[];
   rows: ImportRowDoc[];
-  importAs: 'draft' | 'published' | null;
+  importAs: 'draft' | 'available' | null;
   duplicates: 'skip' | 'update' | null;
   result: ImportResult | null;
   createdBy?: string | null;

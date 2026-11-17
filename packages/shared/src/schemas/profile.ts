@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ROLES } from '../roles';
 import { idSchema, passwordSchema, phoneSchema } from './common';
+import { roleKeySchema } from './roles';
 
 /** The signed-in user's own profile (GET /admin/profile). */
 export const profileSchema = z.object({
@@ -8,7 +8,8 @@ export const profileSchema = z.object({
   name: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
-  role: z.enum(ROLES),
+  role: roleKeySchema,
+  roleName: z.string(),
   lastLoginAt: z.string().nullable(),
   createdAt: z.string(),
 });

@@ -15,12 +15,14 @@ import {
   propertyStatusCountsSchema,
   reorderMediaBodySchema,
   uploadMediaQuerySchema,
+  updateLocationBodySchema,
   updatePropertyBodySchema,
 } from '@real-estate/shared';
 import type { RequestHandler } from 'express';
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
+import { requireIfMatch } from '../../db/versionPlugin';
 import { ErrorResponseSchema, registry } from '../../docs/openapi';
 import { sendData, sendList } from '../../lib/http';
 import { authenticate, requirePermission } from '../../middleware/auth';
@@ -109,8 +111,19 @@ registry.registerPath({
   method: 'patch',
   path: `${BASE}/{id}`,
   summary: 'Edit a property (only the parts sent change)',
-  request: { params: idParams, body: { content: json(updatePropertyBodySchema) } },
-  responses: { 200: data(propertySchema), ...writeErrors },
+  description:
+    'Send `If-Match: "<version>"` with the version you loaded. A stale version gets 409 VERSION_CONFLICT; a missing header gets 428.',
+  request: {
+    params: idParams,
+    headers: z.object({ 'if-match': z.string().meta({ example: '"3"' }) }),
+    body: { content: json(updatePropertyBodySchema) },
+  },
+  responses: {
+    200: data(propertySchema),
+    ...writeErrors,
+    409: err('Someone else changed the property since it was loaded (VERSION_CONFLICT)'),
+    428: err('The If-Match header is missing'),
+  },
 });
 registry.registerPath({
   ...secured,
@@ -251,7 +264,10 @@ export function createPropertiesRouter(deps: {
     '/location-suggestions',
     canRead,
     endpoint({ query: locationSuggestionsQuerySchema }, async ({ query }, _req, res) => {
-      sendData(res, await properties.locationSuggestions(query.field, query.q, query.city));
+      sendData(
+        res,
+        await properties.locationSuggestions(query.field, query.q, query.city, query.limit),
+      );
     }),
   );
   router.post(
@@ -281,7 +297,24 @@ export function createPropertiesRouter(deps: {
     endpoint(
       { params: idParams, body: updatePropertyBodySchema },
       async ({ params, body }, req, res) => {
-        sendData(res, await properties.update(req.user!.id, params.id, body));
+        const expected = requireIfMatch(req);
+        const updated = await properties.update(req.user!.id, params.id, body, expected);
+        res.setHeader('ETag', `"${updated.version}"`);
+        sendData(res, updated);
+      },
+    ),
+  );
+  // The Location tab saves one change at a time (PROP-22–24, PROP-67).
+  router.patch(
+    '/:id/location',
+    canWrite,
+    endpoint(
+      { params: idParams, body: updateLocationBodySchema },
+      async ({ params, body }, req, res) => {
+        const expected = requireIfMatch(req);
+        const updated = await properties.updateLocation(req.user!.id, params.id, body, expected);
+        res.setHeader('ETag', `"${updated.version}"`);
+        sendData(res, updated);
       },
     ),
   );

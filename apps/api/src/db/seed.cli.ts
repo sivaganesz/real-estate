@@ -1,11 +1,12 @@
 /**
  * Seed script: `pnpm --filter @real-estate/api seed`
  * Reads SEED_SUPERADMIN_NAME / SEED_SUPERADMIN_EMAIL / SEED_SUPERADMIN_PASSWORD from
- * apps/api/.env, creates the first Super Admin, the default company settings and the starting property types.
+ * apps/api/.env, creates the first Admin, the default company settings and the starting property types.
  */
 import { loadEnv } from '../config/env';
 import { createLogger } from '../lib/logger';
 import { ensureStartingPropertyTypes } from '../modules/propertyTypes/propertyTypes.defaults';
+import { RolesService } from '../modules/roles/roles.service';
 import { connectDatabase, disconnectDatabase } from './mongoose';
 import { seedCompanySettings, seedSuperAdmin, superAdminSeedSchema } from './seed';
 
@@ -27,11 +28,12 @@ async function main(): Promise<void> {
 
   await connectDatabase(env.MONGODB_URI, logger);
   try {
+    await RolesService.ensureSystemRoles();
     const admin = await seedSuperAdmin(input.data);
     logger.info(
       admin === 'created'
-        ? `Super Admin created: ${input.data.email}`
-        : 'A Super Admin already exists, skipped',
+        ? `Admin created: ${input.data.email}`
+        : 'An Admin already exists, skipped',
     );
     const company = await seedCompanySettings();
     logger.info(

@@ -29,6 +29,9 @@ import { createProfileRouter } from './modules/profile/profile.routes';
 import { ProfileService } from './modules/profile/profile.service';
 import { CompanySettingsService } from './modules/settings/company.service';
 import { createSettingsRouter } from './modules/settings/settings.routes';
+import { ValuationCostsService } from './modules/settings/valuationCosts.service';
+import { createRolesRouter } from './modules/roles/roles.routes';
+import { RolesService } from './modules/roles/roles.service';
 import { createUsersRouter } from './modules/users/users.routes';
 import { UsersService } from './modules/users/users.service';
 
@@ -49,7 +52,10 @@ function createApiRouter(deps: AppDeps): express.Router {
   const profile = new ProfileService({ ...deps, auth });
   router.use('/admin/profile', createProfileRouter({ env: deps.env, auth, profile }));
   const company = new CompanySettingsService(deps);
-  router.use('/admin/settings', createSettingsRouter({ auth, company }));
+  router.use(
+    '/admin/settings',
+    createSettingsRouter({ auth, company, valuationCosts: new ValuationCostsService() }),
+  );
   const propertyTypes = new PropertyTypesService({ usage: propertyUsage });
   router.use('/admin/property-types', createPropertyTypesRouter({ auth, propertyTypes }));
   const properties = new PropertiesService({ propertyTypes, storage: deps.storage });
@@ -63,6 +69,7 @@ function createApiRouter(deps: AppDeps): express.Router {
   router.use('/admin/imports', createImportsRouter({ auth, imports }));
   const geo = new GeocodingService({ env: deps.env, logger: deps.logger });
   router.use('/admin/geo', createGeoRouter({ auth, geo }));
+  router.use('/admin', createRolesRouter({ roles: new RolesService(), auth }));
   router.use('/admin', createUsersRouter({ users, auth }));
   return router;
 }
@@ -73,7 +80,7 @@ export function createApp(deps: AppDeps): Express {
 
   app.disable('x-powered-by');
   // Behind a reverse proxy in production: trust its X-Forwarded-For (needed for rate limits).
-  app.set('trust proxy', env.NODE_ENV === 'production' ? 1 : false);
+  app.set('trust proxy', env.TRUST_PROXY ?? (env.NODE_ENV === 'production' ? 1 : false));
 
   app.use(requestLogger(logger));
   app.use(securityMiddleware(env));

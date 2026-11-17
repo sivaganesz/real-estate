@@ -1,4 +1,9 @@
-import type { CompanySettings, UpdateCompanySettingsBody } from '@real-estate/shared';
+import type {
+  CompanySettings,
+  UpdateCompanySettingsBody,
+  ValuationCosts,
+  ValuationCostsBody,
+} from '@real-estate/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
@@ -22,7 +27,9 @@ function useSaveToCache() {
 export function useUpdateCompanySettings() {
   const save = useSaveToCache();
   return useMutation({
-    mutationFn: (body: UpdateCompanySettingsBody) => api.put<CompanySettings>(PATH, body),
+    // `version` is the one on screen: a save based on an outdated copy gets 409.
+    mutationFn: ({ version, ...body }: UpdateCompanySettingsBody & { version: number }) =>
+      api.put<CompanySettings>(PATH, body, { ifMatch: version }),
     onSuccess: save,
   });
 }
@@ -44,5 +51,25 @@ export function useRemoveLogo() {
   return useMutation({
     mutationFn: () => api.delete<CompanySettings>(`${PATH}/logo`),
     onSuccess: save,
+  });
+}
+
+export const valuationCostsKey = ['settings', 'valuation-costs'] as const;
+const COSTS_PATH = '/admin/settings/valuation-costs';
+
+/** Transaction cost assumptions (SET-04): stamp duty, registration, other costs. */
+export function useValuationCosts() {
+  return useQuery({
+    queryKey: valuationCostsKey,
+    queryFn: () => api.get<ValuationCosts>(COSTS_PATH),
+  });
+}
+
+export function useUpdateValuationCosts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ version, ...body }: ValuationCostsBody & { version: number }) =>
+      api.put<ValuationCosts>(COSTS_PATH, body, { ifMatch: version }),
+    onSuccess: (saved) => queryClient.setQueryData(valuationCostsKey, saved),
   });
 }

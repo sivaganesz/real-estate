@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { createApp } from '../app';
 import { parseEnv } from '../config/env';
 import type { Env } from '../config/env';
@@ -17,6 +17,15 @@ export const TEST_ENV_VARS = {
   ADMIN_ORIGIN: 'http://localhost:5173',
   APP_BASE_URL: 'http://localhost:5173',
   EMAIL_PROVIDER: 'console',
+} as const;
+
+/** Extra settings a valid production configuration needs (see the guards in config/env.ts). */
+export const PRODUCTION_ENV_VARS = {
+  NODE_ENV: 'production',
+  EMAIL_PROVIDER: 'resend',
+  RESEND_API_KEY: 're_test_key',
+  ADMIN_ORIGIN: 'https://admin.example.com',
+  APP_BASE_URL: 'https://admin.example.com',
 } as const;
 
 export function testEnv(overrides: Record<string, string> = {}): Env {
@@ -52,11 +61,20 @@ export async function buildTestApp(envOverrides: Record<string, string> = {}) {
   };
 }
 
-/** Starts an in-memory MongoDB and connects Mongoose to it. */
+/**
+ * Starts an in-memory single-node replica set (transactions need one, like production)
+ * and connects Mongoose to it.
+ */
 export async function startTestDatabase() {
   // The default 10 s start limit is too tight when every package's tests run at once.
-  const server = await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
+  const server = await MongoMemoryReplSet.create({
+    replSet: { count: 1, storageEngine: 'wiredTiger' },
+    instanceOpts: [{ launchTimeout: 60_000 }],
+  });
   await mongoose.connect(server.getUri(), { dbName: 'real_estate_test' });
+  // Create collections up front: creating one inside a transaction can conflict with a
+  // concurrent transaction on the same new collection.
+  await Promise.all(Object.values(mongoose.models).map((m) => m.createCollection()));
   return {
     clear: async () => {
       const collections = await mongoose.connection.db?.collections();

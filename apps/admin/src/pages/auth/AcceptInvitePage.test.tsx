@@ -1,4 +1,4 @@
-import { permissionsFor } from '@real-estate/shared';
+import { effectivePermissions, SYSTEM_ROLES } from '@real-estate/shared';
 import type { AuthUser, InviteInfo } from '@real-estate/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
@@ -14,7 +14,8 @@ import { AcceptInvitePage } from './AcceptInvitePage';
 const invite: InviteInfo = {
   name: 'Agent Ravi',
   email: 'ravi@company.com',
-  role: 'sales_agent',
+  role: 'sales_executive',
+  roleName: 'Sales Executive',
   invitedBy: 'Owner Sam',
 };
 
@@ -23,8 +24,9 @@ const ravi: AuthUser = {
   name: 'Agent Ravi',
   email: 'ravi@company.com',
   phone: null,
-  role: 'sales_agent',
-  permissions: [...permissionsFor('sales_agent')],
+  role: 'sales_executive',
+  roleName: 'Sales Executive',
+  permissions: effectivePermissions('sales_executive', SYSTEM_ROLES.sales_executive.permissions),
 };
 
 function json(status: number, body: unknown) {
@@ -98,23 +100,26 @@ describe('AcceptInvitePage', () => {
 
     expect(await screen.findByText('Welcome, Agent Ravi')).toBeInTheDocument();
     expect(screen.getByText(/Owner Sam invited you/)).toBeInTheDocument();
-    expect(screen.getByText('Sales Agent')).toBeInTheDocument();
+    expect(screen.getByText('Sales Executive')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveValue('ravi@company.com');
 
-    await userEvent.type(screen.getByLabelText('Password'), 'house123');
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'house999');
+    await userEvent.type(screen.getByLabelText('Password'), 'House-key-123');
+    await userEvent.type(screen.getByLabelText('Confirm password'), 'House-key-999');
     await userEvent.click(screen.getByRole('button', { name: 'Activate account' }));
     expect(await screen.findByText('Passwords do not match')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     await userEvent.clear(screen.getByLabelText('Confirm password'));
-    await userEvent.type(screen.getByLabelText('Confirm password'), 'house123');
+    await userEvent.type(screen.getByLabelText('Confirm password'), 'House-key-123');
     await userEvent.click(screen.getByRole('button', { name: 'Activate account' }));
 
     await vi.waitFor(() => expect(router.state.location.pathname).toBe('/properties'));
     expect(startSession).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[1]!;
     expect(String(url)).toContain('/auth/accept-invite');
-    expect(JSON.parse(String(init?.body))).toEqual({ token: 'good-token', password: 'house123' });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      token: 'good-token',
+      password: 'House-key-123',
+    });
   });
 });

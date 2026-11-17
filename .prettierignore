@@ -6,3 +6,6 @@ pnpm-lock.yaml
 apps/api/uploads
 # planning documents and wireframes are hand-formatted
 docs
+
+# Vanilla-JS clickable wireframe kept as the UI reference (not app code)
+spec-system-wireframe/

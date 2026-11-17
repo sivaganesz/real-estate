@@ -1,0 +1,2070 @@
+[
+  {
+    "wireframeId": "PROP-1001",
+    "codePrefix": "PLT",
+    "title": "Premium residential plot",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-11-16",
+    "price": {
+      "amount": 2800000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1200,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Vilangudi",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.962,
+        "lng": 78.091
+      },
+      "roadType": "Tar road",
+      "roadWidthFt": 30
+    },
+    "attributeValues": {
+      "facing": "East",
+      "length": 40,
+      "width": 30,
+      "road_access": "Layout road",
+      "corner": "Non-corner",
+      "topography": "Level",
+      "survey_number": "112/3B",
+      "subdivision": "Plot 14",
+      "layout_approval": "DTCP approval (sample no. 245/2024)",
+      "land_use": "Residential",
+      "water_supply": "Municipal + borewell",
+      "electricity": "Available at site",
+      "drainage": "Underground drainage"
+    },
+    "amenities": ["Park / open space", "Rainwater harvesting"],
+    "highway": {
+      "name": "NH-44 (Madurai–Dindigul)",
+      "distanceKm": 3.2,
+      "routeNote": "Via Vilangudi main road; route driven and measured 02 Nov 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Green Valley Matriculation School (sample)",
+        "distanceKm": 1.4,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "City Care Multispeciality Hospital (sample)",
+        "distanceKm": 2.8,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Bus stop",
+        "name": "Vilangudi bus stop",
+        "distanceKm": 0.6,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Railway station",
+        "name": "Madurai Junction",
+        "distanceKm": 9.5,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Airport",
+        "name": "Madurai Airport",
+        "distanceKm": 21,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Outer ring road extension",
+        "distanceKm": 1.8,
+        "routeChecked": false,
+        "status": "planned"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "layout_approval",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-11-12",
+      "valuerReport": "Valuer report — Registered Valuer (sample), 10 Nov 2026",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Vilangudi, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2400,
+          "kind": "transaction",
+          "date": "2026-09-20",
+          "source": "Registered sale (sample)",
+          "differences": "Older layout, 23 ft road"
+        },
+        {
+          "location": "Vilangudi, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1500,
+          "pricePerSqft": 2550,
+          "kind": "asking",
+          "date": "2026-11-01",
+          "source": "Property portal listing",
+          "differences": "Corner plot, asking price only"
+        },
+        {
+          "location": "Thirunagar, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1100,
+          "pricePerSqft": 2450,
+          "kind": "transaction",
+          "date": "2026-08-14",
+          "source": "Channel partner",
+          "differences": "Similar approval, 1.5 km away"
+        }
+      ]
+    },
+    "photos": 4
+  },
+  {
+    "wireframeId": "PROP-1002",
+    "codePrefix": "PLT",
+    "title": "Large plot near ring road",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-11-08",
+    "price": {
+      "amount": 3000000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1500,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Thiruparankundram",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.881,
+        "lng": 78.07
+      },
+      "roadType": "Gravel road",
+      "roadWidthFt": 30
+    },
+    "attributeValues": {
+      "facing": "East",
+      "length": 50,
+      "width": 30,
+      "road_access": "Layout road",
+      "corner": "Corner",
+      "topography": "Level",
+      "survey_number": "87/1A",
+      "subdivision": "Plot 3",
+      "layout_approval": "Approval number awaited from seller",
+      "land_use": "Residential",
+      "water_supply": "Borewell",
+      "electricity": "Line nearby — connection to apply",
+      "drainage": "Open drain"
+    },
+    "amenities": [],
+    "highway": {
+      "name": "Madurai Ring Road",
+      "distanceKm": 1.1,
+      "routeNote": "Measured on map — route not yet driven"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Sunrise Public School (sample)",
+        "distanceKm": 2.2,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "Primary Health Centre (sample)",
+        "distanceKm": 3.5,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Bus stop",
+        "name": "Thiruparankundram bus stand",
+        "distanceKm": 1.9,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Proposed metro corridor",
+        "distanceKm": 4,
+        "routeChecked": false,
+        "status": "proposed"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "layout_approval",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "not_collected",
+        "verifiedBy": "",
+        "date": null,
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "not_collected",
+        "verifiedBy": "",
+        "date": null,
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-11-08",
+      "valuerReport": "",
+      "notes": "Approval verification pending — do not quote as approved.",
+      "comparables": [
+        {
+          "location": "Thiruparankundram, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1500,
+          "pricePerSqft": 1950,
+          "kind": "asking",
+          "date": "2026-10-30",
+          "source": "Property portal listing",
+          "differences": "Mud road access"
+        },
+        {
+          "location": "Thiruparankundram, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2100,
+          "kind": "transaction",
+          "date": "2026-09-02",
+          "source": "Registered sale (sample)",
+          "differences": "Approved layout"
+        },
+        {
+          "location": "Pasumalai, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1350,
+          "pricePerSqft": 2050,
+          "kind": "transaction",
+          "date": "2026-07-18",
+          "source": "Channel partner",
+          "differences": "Closer to main road"
+        }
+      ]
+    },
+    "photos": 3
+  },
+  {
+    "wireframeId": "PROP-1003",
+    "codePrefix": "PLT",
+    "title": "East-facing plot in gated layout",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-11-02",
+    "price": {
+      "amount": 3500000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1200,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "K.K. Nagar",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.93,
+        "lng": 78.145
+      },
+      "roadType": "Concrete road",
+      "roadWidthFt": 33
+    },
+    "attributeValues": {
+      "facing": "East",
+      "length": 40,
+      "width": 30,
+      "road_access": "Layout road",
+      "corner": "Non-corner",
+      "topography": "Level",
+      "survey_number": "45/2",
+      "subdivision": "Plot 22",
+      "layout_approval": "DTCP approval (sample no. 118/2023)",
+      "land_use": "Residential",
+      "water_supply": "Municipal supply",
+      "electricity": "Available at site",
+      "drainage": "Underground drainage"
+    },
+    "amenities": ["Gated community", "Security", "Park / open space", "CCTV"],
+    "highway": {
+      "name": "NH-38 (Madurai–Trichy)",
+      "distanceKm": 4.5,
+      "routeNote": "Via K.K. Nagar 80 ft road; driven 28 Oct 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Lakeview Senior Secondary School (sample)",
+        "distanceKm": 0.9,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "Meenakshi Care Hospital (sample)",
+        "distanceKm": 1.6,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Bus stop",
+        "name": "K.K. Nagar arch",
+        "distanceKm": 0.4,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Market",
+        "name": "Mattuthavani market",
+        "distanceKm": 3,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "layout_approval",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-11-02",
+      "valuerReport": "",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "K.K. Nagar, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2850,
+          "kind": "transaction",
+          "date": "2026-10-05",
+          "source": "Registered sale (sample)",
+          "differences": "Non-gated"
+        },
+        {
+          "location": "K.K. Nagar, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1000,
+          "pricePerSqft": 3050,
+          "kind": "asking",
+          "date": "2026-10-28",
+          "source": "Property portal listing",
+          "differences": "Gated, smaller plot"
+        },
+        {
+          "location": "Anna Nagar, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2900,
+          "kind": "transaction",
+          "date": "2026-08-21",
+          "source": "Channel partner",
+          "differences": "Similar approval"
+        }
+      ]
+    },
+    "photos": 6
+  },
+  {
+    "wireframeId": "PROP-1004",
+    "codePrefix": "PLT",
+    "title": "Budget plot near bypass",
+    "purpose": "sale",
+    "status": "sold",
+    "listedAt": "2026-09-10",
+    "price": {
+      "amount": 2600000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1200,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Othakadai",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.955,
+        "lng": 78.19
+      },
+      "roadType": "Tar road",
+      "roadWidthFt": 30
+    },
+    "attributeValues": {
+      "facing": "East",
+      "length": 40,
+      "width": 30,
+      "road_access": "Public road",
+      "corner": "Non-corner",
+      "topography": "Level",
+      "survey_number": "201/4",
+      "layout_approval": "DTCP approval (sample no. 77/2022)",
+      "land_use": "Residential",
+      "water_supply": "Borewell",
+      "electricity": "Available at site",
+      "drainage": "Open drain"
+    },
+    "amenities": [],
+    "highway": {
+      "name": "Madurai–Melur road",
+      "distanceKm": 0.8,
+      "routeNote": "Driven 12 Sep 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Government Higher Secondary School (sample)",
+        "distanceKm": 1.2,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "layout_approval",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "not_collected",
+        "verifiedBy": "",
+        "date": null,
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-09-10",
+      "valuerReport": "",
+      "notes": "Sold 30 Oct 2026",
+      "comparables": [
+        {
+          "location": "Othakadai, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2150,
+          "kind": "transaction",
+          "date": "2026-08-01",
+          "source": "Registered sale (sample)",
+          "differences": "Similar"
+        }
+      ]
+    },
+    "photos": 2
+  },
+  {
+    "wireframeId": "PROP-1005",
+    "codePrefix": "APT",
+    "title": "2 BHK apartment, Anna Nagar",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-10-20",
+    "price": {
+      "amount": 5200000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1050,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Anna Nagar",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.925,
+        "lng": 78.138
+      },
+      "roadType": "Tar road",
+      "roadWidthFt": 40
+    },
+    "attributeValues": {
+      "facing": "North",
+      "bhk": "2 BHK",
+      "carpet_area": 820,
+      "super_built_up_area": 1250,
+      "floor_number": 3,
+      "total_floors": 5,
+      "lifts": 1,
+      "parking_allocation": "1 covered",
+      "uds": 420,
+      "maintenance": 2500,
+      "possession_status": "Ready to move"
+    },
+    "amenities": ["Lift", "Power backup", "Security", "CCTV", "Visitor parking"],
+    "highway": {
+      "name": "NH-38",
+      "distanceKm": 3.8,
+      "routeNote": "Driven 18 Oct 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "St. Mary’s Matriculation School (sample)",
+        "distanceKm": 0.7,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "Anna Nagar Clinic & Nursing Home (sample)",
+        "distanceKm": 0.5,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Bus stop",
+        "name": "Anna Nagar bus stop",
+        "distanceKm": 0.3,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Railway station",
+        "name": "Madurai Junction",
+        "distanceKm": 5.6,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-10-20",
+      "valuerReport": "",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Anna Nagar, Madurai",
+          "type": "2 BHK flat",
+          "areaSqft": 1000,
+          "pricePerSqft": 4800,
+          "kind": "transaction",
+          "date": "2026-09-11",
+          "source": "Registered sale (sample)",
+          "differences": "Older building"
+        },
+        {
+          "location": "Anna Nagar, Madurai",
+          "type": "2 BHK flat",
+          "areaSqft": 1100,
+          "pricePerSqft": 5100,
+          "kind": "asking",
+          "date": "2026-10-15",
+          "source": "Property portal listing",
+          "differences": "New building"
+        },
+        {
+          "location": "K.K. Nagar, Madurai",
+          "type": "2 BHK flat",
+          "areaSqft": 1050,
+          "pricePerSqft": 4950,
+          "kind": "transaction",
+          "date": "2026-08-30",
+          "source": "Channel partner",
+          "differences": "No lift"
+        }
+      ]
+    },
+    "photos": 8
+  },
+  {
+    "wireframeId": "PROP-1006",
+    "codePrefix": "APT",
+    "title": "3 BHK apartment on OMR",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-10-05",
+    "price": {
+      "amount": 9800000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1450,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Chennai",
+      "locality": "Sholinganallur (OMR)",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 12.901,
+        "lng": 80.227
+      },
+      "roadType": "Highway service road",
+      "roadWidthFt": 60
+    },
+    "attributeValues": {
+      "facing": "East",
+      "bhk": "3 BHK",
+      "carpet_area": 1120,
+      "super_built_up_area": 1720,
+      "floor_number": 9,
+      "total_floors": 14,
+      "lifts": 3,
+      "parking_allocation": "1 covered",
+      "uds": 510,
+      "maintenance": 5200,
+      "possession_status": "Under construction",
+      "expected_possession": "2027-09"
+    },
+    "amenities": ["Lift", "Power backup", "Gym", "Swimming pool", "Clubhouse", "Security", "CCTV"],
+    "highway": {
+      "name": "OMR (Rajiv Gandhi Salai)",
+      "distanceKm": 0.4,
+      "routeNote": "Direct access; peak hours add 20+ minutes"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Bayview International School (sample)",
+        "distanceKm": 1.8,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "OMR Multispeciality Hospital (sample)",
+        "distanceKm": 2.1,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Metro Phase 2 — Sholinganallur station",
+        "distanceKm": 0.9,
+        "routeChecked": true,
+        "status": "under_construction"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "not_collected",
+        "verifiedBy": "",
+        "date": null,
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-10-05",
+      "valuerReport": "",
+      "notes": "Under construction — completion certificate not applicable yet.",
+      "comparables": [
+        {
+          "location": "Sholinganallur, Chennai",
+          "type": "3 BHK flat",
+          "areaSqft": 1500,
+          "pricePerSqft": 6500,
+          "kind": "asking",
+          "date": "2026-09-28",
+          "source": "Builder price list",
+          "differences": "Lower floor"
+        },
+        {
+          "location": "Sholinganallur, Chennai",
+          "type": "3 BHK flat",
+          "areaSqft": 1400,
+          "pricePerSqft": 6900,
+          "kind": "transaction",
+          "date": "2026-08-12",
+          "source": "Registered sale (sample)",
+          "differences": "Ready to move"
+        },
+        {
+          "location": "Navalur, Chennai",
+          "type": "3 BHK flat",
+          "areaSqft": 1450,
+          "pricePerSqft": 6100,
+          "kind": "transaction",
+          "date": "2026-07-09",
+          "source": "Channel partner",
+          "differences": "3 km further south"
+        }
+      ]
+    },
+    "photos": 10
+  },
+  {
+    "wireframeId": "PROP-1007",
+    "codePrefix": "VIL",
+    "title": "Independent house, Peelamedu",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-09-25",
+    "price": {
+      "amount": 13500000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1800,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Coimbatore",
+      "locality": "Peelamedu",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 11.03,
+        "lng": 77.02
+      },
+      "roadType": "Tar road",
+      "roadWidthFt": 30
+    },
+    "attributeValues": {
+      "facing": "North",
+      "house_type": "Independent house",
+      "land_area": 2400,
+      "floors": 2,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "car_parking": "2 cars",
+      "construction_year": 2018,
+      "construction_quality": "Standard",
+      "condition": "Good",
+      "garden": "Small front garden",
+      "water_supply": "Municipal + borewell",
+      "power_arrangement": "EB + inverter",
+      "approval_docs": "Approval + completion available"
+    },
+    "amenities": ["Rainwater harvesting", "Power backup"],
+    "highway": {
+      "name": "Avinashi Road",
+      "distanceKm": 1.2,
+      "routeNote": "Driven 20 Sep 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Peelamedu Public School (sample)",
+        "distanceKm": 0.8,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "Kovai Medical Centre (sample)",
+        "distanceKm": 2.4,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Airport",
+        "name": "Coimbatore Airport",
+        "distanceKm": 4.2,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-09-25",
+      "valuerReport": "",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Peelamedu, Coimbatore",
+          "type": "Independent house",
+          "areaSqft": 1750,
+          "pricePerSqft": 7300,
+          "kind": "transaction",
+          "date": "2026-08-18",
+          "source": "Registered sale (sample)",
+          "differences": "Older construction"
+        },
+        {
+          "location": "Peelamedu, Coimbatore",
+          "type": "Independent house",
+          "areaSqft": 2000,
+          "pricePerSqft": 7800,
+          "kind": "asking",
+          "date": "2026-09-10",
+          "source": "Property portal listing",
+          "differences": "Corner, larger land"
+        },
+        {
+          "location": "Hope College, Coimbatore",
+          "type": "Independent house",
+          "areaSqft": 1600,
+          "pricePerSqft": 7100,
+          "kind": "transaction",
+          "date": "2026-06-22",
+          "source": "Channel partner",
+          "differences": "Smaller land"
+        }
+      ]
+    },
+    "photos": 7
+  },
+  {
+    "wireframeId": "PROP-1008",
+    "codePrefix": "VIL",
+    "title": "Luxury villa, Vadavalli",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-10-12",
+    "price": {
+      "amount": 34000000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 3800,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Coimbatore",
+      "locality": "Vadavalli",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 11.025,
+        "lng": 76.905
+      },
+      "roadType": "Concrete road",
+      "roadWidthFt": 40
+    },
+    "attributeValues": {
+      "facing": "East",
+      "house_type": "Villa (gated community)",
+      "land_area": 5400,
+      "floors": 2,
+      "bedrooms": 4,
+      "bathrooms": 5,
+      "car_parking": "3+ cars",
+      "construction_year": 2025,
+      "construction_quality": "Premium",
+      "condition": "New",
+      "garden": "Private lawn + terrace garden",
+      "water_supply": "Municipal + borewell",
+      "power_arrangement": "EB + solar",
+      "approval_docs": "Approval + completion available"
+    },
+    "amenities": [
+      "Gated community",
+      "Security",
+      "Swimming pool",
+      "Clubhouse",
+      "Power backup",
+      "CCTV"
+    ],
+    "highway": {
+      "name": "Marudhamalai Road",
+      "distanceKm": 0.9,
+      "routeNote": "Driven 08 Oct 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Hillside International School (sample)",
+        "distanceKm": 2.5,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "West Kovai Hospital (sample)",
+        "distanceKm": 3.1,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Western bypass",
+        "distanceKm": 2,
+        "routeChecked": false,
+        "status": "planned"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-10-12",
+      "valuerReport": "Valuer report — Registered Valuer (sample), 09 Oct 2026",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Vadavalli, Coimbatore",
+          "type": "Villa",
+          "areaSqft": 3500,
+          "pricePerSqft": 8600,
+          "kind": "transaction",
+          "date": "2026-07-30",
+          "source": "Registered sale (sample)",
+          "differences": "Smaller land"
+        },
+        {
+          "location": "Vadavalli, Coimbatore",
+          "type": "Villa",
+          "areaSqft": 4000,
+          "pricePerSqft": 9200,
+          "kind": "asking",
+          "date": "2026-10-01",
+          "source": "Builder price list",
+          "differences": "Same community, larger"
+        },
+        {
+          "location": "Thondamuthur Rd, Coimbatore",
+          "type": "Villa",
+          "areaSqft": 3600,
+          "pricePerSqft": 8300,
+          "kind": "transaction",
+          "date": "2026-06-15",
+          "source": "Channel partner",
+          "differences": "Farther from city"
+        }
+      ]
+    },
+    "photos": 12
+  },
+  {
+    "wireframeId": "PROP-1009",
+    "codePrefix": "SHP",
+    "title": "Retail shop, Thillai Nagar main road",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-10-01",
+    "price": {
+      "amount": 8500000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 650,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Tiruchirappalli",
+      "locality": "Thillai Nagar",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 10.825,
+        "lng": 78.685
+      },
+      "roadType": "Main road",
+      "roadWidthFt": 60
+    },
+    "attributeValues": {
+      "facing": "South",
+      "floor": "Ground",
+      "frontage": 18,
+      "parking": "Street parking",
+      "permitted_usage": "Retail / showroom",
+      "occupancy": "Tenanted",
+      "rental_income": 45000,
+      "lease_duration": "3 years (ends Mar 2028)",
+      "lease_terms": "5% annual escalation",
+      "maintenance": 1500,
+      "operating_expenses": 24000
+    },
+    "amenities": ["CCTV"],
+    "highway": {
+      "name": "Trichy–Chennai NH",
+      "distanceKm": 4,
+      "routeNote": "Driven 25 Sep 2026"
+    },
+    "nearby": [
+      {
+        "category": "Bus stop",
+        "name": "Thillai Nagar bus stop",
+        "distanceKm": 0.2,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Railway station",
+        "name": "Tiruchirappalli Junction",
+        "distanceKm": 3.9,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fire_noc",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-10-01",
+      "valuerReport": "",
+      "notes": "Gross rental yield ≈ 6.4% on asking price (before costs).",
+      "comparables": [
+        {
+          "location": "Thillai Nagar, Trichy",
+          "type": "Shop",
+          "areaSqft": 600,
+          "pricePerSqft": 12500,
+          "kind": "transaction",
+          "date": "2026-08-08",
+          "source": "Registered sale (sample)",
+          "differences": "First floor"
+        },
+        {
+          "location": "Thillai Nagar, Trichy",
+          "type": "Shop",
+          "areaSqft": 700,
+          "pricePerSqft": 13800,
+          "kind": "asking",
+          "date": "2026-09-20",
+          "source": "Property portal listing",
+          "differences": "Wider frontage"
+        },
+        {
+          "location": "Cantonment, Trichy",
+          "type": "Shop",
+          "areaSqft": 650,
+          "pricePerSqft": 12900,
+          "kind": "transaction",
+          "date": "2026-07-01",
+          "source": "Channel partner",
+          "differences": "Similar footfall"
+        }
+      ]
+    },
+    "photos": 5
+  },
+  {
+    "wireframeId": "PROP-1010",
+    "codePrefix": "OFC",
+    "title": "Office floor, Velachery",
+    "purpose": "sale",
+    "status": "reserved",
+    "listedAt": "2026-08-18",
+    "price": {
+      "amount": 42000000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 4200,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Chennai",
+      "locality": "Velachery",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 12.98,
+        "lng": 80.22
+      },
+      "roadType": "Main road",
+      "roadWidthFt": 80
+    },
+    "attributeValues": {
+      "facing": "West",
+      "floor": "4th of 7",
+      "parking": "Dedicated 5+",
+      "permitted_usage": "Office / IT",
+      "occupancy": "Vacant",
+      "maintenance": 21000,
+      "operating_expenses": 180000
+    },
+    "amenities": ["Lift", "Power backup", "Security", "CCTV", "Visitor parking"],
+    "highway": {
+      "name": "Velachery Main Road",
+      "distanceKm": 0.1,
+      "routeNote": "Direct frontage"
+    },
+    "nearby": [
+      {
+        "category": "Railway station",
+        "name": "Velachery MRTS",
+        "distanceKm": 1.1,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Velachery flyover",
+        "distanceKm": 0.6,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fire_noc",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-08-18",
+      "valuerReport": "",
+      "notes": "Booking received 10 Nov 2026",
+      "comparables": [
+        {
+          "location": "Velachery, Chennai",
+          "type": "Office floor",
+          "areaSqft": 4000,
+          "pricePerSqft": 9800,
+          "kind": "transaction",
+          "date": "2026-06-30",
+          "source": "Registered sale (sample)",
+          "differences": "Older building"
+        }
+      ]
+    },
+    "photos": 9
+  },
+  {
+    "wireframeId": "PROP-1011",
+    "codePrefix": "WHS",
+    "title": "Warehouse, Kappalur industrial area",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-10-28",
+    "price": {
+      "amount": 26000000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 10000,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Kappalur",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.87,
+        "lng": 78.03
+      },
+      "roadType": "Industrial road",
+      "roadWidthFt": 40
+    },
+    "attributeValues": {
+      "facing": "North",
+      "floor": "Ground",
+      "frontage": 80,
+      "parking": "Dedicated 5+",
+      "permitted_usage": "Warehousing / light industry",
+      "occupancy": "Vacant",
+      "operating_expenses": 120000
+    },
+    "amenities": ["Loading bay", "Security", "CCTV"],
+    "highway": {
+      "name": "NH-44 (Madurai–Tirunelveli)",
+      "distanceKm": 1.5,
+      "routeNote": "Driven 25 Oct 2026; truck-accessible"
+    },
+    "nearby": [
+      {
+        "category": "Other",
+        "name": "SIDCO industrial estate",
+        "distanceKm": 0.8,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Other",
+        "name": "Freight terminal",
+        "distanceKm": 6,
+        "routeChecked": false,
+        "status": "proposed"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "building_plan",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "completion_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fire_noc",
+        "status": "pending",
+        "verifiedBy": "",
+        "date": "2026-11-10",
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-10-28",
+      "valuerReport": "",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Kappalur, Madurai",
+          "type": "Warehouse",
+          "areaSqft": 12000,
+          "pricePerSqft": 2500,
+          "kind": "transaction",
+          "date": "2026-09-15",
+          "source": "Registered sale (sample)",
+          "differences": "Larger, older shed"
+        },
+        {
+          "location": "Kappalur, Madurai",
+          "type": "Warehouse",
+          "areaSqft": 8000,
+          "pricePerSqft": 2750,
+          "kind": "asking",
+          "date": "2026-10-20",
+          "source": "Property portal listing",
+          "differences": "Newer construction"
+        }
+      ]
+    },
+    "photos": 6
+  },
+  {
+    "wireframeId": "PROP-1012",
+    "codePrefix": "PLT",
+    "title": "West-facing plot, Ponmeni",
+    "purpose": "sale",
+    "status": "available",
+    "listedAt": "2026-11-11",
+    "price": {
+      "amount": 3100000,
+      "basis": "total",
+      "negotiable": false,
+      "onRequest": false
+    },
+    "area": {
+      "value": 1350,
+      "unit": "sqft"
+    },
+    "location": {
+      "state": "Tamil Nadu",
+      "city": "Madurai",
+      "locality": "Ponmeni",
+      "pincode": "",
+      "address": "",
+      "landmark": "",
+      "mapPin": {
+        "lat": 9.93,
+        "lng": 78.095
+      },
+      "roadType": "Tar road",
+      "roadWidthFt": 23
+    },
+    "attributeValues": {
+      "facing": "West",
+      "length": 45,
+      "width": 30,
+      "road_access": "Public road",
+      "corner": "Non-corner",
+      "topography": "Level",
+      "survey_number": "66/7",
+      "subdivision": "Plot 5",
+      "layout_approval": "Local body approval (sample no. 39/2021)",
+      "land_use": "Residential",
+      "water_supply": "Municipal supply",
+      "electricity": "Available at site",
+      "drainage": "Underground drainage"
+    },
+    "amenities": [],
+    "highway": {
+      "name": "Madurai–Theni road",
+      "distanceKm": 2.6,
+      "routeNote": "Driven 10 Nov 2026"
+    },
+    "nearby": [
+      {
+        "category": "School",
+        "name": "Ponmeni Matriculation School (sample)",
+        "distanceKm": 0.6,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Hospital",
+        "name": "Ponmeni Nursing Home (sample)",
+        "distanceKm": 1,
+        "routeChecked": true,
+        "status": "existing"
+      },
+      {
+        "category": "Bus stop",
+        "name": "Ponmeni bus stop",
+        "distanceKm": 0.3,
+        "routeChecked": true,
+        "status": "existing"
+      }
+    ],
+    "legal": [
+      {
+        "key": "parent_documents",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "sale_deed",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "encumbrance_certificate",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "patta",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "fmb_survey",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "land_use",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "layout_approval",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      },
+      {
+        "key": "rera",
+        "status": "not_collected",
+        "verifiedBy": "",
+        "date": null,
+        "note": ""
+      },
+      {
+        "key": "tax_receipts",
+        "status": "verified",
+        "verifiedBy": "Adv. Legal Partner (sample)",
+        "date": "2026-11-05",
+        "note": ""
+      }
+    ],
+    "valuation": {
+      "reviewDate": "2026-11-11",
+      "valuerReport": "",
+      "notes": "",
+      "comparables": [
+        {
+          "location": "Ponmeni, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1200,
+          "pricePerSqft": 2250,
+          "kind": "transaction",
+          "date": "2026-09-25",
+          "source": "Registered sale (sample)",
+          "differences": "Interior road"
+        },
+        {
+          "location": "Ponmeni, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1400,
+          "pricePerSqft": 2350,
+          "kind": "asking",
+          "date": "2026-11-02",
+          "source": "Property portal listing",
+          "differences": "Similar"
+        },
+        {
+          "location": "Bypass Road, Madurai",
+          "type": "Residential plot",
+          "areaSqft": 1300,
+          "pricePerSqft": 2400,
+          "kind": "transaction",
+          "date": "2026-08-10",
+          "source": "Channel partner",
+          "differences": "Main road frontage"
+        }
+      ]
+    },
+    "photos": 3
+  }
+]

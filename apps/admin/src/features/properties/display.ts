@@ -12,7 +12,7 @@ import type {
   PropertyStatus,
   Purpose,
 } from '@real-estate/shared';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMonth } from '@/lib/format';
 
 /** "3 BHK", "1,850 sq.ft", "Yes", "Gym, Pool", "12 Nov 2026". Empty values return null. */
 export function formatAttributeValue(
@@ -28,6 +28,7 @@ export function formatAttributeValue(
     return a.unit.startsWith('₹') ? `₹${shown}${a.unit.slice(1)}` : `${shown} ${a.unit}`;
   }
   if (a.type === 'date' && typeof value === 'string') return formatDate(`${value}T00:00:00`);
+  if (a.type === 'month' && typeof value === 'string') return formatMonth(value);
   return String(value);
 }
 
@@ -65,6 +66,12 @@ const FIELD_LABELS: Record<string, string> = {
   cover: 'Cover photo',
 };
 
+/** Statuses in history entries written before v2 (D1), shown as they were. */
+const V1_STATUS_LABELS: Record<string, string> = {
+  published: 'Published',
+  unpublished: 'Unpublished',
+};
+
 export const ACTION_LABELS: Record<string, string> = {
   created: 'Created as draft',
   updated: 'Edited',
@@ -88,7 +95,13 @@ export function historyFieldLabel(field: string, names: Names): string {
 /** One side of a history change, in words. */
 export function historyValue(field: string, value: unknown, names: Names): string {
   if (value === null || value === undefined || value === '') return '—';
-  if (field === 'status') return PROPERTY_STATUS_LABELS[value as PropertyStatus] ?? String(value);
+  if (field === 'status') {
+    return (
+      PROPERTY_STATUS_LABELS[value as PropertyStatus] ??
+      V1_STATUS_LABELS[String(value)] ??
+      String(value)
+    );
+  }
   if (field === 'purpose') return PURPOSE_LABELS[value as Purpose] ?? String(value);
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (typeof value === 'number' || typeof value === 'string') return String(value);
@@ -126,4 +139,11 @@ export function historyValue(field: string, value: unknown, names: Names): strin
     return value.join(', ') || '—';
   }
   return JSON.stringify(value);
+}
+
+/** The property page shows the full amount, as the wireframe does: "₹28,00,000". */
+export function formatPriceFull(price: Parameters<typeof formatPrice>[0]): string {
+  return price.basis === 'total' && !price.onRequest && price.amount !== null
+    ? `₹${price.amount.toLocaleString('en-IN')}`
+    : formatPrice(price);
 }

@@ -15,6 +15,8 @@ export default defineConfig(
       '**/coverage/**',
       'apps/api/uploads/**',
       'docs/**',
+      // Vanilla-JS clickable wireframe kept as the UI reference (not app code).
+      'spec-system-wireframe/**',
     ],
   },
   js.configs.recommended,
@@ -42,6 +44,22 @@ export default defineConfig(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
+  },
+  // Design tokens only (TRD v2 §12.1): use tone / brand classes, not raw Tailwind palette
+  // colours, so light and dark themes stay consistent. Generated shadcn/ui code is exempt.
+  {
+    files: ['apps/admin/src/**/*.tsx'],
+    ignores: ['apps/admin/src/components/ui/**', 'apps/admin/src/**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...['Literal', 'TemplateElement'].map((node) => ({
+          selector: `${node}[${node === 'Literal' ? 'value' : 'value.raw'}=/\\b(bg|text|border|ring|fill|stroke|from|to|via|outline|decoration)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d{2,3}/]`,
+          message:
+            'Use design tokens (e.g. text-tone-green, bg-tone-amber-soft, bg-primary) instead of raw palette colours.',
+        })),
+      ],
     },
   },
   // shadcn/ui components export variant helpers next to components (generated code)

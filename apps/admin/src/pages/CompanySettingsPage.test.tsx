@@ -20,6 +20,7 @@ const unconfigured: CompanySettings = {
   isConfigured: false,
   updatedAt: null,
   updatedBy: null,
+  version: 0,
 };
 
 function json(status: number, body: unknown) {
