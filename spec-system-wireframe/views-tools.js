@@ -28,7 +28,7 @@ function viewAbout() {
         <li>A high-budget customer is not automatically an HNI; an expensive property is not automatically a high-value investment.</li>
         <li>Every property and customer has a unique ID.</li>
         <li>Forms change by property type — no one-size form.</li>
-        <li>Legal checks use three statuses; never “100% legally clear”.</li>
+        <li>Legal &amp; documents is optional: approval badges show once their document is uploaded; never “100% legally clear”.</li>
         <li>Distances are measured; planned/proposed infrastructure is never shown as existing.</li>
         <li>Unresolved mandatory legal checks block a property from being the top recommendation.</li>
         <li>Consent before follow-up; sensitive financial data is never collected during lead generation.</li></ul></div>

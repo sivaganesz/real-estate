@@ -3,7 +3,7 @@
    Flow: choose type → download template → upload → validate & preview → import.
    Rules: one template per property type (fields differ by type);
           blank Property ID = new property, existing ID = update only the filled cells;
-          legal checks are never imported as verified — every new property starts "Not collected".
+          approvals and documents are never imported — they are added on the property page (optional).
    ===================================================================== */
 
 UI.imp = { type: 'plot', rows: null, file: '', fileNotes: [], filter: '', update: true, result: null };
@@ -235,7 +235,7 @@ function impStartHtml(t) {
       <div class="row" style="margin-top:12px"><span class="muted">No file handy?</span><button class="btn sm" data-act="impUseSample">Try with sample data</button></div>
       <div class="note" style="margin-top:12px"><ul class="why" style="margin:0">
         <li>Leave <b>Property ID</b> blank for a new property. Fill it in to update an existing one — only the cells you fill in are changed.</li>
-        <li>Legal checks are never imported as verified. New properties start as “Not collected”; verify them on the property’s Legal tab.</li>
+        <li>Approvals and documents are not imported; add them any time on the property’s Legal &amp; documents tab (optional). The important nearby places are added automatically.</li>
         <li>Location distances, comparables and images are added on the property page afterwards.</li>
         <li>Excel users: save the sheet as CSV (UTF-8) before uploading.</li></ul></div>
     </div>

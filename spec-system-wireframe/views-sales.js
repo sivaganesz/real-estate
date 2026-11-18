@@ -109,10 +109,10 @@ function viewMatching(cid) {
       <div class="card"><h2>Result</h2>
         <div class="row">${chip(mm.eligible.filter(m => m.label !== 'Conditional match').length + ' eligible', 'green')}${chip(mm.eligible.filter(m => m.label === 'Conditional match').length + ' conditional', 'amber')}${chip(mm.excluded.length + ' excluded', 'red')}</div>
         <p style="margin:10px 0 0">${mm.top ? `Best initial recommendation: <a href="#/properties/${mm.top.prop.id}"><b>${mm.top.prop.id}</b></a> — ${esc(mm.top.prop.title)} (${mm.top.M}).` : 'No unconditional recommendation available.'}</p>
-        <p class="muted" style="margin:6px 0 0">Critical rule: a property with unresolved mandatory legal checks never becomes the top recommendation, even with a high score.</p></div>
+        <p class="muted" style="margin:6px 0 0">Critical rule: a property with an approval badge whose document is pending never becomes the top recommendation, even with a high score.</p></div>
     </div>
     <div class="card" style="margin-top:14px"><h2>Step 1 — Hard filters (all ${mm.all.length} active properties)</h2>
-      <div class="tbl-wrap"><table><thead><tr><th>Property</th><th>Type · city · price</th><th>Available</th><th>Type</th><th>Location</th><th>Budget</th><th>Legal (mandatory)</th><th>Result</th></tr></thead><tbody>${filterRows}</tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Property</th><th>Type · city · price</th><th>Available</th><th>Type</th><th>Location</th><th>Budget</th><th>Approval documents</th><th>Result</th></tr></thead><tbody>${filterRows}</tbody></table></div>
       <p class="muted" style="margin:8px 0 0">✗ excludes the property · ⚠ keeps it only as a Conditional match until resolved. Hover a mark for the reason.</p></div>
     <div class="card"><h2>Step 2 — Ranking of properties that passed</h2>
       ${mm.eligible.length ? `<div class="tbl-wrap"><table><thead><tr><th class="num">#</th><th>Property</th><th class="num">B</th><th class="num">L</th><th class="num">S</th><th class="num">A</th><th class="num">P</th><th class="num">M</th><th>Label</th></tr></thead><tbody>${rankRows}</tbody></table></div>` : '<p class="muted">Nothing passed the hard filters.</p>'}

@@ -357,7 +357,7 @@ function matchCard(c, m, isTop) {
     <div class="comps">${[['B', 'Budget'], ['L', 'Location'], ['S', 'Size'], ['A', 'Amenities'], ['P', 'Preferences']].map(([k, l]) => `<div><small>${l} · ×${w[k]}</small><b>${m.comps[k]}</b>${meter(m.comps[k], m.comps[k] >= 80 ? 'green' : m.comps[k] >= 50 ? 'amber' : 'red')}</div>`).join('')}</div>
     <ul class="why">${m.why.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
     <div class="row" style="margin-top:10px">
-      ${rec ? `<button class="btn sm" data-act="unrecommend" data-id="${c.id}" data-p="${p.id}">Remove recommendation</button>` : `<button class="btn sm ${m.legalOk ? 'primary' : ''}" data-act="recommend" data-id="${c.id}" data-p="${p.id}" ${m.legalOk ? '' : 'title="Mandatory legal checks unresolved — explain before recommending"'}>✓ Recommend to customer</button>`}
+      ${rec ? `<button class="btn sm" data-act="unrecommend" data-id="${c.id}" data-p="${p.id}">Remove recommendation</button>` : `<button class="btn sm ${m.legalOk ? 'primary' : ''}" data-act="recommend" data-id="${c.id}" data-p="${p.id}" ${m.legalOk ? '' : 'title="An approval document is pending — explain before recommending"'}>✓ Recommend to customer</button>`}
       <button class="btn sm" data-act="visitModal" data-id="${c.id}" data-p="${p.id}">📅 Schedule site visit</button>
     </div>
   </div>`;
@@ -535,7 +535,7 @@ Object.assign(ACTIONS, {
   recommend: d => {
     const c = getCust(d.id), p = getProp(d.p), m = matchScore(c, p, DB.settings);
     (c.recommended = c.recommended || []).push(d.p);
-    logActivity(c, 'Note', `Recommended ${d.p} (${m.label}, fit ${m.M})${m.legalOk ? '' : ' — customer informed that mandatory legal checks are pending'}`);
+    logActivity(c, 'Note', `Recommended ${d.p} (${m.label}, fit ${m.M})${m.legalOk ? '' : ' — customer informed that an approval document is pending'}`);
     if (stageIndex(c.stage) >= 0 && stageIndex(c.stage) < STAGES.indexOf('Property recommended')) moveStage(c, 'Property recommended');
     save(); toast(m.legalOk ? 'Marked as recommended' : 'Recommended with legal caveat logged'); render();
   },
