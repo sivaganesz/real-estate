@@ -1,54 +1,70 @@
 /* =====================================================================
    Module A — Property specification database
    ===================================================================== */
-
 function legalChip(p) {
   const s = legalSummary(p);
   const tone = s.openMandatory.length ? 'amber' : s.verified === s.total ? 'green' : 'blue';
   return chip(`${s.verified}/${s.total} verified`, tone, s.openMandatory.length ? 'Mandatory checks unresolved: ' + s.openMandatory.join(', ') : 'All mandatory checks verified');
 }
-
 /* ---------- list ---------- */
+/** Completion score (same weights as the Add property page); the tooltip lists what is still missing. */
+function scoreCell(p) {
+  if (typeof AddProperty === 'undefined') return '';
+  const s = AddProperty.listedScore(p);
+  return `<div class="dl-ring" title="${esc(s.missing.length ? 'To reach 100%: ' + s.missing.join(', ') : 'Complete')}">${AddProperty.miniRing(s.score)}</div>`;
+}
+/** What the AI flags on a listing (the "needs attention" strip). Each: { k, group, l (this listing), fix (link), act }. */
+function propAttention(p) {
+  if (p.archived || p.status === 'Sold') return [];
+  const out = [];
+  const sc = typeof AddProperty !== 'undefined' ? AddProperty.listedScore(p) : { score: 100, missing: [] };
+  if (sc.score < 80) out.push({ k: 'details', group: 'Missing details', l: 'Missing: ' + sc.missing.map(m => m.replace(/ \(.*\)$/, '').toLowerCase()).join(', '), fix: `#/properties/${p.id}/edit`, act: 'Add details' });
+  const v = valuationSummary(p, DB.settings);
+  if (v.count && v.position && !v.position.startsWith('Within')) {
+    const up = v.diffPct > 0;
+    out.push({ k: 'price', group: 'Price out of range', l: `Price ${Math.abs(Math.round(v.diffPct))}% ${up ? 'above' : 'below'} similar properties`, fix: `#/properties/${p.id}/pricing`, act: 'Review price' });
+  }
+  const days = Math.round((new Date(DEMO_TODAY) - new Date(p.listingDate)) / 864e5);
+  const visited = DB.customers.some(c => (c.siteVisits || []).some(s => s.prop === p.id));
+  if (p.status === 'Available' && days >= 45 && !visited) out.push({ k: 'stale', group: 'No site visits in 45+ days', l: `Listed ${days} days ago, no site visits yet`, fix: `#/properties/${p.id}/matches`, act: 'Offer to matching buyers' });
+  const docs = legalSummary(p).openMandatory;
+  if (docs.length) out.push({ k: 'docs', group: 'Documents pending', l: `Not verified: ${docs.slice(0, 2).join(', ')}${docs.length > 2 ? ` +${docs.length - 2} more` : ''}`, fix: `#/properties/${p.id}/legal`, act: 'Open documents' });
+  return out;
+}
 function viewProperties() {
+  const S = PropSearch.run('props'), list = S.list; // search bar + filtering: property-search.js
   const f = UI.filters.props;
-  const q = (f.q || '').toLowerCase();
-  const list = DB.properties.filter(p =>
-    (f.arch === 'all' || (f.arch === 'archived' ? !!p.archived : !p.archived)) &&
-    (!q || [p.id, p.title, p.locality, p.city].join(' ').toLowerCase().includes(q)) &&
-    (!f.type || p.type === f.type) && (!f.city || p.city === f.city) && (!f.status || p.status === f.status) &&
-    (!f.legal || (f.legal === 'open' ? legalSummary(p).openMandatory.length > 0 : legalSummary(p).openMandatory.length === 0)));
+  // with an attention filter on, each row says what's wrong and offers the fix
+  const attnLine = p => {
+    const items = propAttention(p).filter(i => !f.attn || i.k === f.attn);
+    return f.attn && items.length ? items.map(i => `<div class="ps-row-attn">⚠ ${esc(i.l)} · <a href="${i.fix}">${esc(i.act)} →</a></div>`).join('') : '';
+  };
   const rows = list.map(p => `
     <tr class="click" data-href="#/properties/${p.id}">
-      <td class="mono">${p.id}</td>
-      <td><b>${esc(p.title)}</b><br><small>${typeLabel(p.type)} · ${p.purpose}</small></td>
+      <td class="mono" style="white-space:nowrap">${p.id}</td>
+      <td><b>${esc(p.title)}</b><br><small>${typeLabel(p.type)} · ${p.purpose}</small>${attnLine(p)}</td>
       <td>${esc(p.locality)}<br><small>${esc(p.city)}</small></td>
       <td class="num">${num(p.area)} <small>sq.ft.</small></td>
       <td class="num"><b>${inrShort(p.price)}</b><br><small>${inr(pricePerSqft(p))}/sq.ft.</small></td>
-      <td>${legalChip(p)}</td>
       <td>${chip(p.status, STATUS_TONE[p.status])}${p.archived ? ' ' + chip('Archived', 'outline') : ''}</td>
       <td><small>${fmtDate(p.listingDate)}</small></td>
+      <td class="score-col">${scoreCell(p)}</td>
     </tr>`).join('');
   return {
     title: 'Properties', crumbs: 'Specification data / <b>Properties</b>',
+    after: () => PropSearch.after('props'),
     html: `
     <div class="page-head"><div><h1>Property specification database</h1><p>Every property has a unique ID and a standard specification. Form fields change by property type.</p></div><span class="sp"></span>
-      <a class="btn primary" href="#/properties/new">＋ Add property</a><a class="btn" href="#/import">📥 Bulk import</a></div>
-    <div class="filters">
-      <input type="search" id="pf-q" placeholder="Search ID, title, locality…" value="${esc(f.q || '')}" data-inp="filter" data-scope="props" data-key="q">
-      <select data-chg="filter" data-scope="props" data-key="type">${options(Object.entries(PROPERTY_TYPES).map(([v, t]) => ({ v, l: t.label })), f.type, 'All types')}</select>
-      <select data-chg="filter" data-scope="props" data-key="city">${options(Object.keys(CITIES), f.city, 'All cities')}</select>
-      <select data-chg="filter" data-scope="props" data-key="status">${options(PROPERTY_STATUSES, f.status, 'Any status')}</select>
-      <select data-chg="filter" data-scope="props" data-key="legal">${options([{ v: 'open', l: 'Mandatory checks open' }, { v: 'clean', l: 'Mandatory checks verified' }], f.legal, 'Any legal status')}</select>
-      <select data-chg="filter" data-scope="props" data-key="arch">${options([{ v: 'archived', l: 'Archived only' }, { v: 'all', l: 'Active + archived' }], f.arch, 'Active properties')}</select>
-      ${Object.values(f).some(Boolean) ? `<button class="btn ghost" data-act="clearFilters" data-scope="props">Clear</button>` : ''}
-    </div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>ID</th><th>Property</th><th>Location</th><th class="num">Area</th><th class="num">Asking price</th><th>Legal checks</th><th>Status</th><th>Listed</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="8" class="empty">No properties match these filters.</td></tr>`}</tbody>
+      ${typeof AddProperty !== 'undefined' ? AddProperty.draftsButton() : ''}<a class="btn primary" href="#/properties/new">＋ Add property</a><a class="btn" href="#/import">📥 Bulk import</a></div>
+    ${S.head}
+    <div class="tbl-wrap ps-table"><table>
+      <thead><tr><th>ID</th><th>Property</th><th>Location</th><th class="num">Area</th><th class="num">Asking price</th><th>Status</th><th>Listed</th><th class="score-col" title="Required details 60%, key details 15%, photos 10%, legal documents 10%, amenities 5% — hover a score to see what’s missing">Completion score</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" class="empty">No properties match these filters.${S.relax ? '<br><br>' + S.relax : ''}</td></tr>`}</tbody>
     </table></div>
-    <p class="muted" style="margin-top:10px">${list.length} shown · ${DB.properties.filter(p => !p.archived).length} active${DB.properties.some(p => p.archived) ? ` · ${DB.properties.filter(p => p.archived).length} archived` : ''}. Legal column counts checks <i>verified by an authorised legal professional</i> — uploaded documents alone don’t count.</p>`,
+    ${S.pager}`,
   };
 }
+
 
 /* ---------- add / edit form ---------- */
 function blankProperty() {
@@ -102,7 +118,6 @@ function viewPropertyForm(id) {
     </form>`,
   };
 }
-
 Object.assign(CHANGES, {
   ptype: el => {
     const t = PROPERTY_TYPES[el.value];
@@ -122,7 +137,6 @@ Object.assign(INPUTS, {
     document.getElementById('ppsf-live').value = a > 0 && pr > 0 ? inr(Math.round(pr / a)) : '—';
   },
 });
-
 FORMS.property = (f, fd) => {
   const id = f.dataset.id;
   const type = fd.get('type');
@@ -156,10 +170,8 @@ FORMS.property = (f, fd) => {
   save(); toast(id ? 'Property saved' : `Property ${p.id} created — now add location, legal and valuation details`);
   go(`#/properties/${p.id}/${id ? 'specs' : 'location'}`);
 };
-
 /* ---------- detail ---------- */
 const PROP_TABS = [['specs', 'Specifications'], ['location', 'Location'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['media', 'Media'], ['history', 'History']];
-
 function viewProperty(id, tab) {
   const p = getProp(id);
   if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to list</a></div>' };
@@ -172,8 +184,8 @@ function viewProperty(id, tab) {
     <div class="ent-head">
       <div class="av">${p.type === 'plot' ? '▦' : p.type === 'flat' ? '🏢' : p.type === 'house' ? '🏡' : '🏬'}</div>
       <div class="meta"><h1>${esc(p.title)}</h1>
-        <div class="row">${chip(p.id, 'outline mono')} ${chip(categoryOf(p.type))} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])}</div>
-        <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)}, ${esc(p.state)} · ${num(p.area)} sq.ft. · ${esc(p.facing)} facing · listed ${fmtDate(p.listingDate)}</div>
+        <div class="row">${chip(p.id, 'outline mono')} ${chip(categoryOf(p.type))} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${(p.badges || []).map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ')}</div>
+        <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)}, ${esc(p.state)} · ${num(p.area)} sq.ft.${p.facing ? ` · ${esc(p.facing)} facing` : ''} · listed ${fmtDate(p.listingDate)}</div>
       </div>
       <div class="price"><div class="p">${inr(p.price)}</div><div class="muted">${inr(pricePerSqft(p))} / sq.ft. (${PROPERTY_TYPES[p.type].areaBasis})</div>
         <div class="row" style="justify-content:flex-end;margin-top:8px">${propHeaderActions(p)}</div></div>
@@ -184,7 +196,6 @@ function viewProperty(id, tab) {
     ${body(p)}`,
   };
 }
-
 function propSpecs(p) {
   const t = PROPERTY_TYPES[p.type];
   const main = [['Property ID', p.id], ['Property title', p.title], ['Property category', t.category], ['Property type', t.label], ['Listing purpose', p.purpose], ['Location', `${p.city}, ${p.state}`], ['Locality', p.locality], [t.areaLabel.replace(' (sq.ft.)', ''), num(p.area) + ' sq.ft.'], ['Facing', p.facing], ['Property status', p.status], ['Listing date', fmtDate(p.listingDate)], ['Asking price', inr(p.price)]];
@@ -201,9 +212,9 @@ function propSpecs(p) {
     <div class="card"><div class="card-head"><h2>A. Main property information</h2><span class="sp"></span><a class="btn sm" href="#/properties/${p.id}/edit">✎ Edit</a></div>${dl(main)}</div>
     <div class="card"><div class="card-head"><h2>B. ${t.label} specifications</h2><span class="chip blue">type-specific fields</span></div>
       <div class="dl3">${spec.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div></div>
+    ${(p.extra || []).length ? `<div class="card"><h2>Other details</h2><div class="dl3">${p.extra.map(x => `<div><span>${esc(x.label)}</span><b>${esc(x.value)}</b></div>`).join('')}</div></div>` : ''}
     <div class="card"><h2>Features &amp; amenities</h2><div class="row">${p.amenities.length ? p.amenities.map(a => chip(a, 'outline')).join(' ') : '<span class="muted">None recorded</span>'}</div></div>`;
 }
-
 function propLocation(p) {
   const L = p.location, cityInfo = CITIES[p.city] || {};
   const nearbyRows = L.nearby.map((n, i) => `
@@ -256,7 +267,6 @@ function propLocation(p) {
     </div>
   </div>`;
 }
-
 function propLegal(p) {
   const s = legalSummary(p), mand = MANDATORY_BY_TYPE[p.type];
   const rows = p.legal.map((d, i) => {
@@ -284,7 +294,6 @@ function propLegal(p) {
     <p style="margin:0">“${s.verified} of ${s.total} document checks verified by an authorised legal professional${s.verified ? ` (latest ${fmtDate(p.legal.filter(d => d.status === 'verified').map(d => d.date).sort().pop())})` : ''}.${s.pending ? ` ${s.pending} collected and pending verification.` : ''}${s.not ? ` ${s.not} not yet collected.` : ''}”</p>
   </div>`;
 }
-
 function propPricing(p) {
   const v = valuationSummary(p, DB.settings), V = p.valuation;
   const compRows = V.comparables.map((c, i) => `<tr>
@@ -343,7 +352,6 @@ function propPricing(p) {
     </div>
   </div>`;
 }
-
 function propMatches(p) {
   const list = matchesForProperty(p, DB);
   const rows = list.map(({ cust: c, m }) => {
@@ -359,7 +367,6 @@ function propMatches(p) {
     <div class="tbl-wrap"><table><thead><tr><th>Customer</th><th>Purpose</th><th>Budget</th><th>Match</th><th class="num">Fit score</th><th>Readiness</th><th>Stage</th><th>Owner</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="8" class="empty">No active customer passes the hard filters for this property.</td></tr>'}</tbody></table></div></div>`;
 }
-
 function propMedia(p) {
   const tiles = Array.from({ length: p.images || 0 }, (_, i) => `<div class="ph">Image ${i + 1}<br>${i === 0 ? '(cover)' : ''}</div>`).join('');
   const docs = p.legal.filter(d => d.file);
@@ -368,11 +375,9 @@ function propMedia(p) {
     <div class="media">${tiles || '<div class="empty">No images yet.</div>'}</div></div>
   <div class="card"><h2>Documents</h2>${docs.length ? `<ul class="why">${docs.map(d => `<li class="mono">📄 ${esc(d.file)} — ${LEGAL_DOCS[d.key].n} ${chip(LEGAL_STATUS[d.status].l, LEGAL_STATUS[d.status].tone)}</li>`).join('')}</ul>` : '<p class="muted">No documents uploaded. Upload from the Legal &amp; documents tab.</p>'}</div>`;
 }
-
 function propHistory(p) {
   return `<div class="card"><h2>Change history</h2><ul class="tl">${(p.history || []).map(h => `<li><div class="when">${fmtDate(h.date)} · ${esc(h.by)}</div>${esc(h.text)}</li>`).join('') || '<li>No history.</li>'}</ul></div>`;
 }
-
 Object.assign(ACTIONS, {
   clearFilters: d => { UI.filters[d.scope] = d.scope === 'custs' ? { sort: 'readiness' } : {}; render(); },
   addNearby: d => { const p = getProp(d.id); p.location.nearby.push({ id: 'nb' + Date.now(), cat: 'School', name: '', distanceKm: '', routeChecked: false, status: 'Existing' }); save(); render(); },
@@ -387,7 +392,6 @@ Object.assign(ACTIONS, {
   addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; save(); render(); },
   rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); save(); render(); },
 });
-
 /* ---------- archive / restore / delete ---------- */
 const MANAGE_TITLE = 'disabled title="Admin / Sales manager only"';
 function propHeaderActions(p) {
@@ -396,7 +400,6 @@ function propHeaderActions(p) {
   return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn" href="#/properties/${p.id}/edit">✎ Edit</a>
     <button class="btn" data-act="propArchiveOpen" data-id="${p.id}" ${dis}>🗄 Archive</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
 }
-
 /** Customers whose records point at this property (recommendation, site visit, negotiation or appointment). */
 function propertyLinks(pid) {
   return DB.customers.map(c => {
@@ -416,7 +419,6 @@ function upcomingForProperty(pid) {
   return out;
 }
 const linkList = links => `<ul class="why" style="margin:6px 0 0">${links.map(l => `<li><a data-act="propGo" data-href="#/customers/${l.c.id}">${esc(l.c.name)}</a> <small class="mono">${l.c.id}</small> — ${l.k.join(', ')}</li>`).join('')}</ul>`;
-
 Object.assign(MODALS, {
   propArchive: m => {
     const p = getProp(m.id), links = propertyLinks(p.id), up = upcomingForProperty(p.id);

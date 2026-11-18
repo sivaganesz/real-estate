@@ -63,7 +63,7 @@ const PROPERTY_TYPES = {
     ],
   },
   commercial: {
-    label: 'Commercial property', category: 'Commercial', areaLabel: 'Carpet / usable area (sq.ft.)', areaBasis: 'usable area',
+    label: 'Office / shop / warehouse', category: 'Commercial', areaLabel: 'Carpet / usable area (sq.ft.)', areaBasis: 'usable area',
     fields: [
       { k: 'commCategory', l: 'Commercial category', t: 'select', o: ['Office space', 'Shop / Showroom', 'Warehouse / Godown', 'Commercial building', 'Industrial shed'] },
       { k: 'floor', l: 'Floor', t: 'text' },
@@ -79,6 +79,33 @@ const PROPERTY_TYPES = {
       { k: 'opex', l: 'Operating expenses (₹ / year)', t: 'number' },
     ],
   },
+  /* Agricultural and industrial land sit under Commercial, as on the big listing sites */
+  agri: {
+    label: 'Agricultural land', category: 'Commercial', areaLabel: 'Land area (sq.ft.)', areaBasis: 'land area',
+    fields: [
+      { k: 'acres', l: 'Land area (acres)', t: 'number' },
+      { k: 'soil', l: 'Soil type', t: 'select', o: ['Red soil', 'Black soil', 'Alluvial', 'Sandy', 'Mixed'] },
+      { k: 'waterSource', l: 'Water source', t: 'select', o: ['Borewell', 'Open well', 'Canal', 'River / channel', 'Rain-fed only'] },
+      { k: 'crops', l: 'Current crops / trees', t: 'text' },
+      { k: 'roadAccess', l: 'Road access', t: 'select', o: ['Tar road', 'Gravel road', 'Mud road / cart track', 'No direct road'] },
+      { k: 'electricity', l: 'EB connection', t: 'select', o: ['Three-phase', 'Single-phase', 'Not available'] },
+      { k: 'fencing', l: 'Fencing', t: 'select', o: ['Fully fenced', 'Partly fenced', 'Not fenced'] },
+      { k: 'surveyNo', l: 'Survey number', t: 'text' },
+    ],
+  },
+  industrial: {
+    label: 'Industrial land / shed', category: 'Commercial', areaLabel: 'Plot / shed area (sq.ft.)', areaBasis: 'plot area',
+    fields: [
+      { k: 'subType', l: 'Industrial type', t: 'select', o: ['Industrial plot', 'Factory / shed', 'Industrial building'] },
+      { k: 'shedArea', l: 'Built-up shed area (sq.ft.)', t: 'number' },
+      { k: 'powerKva', l: 'Power load (kVA)', t: 'number' },
+      { k: 'clearHeight', l: 'Clear height (ft)', t: 'number' },
+      { k: 'estate', l: 'Industrial estate / zone', t: 'text', h: 'e.g. SIPCOT, SIDCO' },
+      { k: 'roadWidth', l: 'Road width (ft)', t: 'number' },
+      { k: 'truckAccess', l: 'Truck access', t: 'select', o: ['Container trucks', 'Small trucks only', 'No truck access'] },
+      { k: 'water', l: 'Water supply', t: 'select', o: ['Municipal supply', 'Borewell', 'Industrial supply', 'Not available'] },
+    ],
+  },
 };
 
 const CATEGORIES = ['Residential', 'Commercial'];
@@ -90,6 +117,12 @@ const CITIES = {
   Chennai: { district: 'Chennai', localities: ['Sholinganallur (OMR)', 'Velachery', 'Porur', 'Tambaram'] },
   Coimbatore: { district: 'Coimbatore', localities: ['Peelamedu', 'Vadavalli', 'Saravanampatti'] },
   Tiruchirappalli: { district: 'Tiruchirappalli', localities: ['Thillai Nagar', 'K.K. Nagar (Trichy)', 'Srirangam'] },
+  Salem: { district: 'Salem', localities: ['Fairlands', 'Hasthampatti', 'Alagapuram'] },
+  Tirunelveli: { district: 'Tirunelveli', localities: ['Palayamkottai', 'Vannarpettai', 'Perumalpuram'] },
+  Erode: { district: 'Erode', localities: ['Perundurai Road', 'Thindal', 'Surampatti'] },
+  Vellore: { district: 'Vellore', localities: ['Sathuvachari', 'Katpadi', 'Gandhi Nagar (Vellore)'] },
+  Thanjavur: { district: 'Thanjavur', localities: ['Medical College Road', 'Vallam', 'Nanjikottai'] },
+  Dindigul: { district: 'Dindigul', localities: ['Reddiarchatram', 'Begampur', 'Nagal Nagar'] },
 };
 const AMENITIES = ['Gated community', 'Security', 'Park / open space', 'Power backup', 'Lift', 'Gym', 'Swimming pool', 'Clubhouse', 'Rainwater harvesting', 'CCTV', 'Visitor parking', 'Loading bay'];
 
@@ -117,6 +150,8 @@ const LEGAL_BY_TYPE = {
   flat: ['parent', 'saledeed', 'ec', 'patta', 'plan', 'completion', 'rera', 'tax'],
   house: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'plan', 'completion', 'tax'],
   commercial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'plan', 'completion', 'fire', 'tax'],
+  agri: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'tax'],
+  industrial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'plan', 'fire', 'tax'],
 };
 /* Mandatory checks — a property with any of these unresolved can never be a top recommendation */
 const MANDATORY_BY_TYPE = {
@@ -124,6 +159,8 @@ const MANDATORY_BY_TYPE = {
   flat: ['saledeed', 'ec', 'plan', 'rera'],
   house: ['saledeed', 'ec', 'plan'],
   commercial: ['saledeed', 'ec', 'plan'],
+  agri: ['saledeed', 'ec'],
+  industrial: ['saledeed', 'ec', 'plan'],
 };
 const LEGAL_STATUS = {
   not: { l: 'Not collected', tone: 'grey' },
