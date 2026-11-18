@@ -459,3 +459,37 @@ html::-webkit-scrollbar-thumb:hover { background: #a5adbb; }
 .side::-webkit-scrollbar-track { background: transparent; }
 .side::-webkit-scrollbar-thumb { background: transparent; border-radius: 99px; }
 .side:hover::-webkit-scrollbar-thumb { background: #d3d8e0; }
+
+/* ---------- property page: Overview tab ---------- */
+.ov { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.ov-side { position: sticky; top: 70px; }
+.ov-photos { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.7fr; gap: 8px; margin-bottom: 16px; height: 150px; }
+.ov-ph { position: relative; border-radius: 10px; background: linear-gradient(135deg, #e3e9f6, #cfd9ee); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; color: #5b6b8c; overflow: hidden; }
+.ov-ph small { font-size: 11px; margin-top: 4px; }
+.ov-ph.cover { background: linear-gradient(135deg, #d8e2f7, #b9c9ec); font-size: 34px; }
+.ov-ph.add { background: var(--panel); border: 1.5px dashed #c4cad6; color: var(--brand); font-size: 20px; text-decoration: none; }
+.ov-ph.add:hover { background: var(--brand-soft); }
+.ov-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(27, 33, 48, .55); color: #fff; font-size: 18px; }
+.ov-nophoto { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 16px; border: 1.5px dashed #c4cad6; border-radius: var(--radius); background: var(--panel); color: var(--ink); text-decoration: none; }
+.ov-nophoto:hover { background: var(--brand-soft); text-decoration: none; }
+.ov-nophoto > span:first-child { font-size: 28px; }
+.ov-nophoto div { flex: 1; } .ov-nophoto small { display: block; color: var(--muted); }
+.ov-adds { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line2); font-size: 13px; }
+.ov-add { border: 1px dashed #c4cad6; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; color: var(--ink2); }
+.ov-add:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); text-decoration: none; }
+.ov-add.more { border-style: solid; color: var(--muted); }
+.ov-score-top { display: flex; align-items: center; gap: 12px; }
+.ov-score-top h2 { margin: 0 0 2px; }
+.ov-score .sfacts { margin: 12px 0 0; }
+.ov-attn { background: linear-gradient(135deg, #f7f4ff, #f0f4ff); border-color: #e0d8fb; }
+.ov-attn h2 { color: #3b2585; }
+.ov-attn-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid #e6e0fa; font-size: 13px; }
+.ov-attn-row:first-of-type { border-top: 0; padding-top: 0; }
+.ov-attn-row span { color: var(--amber); }
+.ov-attn-row a { font-weight: 500; }
+.ov-buyer { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line2); color: var(--ink); text-decoration: none; }
+.ov-buyer:first-of-type { border-top: 0; }
+.ov-buyer:hover { text-decoration: none; background: #f8f9fb; }
+.ov-av { width: 32px; height: 32px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-size: 12px; font-weight: 600; flex: none; }
+.ov-bn { flex: 1; min-width: 0; } .ov-bn b { display: block; font-weight: 600; font-size: 13px; } .ov-bn small { color: var(--muted); font-size: 12px; }
+@media (max-width: 1100px) { .ov { grid-template-columns: 1fr; } .ov-side { position: static; } .ov-photos { height: 110px; } }

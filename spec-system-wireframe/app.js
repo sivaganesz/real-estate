@@ -99,8 +99,9 @@ function route(r) {
       if (b === 'new') return AddProperty.startNew(); // the AI-first Add property page (views-add-property.js)
       if (b === 'draft') return AddProperty.view(c, r.parts[3]);
       if (b === 'drafts') return AddProperty.draftsList(); // drafts, in the property list’s layout
-      if (c === 'edit') return viewPropertyForm(b);
-      return viewProperty(b, c || 'specs');
+      if (c === 'edit') return AddProperty.edit(b, r.parts[3]); // edit with the AI assistant (views-add-property.js)
+      if (c === 'form') return viewPropertyForm(b); // the classic form, kept as a fallback
+      return viewProperty(b, c || 'overview');
     case 'customers':
       if (!b) return viewCustomers();
       if (b === 'new') return viewCustomerForm(null);

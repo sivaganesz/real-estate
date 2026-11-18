@@ -75,7 +75,10 @@ const AUI = { forced: null, forcedMgr: true, attach: false, toastTimer: null, ke
 const me = () => AUI.forced || currentUser(); // the main wireframe’s “Viewing as”
 const isMgr = () => (AUI.forced ? AUI.forcedMgr : canEditSettings());
 function withUser(name, mgr, fn) { AUI.forced = name; AUI.forcedMgr = mgr; try { fn(); } finally { AUI.forced = null; } }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked — keep in memory */ } }
+function save() {
+  if (S && S.props) S.props.filter(p => p.editOf).forEach(syncEdit); // edits of published properties go straight back to them
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage blocked — keep in memory */ }
+}
 function load() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 const getP = id => S.props.find(p => p.id === id);
 
@@ -585,6 +588,69 @@ function publishToMain(p, approvedBy) {
   window.save(); save();
   return old;
 }
+/* ---------- editing a published property with the AI assistant ----------
+   The property is opened on this page as a live copy (editOf = its ID). Every confirmed change — from the chat or the
+   drawer — is written straight back to the property in the main list, with a history line. */
+const drafts = () => S.props.filter(p => !p.editOf); // edit copies never show as drafts
+function editCopy(old) {
+  const p = blank(old.id);
+  const appr = (old.badges || []).map(b => (allApprovals().find(a => a.long === b.l || a.l === b.l) || {}).k).filter(Boolean);
+  Object.assign(p, {
+    editOf: old.id, status: 'published', avail: old.status, createdBy: ((old.history || []).slice(-1)[0] || {}).by || me(), createdAt: old.listingDate, updatedAt: TODAY,
+    category: categoryOf(old.type), type: old.type, purpose: old.purpose, title: old.title, facing: old.facing || '',
+    area: old.area, price: old.price, priceOnRequest: !!old.priceOnRequest,
+    specs: Object.fromEntries(Object.entries(old.specs || {}).filter(([, v]) => !isEmpty(v))),
+    custom: (old.extra || []).map(x => ({ label: x.label, value: x.value })),
+    amenities: (old.amenities || []).slice(), approvals: appr, photos: old.images || 0, videos: old.videos || 0,
+    dupChecked: true, // it is the property itself — no duplicate check
+  });
+  Object.assign(p.loc, { city: old.city, locality: old.locality, state: old.state || 'Tamil Nadu', district: (CITIES[old.city] || {}).district || old.city, country: 'India' });
+  (old.badges || []).forEach((b, i) => { if (b.doc && appr[i]) p.docs[appr[i]] = { status: 'collected', file: `${appr[i]}-document.pdf`, at: old.listingDate, by: '' }; });
+  // documents already in the property's legal checklist count as collected here too
+  (old.legal || []).forEach(d => { if (d.status !== 'not' && !p.docs[d.key]) p.docs[d.key] = { status: d.status === 'verified' ? 'verified' : 'collected', file: d.file || d.key + '.pdf', at: d.date || old.listingDate, by: d.verifiedBy || '' }; });
+  p.shownFields = Object.keys(p.specs);
+  p.syncedHist = 0;
+  return p;
+}
+/** Open property `id` for editing (always a fresh copy of what is in the list now). */
+function startEdit(id) {
+  const old = DB.properties.find(o => o.id === id);
+  if (!old) return null;
+  S.props = S.props.filter(x => x.editOf !== id);
+  const p = editCopy(old);
+  S.props.unshift(p); save();
+  return p;
+}
+/** Write an edit copy back onto its property. */
+function syncEdit(p) {
+  const old = DB.properties.find(o => o.id === p.editOf);
+  if (!old) return;
+  const t = PROPERTY_TYPES[p.type] || PROPERTY_TYPES[old.type];
+  Object.assign(old, {
+    title: p.title || old.title, type: p.type || old.type, purpose: p.purpose || old.purpose, status: p.avail || old.status,
+    city: p.loc.city || old.city, locality: p.loc.locality || old.locality, state: p.loc.state || old.state, facing: p.facing || '',
+    area: Number(p.area) || old.area, price: Number(p.price) || old.price, priceOnRequest: !!p.priceOnRequest,
+    amenities: p.amenities.slice(), images: p.photos, videos: p.videos,
+    specs: Object.assign({}, old.specs, Object.fromEntries(t.fields.map(f => [f.k, isEmpty(p.specs[f.k]) ? '' : p.specs[f.k]]))),
+    badges: p.approvals.map(k => ({ l: approvalOf(k).long, doc: !!p.docs[k] })),
+    extra: p.custom.map(c => ({ label: c.label, value: c.value })),
+  });
+  // new documents land in the legal checklist as "collected, pending verification"
+  Object.entries(p.docs).forEach(([k, d]) => {
+    const key = k === 'building' ? ((LEGAL_BY_TYPE[old.type] || []).includes('layout') ? 'layout' : 'plan') : k;
+    const row = (old.legal || []).find(x => x.key === key);
+    if (row && row.status === 'not') Object.assign(row, { status: 'pending', file: d.file, date: d.at || DEMO_TODAY, note: 'Uploaded through the AI assistant' });
+  });
+  // history: what changed since the last sync, marked as done through the assistant
+  const fresh = p.history.length - (p.syncedHist || 0);
+  if (fresh > 0) {
+    old.history = old.history || [];
+    const how = text => (/ \(chat\)$/.test(text) ? text.replace(/ \(chat\)$/, ' — via AI chat') : / \(form\)$/.test(text) ? text.replace(/ \(form\)$/, ' — in the details form') : text + ' — via the AI assistant');
+    p.history.slice(0, fresh).reverse().forEach(h => old.history.unshift({ date: DEMO_TODAY, by: h.by, text: how(h.text) }));
+    p.syncedHist = p.history.length;
+  }
+  window.save();
+}
 function tryPublish(p) {
   if (p.status === 'published') return aiSay(p, 'This property is already published.');
   const m = missing(p);
@@ -1017,7 +1083,8 @@ function summaryCard(p) {
   } else rows.push(row(docsIn > 0, docsIn ? `${docsIn} legal document${docsIn > 1 ? 's' : ''}` : 'Approvals and legal documents', { pts: 10, btn: docsIn ? '' : btn('Add', 'drawer', 'data-tab="legal"') }));
 
   const status = p.status === 'draft' ? (m.length ? `<div class="need">Needed to publish: ${esc(m.map(x => x.l.replace(/ \(.*\)$/, '')).join(', '))}</div>` : '<div class="ok-line">✓ Everything needed to publish is in</div>') : '';
-  const actions = p.status === 'draft' ? `<button class="btn primary block" data-ap="publish" data-id="${p.id}" ${m.length ? 'disabled' : ''}>${isMgr() ? 'Publish' : 'Submit for approval'}</button>`
+  const actions = p.editOf ? `<div class="ok-line">✓ Changes are saved to ${p.editOf} as you confirm them</div><button class="btn primary block" data-ap="editDone" data-id="${p.id}">Done — back to the property</button>`
+    : p.status === 'draft' ?`<button class="btn primary block" data-ap="publish" data-id="${p.id}" ${m.length ? 'disabled' : ''}>${isMgr() ? 'Publish' : 'Submit for approval'}</button>`
     : p.status === 'pending' && isMgr() ? `<div class="row" style="gap:8px"><button class="btn" data-ap="sendback" data-id="${p.id}">Send back</button><button class="btn primary" style="flex:1;justify-content:center" data-ap="approve" data-id="${p.id}">✓ Approve & publish</button></div>` : '';
   return `<div class="card sumcard">
     <div class="sum-top">${ring(score, 60)}<div style="min-width:0"><h2>${esc(p.title || 'New property')}</h2>
@@ -1084,27 +1151,27 @@ function dropBlankDrafts(exceptId) {
 /** The strip above the old property list: drafts and properties waiting for approval. */
 function draftsStrip() {
   dropBlankDrafts();
-  if (!S.props.length) return '';
-  const rows = S.props.map(p => {
+  if (!drafts().length) return '';
+  const rows = drafts().map(p => {
     const m = missing(p), sc = completeness(p);
     const state = p.status === 'pending' ? chip('Waiting for approval', 'blue') : m.length ? `<span class="ds-need">Needs: ${esc(m.map(x => x.l.replace(/ \(.*\)$/, '')).join(', '))}</span>` : chip('Ready to publish', 'green');
     return `<a class="ds-row" href="#/properties/draft/${p.id}"><span class="mono">${p.id}</span><span class="ds-title"><b>${esc(p.title || 'Untitled property')}</b><small class="muted">${esc([p.type ? typeLabel(p.type) : '', p.loc.locality, p.loc.city].filter(Boolean).join(' · ') || 'Nothing given yet')} · started by ${esc(p.createdBy)}</small></span>${state}<span class="ds-score">${meter(sc, scoreTone(sc))}<small>${sc}%</small></span><span class="ds-go">${p.status === 'pending' && isMgr() ? 'Review' : 'Continue'} →</span></a>`;
   }).join('');
-  return `<div class="card drafts-strip"><div class="card-head"><h2>📝 Drafts in progress</h2>${chip(S.props.length)}<span class="sp"></span><small class="muted">Not in the list yet — open one to continue with the AI assistant</small></div>${rows}</div>`;
+  return `<div class="card drafts-strip"><div class="card-head"><h2>📝 Drafts in progress</h2>${chip(drafts().length)}<span class="sp"></span><small class="muted">Not in the list yet — open one to continue with the AI assistant</small></div>${rows}</div>`;
 }
 /** “📝 Drafts (n)” next to “+ Add property” — opens the drafts as a list page, in the same layout as the property list. */
 function draftsButton() {
   dropBlankDrafts();
-  if (!S.props.length) return '';
-  const waiting = S.props.filter(p => p.status === 'pending').length;
-  return `<a class="btn" href="#/properties/drafts">📝 Drafts <span class="chip ${waiting && isMgr() ? 'blue' : ''}">${S.props.length}</span></a>`;
+  if (!drafts().length) return '';
+  const waiting = drafts().filter(p => p.status === 'pending').length;
+  return `<a class="btn" href="#/properties/drafts">📝 Drafts <span class="chip ${waiting && isMgr() ? 'blue' : ''}">${drafts().length}</span></a>`;
 }
 /** The drafts page: the old property list’s table, filled with the properties still being added. */
 const draftStatus = p => (p.status === 'pending' ? 'Waiting for approval' : missing(p).length ? 'Draft' : 'Ready to publish');
 /** Drafts in the shape the shared search (property-search.js) reads. */
 function searchItems() {
   dropBlankDrafts();
-  return S.props.map(p => ({
+  return drafts().map(p => ({
     raw: p, id: p.id, title: p.title, type: p.type, purpose: p.purpose, city: p.loc.city, locality: p.loc.locality,
     price: +p.price || 0, area: +p.area || 0, facing: p.facing, specs: p.specs || {}, amenities: p.amenities || [],
     status: draftStatus(p), date: p.updatedAt, score: completeness(p),
@@ -1136,7 +1203,7 @@ function draftsList() {
     ${SR.head}
     <div class="tbl-wrap ps-table"><table>
       <thead><tr><th>ID</th><th>Property</th><th>Location</th><th class="num">Area</th><th class="num">Asking price</th><th>Approvals</th><th>Status</th><th>Updated</th><th class="score-col" title="What is still needed to publish — hover a score for the list">Completion score</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="9" class="empty">${S.props.length ? `No drafts match these filters.${SR.relax ? '<br><br>' + SR.relax : ''}` : 'No drafts — everything has been published. <a href="#/properties/new">Add a property</a>'}</td></tr>`}</tbody>
+      <tbody>${rows || `<tr><td colspan="9" class="empty">${drafts().length ? `No drafts match these filters.${SR.relax ? '<br><br>' + SR.relax : ''}` : 'No drafts — everything has been published. <a href="#/properties/new">Add a property</a>'}</td></tr>`}</tbody>
     </table></div>
     ${SR.pager}`,
   };
@@ -1160,8 +1227,10 @@ function startNew() {
 }
 function view(id, tab) {
   dropBlankDrafts(id);
-  const v = viewProperty(id, tab);
-  v.crumbs = `Specification data / <a href="#/properties">Properties</a> / <b>${getP(id) ? 'Add property · ' + id : id}</b>`;
+  if (!getP(id) && DB.properties.some(o => o.id === id)) startEdit(id); // reloaded an edit page: open a fresh copy
+  const v = viewProperty(id, tab), p = getP(id);
+  v.crumbs = p && p.editOf ? `Specification data / <a href="#/properties">Properties</a> / <a href="#/properties/${id}">${id}</a> / <b>Edit with AI</b>`
+    : `Specification data / <a href="#/properties">Properties</a> / <b>${p ? 'Add property · ' + id : id}</b>`;
   const after = v.after;
   v.after = () => {
     if (AUI.keep && AUI.keep.hash === location.hash) { const d = document.getElementById('drawer-body'); if (d) d.scrollTop = AUI.keep.top; }
@@ -1169,6 +1238,16 @@ function view(id, tab) {
     if (after) after();
   };
   return v;
+}
+/** #/properties/PROP-x/edit[/details | /field-<key>] — open a published property in the AI assistant. */
+function edit(id, arg) {
+  const p = startEdit(id);
+  if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to properties</a></div>' };
+  let tab = '';
+  if (arg && arg.startsWith('field-')) { const k = arg.slice(6); if (!p.shownFields.includes(k)) p.shownFields.push(k); AUI.focus = fid('specs.' + k); tab = '/details'; save(); }
+  else if (['details', 'media', 'legal'].includes(arg)) tab = '/' + arg;
+  setTimeout(() => location.replace('#/properties/draft/' + id + tab), 0);
+  return { title: 'Edit ' + id, crumbs: 'Specification data / <a href="#/properties">Properties</a> / <b>' + id + '</b>', html: '' };
 }
 function onSend(id, text) {
   const p = getP(id); if (!p || !text.trim()) return;
@@ -1195,6 +1274,7 @@ const AP_ACTIONS = {
     if (getP(p.id)) { toast(p.status === 'pending' ? `${p.id} sent for approval` : 'Still a draft'); render(); } // published ones have moved to the property list
   },
   approve: d => { const p = getP(d.id); if (!isMgr()) return; const old = publishToMain(p, p.submittedBy); toast(`${old.id} published — it’s in the property list now`); go('#/properties/' + old.id); },
+  editDone: d => { const p = getP(d.id); const id = p ? p.editOf : d.id; if (p) { syncEdit(p); S.props = S.props.filter(x => x !== p); save(); } toast('Saved — ' + id + ' is up to date'); go('#/properties/' + id); },
   sendback: d => { const p = getP(d.id); p.status = 'draft'; hist(p, 'Sent back to draft'); aiSay(p, `Sent back to ${esc(p.submittedBy)} as a draft.`); save(); render(); },
   fset: d => { const p = getP(d.id); setField(p, d.path, d.v); },
   fcat: d => {
@@ -1294,5 +1374,5 @@ save();
 const mainReset = ACTIONS.doReset;
 ACTIONS.doReset = (...args) => { S = null; seed(); save(); return mainReset(...args); };
 // search on the drafts page
-window.AddProperty = { startNew, view, draftsList, draftsButton, draftsStrip, listedScore, miniRing, searchItems };
+window.AddProperty = { ring, startNew, edit, view, draftsList, draftsButton, draftsStrip, listedScore, miniRing, searchItems };
 })();

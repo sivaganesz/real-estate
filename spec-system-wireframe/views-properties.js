@@ -171,12 +171,13 @@ FORMS.property = (f, fd) => {
   go(`#/properties/${p.id}/${id ? 'specs' : 'location'}`);
 };
 /* ---------- detail ---------- */
-const PROP_TABS = [['specs', 'Specifications'], ['location', 'Location'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['media', 'Media'], ['history', 'History']];
+const PROP_TABS = [['overview', 'Overview'], ['location', 'Location'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['media', 'Media'], ['history', 'History']];
 function viewProperty(id, tab) {
   const p = getProp(id);
   if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to list</a></div>' };
   const ls = legalSummary(p);
-  const body = { specs: propSpecs, location: propLocation, legal: propLegal, pricing: propPricing, matches: propMatches, media: propMedia, history: propHistory }[tab] || propSpecs;
+  if (tab === 'specs') tab = 'overview'; // old links
+  const body = { overview: propOverview, location: propLocation, legal: propLegal, pricing: propPricing, matches: propMatches, media: propMedia, history: propHistory }[tab] || propOverview;
   const nMatch = matchesForProperty(p, DB).length;
   return {
     title: p.title, crumbs: `Specification data / <a href="#/properties">Properties</a> / <b>${p.id}</b>`,
@@ -196,24 +197,56 @@ function viewProperty(id, tab) {
     ${body(p)}`,
   };
 }
-function propSpecs(p) {
-  const t = PROPERTY_TYPES[p.type];
-  const main = [['Property ID', p.id], ['Property title', p.title], ['Property category', t.category], ['Property type', t.label], ['Listing purpose', p.purpose], ['Location', `${p.city}, ${p.state}`], ['Locality', p.locality], [t.areaLabel.replace(' (sq.ft.)', ''), num(p.area) + ' sq.ft.'], ['Facing', p.facing], ['Property status', p.status], ['Listing date', fmtDate(p.listingDate)], ['Asking price', inr(p.price)]];
-  const spec = t.fields.map(f => {
-    let v = p.specs[f.k];
-    if (v === '' || v == null) v = '<span class="muted">Not recorded</span>';
-    else if (f.t === 'number' && /₹/.test(f.l)) v = inr(v);
-    else if (f.t === 'number') v = num(v);
-    else v = esc(v);
-    return [f.l, v];
-  });
-  const dl = arr => `<div class="dl3">${arr.map(([k, v]) => `<div><span>${k}</span><b>${typeof v === 'string' && v.startsWith('<') ? v : esc(v)}</b></div>`).join('')}</div>`;
-  return `
-    <div class="card"><div class="card-head"><h2>A. Main property information</h2><span class="sp"></span><a class="btn sm" href="#/properties/${p.id}/edit">✎ Edit</a></div>${dl(main)}</div>
-    <div class="card"><div class="card-head"><h2>B. ${t.label} specifications</h2><span class="chip blue">type-specific fields</span></div>
-      <div class="dl3">${spec.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div></div>
-    ${(p.extra || []).length ? `<div class="card"><h2>Other details</h2><div class="dl3">${p.extra.map(x => `<div><span>${esc(x.label)}</span><b>${esc(x.value)}</b></div>`).join('')}</div></div>` : ''}
-    <div class="card"><h2>Features &amp; amenities</h2><div class="row">${p.amenities.length ? p.amenities.map(a => chip(a, 'outline')).join(' ') : '<span class="muted">None recorded</span>'}</div></div>`;
+/** Overview (first tab): photos, key facts, filled-in details only (+ add chips for the rest), and beside them
+    what's missing, what needs attention and the best-matching buyers. */
+function propOverview(p) {
+  const t = PROPERTY_TYPES[p.type], edit = `#/properties/${p.id}/edit`;
+  const val = (f, v) => (f.t === 'number' && /₹/.test(f.l) ? inr(v) : f.t === 'number' ? num(v) : esc(v));
+  const filled = t.fields.filter(f => !(p.specs[f.k] === '' || p.specs[f.k] == null));
+  const empty = t.fields.filter(f => p.specs[f.k] === '' || p.specs[f.k] == null);
+  const dl = rows => `<div class="dl3">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
+  // photos
+  const n = p.images || 0;
+  const photos = n
+    ? `<div class="ov-photos">${Array.from({ length: Math.min(n, 4) }, (_, i) => `<div class="ov-ph ${i === 0 ? 'cover' : ''}">${i === 0 ? '🏠' : '🖼'}<small>${i === 0 ? 'Cover' : 'Photo ' + (i + 1)}</small>${i === 3 && n > 4 ? `<b class="ov-more">+${n - 4}</b>` : ''}</div>`).join('')}
+        <a class="ov-ph add" href="${edit}/media">＋<small>Add photos</small></a></div>`
+    : `<a class="ov-nophoto" href="${edit}/media"><span>📷</span><div><b>No photos yet</b><small>Listings with photos get far more enquiries — add some (+10%)</small></div><span class="btn sm">＋ Add photos</span></a>`;
+  // key facts (only what is known)
+  const facts = [['Type', `${t.label} <small class="muted">· ${t.category}</small>`], ['Purpose', esc(p.purpose)], ['Asking price', `${inr(p.price)}${p.priceOnRequest ? ' <small class="muted">(hidden on listing)</small>' : ''}`],
+    [t.areaLabel.replace(' (sq.ft.)', ''), `${num(p.area)} sq.ft. <small class="muted">· ${inr(pricePerSqft(p))}/sq.ft.</small>`], ['Location', `${esc(p.locality)}, ${esc(p.city)}`],
+    ...(p.facing ? [['Facing', esc(p.facing)]] : []), ['Status', chip(p.status, STATUS_TONE[p.status])], ['Listed', fmtDate(p.listingDate)]];
+  // details: filled only; the rest as one-click chips that open the assistant on that field
+  const addChips = empty.slice(0, 6).map(f => `<a class="ov-add" href="${edit}/field-${f.k}">＋ ${esc(f.l.replace(/ \(.*\)$/, ''))}</a>`).join('') + (empty.length > 6 ? `<a class="ov-add more" href="${edit}/details">+${empty.length - 6} more</a>` : '');
+  const details = filled.map(f => [esc(f.l), val(f, p.specs[f.k])]).concat((p.extra || []).map(x => [esc(x.label), esc(x.value)]));
+  // side: completion
+  const sc = typeof AddProperty !== 'undefined' ? AddProperty.listedScore(p) : { score: 100, missing: [] };
+  const fixFor = m => (/photo/i.test(m) ? [`${edit}/media`, '📎 Add'] : /legal/i.test(m) ? [`#/properties/${p.id}/legal`, 'Open'] : /key details/i.test(m) ? [`${edit}/details`, 'Add'] : [edit, 'Add']);
+  const missingRows = sc.missing.map(m => { const [href, l] = fixFor(m); const [, name, pts] = m.match(/^(.*) \((\+\d+%)\)$/) || [, m, '']; return `<li><span class="ic">○</span><span class="tx">${esc(name)}</span><span class="pts">${pts}</span><a class="btn sm" href="${href}">${l}</a></li>`; }).join('');
+  // side: needs attention
+  const attn = typeof propAttention === 'function' ? propAttention(p).filter(i => i.k !== 'details') : [];
+  // side: best-matching buyers
+  const top = matchesForProperty(p, DB).slice(0, 3);
+  return `<div class="ov">
+    <div class="ov-main">
+      ${photos}
+      <div class="card"><div class="card-head"><h2>Key facts</h2><span class="sp"></span><a class="btn sm" href="${edit}">✨ Edit with AI</a></div>${dl(facts)}</div>
+      <div class="card"><div class="card-head"><h2>${esc(t.label)} details</h2><span class="sp"></span><small class="muted">${filled.length} of ${t.fields.length} filled in</small></div>
+        ${details.length ? dl(details) : '<p class="muted" style="margin:0">No details yet.</p>'}
+        ${empty.length ? `<div class="ov-adds"><span class="muted">Add:</span>${addChips}</div>` : ''}</div>
+      <div class="card"><div class="card-head"><h2>Amenities</h2><span class="sp"></span>${p.amenities.length ? '' : `<a class="btn sm" href="${edit}/details">＋ Add</a>`}</div>
+        <div class="row">${p.amenities.length ? p.amenities.map(a => chip(esc(a), 'outline')).join(' ') : '<span class="muted">None added yet (+5%)</span>'}</div></div>
+    </div>
+    <div class="ov-side">
+      <div class="card ov-score"><div class="ov-score-top">${typeof AddProperty !== 'undefined' ? AddProperty.ring(sc.score, 60) : ''}<div><h2>${sc.score === 100 ? 'Listing complete' : 'Listing completion'}</h2><small class="muted">${sc.score === 100 ? 'Everything is in — nice.' : 'Add these to reach 100%'}</small></div></div>
+        ${missingRows ? `<ul class="sfacts">${missingRows}</ul>` : ''}</div>
+      ${attn.length ? `<div class="card ov-attn"><h2>✨ Needs attention</h2>${attn.map(i => `<div class="ov-attn-row"><span>⚠ ${esc(i.l)}</span><a href="${i.fix}">${esc(i.act)} →</a></div>`).join('')}</div>` : ''}
+      <div class="card"><div class="card-head"><h2>Approvals</h2><span class="sp"></span><a class="btn sm" href="#/properties/${p.id}/legal">Documents</a></div>
+        <div class="row">${(p.badges || []).length ? p.badges.map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ') : '<span class="muted">No approval badges</span>'}</div></div>
+      <div class="card"><div class="card-head"><h2>Best-matching buyers</h2><span class="sp"></span>${top.length ? `<a href="#/properties/${p.id}/matches">See all</a>` : ''}</div>
+        ${top.length ? top.map(({ cust: c, m }) => `<a class="ov-buyer" href="#/customers/${c.id}/matches"><span class="ov-av">${esc(c.name.split(' ').map(x => x[0]).join('').slice(0, 2))}</span><span class="ov-bn"><b>${esc(c.name)}</b><small>${inrShort(c.budget.min)} – ${inrShort(c.budget.max)} · ${esc(c.stage)}</small></span>${chip(m.M + '% fit', m.tone, m.label)}</a>`).join('')
+          : `<p class="muted" style="margin:0">${p.status !== 'Available' ? `Not offered — it is ${esc(p.status)}.` : 'No active buyer fits yet.'}</p>`}</div>
+    </div>
+  </div>`;
 }
 function propLocation(p) {
   const L = p.location, cityInfo = CITIES[p.city] || {};
@@ -397,7 +430,7 @@ const MANAGE_TITLE = 'disabled title="Admin / Sales manager only"';
 function propHeaderActions(p) {
   const dis = canEditSettings() ? '' : MANAGE_TITLE;
   if (p.archived) return `${chip('Archived', 'outline')}<button class="btn" data-act="propRestore" data-id="${p.id}" ${dis}>↺ Restore</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
-  return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn" href="#/properties/${p.id}/edit">✎ Edit</a>
+  return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn primary" href="#/properties/${p.id}/edit" title="Tell the AI assistant what changed">✨ Edit with AI</a>
     <button class="btn" data-act="propArchiveOpen" data-id="${p.id}" ${dis}>🗄 Archive</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
 }
 /** Customers whose records point at this property (recommendation, site visit, negotiation or appointment). */
