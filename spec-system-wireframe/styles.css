@@ -677,3 +677,28 @@ td.ctr .check { justify-content: center; margin: 0; }
 .ov-price-all { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line2); font-size: 13px; }
 .ov-price-all b { font-weight: 600; } .ov-price-all small { flex-basis: 100%; font-size: 11.5px; }
 .pr-auto { margin: -4px 0 10px; font-size: 12.5px; color: var(--muted); }
+.pr-allin { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line2); }
+.pr-allin div { display: flex; align-items: baseline; gap: 10px; font-size: 14px; } .pr-allin b { font-size: 17px; font-weight: 700; }
+.pr-allin small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+/* Price check: asking price and total for the buyer as the two headline numbers */
+.pr-head .pr-top { grid-template-columns: minmax(170px, 0.9fr) minmax(220px, 1fr) minmax(260px, 1.6fr); gap: 16px; }
+.pr-stat { border: 1px solid var(--line2); border-radius: 10px; padding: 12px 14px; }
+.pr-stat > span { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.pr-stat > b { display: block; font-size: 24px; font-weight: 700; letter-spacing: -.01em; margin: 2px 0 2px; }
+.pr-stat > small { display: block; font-size: 12.5px; color: var(--muted); }
+.pr-stat.total { background: var(--brand-soft); border-color: #c9d6fb; }
+.pr-stat.total > b { color: var(--brand); }
+.pr-break { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin: 6px 0 0; font-size: 12px; }
+.pr-break dt { color: var(--ink2); } .pr-break dd { margin: 0; text-align: right; color: var(--ink2); }
+.pr-verdict { padding-top: 4px; }
+@media (max-width: 1000px) { .pr-head .pr-top { grid-template-columns: 1fr 1fr; } .pr-verdict { grid-column: 1 / -1; } }
+.pr-head .pr-top { align-items: stretch; }
+/* Price check: market check as the third box */
+.pr-head .pr-top { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pr-break b { font-weight: 700; color: var(--ink); }
+.pr-stat.verdict > b { font-size: 19px; margin: 4px 0 2px; }
+.pr-stat.verdict.green { background: var(--green-soft); border-color: #bfe3cd; } .pr-stat.verdict.green > b { color: var(--green); }
+.pr-stat.verdict.amber { background: var(--amber-soft); border-color: #f0d29b; } .pr-stat.verdict.amber > b { color: #8a5a10; }
+.pr-stat.verdict.grey > b { color: var(--muted); }
+.pr-hint { margin-top: 6px; color: #8a5a10 !important; }
+@media (max-width: 1000px) { .pr-head .pr-top { grid-template-columns: 1fr; } }

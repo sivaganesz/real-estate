@@ -724,7 +724,7 @@ function propLegal(p) {
       <div class="lg-acts"><button class="btn sm" data-act="lgView" data-f="${esc(d.file)}">View</button>${mgr ? `<button class="btn sm ghost" data-act="docVerify" data-id="${p.id}" data-d="${d.id}">${d.verified ? 'Undo verified' : '✓ Mark verified'}</button>` : ''}
         <button class="btn sm ghost danger" data-act="docRemove" data-id="${p.id}" data-d="${d.id}" title="Remove" aria-label="Remove ${esc(d.name)}">✕</button></div>
     </div>`;
-  const usual = (LEGAL_BY_TYPE[p.type] || []).filter(k => !OLD_APPROVAL_DOCS[k] && !p.documents.some(d => d.kind === k));
+  const usual = (LEGAL_BY_TYPE[p.type] || []).concat('valuer').filter(k => !OLD_APPROVAL_DOCS[k] && !p.documents.some(d => d.kind === k));
   const docsCard = `<div class="card"><div class="card-head"><h2>Other documents</h2><span class="opt-tag">Optional</span><span class="sp"></span><button class="btn sm" data-act="docNewOpen" data-id="${p.id}">⤒ Upload document</button></div>
     ${p.documents.length ? p.documents.map(docRow).join('') : '<p class="muted" style="margin:0 0 4px">No documents yet — upload any that help the sale.</p>'}
     ${usual.length ? `<div class="lg-add"><span class="muted">Usual for a ${esc(typeLabel(p.type).toLowerCase())}:</span>${usual.map(k => `<button class="ov-add" data-act="docAdd" data-id="${p.id}" data-k="${k}" title="${esc(LEGAL_DOCS[k].v)}">⤒ ${esc(LEGAL_DOCS[k].n)}</button>`).join('')}</div>` : ''}
@@ -839,11 +839,19 @@ function propPricing(p) {
   const bars = [{ l: 'This property (asking)', val: v.ppsf, me: 1 }].concat(all.filter(c => Number(c.pricePerSqft) > 0).map(c => ({ l: `${c.location}${c.ref ? ' · ' + c.ref : ''} · ${c.kind === 'Transaction' ? 'sold' : 'asking'}`, val: Number(c.pricePerSqft) })))
     .map(b => `<div class="bar-row ${b.me ? 'me' : ''}"><span>${esc(b.l)}</span>${meter((b.val - lo) / ((maxP - lo) || 1) * 100, b.me ? '' : 'grey')}<span class="num">${num(b.val)}</span></div>`).join('');
   const head = `<div class="card pr-head">
-      <div class="pr-top"><div><div class="pr-price">${inr(p.price)}</div><div class="muted">${inr(v.ppsf)} / sq.ft. · ${num(p.area)} sq.ft.${p.priceOnRequest ? ' · hidden on the listing' : ''}</div></div>
-        <div class="pr-verdict">${v.count ? `${chip(v.position.split(' — ')[0], tone)}<p>${inr(v.ppsf)}/sq.ft. is <b>${pos}</b> of ${v.count} similar propert${v.count > 1 ? 'ies' : 'y'} (${inr(v.min)} – ${inr(v.max)}/sq.ft.)${v.txnAvg ? `; recent sales average <b>${inr(v.txnAvg)}</b>` : ''}.${v.position.includes(' — ') ? ` <span class="muted">${esc(v.position.split(' — ')[1].replace(/^./, c => c.toUpperCase()))}.</span>` : ''}</p>`
-          : `${chip('Not compared yet', 'grey')}<p class="muted">No similar ${noun}s in ${esc(p.city)} in our records yet. Add one from outside — a portal listing or a registered sale — to compare the price.</p>`}</div></div>
+      <div class="pr-top">
+        <div class="pr-stat"><span>Asking price</span><b>${inr(p.price)}</b><small>${inr(v.ppsf)} / sq.ft. · ${num(p.area)} sq.ft.${p.priceOnRequest ? ' · hidden on the listing' : ''}</small></div>
+        <div class="pr-stat total"><span>Total for the buyer</span><b>${inr(v.allIn)}</b>
+          <dl class="pr-break"><dt>Stamp duty <b>${DB.settings.costs.stampDutyPct}%</b></dt><dd><b>+ ${inr(Math.round(p.price * DB.settings.costs.stampDutyPct / 100))}</b></dd>
+            <dt>Registration <b>${DB.settings.costs.registrationPct}%</b></dt><dd><b>+ ${inr(Math.round(p.price * DB.settings.costs.registrationPct / 100))}</b></dd>
+            <dt>Other (legal, misc.) <b>${DB.settings.costs.otherPct}%</b></dt><dd><b>+ ${inr(Math.round(p.price * DB.settings.costs.otherPct / 100))}</b></dd></dl></div>
+        ${v.count ? `<div class="pr-stat verdict ${tone}"><span>Market check · ${v.count} similar</span><b>${pos === 'within the range' ? 'In line with the market' : pos === 'below the range' ? 'Below the market' : 'Above the market'}</b>
+          <dl class="pr-break"><dt>Similar properties</dt><dd><b>${v.min === v.max ? inr(v.min) : `${inr(v.min)} – ${inr(v.max)}`}</b> /sq.ft.</dd>
+            ${v.txnAvg ? `<dt>Recent sales average</dt><dd><b>${inr(v.txnAvg)}</b> /sq.ft.</dd>` : ''}<dt>This property</dt><dd><b>${inr(v.ppsf)}</b> /sq.ft.</dd></dl>
+          ${v.position.includes(' — ') ? `<small class="pr-hint">${esc(v.position.split(' — ')[1].replace(/^./, c => c.toUpperCase()))}.</small>` : ''}</div>`
+          : `<div class="pr-stat verdict grey"><span>Market check</span><b>Not compared yet</b><small>No similar ${noun}s in ${esc(p.city)} in our records yet. Add one from outside — a portal listing or a registered sale.</small></div>`}</div>
       ${v.count ? `<div class="pr-bars">${bars}</div>` : ''}
-      <p class="pr-rule">Say it neutrally — never “bargain” or “best price” just because another seller asks more.</p>
+      <p class="pr-rule">Say it neutrally — never “bargain” or “best price” just because another seller asks more. Cost rates are set in <a href="#/settings">Settings</a>; confirm the current rates before quoting.</p>
     </div>`;
   // comparables kept: compact rows; an outside one can be edited
   const row = (c, i) => UI.compEdit === p.id + ':' + i ? `<div class="pr-row edit"><div class="fgrid">
@@ -865,16 +873,7 @@ function propPricing(p) {
       ${V.comparables.length ? `<div class="pr-found"><div class="pr-found-h">Added from outside</div>${V.comparables.map(row).join('')}</div>` : ''}
       ${(V.dismissed || []).length ? `<p class="pr-auto">${V.dismissed.length} left out as not similar (${V.dismissed.join(', ')}) · <button class="linkbtn" data-act="compUndo" data-id="${p.id}">Bring back</button></p>` : ''}
     </div>`;
-  // all-in cost for the buyer, and the price review
-  const costs = `<div class="card"><div class="card-head"><h2>All-in cost for the buyer</h2><span class="sp"></span><b>${inr(v.allIn)}</b></div>
-      <div class="kv"><dt>Asking price</dt><dd>${inr(p.price)}</dd><dt>Stamp duty (${DB.settings.costs.stampDutyPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.stampDutyPct / 100))}</dd>
-        <dt>Registration (${DB.settings.costs.registrationPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.registrationPct / 100))}</dd><dt>Other — legal, misc. (${DB.settings.costs.otherPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.otherPct / 100))}</dd></div>
-      <p class="muted" style="margin:10px 0 0;font-size:12.5px">Use it when a customer’s budget includes registration. Rates are assumptions in <a href="#/settings">Settings</a> — confirm the current rates and guideline value before quoting.</p></div>`;
-  const review = `<div class="card"><h2>Price review</h2>
-      <div class="fgrid c2">${fld('Asking price (₹)', bIn('p', p.id, 'price', p.price, 'number'))}${fld('Last reviewed', bIn('p', p.id, 'valuation.reviewDate', V.reviewDate, 'date'))}</div>
-      <div style="height:8px"></div>${fld('Valuer’s report <span class="opt-tag">Optional</span>', bIn('p', p.id, 'valuation.valuerReport', V.valuerReport, 'text', 'placeholder="e.g. Registered valuer, report date"'))}
-      <div style="height:8px"></div>${fld('Notes', `<textarea class="inline-in" rows="2" data-bind="${bkey('p', p.id, 'valuation.notes')}" placeholder="e.g. Owner open to ₹27 L for a quick sale">${esc(V.notes)}</textarea>`)}</div>`;
-  return `${head}${comps}<div class="grid g2">${costs}${review}</div>`;
+  return `${head}${comps}`;
 }
 Object.assign(ACTIONS, {
   compNo: d => { const p = getProp(d.id); (p.valuation.dismissed = p.valuation.dismissed || []).push(d.r); logHistory(p, `Comparable left out as not similar: ${d.r}`); save(); toast(`${d.r} left out of the comparison`); render(); },

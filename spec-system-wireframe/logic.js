@@ -53,6 +53,11 @@ function addApprovalType(name, doc) {
 const OLD_APPROVAL_DOCS = { rera: 'rera', plan: 'building', layout: 'building' }; // old checklist rows that are really approvals
 /** Older records had a fixed checklist per type (legal[]) and badges[] — convert them once. Safe to run again. */
 function normLegal(p) {
+  const V = p.valuation;
+  if (V && V.valuerReport && p.documents && !p.documents.some(d => d.kind === 'valuer')) { // the valuer's report used to be a text box on the Price tab
+    p.documents.push({ id: 'doc-' + p.id + '-valuer', name: LEGAL_DOCS.valuer.n, kind: 'valuer', file: 'valuation-report.pdf', note: V.valuerReport, uploadedBy: '', uploadedAt: V.reviewDate || '', verified: false, verifiedBy: '', verifiedAt: '' });
+    V.valuerReport = '';
+  }
   if (p.approvals && p.documents && !p.legal && !p.badges) return p;
   const legal = p.legal || [];
   if (!p.approvals) {
@@ -72,7 +77,7 @@ function normLegal(p) {
     .map(d => ({ id: 'doc-' + p.id + '-' + d.key, name: LEGAL_DOCS[d.key].n, kind: d.key, file: d.file || d.key + '-scan.pdf', uploadedBy: '', uploadedAt: d.date || '',
       verified: d.status === 'verified', verifiedBy: d.status === 'verified' ? d.verifiedBy : '', verifiedAt: d.status === 'verified' ? d.date : '' }));
   delete p.legal; delete p.badges;
-  return p;
+  return normLegal(p); // once more, for the valuer's report
 }
 function legalSummary(p) {
   normLegal(p);

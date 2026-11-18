@@ -177,6 +177,7 @@ const LEGAL_DOCS = {
   rera: { n: 'RERA registration', v: 'Registration or exemption status, as applicable' },
   fire: { n: 'Fire NOC', v: 'Fire safety clearance, where applicable' },
   tax: { n: 'Tax receipts', v: 'Property tax / land revenue records' },
+  valuer: { n: 'Valuation report', v: 'Registered valuer’s report — banks ask for it when the buyer takes a loan' },
 };
 const LEGAL_BY_TYPE = {
   plot: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'layout', 'rera', 'tax'],
