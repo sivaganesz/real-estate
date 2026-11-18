@@ -73,7 +73,7 @@ const APPROVALS = [
 ];
 /** The two standard approvals plus any added by users (available on every property). */
 const allApprovals = () => APPROVALS.concat((S && S.catalog.approvals) || []);
-const approvalOf = k => allApprovals().find(a => a.k === k) || { k, l: k, long: k, doc: k };
+const apOfLocal = k => allApprovals().find(a => a.k === k) || { k, l: k, long: k, doc: k };
 /* Only a few amenities per type — they are optional extras; anything else can be added by name. */
 const AMENITIES_BY_TYPE = {
   flat: ['Lift', 'Power backup', 'Security', 'CCTV', 'Gym', 'Swimming pool'],
@@ -174,7 +174,7 @@ function fmt(p, path, v) {
   if (path === 'type') return typeLabel(v);
   if (path === 'priceOnRequest') return v ? 'Yes' : 'No';
   if (path === 'purpose') return PURPOSE_LABEL[v] || v;
-  if (path === 'approvals') return v.map(k => approvalOf(k).l).join(', ');
+  if (path === 'approvals') return v.map(k => apOfLocal(k).l).join(', ');
   if (Array.isArray(v)) return v.join(', ');
   if (path.startsWith('specs.')) { const f = fieldsFor(p.type).find(x => 'specs.' + x.k === path); if (f && f.t === 'number') return /₹/.test(f.l) ? inr(v) : num(v); }
   return String(v);
@@ -428,7 +428,7 @@ function changesFrom(p, x) {
   const add = x.amen.filter(a => !p.amenities.includes(a)), rem = x.removeAmen.filter(a => p.amenities.includes(a));
   if (add.length || rem.length) ch.push({ path: 'amenities', from: p.amenities.slice(), to: p.amenities.filter(a => !rem.includes(a)).concat(add), q: add.concat(rem.map(r => 'no ' + r)).join(', ') });
   const badges = (x.badges || []).filter(b => !p.approvals.includes(b)), unbadges = (x.unbadges || []).filter(b => p.approvals.includes(b));
-  if (badges.length || unbadges.length) ch.push({ path: 'approvals', from: p.approvals.slice(), to: p.approvals.filter(b => !unbadges.includes(b)).concat(badges), q: badges.concat(unbadges).map(b => approvalOf(b).l).join(', ') });
+  if (badges.length || unbadges.length) ch.push({ path: 'approvals', from: p.approvals.slice(), to: p.approvals.filter(b => !unbadges.includes(b)).concat(badges), q: badges.concat(unbadges).map(b => apOfLocal(b).l).join(', ') });
   if (x.avail && p.status === 'published' && x.avail !== p.avail) ch.push({ path: 'avail', from: p.avail, to: x.avail, q: x.avail });
   if (x.latlng) ch.push({ path: 'pin', from: p.loc.lat !== '' ? `${p.loc.lat}, ${p.loc.lng}` : '', to: `${x.latlng.lat}, ${x.latlng.lng}`, q: x.latlng.q, ll: x.latlng });
   // property-only attributes that already exist are simply updated
@@ -527,8 +527,8 @@ function commit(p, x, kind) {
     if (rest.length) said.push(`filled in ${esc(updatesText(p, rest))}`);
     if (ap) {
       const added = ap.to.filter(k => !ap.from.includes(k)), removed = ap.from.filter(k => !ap.to.includes(k));
-      if (added.length) said.push(`ticked ${added.map(k => approvalOf(k).long).join(' and ')} (the document can come later)`);
-      if (removed.length) said.push(`removed the ${removed.map(k => approvalOf(k).long).join(' and ')} badge`);
+      if (added.length) said.push(`ticked ${added.map(k => apOfLocal(k).long).join(' and ')} (the document can come later)`);
+      if (removed.length) said.push(`removed the ${removed.map(k => apOfLocal(k).long).join(' and ')} badge`);
     }
     aiSay(p, `Got it — ${said.join('; ')}.`);
   }
@@ -545,7 +545,7 @@ function commit(p, x, kind) {
    Everything else is optional and counts towards the completion score (100%).
    Approval badges (RERA, building approval) are optional and can be ticked any time; their documents follow later. */
 const otherDocs = type => (type ? LEGAL_BY_TYPE[type].filter(k => !['rera', 'layout', 'plan'].includes(k)) : []);
-const docName = k => (approvalOf(k) ? approvalOf(k).doc : LEGAL_DOCS[k] ? LEGAL_DOCS[k].n : k);
+const docName = k => (apOfLocal(k) ? apOfLocal(k).doc : LEGAL_DOCS[k] ? LEGAL_DOCS[k].n : k);
 function missing(p) {
   const m = [];
   if (!p.purpose) m.push({ k: 'purpose', l: 'Purpose (sell, rent or lease)' });
@@ -826,7 +826,7 @@ function statusCell(p) {
   return `${chip('Draft', 'amber')}${missing(p).length ? '' : '<br><small style="color:var(--green)">Ready to publish</small>'}`;
 }
 function badgesInline(p) {
-  return p.approvals.map(k => { const d = p.docs[k]; return chip(approvalOf(k).l + (d ? '' : ' · doc pending'), d ? (d.status === 'verified' ? 'green' : 'blue') : 'amber', d ? (d.status === 'verified' ? 'Document verified' : 'Document uploaded, pending verification') : 'Badge selected — document not uploaded yet'); }).join(' ');
+  return p.approvals.map(k => { const d = p.docs[k]; return chip(apOfLocal(k).l + (d ? '' : ' · doc pending'), d ? (d.status === 'verified' ? 'green' : 'blue') : 'amber', d ? (d.status === 'verified' ? 'Document verified' : 'Document uploaded, pending verification') : 'Badge selected — document not uploaded yet'); }).join(' ');
 }
 
 /* ---------- property list ---------- */
@@ -915,7 +915,7 @@ function detailsTab(p) {
   }).join('');
   // four sections joined by a vertical step indicator; each can be collapsed with its arrow
   const m = missing(p), core = coreFields(p), coreIn = core.filter(f => !isEmpty(p.specs[f.k])).length;
-  const appr = p.approvals.map(k => `${approvalOf(k).l}${p.docs[k] ? '' : ' · document pending'}`).join(', ');
+  const appr = p.approvals.map(k => `${apOfLocal(k).l}${p.docs[k] ? '' : ' · document pending'}`).join(', ');
   const steps = [
     { k: 'basic', title: 'Required details', done: !m.length, status: m.length ? `${6 - m.length} of 6 filled` : 'Complete', req: true,
       body: `<div class="fgrid c2">
@@ -984,7 +984,7 @@ function legalTab(p) {
   const others = otherDocs(p.type);
   return `
     <div class="card"><div class="card-head"><h2>Approval documents</h2><span class="sp"></span><small class="muted">for the badges ticked in Details</small></div>
-      ${p.approvals.length ? p.approvals.map(k => row(k, `${chip(approvalOf(k).l, 'purple')} `)).join('') : '<p class="muted" style="margin:0 0 8px">No approval badges ticked yet.</p>'}
+      ${p.approvals.length ? p.approvals.map(k => row(k, `${chip(apOfLocal(k).l, 'purple')} `)).join('') : '<p class="muted" style="margin:0 0 8px">No approval badges ticked yet.</p>'}
       <div class="badges" style="margin-top:10px"><small class="muted" style="margin-right:6px">Tick a badge:</small>${allApprovals().filter(a => !p.approvals.includes(a.k)).map(a => `<button type="button" class="badge-tog" data-act="badge" data-id="${p.id}" data-k="${a.k}" ${dis}>＋ ${a.l}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="card-head"><h2>Other legal documents</h2><span class="sp"></span><small class="muted">optional</small></div>
@@ -1068,7 +1068,7 @@ function summaryCard(p) {
   const docsIn = Object.keys(p.docs).length;
   if (p.approvals.length) {
     const up = p.approvals.filter(k => p.docs[k]).length;
-    rows.push(row(up === p.approvals.length, `${p.approvals.map(k => approvalOf(k).l).join(', ')} <span class="muted">· ${up} of ${p.approvals.length} document${p.approvals.length > 1 ? 's' : ''}</span>`,
+    rows.push(row(up === p.approvals.length, `${p.approvals.map(k => apOfLocal(k).l).join(', ')} <span class="muted">· ${up} of ${p.approvals.length} document${p.approvals.length > 1 ? 's' : ''}</span>`,
       { pts: 10, cls: hit('approvals'), btn: up === p.approvals.length ? '' : btn('📎 Upload', 'drawer', 'data-tab="legal"') }));
   } else rows.push(row(docsIn > 0, docsIn ? `${docsIn} legal document${docsIn > 1 ? 's' : ''}` : 'Approvals and legal documents', { pts: 10, btn: docsIn ? '' : btn('Add', 'drawer', 'data-tab="legal"') }));
 
@@ -1206,7 +1206,7 @@ const ACTIONS = {
     p.category = d.v; p.src.category = { s: 'form' }; hist(p, `Category: ${d.v} (form)`); p.updatedAt = TODAY; save(); render();
   },
   badge: d => {
-    const p = getP(d.id), a = approvalOf(d.k), on = p.approvals.includes(d.k);
+    const p = getP(d.id), a = apOfLocal(d.k), on = p.approvals.includes(d.k);
     if (d.via !== 'chat') return setField(p, 'approvals', on ? p.approvals.filter(k => k !== d.k) : p.approvals.concat(d.k));
     if (!canEdit(p)) return;
     youSay(p, esc(a.long)); // ticked from the assistant’s quick reply

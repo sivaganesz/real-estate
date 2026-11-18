@@ -223,14 +223,6 @@ const BIND_HOOKS = {
   },
   after(kind, t, path, v, old) {
     if (kind === 'p') {
-      const m = path.match(/^legal\.(\d+)\.status$/);
-      if (m) {
-        const d = t.legal[+m[1]];
-        if (v === 'verified') { d.date = d.date || DEMO_TODAY; d.verifiedBy = d.verifiedBy || 'Adv. Legal Partner (sample)'; }
-        if (v === 'not') { d.verifiedBy = ''; d.date = ''; d.file = ''; }
-        if (v === 'pending' && !d.file) d.file = `${d.key}-scan.pdf`;
-        logHistory(t, `Legal: ${LEGAL_DOCS[d.key].n} → ${LEGAL_STATUS[v].l}`);
-      }
       if (path === 'status') logHistory(t, `Status changed: ${old} → ${v}`);
       if (path === 'price') logHistory(t, `Asking price changed: ${inr(old)} → ${inr(v)}`);
     }

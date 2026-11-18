@@ -192,8 +192,8 @@ function runTest001(withConsent) {
     { t: 'Save the customer’s enquiry', ok: !!getCust(c.id), d: `Saved as ${c.id}` },
     { t: 'Identify residential plots matching the location and budget', ok: candidates.length > 0, d: candidates.map(p => `${p.id} (${inrShort(p.price)}, ${p.status})`).join(', ') || 'none' },
     { t: 'Exclude unavailable properties', ok: unavailable.every(p => mm.excluded.some(m => m.prop.id === p.id)), d: unavailable.length ? unavailable.map(p => `${p.id} excluded — ${p.status}`).join(', ') : 'No unavailable candidates' },
-    { t: 'Flag unresolved approval verification', ok: legalOpen.every(m => m.label === 'Conditional match') && (!mm.top || mm.top.legalOk), d: legalOpen.length ? legalOpen.map(m => `${m.prop.id} → Conditional (${legalSummary(m.prop).openMandatory.join(', ')})`).join('; ') : 'No eligible property with open checks' },
-    { t: 'Recommend suitable verified listings', ok: !!mm.top && mm.top.legalOk, d: mm.top ? `${mm.top.prop.id} — ${mm.top.prop.title}, fit ${mm.top.M} (${mm.top.label})` : 'No verified listing available' },
+    { t: 'Flag approvals claimed without a document', ok: legalOpen.every(m => m.label === 'Conditional match') && (!mm.top || mm.top.legalOk), d: legalOpen.length ? legalOpen.map(m => `${m.prop.id} → Conditional (${legalSummary(m.prop).openApprovals.join(', ')} pending)`).join('; ') : 'No eligible property with a pending approval document' },
+    { t: 'Recommend suitable listings', ok: !!mm.top && mm.top.legalOk, d: mm.top ? `${mm.top.prop.id} — ${mm.top.prop.title}, fit ${mm.top.M} (${mm.top.label})` : 'No suitable listing available' },
     { t: 'Assign the lead to a sales executive', ok: !!DB.settings.executives.find(e => e.id === c.owner), d: execName(DB, c.owner) },
     { t: 'Schedule a follow-up after customer consent', ok: withConsent ? !!c.nextFollowUp : !c.nextFollowUp, d: withConsent ? `Consent recorded → follow-up ${fmtDate(c.nextFollowUp)}` : 'No consent → correctly NOT scheduled' },
     { t: 'Expected output: Qualified buyer', ok: cls === 'Qualified buyer', d: `Classification: ${cls}` },
@@ -266,6 +266,7 @@ function viewSettings() {
         <div class="stack">${S.executives.map((e, i) => `<div class="row"><span class="mono" style="width:44px">${e.id}</span><div style="flex:1">${bIn('s', '', `executives.${i}.name`, e.name, 'text', dis)}</div></div>`).join('')}</div></div>
     </div>
     ${placeCategoriesCard(dis)}
+    ${approvalTypesCard(dis)}
     <div class="card"><h2>Demo data</h2>
       <p class="muted" style="margin-top:0">Everything you change is stored in this browser only. Export to share a snapshot, or reset to the original mock data.</p>
       <div class="row"><button class="btn" data-act="exportData">⤓ Export JSON</button>
@@ -291,16 +292,36 @@ function placeCategoriesCard(dis) {
       <tbody>${cats.map(row).join('')}</tbody></table></div>
     ${own ? '' : '<p class="muted" style="margin:8px 0 0">These are the defaults — click <b>Add category</b> to start editing them.</p>'}</div>`;
 }
+/** Approval badges — the shared list behind "Approvals" on every property and in Add property. */
+function approvalTypesCard(dis) {
+  const own = (DB.settings.approvals || []).length > 0, list = approvalTypes();
+  const used = k => DB.properties.filter(p => { normLegal(p); return p.approvals.some(a => a.k === k); }).length;
+  const row = (a, i) => `<tr><td>${own ? bIn('s', '', `approvals.${i}.long`, a.long, 'text', dis) : esc(a.long)}${APPROVAL_TYPES.some(t => t.k === a.k) ? ' <small class="muted">default</small>' : ''}</td>
+      <td>${own ? bIn('s', '', `approvals.${i}.doc`, a.doc, 'text', dis) : esc(a.doc)}</td>
+      <td><small class="muted">${a.by ? `${esc(a.by)}${a.at ? ', ' + fmtDate(a.at) : ''}` : '—'}</small></td>
+      <td class="num"><small class="muted">${used(a.k)}</small></td></tr>`;
+  return `<div class="card"><div class="card-head"><h2>Approval badges</h2><span class="sp"></span><button class="btn sm" data-act="addApprovalType" ${dis}>＋ Add approval</button></div>
+    <p class="muted" style="margin-top:-4px">Badges the team can tick on a property (Legal &amp; documents, or while adding it with the AI). A ticked badge shows on the listing once its document is uploaded. New ones can also be created from any property.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Approval</th><th>Its document</th><th>Created by</th><th class="num">On properties</th></tr></thead>
+      <tbody>${list.map(row).join('')}</tbody></table></div></div>`;
+}
 { // renaming a category renames it on every property's places too, so nothing is left in an unknown category
   const after = BIND_HOOKS.after;
   BIND_HOOKS.after = (kind, t, path, v, old) => {
     after(kind, t, path, v, old);
+    const ap = kind === 's' && path.match(/^approvals\.(\d+)\.long$/); // the short label follows the name
+    if (ap && DB.settings.approvals[+ap[1]]) DB.settings.approvals[+ap[1]].l = v;
     if (kind === 's' && /^placeCategories\.\d+\.name$/.test(path) && old && v !== old) {
       DB.properties.forEach(p => ((p.location || {}).nearby || []).forEach(x => { if (x.cat === old) x.cat = v; }));
     }
   };
 }
 Object.assign(ACTIONS, {
+  addApprovalType: () => {
+    if (!canEditSettings()) return;
+    addApprovalType('New approval ' + ((DB.settings.approvals || []).length + 1), '');
+    save(); render();
+  },
   addPlaceCat: () => {
     if (!canEditSettings()) return;
     if (!(DB.settings.placeCategories || []).length) DB.settings.placeCategories = PLACE_CATEGORIES.map(c => ({ ...c }));

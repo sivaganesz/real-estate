@@ -175,7 +175,7 @@ function impApply() {
         city: d.city, locality: d.locality, state: 'Tamil Nadu', facing: d.facing || '', area: impNum(d.area_sqft), price: impNum(d.asking_price),
         amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: 0, specs,
         location: { lat: d.latitude ? impNum(d.latitude) : '', lng: d.longitude ? impNum(d.longitude) : '', address: '', pincode: d.pincode || '', district: '', pinOk: false, roadType: '', roadWidth: '', nearby: [] },
-        legal: LEGAL_BY_TYPE[I.type].map(k => ({ key: k, status: 'not', verifiedBy: '', date: '', file: '', note: '' })),
+        approvals: [], documents: [],
         valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
       };
       logHistory(p, `Created by bulk import ${batch} (${I.file}, line ${r.line})`);
@@ -299,7 +299,7 @@ function impResultHtml(r) {
     </div>
     ${r.created.length ? `<p><b>New properties:</b> ${r.created.map(link).join(', ')}</p>` : ''}
     ${r.updated.length ? `<p><b>Updated:</b> ${r.updated.map(link).join(', ')}</p>` : ''}
-    ${r.created.length ? '<div class="note amber">Next: open each new property and complete Location, Legal &amp; documents and Pricing &amp; valuation. All legal checks start as “Not collected”, so these properties show as Conditional matches until verified.</div>' : ''}
+    ${r.created.length ? '<div class="note amber">Next: open each new property and add photos, approval badges and documents (all optional) and check the pricing. The important nearby places are already shown.</div>' : ''}
   </div>`;
 }
 

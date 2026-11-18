@@ -33,14 +33,9 @@ const AMEN_SKIP = /\b(parking|car park|floor|road|facing|bhk|sq|sqft|feet|ft|lak
 const TYPE_ORDER = ['flat', 'house', 'plot', 'commercial', 'agri', 'industrial'];
 const typesIn = cat => TYPE_ORDER.filter(k => PROPERTY_TYPES[k].category === cat);
 const PURPOSE_LABEL = { Sale: 'Sell', Rent: 'Rent', Lease: 'Lease' };
-/* Approval badges: picked while creating the property; the document follows later under Legal documents. */
-const APPROVALS = [
-  { k: 'rera', l: 'RERA', long: 'RERA approval', doc: 'RERA registration certificate' },
-  { k: 'building', l: 'Building approval', long: 'Building approval', doc: 'Building / layout approval (DTCP, CMDA or local body)' },
-];
-/** The two standard approvals plus any added by users (available on every property). */
-const allApprovals = () => APPROVALS.concat((S && S.catalog.approvals) || []);
-const approvalOf = k => allApprovals().find(a => a.k === k) || { k, l: k, long: k, doc: k };
+/* Approval badges: picked while creating the property; the document follows later under Legal documents.
+   One shared list for every property (logic.js approvalTypes → Settings): RERA and building approval, plus any the team creates. */
+const allApprovals = () => approvalTypes();
 /* Only a few amenities per type — they are optional extras; anything else can be added by name. */
 const AMENITIES_BY_TYPE = {
   flat: ['Lift', 'Power backup', 'Security', 'CCTV', 'Gym', 'Swimming pool'],
@@ -598,23 +593,16 @@ const findAny = id => getP(id) || listed().find(o => o.id === id);
 function publishToMain(p, approvedBy) {
   const t = PROPERTY_TYPES[p.type], id = 'PROP-' + (++DB.counters.prop);
   const specs = Object.fromEntries(t.fields.map(f => [f.k, isEmpty(p.specs[f.k]) ? '' : p.specs[f.k]]));
-  // approval badges map onto the old legal checklist: RERA → RERA registration; building approval → building plan (or layout, for a plot)
-  const docFor = k => (k === 'rera' ? 'rera' : k === 'building' ? (LEGAL_BY_TYPE[p.type].includes('layout') ? 'layout' : 'plan') : null);
-  const legal = LEGAL_BY_TYPE[p.type].map(key => {
-    const badge = p.approvals.find(a => docFor(a) === key), d = p.docs[key] || (badge && p.docs[badge]);
-    return d ? { key, status: d.status === 'verified' ? 'verified' : 'pending', verifiedBy: '', date: d.at || DEMO_TODAY, file: d.file || '', note: 'Collected through the AI assistant' }
-      : { key, status: 'not', verifiedBy: '', date: '', file: '', note: badge ? 'Approval badge ticked — document to come' : '' };
-  });
   const old = {
     id, title: p.title || suggestTitle(p) || typeLabel(p.type), type: p.type, purpose: p.purpose, status: 'Available', listingDate: DEMO_TODAY,
     city: p.loc.city, locality: p.loc.locality, state: p.loc.state || 'Tamil Nadu', facing: p.facing || '', area: Number(p.area), price: Number(p.price), priceOnRequest: !!p.priceOnRequest,
     amenities: p.amenities.slice(), images: p.photos, videos: p.videos, specs,
-    badges: p.approvals.map(k => ({ l: approvalOf(k).long, doc: !!p.docs[k] })),
+    ...legalFromDraft(p),
     extra: p.custom.map(c => ({ label: c.label, value: c.value })),
     location: { address: p.loc.address || '', pincode: p.loc.pincode || '', district: p.loc.district || (CITIES[p.loc.city] || {}).district || p.loc.city,
       lat: p.loc.lat, lng: p.loc.lng, pinOk: !!p.loc.pinOk, roadType: specs.roadInfra || '', roadWidth: specs.roadWidth || '', nearby: [],
       suggestPending: !!(p.loc.pinOk && p.loc.lat !== '') }, // an exact location → look up the places around it once
-    legal, valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] },
+    valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] },
     history: [{ date: DEMO_TODAY, text: `Published${approvedBy ? ` (approved by ${approvedBy})` : ''} — created with the AI assistant as draft ${p.id}, ${completeness(p)}% complete`, by: me() }],
   };
   DB.properties.unshift(old);
@@ -623,13 +611,29 @@ function publishToMain(p, approvedBy) {
   window.save(); save();
   return old;
 }
+/** The draft's approvals and documents in the property's shape (Legal & documents tab). With prev (an existing property),
+    what didn't change is kept as it is — including who verified it — and documents added on the property page stay. */
+function legalFromDraft(p, prev) {
+  prev = prev || { approvals: [], documents: [] };
+  const approvals = p.approvals.map(k => {
+    const d = p.docs[k], o = prev.approvals.find(a => a.k === k);
+    if (o && (!d || o.file === d.file)) return o;
+    return d ? { k, status: d.status === 'verified' ? 'verified' : 'uploaded', file: d.file || k + '-document.pdf', uploadedBy: d.by || me(), uploadedAt: d.at || DEMO_TODAY, verifiedBy: '', verifiedAt: '' }
+      : { k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' };
+  });
+  const documents = prev.documents.slice();
+  Object.entries(p.docs).filter(([k]) => !p.approvals.includes(k) && LEGAL_DOCS[k] && !documents.some(x => x.kind === k)).forEach(([k, d]) =>
+    documents.push({ id: 'doc-' + k + '-' + hash(p.id + k), name: LEGAL_DOCS[k].n, kind: k, file: d.file || k + '-scan.pdf', uploadedBy: d.by || me(), uploadedAt: d.at || DEMO_TODAY, verified: d.status === 'verified', verifiedBy: '', verifiedAt: '' }));
+  return { approvals, documents };
+}
 /* ---------- editing a published property with the AI assistant ----------
    The property is opened on this page as a live copy (editOf = its ID). Every confirmed change — from the chat or the
    drawer — is written straight back to the property in the main list, with a history line. */
 const drafts = () => S.props.filter(p => !p.editOf); // edit copies never show as drafts
 function editCopy(old) {
   const p = blank(old.id);
-  const appr = (old.badges || []).map(b => (allApprovals().find(a => a.long === b.l || a.l === b.l) || {}).k).filter(Boolean);
+  normLegal(old);
+  const appr = old.approvals.map(a => a.k);
   Object.assign(p, {
     editOf: old.id, status: 'published', avail: old.status, createdBy: ((old.history || []).slice(-1)[0] || {}).by || me(), createdAt: old.listingDate, updatedAt: TODAY,
     category: categoryOf(old.type), type: old.type, purpose: old.purpose, title: old.title, facing: old.facing || '',
@@ -642,9 +646,9 @@ function editCopy(old) {
   const OL = old.location || {};
   Object.assign(p.loc, { city: old.city, locality: old.locality, state: old.state || 'Tamil Nadu', district: OL.district || (CITIES[old.city] || {}).district || old.city, country: 'India',
     address: OL.address || '', pincode: OL.pincode || '', lat: OL.lat ?? '', lng: OL.lng ?? '', pinOk: !!(OL.lat !== '' && OL.lat != null && OL.pinOk !== false), precise: true });
-  (old.badges || []).forEach((b, i) => { if (b.doc && appr[i]) p.docs[appr[i]] = { status: 'collected', file: `${appr[i]}-document.pdf`, at: old.listingDate, by: '' }; });
-  // documents already in the property's legal checklist count as collected here too
-  (old.legal || []).forEach(d => { if (d.status !== 'not' && !p.docs[d.key]) p.docs[d.key] = { status: d.status === 'verified' ? 'verified' : 'collected', file: d.file || d.key + '.pdf', at: d.date || old.listingDate, by: d.verifiedBy || '' }; });
+  // approval documents, and the property's other documents of a known kind, count as collected here too
+  old.approvals.filter(a => a.file).forEach(a => { p.docs[a.k] = { status: a.status === 'verified' ? 'verified' : 'collected', file: a.file, at: a.uploadedAt || old.listingDate, by: a.uploadedBy || '' }; });
+  old.documents.filter(d => LEGAL_DOCS[d.kind] && !p.docs[d.kind]).forEach(d => { p.docs[d.kind] = { status: d.verified ? 'verified' : 'collected', file: d.file, at: d.uploadedAt || old.listingDate, by: d.uploadedBy || '' }; });
   p.shownFields = Object.keys(p.specs);
   p.syncedHist = 0;
   return p;
@@ -669,20 +673,14 @@ function syncEdit(p) {
     area: Number(p.area) || old.area, price: Number(p.price) || old.price, priceOnRequest: !!p.priceOnRequest,
     amenities: p.amenities.slice(), images: p.photos, videos: p.videos,
     specs: Object.assign({}, old.specs, Object.fromEntries(t.fields.map(f => [f.k, isEmpty(p.specs[f.k]) ? '' : p.specs[f.k]]))),
-    badges: p.approvals.map(k => ({ l: approvalOf(k).long, doc: !!p.docs[k] })),
     extra: p.custom.map(c => ({ label: c.label, value: c.value })),
   });
+  Object.assign(old, legalFromDraft(p, normLegal(old))); // approvals and documents
   // the address and map pin (nearby places stay as they are — they are managed on the property page)
   old.location = old.location || { nearby: [] };
   const wasExact = old.location.lat !== '' && old.location.lat != null && old.location.pinOk !== false, isExact = p.loc.lat !== '' && p.loc.lat != null && !!p.loc.pinOk;
   if (isExact && !wasExact) old.location.suggestPending = true;
   Object.assign(old.location, { address: p.loc.address || '', pincode: p.loc.pincode || '', district: p.loc.district || old.location.district || '', lat: p.loc.lat, lng: p.loc.lng, pinOk: !!p.loc.pinOk });
-  // new documents land in the legal checklist as "collected, pending verification"
-  Object.entries(p.docs).forEach(([k, d]) => {
-    const key = k === 'building' ? ((LEGAL_BY_TYPE[old.type] || []).includes('layout') ? 'layout' : 'plan') : k;
-    const row = (old.legal || []).find(x => x.key === key);
-    if (row && row.status === 'not') Object.assign(row, { status: 'pending', file: d.file, date: d.at || DEMO_TODAY, note: 'Uploaded through the AI assistant' });
-  });
   // history: what changed since the last sync, marked as done through the assistant
   const fresh = p.history.length - (p.syncedHist || 0);
   if (fresh > 0) {
@@ -1295,7 +1293,8 @@ function draftsList() {
 function listedScore(o) {
   const t = PROPERTY_TYPES[o.type], core = (CORE_FIELDS[o.type] || []).filter(k => t && t.fields.some(f => f.k === k));
   const coreIn = core.filter(k => !isEmpty((o.specs || {})[k])).length;
-  const docs = o.badges && o.badges.length ? o.badges.filter(b => b.doc).length / o.badges.length : (o.legal || []).some(d => d.status !== 'not') ? 1 : 0;
+  normLegal(o);
+  const docs = o.approvals.length ? o.approvals.filter(a => a.status !== 'pending').length / o.approvals.length : o.documents.length ? 1 : 0;
   const items = [
     ['Purpose', 10, !!o.purpose], ['Property type', 10, !!o.type], ['City', 10, !!o.city], ['Locality', 10, !!o.locality],
     ['Price', 10, o.price > 0], ['Area', 10, o.area > 0], ['Key details', 15, core.length ? coreIn / core.length : 0],
@@ -1418,9 +1417,7 @@ const AP_ACTIONS = {
   addApproval: d => { // a new approval badge (e.g. Fire NOC) — becomes available on every property
     const p = getP(d.id), el = document.getElementById('f-new-approval'), name = (el && el.value || '').trim(); if (!name) return;
     if (AUI.addOpen) AUI.addOpen.approvals = false;
-    const known = allApprovals().find(a => normKey(a.l) === normKey(name) || normKey(a.long) === normKey(name));
-    const k = known ? known.k : 'x_' + normKey(name);
-    if (!known) S.catalog.approvals.push({ k, l: CAP1(name), long: CAP1(name), doc: CAP1(name) + ' document', by: me(), at: TODAY, from: p.id });
+    const k = addApprovalType(CAP1(name)); window.save(); // shared with every property (Settings → Approval badges)
     if (!p.approvals.includes(k)) setField(p, 'approvals', p.approvals.concat(k)); else render();
   },
   addAmen: d => {
@@ -1480,6 +1477,9 @@ document.addEventListener('change', e => {
 });
 
 S = load() || seed();
+// approvals created here before the list was shared move into it once
+((S.catalog && S.catalog.approvals) || []).forEach(a => { if (!approvalTypes().some(t => t.k === a.k)) addApprovalType(a.l, a.doc); });
+if (S.catalog) S.catalog.approvals = [];
 save();
 // the main ribbon’s “Reset demo data” also resets the drafts
 const mainReset = ACTIONS.doReset;

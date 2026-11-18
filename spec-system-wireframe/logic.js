@@ -32,12 +32,56 @@ const typeLabel = t => PROPERTY_TYPES[t] ? PROPERTY_TYPES[t].label : t;
 const categoryOf = t => PROPERTY_TYPES[t] ? PROPERTY_TYPES[t].category : '';
 function pricePerSqft(p) { return p.area > 0 ? Math.round(p.price / p.area) : null; }
 
+/* ---------- Legal & documents ----------
+   approvals[] = the approval badges the team ticked (RERA, building approval, or any they created). Each needs its
+     document: { k, status: 'pending' (no document yet) | 'uploaded' | 'verified', file, uploadedBy, uploadedAt, verifiedBy, verifiedAt }
+   documents[] = any other document, optional: { id, name, kind (a LEGAL_DOCS key or 'other'), file, uploadedBy, uploadedAt, verified, verifiedBy, verifiedAt }
+   Nothing here is mandatory. The only warning is an approval claimed without its document. */
+const approvalTypes = () => (typeof DB !== 'undefined' && DB.settings && (DB.settings.approvals || []).length ? DB.settings.approvals : APPROVAL_TYPES);
+const approvalOf = k => approvalTypes().find(a => a.k === k) || { k, l: k, long: k, doc: k + ' document' };
+const approvalKey = name => 'x_' + String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+/** Create an approval type (available on every property from then on); returns its key. */
+function addApprovalType(name, doc) {
+  const label = String(name).trim().replace(/^./, c => c.toUpperCase());
+  const known = approvalTypes().find(a => [a.l, a.long].some(x => x.toLowerCase() === label.toLowerCase()));
+  if (known) return known.k;
+  if (!(DB.settings.approvals || []).length) DB.settings.approvals = APPROVAL_TYPES.map(a => ({ ...a }));
+  const k = approvalKey(label);
+  DB.settings.approvals.push({ k, l: label, long: label, doc: (doc || '').trim() || label + ' document', by: currentUser(), at: DEMO_TODAY });
+  return k;
+}
+const OLD_APPROVAL_DOCS = { rera: 'rera', plan: 'building', layout: 'building' }; // old checklist rows that are really approvals
+/** Older records had a fixed checklist per type (legal[]) and badges[] — convert them once. Safe to run again. */
+function normLegal(p) {
+  if (p.approvals && p.documents && !p.legal && !p.badges) return p;
+  const legal = p.legal || [];
+  if (!p.approvals) {
+    p.approvals = [];
+    legal.filter(d => OLD_APPROVAL_DOCS[d.key] && d.status !== 'not').forEach(d => {
+      const k = OLD_APPROVAL_DOCS[d.key];
+      if (!p.approvals.some(a => a.k === k)) p.approvals.push({ k, status: d.status === 'verified' ? 'verified' : 'uploaded', file: d.file || d.key + '-scan.pdf', uploadedBy: '', uploadedAt: d.date || '',
+        verifiedBy: d.status === 'verified' ? d.verifiedBy : '', verifiedAt: d.status === 'verified' ? d.date : '' });
+    });
+    (p.badges || []).forEach(b => {
+      const k = (approvalTypes().find(t => t.long === b.l || t.l === b.l) || {}).k || addApprovalType(b.l);
+      if (!p.approvals.some(a => a.k === k)) p.approvals.push({ k, status: b.doc ? 'uploaded' : 'pending', file: b.doc ? k + '-document.pdf' : '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' });
+    });
+  }
+  p.approvals.forEach(a => ['file', 'uploadedBy', 'uploadedAt', 'verifiedBy', 'verifiedAt'].forEach(f => { if (a[f] == null) a[f] = ''; }));
+  if (!p.documents) p.documents = legal.filter(d => !(OLD_APPROVAL_DOCS[d.key] && p.approvals.some(a => a.k === OLD_APPROVAL_DOCS[d.key])) && d.status !== 'not' && LEGAL_DOCS[d.key])
+    .map(d => ({ id: 'doc-' + p.id + '-' + d.key, name: LEGAL_DOCS[d.key].n, kind: d.key, file: d.file || d.key + '-scan.pdf', uploadedBy: '', uploadedAt: d.date || '',
+      verified: d.status === 'verified', verifiedBy: d.status === 'verified' ? d.verifiedBy : '', verifiedAt: d.status === 'verified' ? d.date : '' }));
+  delete p.legal; delete p.badges;
+  return p;
+}
 function legalSummary(p) {
-  const s = { verified: 0, pending: 0, not: 0, total: p.legal.length };
-  p.legal.forEach(d => s[d.status]++);
-  const mand = MANDATORY_BY_TYPE[p.type] || [];
-  s.openMandatory = p.legal.filter(d => mand.includes(d.key) && d.status !== 'verified').map(d => LEGAL_DOCS[d.key].n);
-  return s;
+  normLegal(p);
+  const A = p.approvals, D = p.documents;
+  return {
+    approvals: A.length, uploaded: A.filter(a => a.status !== 'pending').length, docs: D.length,
+    verified: A.filter(a => a.status === 'verified').length + D.filter(d => d.verified).length, files: A.filter(a => a.file).length + D.length,
+    openApprovals: A.filter(a => a.status === 'pending').map(a => approvalOf(a.k).long), // claimed without a document — the only warning
+  };
 }
 
 function valuationSummary(p, settings) {
@@ -109,7 +153,7 @@ function prefChecks(c, p) {
  * Score one property for one customer.
  * Step 1: hard filters (any failure → excluded).  Step 2: weighted score
  *   M = wB·B + wL·L + wS·S + wA·A + wP·P   (each component 0–100)
- * Unresolved mandatory legal checks → "Conditional", never a top recommendation.
+ * An approval badge claimed without its document → "Conditional", never a top recommendation.
  */
 function matchScore(c, p, settings) {
   const w = settings.matchWeights, b = c.budget, r = c.req;
@@ -121,8 +165,8 @@ function matchScore(c, p, settings) {
     { k: 'budget', l: 'Within permitted budget', ok: p.price <= ceiling, why: `${inrShort(p.price)} > max ${inrShort(b.max)}${b.flexPct ? ` (+${b.flexPct}% = ${inrShort(ceiling)})` : ''}` },
   ];
   const ls = legalSummary(p);
-  const legalOk = ls.openMandatory.length === 0;
-  filters.push({ k: 'legal', l: 'Mandatory legal checks', ok: legalOk, soft: true, why: `Unresolved: ${ls.openMandatory.join(', ')}` });
+  const legalOk = ls.openApprovals.length === 0;
+  filters.push({ k: 'legal', l: 'Approval documents', ok: legalOk, soft: true, why: `Document pending: ${ls.openApprovals.join(', ')}` });
 
   // components
   let B;
@@ -162,8 +206,8 @@ function matchScore(c, p, settings) {
     if (r.size) why.push(sizeDev === 0 ? `Exact size match (${num(p.area)} sq.ft.)` : `Size ${num(p.area)} sq.ft. vs wanted ${num(r.size)} (${p.area > r.size ? '+' : '−'}${Math.round(sizeDev * 100)}%)`);
     if (r.localities && r.localities.length) why.push(r.localities.includes(p.locality) ? `${p.locality} is a preferred locality` : `${p.locality} — city matches, locality not in preferred list`);
     prefs.forEach(x => why.push(`${x.ok ? '✓' : '✗'} ${x.l}${x.ok ? '' : ` (has: ${x.got || '—'})`}`));
-    if (!legalOk) why.push(`⚠ Mandatory checks unresolved: ${ls.openMandatory.join(', ')} — resolve before recommending`);
-    if (r.approvalRequired && legalOk) why.push('✓ Required approvals verified by legal professional');
+    if (!legalOk) why.push(`⚠ ${ls.openApprovals.join(', ')} claimed, document pending — upload it before recommending`);
+    if (r.approvalRequired) why.push(ls.approvals && legalOk ? '✓ Approval documents uploaded' : ls.approvals ? '⚠ Approval documents pending' : '✗ No approval badges on this property');
   } else {
     hardFail.forEach(f => why.push(f.why));
   }

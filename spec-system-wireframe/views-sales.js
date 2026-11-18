@@ -19,7 +19,7 @@ function viewDashboard() {
   const prio = cs.filter(isActive).map(c => ({ c, rd: readiness(c, DB), mm: matchesForCustomer(c, DB) })).sort((a, b) => b.rd.total - a.rd.total).slice(0, 8);
   const stageItems = [...STAGES, LOST_STAGE].map(s => ({ l: s, v: cs.filter(c => c.stage === s).length, tone: s === LOST_STAGE ? 'red' : s === 'Booking / Closed' ? 'green' : '' }));
   const bandCounts = {}; cs.filter(isActive).forEach(c => { const b = readiness(c, DB).band; bandCounts[b.l] = bandCounts[b.l] || { v: 0, tone: b.tone }; bandCounts[b.l].v++; });
-  const openLegal = DB.properties.filter(p => p.status === 'Available' && !p.archived && legalSummary(p).openMandatory.length);
+  const openLegal = DB.properties.filter(p => p.status === 'Available' && !p.archived && legalSummary(p).openApprovals.length);
   return {
     title: 'Sales dashboard', crumbs: 'Overview / <b>Sales dashboard</b>',
     html: `
@@ -46,7 +46,7 @@ function viewDashboard() {
     <div class="grid g3" style="margin-top:14px">
       <div class="card"><h2>Readiness mix (active leads)</h2>${barRows(['High-priority lead', 'Qualified lead', 'Developing lead', 'Early-stage enquiry'].map(l => ({ l, v: (bandCounts[l] || {}).v || 0, tone: (bandCounts[l] || {}).tone })))}</div>
       <div class="card"><h2>Inventory</h2>${barRows(PROPERTY_STATUSES.map(s => ({ l: s, v: DB.properties.filter(p => p.status === s && !p.archived).length, tone: STATUS_TONE[s] === 'grey' ? 'grey' : STATUS_TONE[s], href: '#/properties' })))}</div>
-      <div class="card"><h2>Listings with open legal checks</h2>${openLegal.length ? `<ul class="why">${openLegal.map(p => `<li><a href="#/properties/${p.id}/legal">${p.id}</a> ${esc(p.title)} <br><small>${legalSummary(p).openMandatory.join(', ')}</small></li>`).join('')}</ul>` : '<p class="muted">All available listings have mandatory checks verified.</p>'}</div>
+      <div class="card"><h2>Approval documents pending</h2>${openLegal.length ? `<ul class="why">${openLegal.map(p => `<li><a href="#/properties/${p.id}/legal">${p.id}</a> ${esc(p.title)} <br><small>${legalSummary(p).openApprovals.join(', ')} — document pending</small></li>`).join('')}</ul>` : '<p class="muted">Every approval badge on an available listing has its document.</p>'}</div>
     </div>
     <p class="muted" style="margin-top:12px">Fictional dashboard data for design purposes.</p>`,
   };

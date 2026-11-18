@@ -3,8 +3,8 @@
    ===================================================================== */
 function legalChip(p) {
   const s = legalSummary(p);
-  const tone = s.openMandatory.length ? 'amber' : s.verified === s.total ? 'green' : 'blue';
-  return chip(`${s.verified}/${s.total} verified`, tone, s.openMandatory.length ? 'Mandatory checks unresolved: ' + s.openMandatory.join(', ') : 'All mandatory checks verified');
+  if (s.openApprovals.length) return chip(`${s.openApprovals.length} document${s.openApprovals.length > 1 ? 's' : ''} pending`, 'amber', 'Approval claimed without its document: ' + s.openApprovals.join(', '));
+  return chip(`${s.files} document${s.files === 1 ? '' : 's'}`, s.files ? 'blue' : '', s.approvals ? 'Every approval badge has its document' : 'No approval badges');
 }
 /* ---------- list ---------- */
 /** Completion score (same weights as the Add property page); the tooltip lists what is still missing. */
@@ -27,8 +27,8 @@ function propAttention(p) {
   const days = Math.round((new Date(DEMO_TODAY) - new Date(p.listingDate)) / 864e5);
   const visited = DB.customers.some(c => (c.siteVisits || []).some(s => s.prop === p.id));
   if (p.status === 'Available' && days >= 45 && !visited) out.push({ k: 'stale', group: 'No site visits in 45+ days', l: `Listed ${days} days ago, no site visits yet`, fix: `#/properties/${p.id}/matches`, act: 'Offer to matching buyers' });
-  const docs = legalSummary(p).openMandatory;
-  if (docs.length) out.push({ k: 'docs', group: 'Documents pending', l: `Not verified: ${docs.slice(0, 2).join(', ')}${docs.length > 2 ? ` +${docs.length - 2} more` : ''}`, fix: `#/properties/${p.id}/legal`, act: 'Open documents' });
+  const docs = legalSummary(p).openApprovals;
+  if (docs.length) out.push({ k: 'docs', group: 'Approval documents pending', l: `${docs.join(', ')} — document pending`, fix: `#/properties/${p.id}/legal`, act: 'Upload' });
   return out;
 }
 function viewProperties() {
@@ -151,17 +151,13 @@ FORMS.property = (f, fd) => {
   let p;
   if (id) {
     p = getProp(id);
-    if (p.type !== type) { // rebuild legal checklist for the new type, keep matching documents
-      const old = Object.fromEntries(p.legal.map(d => [d.key, d]));
-      p.legal = LEGAL_BY_TYPE[type].map(k => old[k] || { key: k, status: 'not', verifiedBy: '', date: '', file: '', note: '' });
-    }
     Object.assign(p, data);
     logHistory(p, 'Specification updated');
   } else {
     p = Object.assign(data, {
       id: 'PROP-' + (++DB.counters.prop), images: 0,
       location: { address: '', pincode: '', district: '', lat: '', lng: '', pinOk: false, roadType: '', roadWidth: '', nearby: [] },
-      legal: LEGAL_BY_TYPE[type].map(k => ({ key: k, status: 'not', verifiedBy: '', date: '', file: '', note: '' })),
+      approvals: [], documents: [],
       valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
     });
     logHistory(p, 'Property listed');
@@ -190,15 +186,16 @@ function viewProperty(id, tab) {
     <div class="ent-head">
       ${n ? `<a class="av ph-thumb" href="#/properties/${p.id}" title="${n} photo${n > 1 ? 's' : ''}">🏠<small>${n} 📷</small></a>` : `<div class="av">${p.type === 'plot' ? '▦' : p.type === 'flat' ? '🏢' : p.type === 'house' ? '🏡' : '🏬'}</div>`}
       <div class="meta"><h1>${esc(p.title)}${p.archived ? '' : ` <a class="title-pen" href="#/properties/${p.id}/edit/field-title" title="Change the title" aria-label="Change the title">✎</a>`}</h1>
-        <div class="row">${chip(p.id, 'outline mono')} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${(p.badges || []).map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ')}
-          ${ls.openMandatory.length ? `<a class="chip amber hd-warn" href="#/properties/${p.id}/legal" title="Until verified, matching shows this property only as a Conditional match">⚠ ${esc(ls.openMandatory.join(', '))} not verified</a>` : ''}</div>
+        <div class="row">${chip(p.id, 'outline mono')} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${p.approvals.map(a => a.status === 'pending'
+            ? `<a class="chip amber hd-warn" href="#/properties/${p.id}/legal" title="Upload the document — until then matching shows this property only as a Conditional match">⚠ ${esc(approvalOf(a.k).long)} · document pending</a>`
+            : chip((a.status === 'verified' ? '✓ ' : '') + esc(approvalOf(a.k).long), 'blue', a.status === 'verified' ? 'Document verified' : 'Document uploaded')).join(' ')}</div>
         <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)} · ${num(p.area)} sq.ft.${p.facing ? ` · ${esc(p.facing)} facing` : ''} · listed ${fmtDate(p.listingDate)}</div>
       </div>
       <div class="price"><div class="p">${inr(p.price)}</div><div class="muted">${inr(pricePerSqft(p))} / sq.ft. (${PROPERTY_TYPES[p.type].areaBasis})</div>
         <div class="row hd-actions">${propHeaderActions(p)}</div></div>
     </div>
     ${p.archived ? `<div class="note" style="margin-bottom:12px">🗄 <b>Archived</b> on ${fmtDate(p.archivedDate)} by ${esc(p.archivedBy)}${p.archiveReason ? ' — ' + esc(p.archiveReason) : ''}. Hidden from the property list, matching and new bookings. Existing customer links and history are kept.</div>` : ''}
-    <div class="tabs">${PROP_TABS.map(([k, l]) => `<a href="#/properties/${p.id}/${k}" class="${tab === k ? 'on' : ''}">${l}${k === 'matches' ? ` <span class="chip">${nMatch}</span>` : k === 'legal' ? ` <span class="chip ${ls.openMandatory.length ? 'amber' : 'green'}">${ls.verified}/${ls.total}</span>` : ''}</a>`).join('')}</div>
+    <div class="tabs">${PROP_TABS.map(([k, l]) => `<a href="#/properties/${p.id}/${k}" class="${tab === k ? 'on' : ''}">${l}${k === 'matches' ? ` <span class="chip">${nMatch}</span>` : k === 'legal' ? (ls.openApprovals.length ? ` <span class="chip amber">${ls.openApprovals.length} pending</span>` : ls.files ? ` <span class="chip">${ls.files}</span>` : '') : ''}</a>`).join('')}</div>
     ${body(p)}`,
   };
 }
@@ -243,7 +240,7 @@ function propOverview(p) {
   }) : [];
   // not on offer any more → only the documents still matter (they are needed for registration)
   const attn = (typeof propAttention === 'function' ? propAttention(p) : []).filter(i => i.k !== 'details' && (live || i.k === 'docs'));
-  const attnRows = attn.map(i => `<li class="warn"><span class="ic">⚠</span><span class="tx">${esc(i.l)}${i.k === 'docs' ? `<small>${live ? 'Until verified, matching shows it only as a Conditional match.' : 'Needed before registration.'}</small>` : ''}</span><a class="btn sm" href="${i.fix}">${esc(i.act)}</a></li>`);
+  const attnRows = attn.map(i => `<li class="warn"><span class="ic">⚠</span><span class="tx">${esc(i.l)}${i.k === 'docs' ? `<small>${live ? 'Until it is uploaded, matching shows it only as a Conditional match.' : 'Needed before registration.'}</small>` : ''}</span><a class="btn sm" href="${i.fix}">${esc(i.act)}</a></li>`);
   if (live && !nbExact(L)) missingRows.unshift(`<li class="warn"><span class="ic">📍</span><span class="tx">Set the exact location<small>The map shows ${esc(p.locality)} until then, and routes can’t be checked.</small></span><button class="btn sm" data-act="nbLocOpen" data-id="${p.id}">Set</button></li>`);
   const todoN = attnRows.length + missingRows.length;
   const todo = !todoN ? '' : `<div class="card ov-score"><div class="ov-score-top">${live && typeof AddProperty !== 'undefined' ? AddProperty.ring(sc.score, 56) : ''}<div><h2>To do</h2>
@@ -679,33 +676,109 @@ Object.assign(CHANGES, {
   nbAddF: el => { UI.nbAdd[el.dataset.k] = el.value; render(); },
 });
 
+/* ---------- Legal & documents: optional. Approval badges (each with its document) + any other documents ---------- */
 function propLegal(p) {
-  const s = legalSummary(p), mand = MANDATORY_BY_TYPE[p.type];
-  const rows = p.legal.map((d, i) => {
-    const meta = LEGAL_DOCS[d.key], st = LEGAL_STATUS[d.status];
-    return `<tr>
-      <td><b>${meta.n}</b> ${mand.includes(d.key) ? chip('Mandatory', 'purple') : ''}<br><small>${meta.v}</small></td>
-      <td style="min-width:230px">${bSel('p', p.id, `legal.${i}.status`, d.status, Object.entries(LEGAL_STATUS).map(([v, o]) => ({ v, l: o.l })))}<div style="margin-top:4px">${chip(st.l, st.tone)}</div></td>
-      <td>${bIn('p', p.id, `legal.${i}.verifiedBy`, d.verifiedBy, 'text', d.status !== 'verified' ? 'disabled placeholder="Only when verified"' : 'placeholder="Advocate / firm"')}</td>
-      <td style="width:150px">${bIn('p', p.id, `legal.${i}.date`, d.date, 'date')}</td>
-      <td>${d.file ? `<span class="mono">📄 ${esc(d.file)}</span>` : `<button class="btn sm" data-act="uploadDoc" data-id="${p.id}" data-i="${i}">⤒ Upload</button>`}</td>
-      <td>${bIn('p', p.id, `legal.${i}.note`, d.note, 'text', 'placeholder="Notes"')}</td>
-    </tr>`;
-  }).join('');
-  return `
-  <div class="grid g3" style="margin-bottom:14px">
-    <div class="card kpi"><div class="lbl">Verified by authorised legal professional</div><div class="val" style="color:var(--green)">${s.verified}</div><div class="sub">of ${s.total} checks</div></div>
-    <div class="card kpi"><div class="lbl">Collected, pending verification</div><div class="val" style="color:var(--amber)">${s.pending}</div><div class="sub">uploaded ≠ verified</div></div>
-    <div class="card kpi"><div class="lbl">Not collected</div><div class="val">${s.not}</div><div class="sub">${s.openMandatory.length ? `${s.openMandatory.length} mandatory check(s) open` : 'all mandatory checks verified'}</div></div>
-  </div>
-  <div class="card"><div class="card-head"><h2>D. Legal &amp; documentation checklist — ${typeLabel(p.type)}</h2></div>
-    <div class="note" style="margin-bottom:12px">These checks are <b>not interchangeable</b> — e.g. a DTCP or other planning approval does not by itself prove clear ownership. Status is one of three values only; the system never displays “100% legally clear”.</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Document / check</th><th>Status</th><th>Verified by</th><th>Date</th><th>File</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>
-  </div>
-  <div class="card"><h2>Customer-facing wording</h2>
-    <p style="margin:0">“${s.verified} of ${s.total} document checks verified by an authorised legal professional${s.verified ? ` (latest ${fmtDate(p.legal.filter(d => d.status === 'verified').map(d => d.date).sort().pop())})` : ''}.${s.pending ? ` ${s.pending} collected and pending verification.` : ''}${s.not ? ` ${s.not} not yet collected.` : ''}”</p>
+  const s = legalSummary(p), mgr = canEditSettings(), on = p.approvals.map(a => a.k);
+  const who = (by, at) => [by ? 'by ' + esc(by) : '', at ? fmtDate(at) : ''].filter(Boolean).join(', ');
+  const stChip = a => (a.status === 'pending' ? chip('⚠ Document pending', 'amber') : a.status === 'verified' ? chip('✓ Verified', 'green') : chip('Document uploaded', 'blue'));
+  const apRow = a => {
+    const t = approvalOf(a.k);
+    return `<div class="lg-row ${a.status === 'pending' ? 'warn' : ''}">
+      <span class="lg-ic">🏅</span>
+      <div class="lg-main"><div><b>${esc(t.long)}</b> ${stChip(a)}</div>
+        <small>${a.file ? `📄 ${esc(a.file)}${who(a.uploadedBy, a.uploadedAt) ? ' · uploaded ' + who(a.uploadedBy, a.uploadedAt) : ''}${a.status === 'verified' ? ` · verified ${who(a.verifiedBy, a.verifiedAt)}` : ''}` : `Needs: ${esc(t.doc)}`}</small></div>
+      <div class="lg-acts">${a.file
+        ? `<button class="btn sm" data-act="lgView" data-f="${esc(a.file)}">View</button><button class="btn sm ghost" data-act="apUpload" data-id="${p.id}" data-k="${a.k}">Replace</button>${mgr ? `<button class="btn sm ghost" data-act="apVerify" data-id="${p.id}" data-k="${a.k}">${a.status === 'verified' ? 'Undo verified' : '✓ Mark verified'}</button>` : ''}`
+        : `<button class="btn sm primary" data-act="apUpload" data-id="${p.id}" data-k="${a.k}">⤒ Upload document</button>`}
+        <button class="btn sm ghost danger" data-act="apRemove" data-id="${p.id}" data-k="${a.k}" title="Remove this badge" aria-label="Remove ${esc(t.long)}">✕</button></div>
+    </div>`;
+  };
+  const addable = approvalTypes().filter(t => !on.includes(t.k));
+  const newForm = UI.apNew === p.id ? `<div class="lg-new">
+      <div class="fgrid c2">${fld('Approval name', '<input id="ap-new-name" placeholder="e.g. Fire NOC, DTCP approval, Occupancy certificate">', { req: 1 })}
+        ${fld('Its document <span class="opt-tag">Optional</span>', '<input id="ap-new-doc" placeholder="e.g. Fire NOC certificate">')}</div>
+      <p class="muted" style="margin:8px 0">A new approval is available on <b>every property</b> from then on (Settings → Approval badges).</p>
+      <div class="row"><button class="btn sm primary" data-act="apNewSave" data-id="${p.id}">Create and add to ${p.id}</button><button class="btn sm" data-act="apNewOpen" data-id="${p.id}">Cancel</button></div></div>` : '';
+  const approvalsCard = `<div class="card"><div class="card-head"><h2>Approvals</h2><span class="opt-tag">Optional</span><span class="sp"></span><button class="btn sm" data-act="apNewOpen" data-id="${p.id}">＋ New approval</button></div>
+    <p class="muted lg-intro">Tick the approvals this property has. A badge shows on the listing once its document is uploaded — until then it says <b>document pending</b>, and matching shows the property only as a Conditional match.</p>
+    ${p.approvals.length ? p.approvals.map(apRow).join('') : '<p class="muted" style="margin:0 0 4px">No approval badges.</p>'}
+    ${addable.length ? `<div class="lg-add"><span class="muted">Add a badge:</span>${addable.map(t => `<button class="ov-add" data-act="apAdd" data-id="${p.id}" data-k="${t.k}">＋ ${esc(t.long)}</button>`).join('')}</div>` : ''}
+    ${newForm}</div>`;
+  // other documents — any document, optional; the usual ones for the type are one click away
+  const docRow = d => `<div class="lg-row">
+      <span class="lg-ic">📄</span>
+      <div class="lg-main"><div><b>${esc(d.name)}</b> ${d.verified ? chip('✓ Verified', 'green') : ''}</div>
+        <small>${esc(d.file)}${who(d.uploadedBy, d.uploadedAt) ? ' · uploaded ' + who(d.uploadedBy, d.uploadedAt) : ''}${d.verified && who(d.verifiedBy, d.verifiedAt) ? ` · verified ${who(d.verifiedBy, d.verifiedAt)}` : ''}</small></div>
+      <div class="lg-acts"><button class="btn sm" data-act="lgView" data-f="${esc(d.file)}">View</button>${mgr ? `<button class="btn sm ghost" data-act="docVerify" data-id="${p.id}" data-d="${d.id}">${d.verified ? 'Undo verified' : '✓ Mark verified'}</button>` : ''}
+        <button class="btn sm ghost danger" data-act="docRemove" data-id="${p.id}" data-d="${d.id}" title="Remove" aria-label="Remove ${esc(d.name)}">✕</button></div>
+    </div>`;
+  const usual = (LEGAL_BY_TYPE[p.type] || []).filter(k => !OLD_APPROVAL_DOCS[k] && !p.documents.some(d => d.kind === k));
+  const docsCard = `<div class="card"><div class="card-head"><h2>Other documents</h2><span class="opt-tag">Optional</span><span class="sp"></span><button class="btn sm" data-act="docNewOpen" data-id="${p.id}">⤒ Upload document</button></div>
+    ${p.documents.length ? p.documents.map(docRow).join('') : '<p class="muted" style="margin:0 0 4px">No documents yet — upload any that help the sale.</p>'}
+    ${usual.length ? `<div class="lg-add"><span class="muted">Usual for a ${esc(typeLabel(p.type).toLowerCase())}:</span>${usual.map(k => `<button class="ov-add" data-act="docAdd" data-id="${p.id}" data-k="${k}" title="${esc(LEGAL_DOCS[k].v)}">⤒ ${esc(LEGAL_DOCS[k].n)}</button>`).join('')}</div>` : ''}
+    ${UI.docNew === p.id ? `<div class="lg-new"><div class="row" style="gap:8px"><input id="doc-new-name" placeholder="Document name — e.g. Property tax receipt 2025" style="flex:1"><button class="btn sm primary" data-act="docNewSave" data-id="${p.id}">⤒ Upload</button><button class="btn sm" data-act="docNewOpen" data-id="${p.id}">Cancel</button></div></div>` : ''}
   </div>`;
+  const shown = p.approvals.filter(a => a.status !== 'pending').map(a => approvalOf(a.k).long + (a.status === 'verified' ? ' ✓' : ''));
+  return `${approvalsCard}${docsCard}
+  <div class="note"><b>On the listing:</b> ${shown.length ? esc(shown.join(' · ')) : 'no approval badges'}${s.openApprovals.length ? ` <span class="muted">(${esc(s.openApprovals.join(', '))} — shown once the document is uploaded)</span>` : ''}.
+    Documents are shared with a customer only on request. The listing never says “100% legally clear”.</div>`;
 }
+Object.assign(ACTIONS, {
+  lgView: d => toast(`Opening ${d.f} (mock)`),
+  apAdd: d => {
+    const p = getProp(d.id); normLegal(p); if (p.approvals.some(a => a.k === d.k)) return;
+    p.approvals.push({ k: d.k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' });
+    logHistory(p, `Approval badge added: ${approvalOf(d.k).long} — document pending`); save(); toast(`${approvalOf(d.k).long} added — upload its document to show it on the listing`); render();
+  },
+  apUpload: d => {
+    const p = getProp(d.id), a = p.approvals.find(x => x.k === d.k), again = !!a.file;
+    Object.assign(a, { file: `${d.k.replace(/^x_/, '')}-document${again ? '-v2' : ''}.pdf`, status: 'uploaded', uploadedBy: currentUser(), uploadedAt: DEMO_TODAY, verifiedBy: '', verifiedAt: '' });
+    logHistory(p, `${approvalOf(d.k).long}: document ${again ? 'replaced' : 'uploaded'}`); save(); toast(`${approvalOf(d.k).long} — document ${again ? 'replaced' : 'uploaded'} (mock)`); render();
+  },
+  apVerify: d => {
+    if (!canEditSettings()) return;
+    const p = getProp(d.id), a = p.approvals.find(x => x.k === d.k), v = a.status !== 'verified';
+    Object.assign(a, v ? { status: 'verified', verifiedBy: currentUser(), verifiedAt: DEMO_TODAY } : { status: 'uploaded', verifiedBy: '', verifiedAt: '' });
+    logHistory(p, `${approvalOf(d.k).long}: ${v ? 'document verified' : 'verification undone'}`); save(); render();
+  },
+  apRemove: d => {
+    const p = getProp(d.id); p.approvals = p.approvals.filter(x => x.k !== d.k);
+    logHistory(p, `Approval badge removed: ${approvalOf(d.k).long}`); save(); toast(`${approvalOf(d.k).long} removed`); render();
+  },
+  apNewOpen: d => { UI.apNew = UI.apNew === d.id ? null : d.id; render(); if (UI.apNew) setTimeout(() => { const el = document.getElementById('ap-new-name'); if (el) el.focus(); }, 0); },
+  apNewSave: d => {
+    const p = getProp(d.id), name = (document.getElementById('ap-new-name').value || '').trim(), doc = (document.getElementById('ap-new-doc').value || '').trim();
+    if (!name) { toast('Type the approval’s name'); return; }
+    const before = approvalTypes().length, k = addApprovalType(name, doc), created = approvalTypes().length > before;
+    if (!p.approvals.some(a => a.k === k)) p.approvals.push({ k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' });
+    logHistory(p, `Approval badge ${created ? 'created and ' : ''}added: ${approvalOf(k).long} — document pending`);
+    UI.apNew = null; save(); toast(created ? `${approvalOf(k).long} created — available on every property` : `${approvalOf(k).long} added`); render();
+  },
+  docAdd: d => {
+    const p = getProp(d.id); normLegal(p);
+    p.documents.push({ id: 'doc' + Date.now(), name: LEGAL_DOCS[d.k].n, kind: d.k, file: `${d.k}-scan.pdf`, uploadedBy: currentUser(), uploadedAt: DEMO_TODAY, verified: false, verifiedBy: '', verifiedAt: '' });
+    logHistory(p, `Document uploaded: ${LEGAL_DOCS[d.k].n}`); save(); toast(`${LEGAL_DOCS[d.k].n} uploaded (mock)`); render();
+  },
+  docNewOpen: d => { UI.docNew = UI.docNew === d.id ? null : d.id; render(); if (UI.docNew) setTimeout(() => { const el = document.getElementById('doc-new-name'); if (el) el.focus(); }, 0); },
+  docNewSave: d => {
+    const p = getProp(d.id), name = (document.getElementById('doc-new-name').value || '').trim();
+    if (!name) { toast('Name the document'); return; }
+    const file = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
+    p.documents.push({ id: 'doc' + Date.now(), name, kind: 'other', file, uploadedBy: currentUser(), uploadedAt: DEMO_TODAY, verified: false, verifiedBy: '', verifiedAt: '' });
+    UI.docNew = null; logHistory(p, `Document uploaded: ${name}`); save(); toast(`${name} uploaded (mock)`); render();
+  },
+  docVerify: d => {
+    if (!canEditSettings()) return;
+    const p = getProp(d.id), x = p.documents.find(y => y.id === d.d);
+    Object.assign(x, x.verified ? { verified: false, verifiedBy: '', verifiedAt: '' } : { verified: true, verifiedBy: currentUser(), verifiedAt: DEMO_TODAY });
+    logHistory(p, `${x.name}: ${x.verified ? 'verified' : 'verification undone'}`); save(); render();
+  },
+  docRemove: d => { const p = getProp(d.id), x = p.documents.find(y => y.id === d.d); p.documents = p.documents.filter(y => y !== x); logHistory(p, `Document removed: ${x.name}`); save(); toast(`${x.name} removed`); render(); },
+});
+document.addEventListener('keydown', e => { // Enter in the small "new" forms
+  if (e.key !== 'Enter' || !e.target || !['ap-new-name', 'ap-new-doc', 'doc-new-name'].includes(e.target.id)) return;
+  e.preventDefault(); const b = document.querySelector(e.target.id === 'doc-new-name' ? '[data-act="docNewSave"]' : '[data-act="apNewSave"]'); if (b) b.click();
+});
 function propPricing(p) {
   const v = valuationSummary(p, DB.settings), V = p.valuation;
   const compRows = V.comparables.map((c, i) => `<tr>
@@ -786,11 +859,6 @@ Object.assign(ACTIONS, {
   clearFilters: d => { UI.filters[d.scope] = d.scope === 'custs' ? { sort: 'readiness' } : {}; render(); },
   addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); save(); render(); },
   rmComp: d => { const p = getProp(d.id); p.valuation.comparables.splice(+d.i, 1); save(); render(); },
-  uploadDoc: d => {
-    const p = getProp(d.id), doc = p.legal[+d.i];
-    doc.file = `${doc.key}-scan.pdf`; if (doc.status === 'not') doc.status = 'pending'; doc.date = doc.date || DEMO_TODAY;
-    logHistory(p, `Document uploaded: ${LEGAL_DOCS[doc.key].n} (pending verification)`); save(); toast('Uploaded (mock) — status set to “Collected, pending verification”'); render();
-  },
   addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; logHistory(p, `Photo uploaded (${p.images} in all)`); save(); toast('Photo uploaded (mock)'); render(); },
   rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); logHistory(p, 'Photo removed'); save(); render(); },
 });
@@ -851,12 +919,12 @@ Object.assign(MODALS, {
         ${linkList(links)}
         <p style="margin:12px 0 0">${p.archived ? 'It is already archived, so it is hidden from the list and from matching.' : '<b>Archive it instead</b> to hide it from the list and from matching while keeping the customer history.'}</p>`,
     };
-    const docs = p.legal.filter(d => d.file).length;
+    const docs = legalSummary(p).files;
     return {
       title: `Delete ${p.id} permanently?`, submit: 'Delete permanently',
       html: `<p style="margin-top:0"><b>${esc(p.title)}</b><br><small class="muted">${typeLabel(p.type)} · ${esc(p.locality)}, ${esc(p.city)} · ${inrShort(p.price)} · ${p.status}</small></p>
         <div class="note green" style="margin-bottom:10px">✓ No customer record refers to this property, so it can be deleted.</div>
-        <div class="note red">This <b>cannot be undone</b>. The specification, location, ${p.legal.length} legal checks (${docs} with documents), ${p.valuation.comparables.length} comparables, ${p.images || 0} images and the change history will be removed.</div>
+        <div class="note red">This <b>cannot be undone</b>. The specification, location, ${p.approvals.length} approval badge${p.approvals.length === 1 ? '' : 's'} and ${docs} document${docs === 1 ? '' : 's'}, ${p.valuation.comparables.length} comparables, ${p.images || 0} images and the change history will be removed.</div>
         <label class="check" style="margin-top:12px"><input type="checkbox" name="confirm" required> I understand that ${p.id} will be permanently deleted</label>`,
     };
   },

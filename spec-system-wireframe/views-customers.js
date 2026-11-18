@@ -378,7 +378,7 @@ function custMatches(c, rd, cls, mm) {
     </div>
     <div>
       <div class="card"><h2>How matching works</h2>
-        <ol class="why" style="padding-left:18px"><li><b>Hard filters</b>: available · type matches · location acceptable · price within budget (+ flexibility).</li><li><b>Rank</b> the rest by weighted score.</li><li>Unresolved mandatory legal checks → <b>Conditional</b>, never the top recommendation.</li></ol>
+        <ol class="why" style="padding-left:18px"><li><b>Hard filters</b>: available · type matches · location acceptable · price within budget (+ flexibility).</li><li><b>Rank</b> the rest by weighted score.</li><li>An approval badge claimed without its document → <b>Conditional</b>, never the top recommendation.</li></ol>
         <div class="formula" style="margin-top:10px">M = ${w.B}B + ${w.L}L + ${w.S}S + ${w.A}A + ${w.P}P</div>
         <p class="muted" style="margin:8px 0 0">B budget · L location · S size · A amenities/infrastructure · P preferences. Each 0–100. Weights are starting assumptions — tune in <a href="#/settings">Settings</a>.</p>
       </div>

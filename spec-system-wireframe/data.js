@@ -186,7 +186,13 @@ const LEGAL_BY_TYPE = {
   agri: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'tax'],
   industrial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'plan', 'fire', 'tax'],
 };
-/* Mandatory checks — a property with any of these unresolved can never be a top recommendation */
+/* Approval badges a property can carry. RERA and building approval come by default; the team can create more
+   (Settings → Approval badges, or "New approval" on a property). A ticked approval needs its document. */
+const APPROVAL_TYPES = [
+  { k: 'rera', l: 'RERA', long: 'RERA approval', doc: 'RERA registration certificate' },
+  { k: 'building', l: 'Building approval', long: 'Building approval', doc: 'Building / layout approval (DTCP, CMDA or local body)' },
+];
+/* (Older model — kept only to convert old records.) Mandatory checks per type */
 const MANDATORY_BY_TYPE = {
   plot: ['saledeed', 'ec', 'layout'],
   flat: ['saledeed', 'ec', 'plan', 'rera'],
@@ -251,6 +257,7 @@ const DEFAULT_SETTINGS = {
   stuckDays: 14,
   costs: { stampDutyPct: 7, registrationPct: 4, otherPct: 1 },
   placeCategories: PLACE_CATEGORIES.map(c => ({ ...c })),
+  approvals: APPROVAL_TYPES.map(a => ({ ...a })),
   executives: [
     { id: 'EX01', name: 'Executive 01 — Priya S' },
     { id: 'EX02', name: 'Executive 02 — Karthik R' },
@@ -301,7 +308,8 @@ function seedProperties() {
       specs: { length: 50, width: 30, roadWidth: 30, roadAccess: 'Layout road', corner: 'Corner', topography: 'Level', surveyNo: '87/1A', subdivision: 'Plot 3', layoutApproval: 'Approval number awaited from seller', landUse: 'Residential', water: 'Borewell', electricity: 'Line nearby — connection to apply', drainage: 'Open drain', roadInfra: 'Gravel road' },
       location: { lat: 9.8810, lng: 78.0700, roadType: 'Gravel road', roadWidth: 30, highway: { name: 'Madurai Ring Road', distanceKm: 1.1, route: 'Measured on map — route not yet driven' },
         nearby: [nb('School', 'Sunrise Public School (sample)', 2.2), nb('Hospital', 'Primary Health Centre (sample)', 3.5), nb('Bus stop', 'Thiruparankundram bus stand', 1.9), nb('Other', 'Proposed metro corridor', 4, 'Proposed', false)] },
-      legal: seedLegal('plot', ['parent', 'saledeed', 'ec', 'patta'], ['fmb', 'landuse', 'layout']),
+      legal: seedLegal('plot', ['parent', 'saledeed', 'ec', 'patta'], ['fmb', 'landuse']),
+      approvals: [{ k: 'building', status: 'pending' }], // ticked as DTCP-approved, the approval document has not come yet
       valuation: { reviewDate: '2026-11-08', valuerReport: '', notes: 'Approval verification pending — do not quote as approved.', comparables: [
         comp('Thiruparankundram, Madurai', 'Residential plot', 1500, 1950, 'Asking', '2026-10-30', 'Property portal listing', 'Mud road access'),
         comp('Thiruparankundram, Madurai', 'Residential plot', 1200, 2100, 'Transaction', '2026-09-02', 'Registered sale (sample)', 'Approved layout'),
