@@ -187,7 +187,7 @@ function openModal(m) { UI.modal = m; render(); }
 function closeModal() { UI.modal = null; render(); }
 function renderModal() {
   const m = UI.modal, body = MODALS[m.kind] ? MODALS[m.kind](m) : { title: 'Modal', html: '' };
-  return `<div class="overlay" data-act="overlay"><div class="modal" role="dialog" aria-modal="true">
+  return `<div class="overlay" data-act="overlay"><div class="modal ${body.cls || ''}" role="dialog" aria-modal="true">
     <form data-form="modal">
       <div class="modal-head"><h2>${body.title}</h2><span class="sp"></span><button type="button" class="btn ghost sm" data-act="closeModal">✕</button></div>
       <div class="modal-body">${body.html}</div>

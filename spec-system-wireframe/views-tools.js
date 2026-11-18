@@ -265,6 +265,7 @@ function viewSettings() {
       <div class="card"><div class="card-head"><h2>Sales executives</h2><span class="sp"></span><button class="btn sm" data-act="addExec" ${dis}>＋ Add</button></div>
         <div class="stack">${S.executives.map((e, i) => `<div class="row"><span class="mono" style="width:44px">${e.id}</span><div style="flex:1">${bIn('s', '', `executives.${i}.name`, e.name, 'text', dis)}</div></div>`).join('')}</div></div>
     </div>
+    ${placeCategoriesCard(dis)}
     <div class="card"><h2>Demo data</h2>
       <p class="muted" style="margin-top:0">Everything you change is stored in this browser only. Export to share a snapshot, or reset to the original mock data.</p>
       <div class="row"><button class="btn" data-act="exportData">⤓ Export JSON</button>
@@ -272,7 +273,41 @@ function viewSettings() {
         <button class="btn danger" data-act="resetData">Reset demo data</button></div></div>`,
   };
 }
+/** Nearby place categories — used by "Explore the neighbourhood" on every property, by Find nearby places (Google type) and,
+    later, by customer requirements ("a school within 2 km"). */
+function placeCategoriesCard(dis) {
+  const cats = placeCats(), own = (DB.settings.placeCategories || []).length > 0;
+  const used = name => DB.properties.reduce((n, p) => n + ((p.location || {}).nearby || []).filter(x => x.cat === name).length, 0);
+  const row = (c, i) => `<tr><td style="width:64px">${own ? bIn('s', '', `placeCategories.${i}.icon`, c.icon, 'text', `${dis} style="width:48px;text-align:center"`) : c.icon}</td>
+      <td>${own ? bIn('s', '', `placeCategories.${i}.name`, c.name, 'text', dis) : esc(c.name)}</td>
+      <td>${own ? bSel('s', '', `placeCategories.${i}.group`, c.group, PLACE_GROUPS.map(g => ({ v: g.k, l: g.l })), dis) : esc((PLACE_GROUPS.find(g => g.k === c.group) || {}).l)}</td>
+      <td>${own ? bIn('s', '', `placeCategories.${i}.google`, c.google, 'text', `${dis} placeholder="— added by hand only"`) : `<span class="mono">${esc(c.google || '—')}</span>`}</td>
+      <td class="ctr">${own ? bChk('s', '', `placeCategories.${i}.check`, catOf(c.name).check, '', dis) : (catOf(c.name).check ? '✓' : '—')}</td>
+      <td class="ctr">${own ? bChk('s', '', `placeCategories.${i}.auto`, catOf(c.name).auto, '', dis) : (catOf(c.name).auto ? '✓' : '—')}</td>
+      <td class="num"><small class="muted">${used(c.name)}</small></td></tr>`;
+  return `<div class="card"><div class="card-head"><h2>Nearby place categories</h2><span class="sp"></span><button class="btn sm" data-act="addPlaceCat" ${dis}>＋ Add category</button></div>
+    <p class="muted" style="margin-top:-4px">The kinds of places shown in <b>Explore the neighbourhood</b>. The Google type is what <b>Find more places</b> searches for; leave it empty for places only added by hand (e.g. Highway). <b>Route check</b> — the route must be checked before the place is advertised (everyday places close by); the others are advertised with Google’s approximate distance. <b>Shown by default</b> — the nearest one appears on every new property.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Icon</th><th>Category</th><th>Shown under</th><th>Google Places type</th><th class="ctr" title="The route must be checked before it is advertised">Route check</th><th class="ctr" title="The nearest one is shown on every new property">Shown by default</th><th class="num">In use</th></tr></thead>
+      <tbody>${cats.map(row).join('')}</tbody></table></div>
+    ${own ? '' : '<p class="muted" style="margin:8px 0 0">These are the defaults — click <b>Add category</b> to start editing them.</p>'}</div>`;
+}
+{ // renaming a category renames it on every property's places too, so nothing is left in an unknown category
+  const after = BIND_HOOKS.after;
+  BIND_HOOKS.after = (kind, t, path, v, old) => {
+    after(kind, t, path, v, old);
+    if (kind === 's' && /^placeCategories\.\d+\.name$/.test(path) && old && v !== old) {
+      DB.properties.forEach(p => ((p.location || {}).nearby || []).forEach(x => { if (x.cat === old) x.cat = v; }));
+    }
+  };
+}
 Object.assign(ACTIONS, {
+  addPlaceCat: () => {
+    if (!canEditSettings()) return;
+    if (!(DB.settings.placeCategories || []).length) DB.settings.placeCategories = PLACE_CATEGORIES.map(c => ({ ...c }));
+    DB.settings.placeCategories.forEach(c => { const d = catOf(c.name); c.check = d.check; c.auto = d.auto; });
+    DB.settings.placeCategories.push({ name: 'New category', icon: '📍', group: 'other', google: '', check: true, auto: false });
+    save(); render();
+  },
   addExec: () => { if (!canEditSettings()) return; const n = DB.settings.executives.length + 1, id = 'EX' + String(n).padStart(2, '0'); DB.settings.executives.push({ id, name: `Executive ${String(n).padStart(2, '0')} — New` }); save(); render(); },
   exportData: () => {
     const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });

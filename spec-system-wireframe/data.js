@@ -127,8 +127,41 @@ const CITIES = {
 const AMENITIES = ['Gated community', 'Security', 'Park / open space', 'Power backup', 'Lift', 'Gym', 'Swimming pool', 'Clubhouse', 'Rainwater harvesting', 'CCTV', 'Visitor parking', 'Loading bay'];
 
 /* ---------- Location ---------- */
-const NEARBY_CATEGORIES = ['School', 'Hospital', 'Bus stop', 'Railway station', 'Airport', 'Market', 'Other'];
+/* Map centre and pincode prefix of each city (stands in for Google geocoding in the wireframe). */
+const CITY_GEO = {
+  Madurai: [9.925, 78.12, '625'], Chennai: [13.04, 80.23, '600'], Coimbatore: [11.017, 76.955, '641'], Tiruchirappalli: [10.805, 78.686, '620'],
+  Salem: [11.665, 78.146, '636'], Tirunelveli: [8.713, 77.757, '627'], Erode: [11.341, 77.717, '638'], Vellore: [12.916, 79.132, '632'],
+  Thanjavur: [10.787, 79.137, '613'], Dindigul: [10.362, 77.98, '624'],
+};
+/* Groups shown in "Explore the neighbourhood", and the place categories inside them.
+   The categories are master data (Settings → Nearby place categories); `google` is the Google Places type a category is looked up by. */
+const PLACE_GROUPS = [
+  { k: 'commute', l: 'Commute', i: '🚌' }, { k: 'schools', l: 'Schools & colleges', i: '🎓' }, { k: 'health', l: 'Hospitals', i: '🏥' },
+  { k: 'shop', l: 'Shopping', i: '🛒' }, { k: 'other', l: 'Other & upcoming', i: '📍' },
+];
+/* check = the route must be checked before it is advertised (everyday places close by — "5 minutes to school");
+   far, well-known places (airport, railway station) are advertised with Google's approximate distance.
+   auto = shown on every new property by default (the nearest one, from Google). */
+const PLACE_CATEGORIES = [
+  { name: 'Bus stop', icon: '🚌', group: 'commute', google: 'bus_station', check: true, auto: true },
+  { name: 'Railway station', icon: '🚆', group: 'commute', google: 'train_station', check: false, auto: true },
+  { name: 'Metro station', icon: '🚇', group: 'commute', google: 'subway_station', check: true, auto: false },
+  { name: 'Airport', icon: '✈', group: 'commute', google: 'airport', check: false, auto: false },
+  { name: 'Highway', icon: '🛣', group: 'commute', google: '', check: false, auto: false },
+  { name: 'School', icon: '🎓', group: 'schools', google: 'school', check: true, auto: true },
+  { name: 'College', icon: '🏫', group: 'schools', google: 'university', check: false, auto: false },
+  { name: 'Hospital', icon: '🏥', group: 'health', google: 'hospital', check: true, auto: true },
+  { name: 'Market', icon: '🛒', group: 'shop', google: 'supermarket', check: true, auto: true },
+  { name: 'Shopping mall', icon: '🛍', group: 'shop', google: 'shopping_mall', check: false, auto: false },
+  { name: 'Bank', icon: '🏦', group: 'other', google: 'bank', check: false, auto: false },
+  { name: 'Place of worship', icon: '🛕', group: 'other', google: 'place_of_worship', check: false, auto: false },
+  { name: 'Park', icon: '🌳', group: 'other', google: 'park', check: false, auto: false },
+  { name: 'Other', icon: '📍', group: 'other', google: '', check: true, auto: false },
+];
+const NEARBY_CATEGORIES = PLACE_CATEGORIES.map(c => c.name);
 const INFRA_STATUSES = ['Existing', 'Under construction', 'Planned', 'Proposed'];
+const ROAD_TYPES = ['Tar road', 'Concrete road', 'Gravel road', 'Mud road', 'Main road', 'Highway service road', 'Industrial road'];
+const ROUTE_CHECKS = ['Driven the route', 'Walked the route', 'Travelled by bus / public transport'];
 
 /* ---------- Legal & documentation ---------- */
 const LEGAL_DOCS = {
@@ -217,6 +250,7 @@ const DEFAULT_SETTINGS = {
   highValueThreshold: 15000000, // ₹1.5 Cr — "High-value prospect" suggestion only, never HNI
   stuckDays: 14,
   costs: { stampDutyPct: 7, registrationPct: 4, otherPct: 1 },
+  placeCategories: PLACE_CATEGORIES.map(c => ({ ...c })),
   executives: [
     { id: 'EX01', name: 'Executive 01 — Priya S' },
     { id: 'EX02', name: 'Executive 02 — Karthik R' },
@@ -240,7 +274,7 @@ function seedLegal(type, verified = [], pending = []) {
 }
 let _nb = 0;
 function nb(cat, name, km, status = 'Existing', routeChecked = true) {
-  return { id: 'nb' + (++_nb), cat, name, distanceKm: km, routeChecked, status };
+  return { id: 'nb' + (++_nb), cat, name, distanceKm: km, durationMin: Math.round(km * 2.6 + 3), routeChecked, status, source: 'user' };
 }
 function comp(location, type, area, ppsf, kind, date, source, diff) {
   return { location, type, area, pricePerSqft: ppsf, kind, date, source, differences: diff };

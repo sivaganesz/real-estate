@@ -160,47 +160,52 @@ FORMS.property = (f, fd) => {
   } else {
     p = Object.assign(data, {
       id: 'PROP-' + (++DB.counters.prop), images: 0,
-      location: { lat: '', lng: '', roadType: '', roadWidth: '', highway: { name: '', distanceKm: '', route: '' }, nearby: [] },
+      location: { address: '', pincode: '', district: '', lat: '', lng: '', pinOk: false, roadType: '', roadWidth: '', nearby: [] },
       legal: LEGAL_BY_TYPE[type].map(k => ({ key: k, status: 'not', verifiedBy: '', date: '', file: '', note: '' })),
       valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
     });
     logHistory(p, 'Property listed');
     DB.properties.unshift(p);
+    addDefaultPlaces(p);
   }
   save(); toast(id ? 'Property saved' : `Property ${p.id} created — now add location, legal and valuation details`);
   go(`#/properties/${p.id}/${id ? 'specs' : 'location'}`);
 };
 /* ---------- detail ---------- */
-const PROP_TABS = [['overview', 'Overview'], ['location', 'Location'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['media', 'Media'], ['history', 'History']];
+/* five tabs: Location and Media now live on the Overview (old #/…/location and #/…/media links land there) */
+const PROP_TABS = [['overview', 'Overview'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['history', 'History']];
 function viewProperty(id, tab) {
   const p = getProp(id);
   if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to list</a></div>' };
   const ls = legalSummary(p);
-  if (tab === 'specs') tab = 'overview'; // old links
-  const body = { overview: propOverview, location: propLocation, legal: propLegal, pricing: propPricing, matches: propMatches, media: propMedia, history: propHistory }[tab] || propOverview;
+  if (tab === 'location') { UI.nbFocus = true; tab = 'overview'; } // old link → the neighbourhood card
+  if (['specs', 'media'].includes(tab)) tab = 'overview'; // old links
+  const body = { overview: propOverview, legal: propLegal, pricing: propPricing, matches: propMatches, history: propHistory }[tab] || propOverview;
   const nMatch = matchesForProperty(p, DB).length;
+  const n = p.images || 0;
   return {
     title: p.title, crumbs: `Specification data / <a href="#/properties">Properties</a> / <b>${p.id}</b>`,
+    after: () => { if (UI.nbFocus) { UI.nbFocus = false; const el = document.getElementById('nb-card'); if (el) setTimeout(() => el.scrollIntoView({ block: 'start' }), 0); } },
     html: `
     <div class="ent-head">
-      <div class="av">${p.type === 'plot' ? '▦' : p.type === 'flat' ? '🏢' : p.type === 'house' ? '🏡' : '🏬'}</div>
-      <div class="meta"><h1>${esc(p.title)}</h1>
-        <div class="row">${chip(p.id, 'outline mono')} ${chip(categoryOf(p.type))} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${(p.badges || []).map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ')}</div>
-        <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)}, ${esc(p.state)} · ${num(p.area)} sq.ft.${p.facing ? ` · ${esc(p.facing)} facing` : ''} · listed ${fmtDate(p.listingDate)}</div>
+      ${n ? `<a class="av ph-thumb" href="#/properties/${p.id}" title="${n} photo${n > 1 ? 's' : ''}">🏠<small>${n} 📷</small></a>` : `<div class="av">${p.type === 'plot' ? '▦' : p.type === 'flat' ? '🏢' : p.type === 'house' ? '🏡' : '🏬'}</div>`}
+      <div class="meta"><h1>${esc(p.title)}${p.archived ? '' : ` <a class="title-pen" href="#/properties/${p.id}/edit/field-title" title="Change the title" aria-label="Change the title">✎</a>`}</h1>
+        <div class="row">${chip(p.id, 'outline mono')} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${(p.badges || []).map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ')}
+          ${ls.openMandatory.length ? `<a class="chip amber hd-warn" href="#/properties/${p.id}/legal" title="Until verified, matching shows this property only as a Conditional match">⚠ ${esc(ls.openMandatory.join(', '))} not verified</a>` : ''}</div>
+        <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)} · ${num(p.area)} sq.ft.${p.facing ? ` · ${esc(p.facing)} facing` : ''} · listed ${fmtDate(p.listingDate)}</div>
       </div>
       <div class="price"><div class="p">${inr(p.price)}</div><div class="muted">${inr(pricePerSqft(p))} / sq.ft. (${PROPERTY_TYPES[p.type].areaBasis})</div>
-        <div class="row" style="justify-content:flex-end;margin-top:8px">${propHeaderActions(p)}</div></div>
+        <div class="row hd-actions">${propHeaderActions(p)}</div></div>
     </div>
     ${p.archived ? `<div class="note" style="margin-bottom:12px">🗄 <b>Archived</b> on ${fmtDate(p.archivedDate)} by ${esc(p.archivedBy)}${p.archiveReason ? ' — ' + esc(p.archiveReason) : ''}. Hidden from the property list, matching and new bookings. Existing customer links and history are kept.</div>` : ''}
-    ${ls.openMandatory.length ? `<div class="note amber" style="margin-bottom:12px">⚠ Mandatory checks unresolved: <b>${ls.openMandatory.join(', ')}</b>. The matching engine will show this property only as a <i>Conditional match</i> — it can’t be a top recommendation until they’re verified.</div>` : ''}
     <div class="tabs">${PROP_TABS.map(([k, l]) => `<a href="#/properties/${p.id}/${k}" class="${tab === k ? 'on' : ''}">${l}${k === 'matches' ? ` <span class="chip">${nMatch}</span>` : k === 'legal' ? ` <span class="chip ${ls.openMandatory.length ? 'amber' : 'green'}">${ls.verified}/${ls.total}</span>` : ''}</a>`).join('')}</div>
     ${body(p)}`,
   };
 }
-/** Overview (first tab): photos, key facts, filled-in details only (+ add chips for the rest), and beside them
-    what's missing, what needs attention and the best-matching buyers. */
+/** Overview (first tab). Main: photos, the property's details (with amenities), and the neighbourhood.
+    Side: one To do list and the best-matching buyers — or, once it is sold / reserved / on hold, the deal. */
 function propOverview(p) {
-  const t = PROPERTY_TYPES[p.type], edit = `#/properties/${p.id}/edit`;
+  const t = PROPERTY_TYPES[p.type], edit = `#/properties/${p.id}/edit`, L = normLoc(p);
   const val = (f, v) => (f.t === 'number' && /₹/.test(f.l) ? inr(v) : f.t === 'number' ? num(v) : esc(v));
   const filled = t.fields.filter(f => !(p.specs[f.k] === '' || p.specs[f.k] == null));
   const empty = t.fields.filter(f => p.specs[f.k] === '' || p.specs[f.k] == null);
@@ -209,97 +214,471 @@ function propOverview(p) {
   const n = p.images || 0;
   const photos = n
     ? `<div class="ov-photos">${Array.from({ length: Math.min(n, 4) }, (_, i) => `<div class="ov-ph ${i === 0 ? 'cover' : ''}">${i === 0 ? '🏠' : '🖼'}<small>${i === 0 ? 'Cover' : 'Photo ' + (i + 1)}</small>${i === 3 && n > 4 ? `<b class="ov-more">+${n - 4}</b>` : ''}</div>`).join('')}
-        <a class="ov-ph add" href="${edit}/media">＋<small>Add photos</small></a></div>`
-    : `<a class="ov-nophoto" href="${edit}/media"><span>📷</span><div><b>No photos yet</b><small>Listings with photos get far more enquiries — add some (+10%)</small></div><span class="btn sm">＋ Add photos</span></a>`;
-  // key facts (only what is known)
-  const facts = [['Type', `${t.label} <small class="muted">· ${t.category}</small>`], ['Purpose', esc(p.purpose)], ['Asking price', `${inr(p.price)}${p.priceOnRequest ? ' <small class="muted">(hidden on listing)</small>' : ''}`],
-    [t.areaLabel.replace(' (sq.ft.)', ''), `${num(p.area)} sq.ft. <small class="muted">· ${inr(pricePerSqft(p))}/sq.ft.</small>`], ['Location', `${esc(p.locality)}, ${esc(p.city)}`],
-    ...(p.facing ? [['Facing', esc(p.facing)]] : []), ['Status', chip(p.status, STATUS_TONE[p.status])], ['Listed', fmtDate(p.listingDate)]];
-  // details: filled only; the rest as one-click chips that open the assistant on that field
+        <button class="ov-ph add" data-act="addImage" data-id="${p.id}">＋<small>Upload photo</small></button></div>
+      <div class="ov-photo-bar"><span class="muted">${n} photo${n > 1 ? 's' : ''}${p.videos ? ` · ${p.videos} video${p.videos > 1 ? 's' : ''}` : ''}</span><button class="linkbtn danger" data-act="rmImage" data-id="${p.id}">Remove last photo</button></div>`
+    : `<button class="ov-nophoto" data-act="addImage" data-id="${p.id}"><span>📷</span><div><b>No photos yet</b><small>Listings with photos get far more enquiries — add some (+10%)</small></div><span class="btn sm">＋ Upload photo</span></button>`;
+  // details (filled only) + amenities, in one card; the empty fields become one-click chips that open the assistant on that field
   const addChips = empty.slice(0, 6).map(f => `<a class="ov-add" href="${edit}/field-${f.k}">＋ ${esc(f.l.replace(/ \(.*\)$/, ''))}</a>`).join('') + (empty.length > 6 ? `<a class="ov-add more" href="${edit}/details">+${empty.length - 6} more</a>` : '');
   const details = filled.map(f => [esc(f.l), val(f, p.specs[f.k])]).concat((p.extra || []).map(x => [esc(x.label), esc(x.value)]));
-  // side: completion
+  // main property information (spec §A — common to every property)
+  const main = [['Property ID', `<span class="mono">${esc(p.id)}</span>`], ['Type', `${esc(t.label)} <small class="muted">· ${esc(t.category)}</small>`], ['Purpose', esc(p.purpose)],
+    ['Asking price', `${inr(p.price)}${p.priceOnRequest ? ' <small class="muted">(hidden on listing)</small>' : ''}`],
+    [esc(t.areaLabel.replace(' (sq.ft.)', '')), `${num(p.area)} sq.ft. <small class="muted">· ${inr(pricePerSqft(p))}/sq.ft.</small>`],
+    ['Location', `${L.address ? esc(L.address) + ', ' : ''}${esc(p.locality)}, ${esc(p.city)}${p.state ? `, ${esc(p.state)}` : ''}${L.pincode ? ' – ' + esc(L.pincode) : ''}`], ['Facing', p.facing ? esc(p.facing) : '<span class="muted">—</span>'],
+    ['Status', chip(p.status, STATUS_TONE[p.status])], ['Listed on', fmtDate(p.listingDate)]];
+  const detailsCard = `<div class="card"><div class="card-head"><h2>Property details</h2><span class="sp"></span><a class="btn sm" href="${edit}">✨ Edit with AI</a></div>
+      <div class="ov-sec first"><span class="ov-lbl">Main property information</span></div>
+      ${dl(main)}
+      <div class="ov-sec"><span class="ov-lbl">${esc(t.label)} specifications</span><small class="muted">${filled.length} of ${t.fields.length} filled in</small></div>
+      ${details.length ? dl(details) : '<p class="muted" style="margin:0">No details yet.</p>'}
+      <div class="ov-amen"><span class="ov-lbl">Amenities</span>${p.amenities.length ? p.amenities.map(a => `<span class="ov-amen-chip">${esc(a)}</span>`).join('') : `<span class="muted">None added yet (+5%)</span> <a class="ov-add" href="${edit}/details">＋ Add amenities</a>`}</div>
+      ${empty.length && p.status === 'Available' ? `<div class="ov-adds"><span class="ov-lbl">Add</span>${addChips}</div>` : ''}</div>`;
+  // side: one "To do" list (what needs attention + what is missing), or — once the property is no longer on offer — the deal
+  const live = p.status === 'Available';
   const sc = typeof AddProperty !== 'undefined' ? AddProperty.listedScore(p) : { score: 100, missing: [] };
-  const fixFor = m => (/photo/i.test(m) ? [`${edit}/media`, '📎 Add'] : /legal/i.test(m) ? [`#/properties/${p.id}/legal`, 'Open'] : /key details/i.test(m) ? [`${edit}/details`, 'Add'] : [edit, 'Add']);
-  const missingRows = sc.missing.map(m => { const [href, l] = fixFor(m); const [, name, pts] = m.match(/^(.*) \((\+\d+%)\)$/) || [, m, '']; return `<li><span class="ic">○</span><span class="tx">${esc(name)}</span><span class="pts">${pts}</span><a class="btn sm" href="${href}">${l}</a></li>`; }).join('');
-  // side: needs attention
-  const attn = typeof propAttention === 'function' ? propAttention(p).filter(i => i.k !== 'details') : [];
-  // side: best-matching buyers
-  const top = matchesForProperty(p, DB).slice(0, 3);
+  const fixFor = m => (/photo/i.test(m) ? [null, '📎 Add'] : /legal/i.test(m) ? [`#/properties/${p.id}/legal`, 'Open'] : /key details/i.test(m) ? [`${edit}/details`, 'Add'] : [edit, 'Add']);
+  const missingRows = live ? sc.missing.map(m => {
+    const [href, l] = fixFor(m), [, name, pts] = m.match(/^(.*) \((\+\d+%)\)$/) || [, m, ''];
+    return `<li><span class="ic">○</span><span class="tx">${esc(name)}</span><span class="pts">${pts}</span>${href ? `<a class="btn sm" href="${href}">${l}</a>` : `<button class="btn sm" data-act="addImage" data-id="${p.id}">${l}</button>`}</li>`;
+  }) : [];
+  // not on offer any more → only the documents still matter (they are needed for registration)
+  const attn = (typeof propAttention === 'function' ? propAttention(p) : []).filter(i => i.k !== 'details' && (live || i.k === 'docs'));
+  const attnRows = attn.map(i => `<li class="warn"><span class="ic">⚠</span><span class="tx">${esc(i.l)}${i.k === 'docs' ? `<small>${live ? 'Until verified, matching shows it only as a Conditional match.' : 'Needed before registration.'}</small>` : ''}</span><a class="btn sm" href="${i.fix}">${esc(i.act)}</a></li>`);
+  if (live && !nbExact(L)) missingRows.unshift(`<li class="warn"><span class="ic">📍</span><span class="tx">Set the exact location<small>The map shows ${esc(p.locality)} until then, and routes can’t be checked.</small></span><button class="btn sm" data-act="nbLocOpen" data-id="${p.id}">Set</button></li>`);
+  const todoN = attnRows.length + missingRows.length;
+  const todo = !todoN ? '' : `<div class="card ov-score"><div class="ov-score-top">${live && typeof AddProperty !== 'undefined' ? AddProperty.ring(sc.score, 56) : ''}<div><h2>To do</h2>
+      <small class="muted">${todoN} thing${todoN > 1 ? 's' : ''}${live ? (sc.score < 100 ? ` · listing ${sc.score}% complete` : ' · listing complete') : ` · ${esc(p.status.toLowerCase())}`}</small></div></div>
+      <ul class="sfacts">${attnRows.join('')}${missingRows.join('')}</ul></div>`;
+  const top = live ? matchesForProperty(p, DB).slice(0, 3) : [];
+  const buyers = `<div class="card"><div class="card-head"><h2>Best-matching buyers</h2><span class="sp"></span>${top.length ? `<a href="#/properties/${p.id}/matches">See all</a>` : ''}</div>
+      ${top.length ? top.map(({ cust: c, m }) => `<a class="ov-buyer" href="#/customers/${c.id}/matches"><span class="ov-av">${esc(initials(c.name))}</span><span class="ov-bn"><b>${esc(c.name)}</b><small>${inrShort(c.budget.min)} – ${inrShort(c.budget.max)} · ${esc(c.stage)}</small></span>${chip(m.M + '% fit', m.tone, m.label)}</a>`).join('')
+        : '<p class="muted" style="margin:0">No active buyer fits yet.</p>'}</div>`;
   return `<div class="ov">
     <div class="ov-main">
       ${photos}
-      <div class="card"><div class="card-head"><h2>Key facts</h2><span class="sp"></span><a class="btn sm" href="${edit}">✨ Edit with AI</a></div>${dl(facts)}</div>
-      <div class="card"><div class="card-head"><h2>${esc(t.label)} details</h2><span class="sp"></span><small class="muted">${filled.length} of ${t.fields.length} filled in</small></div>
-        ${details.length ? dl(details) : '<p class="muted" style="margin:0">No details yet.</p>'}
-        ${empty.length ? `<div class="ov-adds"><span class="muted">Add:</span>${addChips}</div>` : ''}</div>
-      <div class="card"><div class="card-head"><h2>Amenities</h2><span class="sp"></span>${p.amenities.length ? '' : `<a class="btn sm" href="${edit}/details">＋ Add</a>`}</div>
-        <div class="row">${p.amenities.length ? p.amenities.map(a => chip(esc(a), 'outline')).join(' ') : '<span class="muted">None added yet (+5%)</span>'}</div></div>
+      ${detailsCard}
+      ${neighbourhoodCard(p)}
     </div>
     <div class="ov-side">
-      <div class="card ov-score"><div class="ov-score-top">${typeof AddProperty !== 'undefined' ? AddProperty.ring(sc.score, 60) : ''}<div><h2>${sc.score === 100 ? 'Listing complete' : 'Listing completion'}</h2><small class="muted">${sc.score === 100 ? 'Everything is in — nice.' : 'Add these to reach 100%'}</small></div></div>
-        ${missingRows ? `<ul class="sfacts">${missingRows}</ul>` : ''}</div>
-      ${attn.length ? `<div class="card ov-attn"><h2>✨ Needs attention</h2>${attn.map(i => `<div class="ov-attn-row"><span>⚠ ${esc(i.l)}</span><a href="${i.fix}">${esc(i.act)} →</a></div>`).join('')}</div>` : ''}
-      <div class="card"><div class="card-head"><h2>Approvals</h2><span class="sp"></span><a class="btn sm" href="#/properties/${p.id}/legal">Documents</a></div>
-        <div class="row">${(p.badges || []).length ? p.badges.map(b => chip(esc(b.l) + (b.doc ? '' : ' · document pending'), b.doc ? 'blue' : 'amber')).join(' ') : '<span class="muted">No approval badges</span>'}</div></div>
-      <div class="card"><div class="card-head"><h2>Best-matching buyers</h2><span class="sp"></span>${top.length ? `<a href="#/properties/${p.id}/matches">See all</a>` : ''}</div>
-        ${top.length ? top.map(({ cust: c, m }) => `<a class="ov-buyer" href="#/customers/${c.id}/matches"><span class="ov-av">${esc(c.name.split(' ').map(x => x[0]).join('').slice(0, 2))}</span><span class="ov-bn"><b>${esc(c.name)}</b><small>${inrShort(c.budget.min)} – ${inrShort(c.budget.max)} · ${esc(c.stage)}</small></span>${chip(m.M + '% fit', m.tone, m.label)}</a>`).join('')
-          : `<p class="muted" style="margin:0">${p.status !== 'Available' ? `Not offered — it is ${esc(p.status)}.` : 'No active buyer fits yet.'}</p>`}</div>
+      ${live ? '' : dealCard(p)}
+      ${todo}
+      ${live ? buyers : ''}
     </div>
   </div>`;
 }
-function propLocation(p) {
-  const L = p.location, cityInfo = CITIES[p.city] || {};
-  const nearbyRows = L.nearby.map((n, i) => `
-    <tr>
-      <td>${bSel('p', p.id, `location.nearby.${i}.cat`, n.cat, NEARBY_CATEGORIES)}</td>
-      <td>${bIn('p', p.id, `location.nearby.${i}.name`, n.name)}</td>
-      <td style="width:110px">${bIn('p', p.id, `location.nearby.${i}.distanceKm`, n.distanceKm, 'number')}</td>
-      <td style="text-align:center">${bChk('p', p.id, `location.nearby.${i}.routeChecked`, n.routeChecked, '')}</td>
-      <td>${bSel('p', p.id, `location.nearby.${i}.status`, n.status, INFRA_STATUSES)}</td>
-      <td>${n.status !== 'Existing' ? chip('Not an existing benefit', 'amber') : !n.routeChecked ? chip('Route not checked', 'amber') : chip('OK to advertise', 'green')}</td>
-      <td><button class="btn ghost sm danger" data-act="rmNearby" data-id="${p.id}" data-i="${i}" title="Remove">✕</button></td>
-    </tr>`).join('');
-  const adv = L.nearby.filter(n => n.status === 'Existing' && n.routeChecked);
-  const future = L.nearby.filter(n => n.status !== 'Existing');
-  const hidden = L.nearby.filter(n => n.status === 'Existing' && !n.routeChecked);
-  const mapLink = L.lat && L.lng ? `<a href="https://www.google.com/maps?q=${L.lat},${L.lng}" target="_blank" rel="noopener">Open in maps ↗</a>` : '';
-  return `
-  <div class="grid g-side">
-    <div>
-      <div class="card"><div class="card-head"><h2>C. Location specification</h2><span class="sp"></span><small>Edits save automatically</small></div>
-        <div class="fgrid">
-          ${fld('State', `<input value="${esc(p.state)}" disabled>`)}
-          ${fld('District', `<input value="${esc(cityInfo.district || p.city)}" disabled>`)}
-          ${fld('Locality', bIn('p', p.id, 'locality', p.locality))}
-          ${fld('Latitude', bIn('p', p.id, 'location.lat', L.lat, 'number'))}
-          ${fld('Longitude', bIn('p', p.id, 'location.lng', L.lng, 'number'))}
-          ${fld('Road type', bIn('p', p.id, 'location.roadType', L.roadType))}
-          ${fld('Road width (ft)', bIn('p', p.id, 'location.roadWidth', L.roadWidth, 'number'))}
-          ${fld('Highway access', bIn('p', p.id, 'location.highway.name', L.highway.name))}
-          ${fld('Highway distance (km, by road)', bIn('p', p.id, 'location.highway.distanceKm', L.highway.distanceKm, 'number'))}
-          ${fld('Highway route — how it was measured', bIn('p', p.id, 'location.highway.route', L.highway.route), { cls: 'span3' })}
-        </div></div>
-      <div class="card"><div class="card-head"><h2>Schools, hospitals, transport &amp; infrastructure</h2><span class="sp"></span><button class="btn sm" data-act="addNearby" data-id="${p.id}">＋ Add place</button></div>
-        <p class="muted" style="margin-top:-6px">Record the <b>measured</b> road distance. Tick “route checked” only after the actual route and travel conditions were verified.</p>
-        <div class="tbl-wrap"><table><thead><tr><th>Category</th><th>Name</th><th>Distance (km)</th><th>Route checked</th><th>Status</th><th>Advertising</th><th></th></tr></thead>
-        <tbody>${nearbyRows || '<tr><td colspan="7" class="empty">No places recorded yet.</td></tr>'}</tbody></table></div>
-      </div>
-    </div>
-    <div>
-      <div class="card"><div class="card-head"><h2>Map</h2><span class="sp"></span>${mapLink}</div>
-        <div class="ph map"><span class="pin">📍</span><span style="margin-top:120px">${L.lat && L.lng ? `${L.lat}, ${L.lng}` : 'Add GPS coordinates'}</span></div></div>
-      <div class="card"><h2>Customer-facing preview</h2>
-        <p class="muted" style="margin-top:-4px">What the listing may claim, generated from the rules above.</p>
-        <b style="font-size:13px">Nearby (measured by road)</b>
-        <ul class="why">${adv.map(n => `<li>${esc(n.name)} — ${n.distanceKm} km</li>`).join('') || '<li class="muted">Nothing verified yet</li>'}
-          ${L.highway.name ? `<li>${esc(L.highway.name)} — ${L.highway.distanceKm} km</li>` : ''}</ul>
-        ${future.length ? `<b style="font-size:13px">Future infrastructure — not yet existing</b><ul class="why">${future.map(n => `<li>${esc(n.name)} <span class="chip amber">${n.status}</span></li>`).join('')}</ul>` : ''}
-        ${hidden.length ? `<div class="note amber" style="margin-top:8px">${hidden.length} place(s) hidden until the route is checked — never say “5 minutes away” without verifying.</div>` : ''}
-      </div>
-    </div>
+/** For a property that is no longer on offer: who it went to (or is going to), the offer against the asking price, and when. */
+function dealCard(p) {
+  const c = DB.customers.find(x => x.negotiation && x.negotiation.prop === p.id), n = c && c.negotiation;
+  const when = (p.history || []).find(h => /^Status changed/.test(h.text));
+  const visits = DB.customers.reduce((s, x) => s + (x.siteVisits || []).filter(v => v.prop === p.id).length, 0);
+  const head = { Sold: '🏁 Sold', Booked: '📝 Booked', Reserved: '🔒 Reserved', 'Under negotiation': '🤝 Under negotiation', 'On hold': '⏸ On hold' }[p.status] || esc(p.status);
+  const gap = n && n.offered ? Math.round((n.offered - p.price) / p.price * 1000) / 10 : null;
+  return `<div class="card ov-deal"><div class="card-head"><h2>${head}</h2><span class="sp"></span>${when ? `<small class="muted">since ${fmtDate(when.date)}</small>` : ''}</div>
+    ${c ? `<a class="ov-buyer" href="#/customers/${c.id}"><span class="ov-av">${esc(initials(c.name))}</span><span class="ov-bn"><b>${esc(c.name)}</b><small>${esc(c.stage)} · ${esc(execName(DB, c.owner))}</small></span></a>
+      <div class="ov-deal-nums"><div><span>Asking</span><b>${inrShort(p.price)}</b></div><div><span>Offer</span><b>${n.offered ? inrShort(n.offered) : '—'}</b>${gap != null ? `<small class="${gap < 0 ? 't-amber' : 't-green'}">${gap > 0 ? '+' : ''}${gap}%</small>` : ''}</div><div><span>Seller’s counter</span><b>${n.counter ? inrShort(n.counter) : '—'}</b></div></div>
+      ${n.notes ? `<p class="ov-deal-note">“${esc(n.notes)}”</p>` : ''}`
+      : `<p class="muted" style="margin:0 0 8px">${p.status === 'Sold' ? 'No buyer is linked in the system — it may have been sold outside it.' : p.status === 'On hold' ? 'The owner has put it on hold.' : 'No customer is linked to this deal yet.'}</p>`}
+    <small class="muted">${visits} site visit${visits === 1 ? '' : 's'} in all · not offered in matching while ${esc(p.status.toLowerCase())}</small>
   </div>`;
 }
+
+/* ---------- Explore the neighbourhood ----------
+   One card for the whole location: the map pin and address (Set location), the places around it (from Google, or added by
+   hand), whether each one may be advertised, and what the customer will see. Places live on the property as
+   location.nearby[] = { id, cat, name, distanceKm, durationMin, status, routeChecked, checkedBy, checkedAt, checkHow,
+                         source: 'google' | 'user', placeId, addedBy, addedAt }
+   Google is mocked here: Set location = Places Autocomplete + geocoding, Find nearby places = Places Nearby Search + route distances. */
+const placeCats = () => (DB.settings && (DB.settings.placeCategories || []).length ? DB.settings.placeCategories : PLACE_CATEGORIES);
+const catOf = name => {
+  const c = placeCats().find(x => x.name === name), d = PLACE_CATEGORIES.find(x => x.name === name) || {};
+  return c ? { check: d.check !== false, auto: !!d.auto, ...c } : { name, icon: '📍', group: 'other', check: true, auto: false };
+};
+/** Does this kind of place need its route checked before it is advertised? (Settings → Nearby place categories) */
+const needsCheck = cat => catOf(cat).check !== false;
+const nbIcon = cat => catOf(cat).icon || '📍';
+const nbHash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 9973; return h; };
+const kmTxt = (x, approx) => (x.distanceKm !== '' && x.distanceKm != null ? `${approx ? '~' : ''}${x.distanceKm} km` : '— km') + (x.durationMin ? ` · ${approx ? '~' : ''}${x.durationMin} min` : '');
+/** Is the map pin the property's exact location? Without it the map shows the locality (approximate). */
+const nbExact = L => L.lat !== '' && L.lat != null && L.pinOk !== false;
+const nbOK = x => x.status === 'Existing' && (!!x.routeChecked || !needsCheck(x.cat));
+/** Can this place be used in advertising? (spec: only existing places, with the route checked) */
+const nbTrust = x => (x.status !== 'Existing' ? { l: `${x.status} — not advertised`, tone: 'grey' } : x.routeChecked ? { l: '✓ Route checked', tone: 'green' }
+  : !needsCheck(x.cat) ? { l: '✓ OK to advertise', tone: 'green' } : { l: x.source === 'google' ? 'From Google — check route' : 'Route not checked', tone: 'amber' });
+/** Older records: the highway becomes a place like any other, and every place gets a source. Safe to run again. */
+function normLoc(p) {
+  const L = p.location = p.location || {};
+  L.nearby = L.nearby || [];
+  if (L.highway) {
+    if (L.highway.name && !L.nearby.some(x => x.cat === 'Highway')) {
+      const r = L.highway.route || '';
+      L.nearby.push({ id: 'nb-hw-' + p.id, cat: 'Highway', name: L.highway.name, distanceKm: L.highway.distanceKm, durationMin: '', status: 'Existing',
+        routeChecked: !!r && !/not yet driven|on map/i.test(r), checkHow: r, source: 'user' });
+    }
+    delete L.highway;
+  }
+  L.nearby.forEach(x => { if (!x.source) x.source = x.ai ? 'google' : 'user'; delete x.ai; if (x.durationMin == null) x.durationMin = ''; });
+  ['address', 'pincode', 'district', 'lat', 'lng', 'roadType', 'roadWidth'].forEach(k => { if (L[k] == null) L[k] = ''; });
+  if (L.pinOk == null) L.pinOk = L.lat !== '' && L.lng !== '';
+  if (p.specs) {
+    const k = roadKeys(p), blank = v => v === '' || v == null;
+    if (!L.roadSynced) { // older records kept the road only in the location — move it into the details once
+      if (k.typeKey && blank(p.specs[k.typeKey]) && L.roadType && k.typeOpts.includes(L.roadType)) p.specs[k.typeKey] = L.roadType;
+      if (k.widthKey && blank(p.specs[k.widthKey]) && !blank(L.roadWidth)) p.specs[k.widthKey] = Number(L.roadWidth);
+      L.roadSynced = true;
+    }
+    const r = roadOf(p); L.roadType = r.type; L.roadWidth = r.width; // details are the source — keep the mirror current
+  }
+  return L;
+}
+/** The road outside the property. It is kept in ONE place: the property's details (specs) when its type has the field —
+    that is what Edit details, the AI and matching use — and in location.* only for types without it (flat, house).
+    location.roadType / roadWidth always mirror the current value, so every screen shows the same road. */
+function roadKeys(p) {
+  const has = k => ((PROPERTY_TYPES[p.type] || {}).fields || []).some(f => f.k === k);
+  const typeKey = has('roadInfra') ? 'roadInfra' : p.type === 'agri' && has('roadAccess') ? 'roadAccess' : null;
+  const field = typeKey && PROPERTY_TYPES[p.type].fields.find(f => f.k === typeKey);
+  return { typeKey, widthKey: has('roadWidth') ? 'roadWidth' : null, typeOpts: field && field.o ? field.o.map(o => (typeof o === 'object' ? o.v : o)) : ROAD_TYPES };
+}
+function roadOf(p) {
+  const k = roadKeys(p), L = p.location || {}, sp = p.specs || {};
+  const v = x => (x == null ? '' : x);
+  return { ...k, type: v(k.typeKey ? sp[k.typeKey] : L.roadType), width: v(k.widthKey ? sp[k.widthKey] : L.roadWidth) };
+}
+function setRoad(p, type, width) {
+  const k = roadKeys(p), w = width === '' || width == null ? '' : Number(width);
+  if (k.typeKey) p.specs[k.typeKey] = type;
+  if (k.widthKey) p.specs[k.widthKey] = w;
+  Object.assign(p.location, { roadType: type, roadWidth: w });
+}
+/** Mock geocoding: a locality's map position and pincode (Google Geocoding in the real build). */
+function geoOf(city, locality) {
+  const g = CITY_GEO[city] || [11.0, 78.5, '600'], h = nbHash(locality || city);
+  return { lat: +(g[0] + ((h % 61) - 30) / 1000).toFixed(5), lng: +(g[1] + (((h >> 3) % 61) - 30) / 1000).toFixed(5), pin: g[2] + String(h % 90 + 10).padStart(3, '0') };
+}
+const nearestLocality = (city, lat, lng) => ((CITIES[city] || {}).localities || []).map(l => ({ l, g: geoOf(city, l) }))
+  .sort((a, b) => Math.hypot(a.g.lat - lat, a.g.lng - lng) - Math.hypot(b.g.lat - lat, b.g.lng - lng))[0];
+const shortLoc = l => String(l || '').replace(/\s*\(.*\)$/, '');
+
+function neighbourhoodCard(p) {
+  const L = normLoc(p), cust = UI.nbView === 'customer', exact = nbExact(L);
+  const named = L.nearby.filter(x => x.name);
+  const byKm = (a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99);
+  const shown = cust ? named.filter(nbOK) : named;
+  const groups = PLACE_GROUPS.map(g => ({ ...g, items: shown.filter(x => (catOf(x.cat).group || 'other') === g.k).sort(byKm) })).filter(g => g.items.length);
+  if (cust) { const fut = named.filter(x => x.status !== 'Existing').sort(byKm); if (fut.length) groups.push({ k: 'future', l: 'Coming up — not built yet', i: '🚧', items: fut }); }
+  const sel = UI.nbSel, selG = groups.find(g => g.items.some(x => x.id === sel)); // the selected place's group stays open
+  const open = selG ? selG.k : UI.nbOpen && groups.some(g => g.k === UI.nbOpen) ? UI.nbOpen : (groups[0] || {}).k;
+  // schematic map: the property in the middle, places on rings by distance (1 / 3 / 10 km, log scale), angle spread by name
+  const all = groups.flatMap(g => g.items);
+  const r = km => Math.min(40, 6 + Math.log10(1 + (+km || 0) * 3) * 18); // radius, in % of the map's width (cqw)
+  const ang = s => nbHash(s) % 360 * Math.PI / 180;
+  const marks = all.map(x => { const a = ang(x.name), d = r(x.distanceKm); return `<button class="nb-mark ${sel === x.id ? 'on' : ''} ${x.status !== 'Existing' ? 'future' : ''}" style="left:clamp(18px, calc(var(--cx) + ${(d * Math.cos(a)).toFixed(1)}cqw), calc(100% - 18px));top:clamp(18px, calc(50% + ${(d * Math.sin(a)).toFixed(1)}cqw), calc(100% - 18px))" data-act="nbSel" data-id="${p.id}" data-x="${x.id}" title="${esc(x.name)} · ${x.distanceKm} km">${nbIcon(x.cat)}</button>`; }).join('');
+  const rings = [1, 3, 10].map(km => `<div class="nb-ring" style="width:${(r(km) * 2).toFixed(1)}cqw"><span>${km} km</span></div>`).join('');
+  const s = all.find(x => x.id === sel);
+  const item = x => {
+    const tr = nbTrust(x), on = sel === x.id;
+    return `<div class="nb-item ${on ? 'on' : ''}"><button class="nb-row" data-act="nbSel" data-id="${p.id}" data-x="${x.id}"><span class="nb-ic">${nbIcon(x.cat)}</span><span class="nb-tx"><span class="nb-n">${esc(x.name)}</span>
+        <span class="nb-d">${kmTxt(x, !exact || (cust && !x.routeChecked))}${cust ? (x.status !== 'Existing' ? ` · ${esc(x.status)}` : '') : ` · <em class="t-${tr.tone}">${tr.l}</em>`}</span></span></button>
+      ${on && !cust ? nbDetail(p, x) : ''}</div>`;
+  };
+  const list = groups.map(g => `<div class="nb-grp ${g.k === open ? 'open' : ''}">
+      <button class="nb-gh" data-act="nbGroup" data-k="${g.k}"><span>${g.i}</span><b>${g.l}</b><small>${g.items.length}</small><i>${g.k === open ? '▴' : '▾'}</i></button>
+      ${g.k === open ? `<div class="nb-items">${g.items.map(item).join('')}</div>` : ''}
+    </div>`).join('');
+  const rd = roadOf(p), road = [rd.type, rd.width ? rd.width + ' ft road' : ''].filter(Boolean).join(', ');
+  const pinned = exact;
+  const maps = pinned ? `https://www.google.com/maps?q=${L.lat},${L.lng}` : `https://www.google.com/maps/search/${encodeURIComponent(p.locality + ', ' + p.city)}`;
+  const pending = !cust && pinned && L.suggestPending ? nbCandidates(p).length : 0;
+  const okN = named.filter(nbOK).length, waitN = named.filter(x => x.status === 'Existing' && !x.routeChecked && needsCheck(x.cat)).length;
+  const empty = cust ? `<div class="nb-empty">Nothing can be advertised yet.<br><small>A place shows here once it exists and someone has checked the route.</small></div>`
+    : `<div class="nb-empty">No nearby places yet.<br><button class="btn sm" data-act="nbFindOpen" data-id="${p.id}">↻ Find places nearby</button></div>`;
+  return `<div class="card nb-card" id="nb-card"><div class="card-head"><h2>Explore the neighbourhood</h2><span class="sp"></span>
+      <div class="nb-seg"><button class="${cust ? '' : 'on'}" data-act="nbView" data-v="team">Team view</button><button class="${cust ? 'on' : ''}" data-act="nbView" data-v="customer" title="Exactly what the listing, brochure and WhatsApp message may say">👁 Customer view</button></div></div>
+    <div class="nb-bar">
+      <span class="nb-addr">📍 <b>${esc(L.address || `${p.locality}, ${p.city}`)}</b>${L.address ? ` <span class="muted">· ${esc(p.locality)}, ${esc(p.city)}</span>` : ''}${L.pincode ? ` <span class="muted">– ${esc(L.pincode)}</span>` : ''}${road ? ` <span class="muted">· ${esc(road)}</span>` : ''}</span>
+      ${pinned ? '' : ' <span class="nb-approx">approximate location</span>'}
+      ${cust ? '' : pinned ? `<button class="linkbtn" data-act="nbLocOpen" data-id="${p.id}">✎ Change location</button>` : `<button class="btn sm nb-setpin" data-act="nbLocOpen" data-id="${p.id}">📍 Set exact location</button>`}
+      <span class="sp"></span>
+      ${cust ? '' : `<button class="btn sm" data-act="nbFindOpen" data-id="${p.id}" title="Look up more schools, hospitals, transport and shops around the property">↻ Find more places</button><button class="btn sm" data-act="nbAddOpen" data-id="${p.id}">＋ Add place</button>`}
+    </div>
+    <p class="nb-sub">${cust ? `What the listing, brochure and WhatsApp message will show.${waitN ? ` <span class="muted">${waitN} place${waitN > 1 ? 's are' : ' is'} hidden until the route is checked.</span>` : ''}`
+      : `${named.length} place${named.length === 1 ? '' : 's'} · <b class="t-green">${okN} OK to advertise</b>${waitN ? ` · <span class="t-amber">${waitN} waiting for a route check</span>` : ''}`}</p>
+    ${pending ? `<div class="nb-found"><span>✨ <b>${pending} places found</b> around the exact location — schools, hospitals, transport and shops.</span><span class="sp"></span><button class="btn sm primary" data-act="nbFindOpen" data-id="${p.id}">Review and keep</button><button class="btn sm ghost" data-act="nbFoundHide" data-id="${p.id}">Not now</button></div>` : ''}
+    <div class="nb-wrap">
+      <div class="nb-map ${pinned ? '' : 'approx'}">${rings}${pinned ? `<div class="nb-pin" title="${esc(p.title)}">📍</div>` : `<div class="nb-area" title="The exact location isn’t set yet"><span>${esc(p.locality)}</span></div>`}${marks}
+        ${s ? `<div class="nb-tip">${nbIcon(s.cat)} <b>${esc(s.name)}</b> · ${kmTxt(s, !pinned)}</div>` : ''}
+        ${pinned ? '<span class="nb-note">Map preview — distances to scale (approx.)</span>' : `<span class="nb-note warn">Approximate — exact location not set</span>`}
+        <a class="btn primary sm nb-view" href="${maps}" target="_blank" rel="noopener">View on Google Maps ↗</a></div>
+      <div class="nb-list">${list || empty}</div>
+    </div></div>`;
+}
+/** The selected place, opened in the list: where it came from, the route check, and its actions (or its edit fields). */
+function nbDetail(p, x) {
+  const i = p.location.nearby.indexOf(x), path = k => `location.nearby.${i}.${k}`;
+  if (UI.nbEdit === x.id) return `<div class="nb-det nb-edit">
+      ${fld('Name', bIn('p', p.id, path('name'), x.name))}
+      <div class="nb-2">${fld('Category', bSel('p', p.id, path('cat'), x.cat, placeCats().map(c => c.name)))}${fld('Status', bSel('p', p.id, path('status'), x.status, INFRA_STATUSES))}</div>
+      <div class="nb-2">${fld('Distance (km)', bIn('p', p.id, path('distanceKm'), x.distanceKm, 'number'))}${fld('Time (min)', bIn('p', p.id, path('durationMin'), x.durationMin, 'number'))}</div>
+      <button class="btn sm primary" data-act="nbEdit" data-x="">Done</button></div>`;
+  const when = d => (d ? ' · ' + fmtDate(d) : '');
+  const src = x.source === 'google' ? `From Google${x.addedBy === 'Shown by default' ? ' · shown by default' : ''}${when(x.addedAt)}` : `Added by ${esc(x.addedBy || 'the team')}${when(x.addedAt)}`;
+  const chk = x.routeChecked ? `✓ ${x.checkedBy ? `Checked by ${esc(x.checkedBy)}${when(x.checkedAt)}` : 'Route checked'}${x.checkHow ? ` — ${esc(x.checkHow)}` : ''}` : '';
+  return `<div class="nb-det"><small>${src}</small>${chk ? `<small>${chk}</small>` : ''}
+      ${x.status !== 'Existing' ? `<small>${esc(x.status)} — never advertised as an existing benefit.</small>` : ''}
+      ${!needsCheck(x.cat) && x.status === 'Existing' && !x.routeChecked ? `<small>No route check needed for ${esc(x.cat.toLowerCase())}s — advertised with the approximate distance.</small>` : ''}
+      ${x.status === 'Existing' && !x.routeChecked && needsCheck(x.cat) && !nbExact(p.location) ? '<small class="t-amber">Set the exact location first — the route is checked from the property, not the locality.</small>' : ''}
+      <div class="row">${x.status === 'Existing' && !x.routeChecked && needsCheck(x.cat) && nbExact(p.location) ? `<button class="btn sm primary" data-act="nbRouteOpen" data-id="${p.id}" data-x="${x.id}">✓ Mark route checked</button>` : ''}
+        ${x.routeChecked ? `<button class="btn sm" data-act="nbUncheck" data-id="${p.id}" data-x="${x.id}">Undo check</button>` : ''}
+        <button class="btn sm" data-act="nbEdit" data-x="${x.id}">✎ Edit</button><button class="btn sm ghost danger" data-act="nbRemove" data-id="${p.id}" data-x="${x.id}">Remove</button></div></div>`;
+}
+
+/* --- mock Google Places: what "Find nearby places" returns for a category (names are samples) --- */
+const NB_MOCK = {
+  'Bus stop': { n: ['{l} bus stop', '{l} main road bus stop'], km: [0.2, 1.4] },
+  'Railway station': { n: ['{c} Junction'], km: [2.5, 11] },
+  'Metro station': { n: ['{l} metro station'], km: [0.6, 3], only: ['Chennai'] },
+  Airport: { n: ['{c} Airport'], km: [8, 24], only: ['Madurai', 'Chennai', 'Coimbatore', 'Tiruchirappalli', 'Salem'] },
+  School: { n: ['{l} Matriculation School (sample)', '{l} Public School (sample)'], km: [0.4, 3] },
+  College: { n: ['{c} Arts & Science College (sample)'], km: [1.5, 6] },
+  Hospital: { n: ['{l} Multispeciality Hospital (sample)', '{l} Nursing Home (sample)'], km: [0.6, 4] },
+  Market: { n: ['{l} market', '{l} Supermarket (sample)'], km: [0.3, 2.5] },
+  'Shopping mall': { n: ['{c} City Centre Mall (sample)'], km: [2, 8] },
+  Bank: { n: ['{l} bank branch & ATM (sample)'], km: [0.3, 2] },
+  'Place of worship': { n: ['{l} temple (sample)'], km: [0.2, 1.8] },
+  Park: { n: ['{l} corporation park (sample)'], km: [0.3, 2.5] },
+};
+const mockKm = (seed, [lo, hi]) => { const km = +(lo + (nbHash(seed) % 100) / 100 * (hi - lo)).toFixed(1); return { km, min: Math.round(km * 2.6 + 3) }; };
+function nbCandidates(p) {
+  const L = normLoc(p), have = new Set(L.nearby.map(x => x.placeId || x.name.toLowerCase()));
+  return placeCats().filter(c => c.google && NB_MOCK[c.name] && (!NB_MOCK[c.name].only || NB_MOCK[c.name].only.includes(p.city))).flatMap(c => {
+    const m = NB_MOCK[c.name], hasCat = L.nearby.some(x => x.cat === c.name);
+    return m.n.map((t, j) => {
+      const name = t.replace('{l}', shortLoc(p.locality)).replace('{c}', p.city), placeId = 'gp-' + nbHash(name + '|' + p.city), d = mockKm(name + p.id, m.km);
+      return { id: placeId, placeId, cat: c.name, name, distanceKm: d.km, durationMin: d.min, pre: !hasCat && j === 0 };
+    }).filter(x => !have.has(x.placeId) && !have.has(x.name.toLowerCase()));
+  });
+}
+/** The important places every new property shows by default: the nearest of each category marked "Shown by default"
+    in Settings (bus stop, school, hospital, market, railway station), from Google. They still need their route checked
+    where the category asks for it. */
+function addDefaultPlaces(p) {
+  const L = normLoc(p), cands = nbCandidates(p);
+  const got = placeCats().filter(c => catOf(c.name).auto && !L.nearby.some(x => x.cat === c.name))
+    .map(c => cands.filter(x => x.cat === c.name).sort((a, b) => a.distanceKm - b.distanceKm)[0]).filter(Boolean);
+  got.forEach(x => L.nearby.push({ id: 'nb' + Date.now() + nbHash(x.name), cat: x.cat, name: x.name, distanceKm: x.distanceKm, durationMin: x.durationMin, status: 'Existing',
+    routeChecked: false, source: 'google', placeId: x.placeId, addedBy: 'Shown by default', addedAt: DEMO_TODAY }));
+  if (got.length) logHistory(p, `Nearby places shown by default: ${got.map(x => x.name).join(', ')} (from Google)`);
+  return got.length;
+}
+const guessCat = q => {
+  const rules = [[/school|matric|cbse|vidyalaya/i, 'School'], [/college|university|institute/i, 'College'], [/hospital|clinic|nursing|medical/i, 'Hospital'], [/metro/i, 'Metro station'],
+    [/railway|junction|rail station/i, 'Railway station'], [/bus/i, 'Bus stop'], [/airport/i, 'Airport'], [/mall/i, 'Shopping mall'], [/market|supermarket|store|mart/i, 'Market'],
+    [/bank|atm/i, 'Bank'], [/temple|kovil|church|mosque|masjid|dargah/i, 'Place of worship'], [/park|garden/i, 'Park'], [/highway|nh-?\d|bypass|ring road/i, 'Highway']];
+  const hit = rules.find(([re]) => re.test(q));
+  return hit && placeCats().some(c => c.name === hit[1]) ? hit[1] : 'Other';
+};
+
+Object.assign(MODALS, {
+  /* Set location: search (Places Autocomplete), click the map to move the pin, and the address fields fill themselves */
+  nbLoc: m => {
+    const p = getProp(m.id), E = UI.locEd, span = 0.04;
+    const x = 50 + (E.lng - E.cLng) / span * 100, y = 50 - (E.lat - E.cLat) / span * 100;
+    const q = E.q.trim().toLowerCase();
+    const sugg = q.length < 2 ? [] : Object.entries(CITIES).flatMap(([c, v]) => v.localities.map(l => ({ c, l, g: geoOf(c, l) })))
+      .filter(s => `${s.l}, ${s.c} ${s.g.pin}`.toLowerCase().includes(q)).slice(0, 5);
+    const inp = (k, l, o = {}) => fld(l, `<input id="loc-${k}" data-inp="locF" data-k="${k}" value="${esc(E[k])}" ${o.attrs || ''}>`, o);
+    const where = `${E.locality ? esc(E.locality) + ', ' : ''}${esc(E.city)}, Tamil Nadu${E.pincode ? ' – ' + esc(E.pincode) : ''}`;
+    return {
+      title: E.exact ? `Location of ${p.id}` : `Set the exact location of ${p.id}`, submit: 'Save location', cls: 'wide',
+      html: `<div class="loc-ways"><button type="button" class="btn" data-act="locHere">📍 Use my current location</button><span class="muted">or</span>
+          <input id="loc-link" placeholder="Paste a Google Maps link or WhatsApp location" autocomplete="off"><button type="button" class="btn" data-act="locLink">Use link</button></div>
+        <div class="loc-search"><input id="loc-q" data-inp="locQ" value="${esc(E.q)}" placeholder="🔍  …or search an address, landmark, locality or pincode" autocomplete="off">
+          ${sugg.length ? `<div class="loc-sugg">${sugg.map(s => `<button type="button" data-act="locPick" data-c="${esc(s.c)}" data-l="${esc(s.l)}">📍 <b>${esc(s.l)}</b>, ${esc(s.c)}, Tamil Nadu ${s.g.pin}</button>`).join('')}</div>` : ''}</div>
+        <div class="loc-map" data-act="locMap"><span class="loc-pin ${E.moved ? '' : 'approx'}" style="left:${Math.max(2, Math.min(98, x))}%;top:${Math.max(4, Math.min(98, y))}%">📍</span>
+          <span class="loc-hint">${E.moved ? `✓ Pin set${E.how ? ' — ' + esc(E.how) : ''}` : E.exact ? 'Click the map to move the pin' : `This is the centre of ${esc(E.locality || E.city)} — click the map where the property is`}</span><span class="loc-ll">${E.lat}, ${E.lng}</span></div>
+        <div class="loc-found"><span>📍 <b>${where}</b> <small class="muted">· filled in from the pin</small></span><button type="button" class="linkbtn" data-act="locMore">${E.more ? 'Hide details' : '✎ Change locality, pincode or road'}</button></div>
+        <div class="fgrid c2" style="margin-top:10px">
+          ${inp('address', 'Door no. and street <span class="opt-tag">Optional</span>', { cls: 'span2', attrs: 'placeholder="e.g. 12, 2nd cross street"' })}
+          ${E.more ? `${fld('Locality', `<input id="loc-locality" data-inp="locF" data-k="locality" value="${esc(E.locality)}" list="loc-dl"><datalist id="loc-dl">${((CITIES[E.city] || {}).localities || []).map(l => `<option value="${esc(l)}">`).join('')}</datalist>`, { req: 1 })}
+          ${fld('City', `<select data-chg="locCity">${options(Object.keys(CITIES), E.city)}</select>`, { req: 1 })}
+          ${inp('pincode', 'Pincode')}
+          ${fld('District / State', `<input value="${esc((CITIES[E.city] || {}).district || E.city)}, Tamil Nadu" disabled>`, { hint: 'From the city' })}
+          ${fld(p.type === 'agri' ? 'Road access' : 'Road type', `<select data-chg="locRoad">${options(roadKeys(p).typeOpts, E.roadType, '—')}</select>`, { hint: roadKeys(p).typeKey ? 'Same as in the property details' : '' })}
+          ${inp('roadWidth', 'Road width (ft)', { attrs: 'type="number" min="0"' })}` : ''}
+        </div>`,
+    };
+  },
+  /* Find nearby places: results come back as suggestions — the user keeps the ones that matter */
+  nbFind: m => {
+    const p = getProp(m.id), L = normLoc(p), list = UI.nbCand || [];
+    if (!list.length) return { title: 'Find more places', submit: false, html: '<p style="margin-top:0">Nothing new found — every place Google knows within 5 km is already on the list.</p><p class="muted">Use <b>＋ Add place</b> for anything Google doesn’t have.</p>' };
+    const grp = PLACE_GROUPS.map(g => ({ g, items: list.filter(x => catOf(x.cat).group === g.k) })).filter(x => x.items.length);
+    return {
+      title: `${list.length} places found near ${esc(p.locality)}`, submit: 'Add selected places', cls: 'wide',
+      html: `${nbExact(L) ? `<p class="muted" style="margin-top:0">Searched Google Places within 5 km of the exact location. Distance and time are by road.</p>`
+          : `<div class="note amber" style="margin:0 0 10px">The exact location isn’t set — searched around the centre of ${esc(p.locality)}, so distances are approximate.</div>`}
+        <div class="nbf-tools"><button type="button" class="linkbtn" data-act="nbfAll" data-v="1">Select all</button> · <button type="button" class="linkbtn" data-act="nbfAll" data-v="0">Clear</button></div>
+        ${grp.map(({ g, items }) => `<div class="nbf-grp"><div class="nbf-gh">${g.i} ${g.l}</div>${items.map(x => `<label class="nbf-row"><input type="checkbox" name="pick" value="${x.id}" ${x.pre ? 'checked' : ''}>
+          <span class="nb-ic">${nbIcon(x.cat)}</span><span class="nb-tx"><b>${esc(x.name)}</b><small>${esc(x.cat)} · ${x.distanceKm} km · ${x.durationMin} min</small></span></label>`).join('')}</div>`).join('')}
+        <div class="note" style="margin-top:12px">Added places are <b>not advertised</b> until someone checks the actual route — Google’s distance is a starting point, not a promise to the customer.</div>`,
+    };
+  },
+  /* Add place: anything Google has (search), or something it doesn't yet — e.g. an upcoming metro station */
+  nbAdd: m => {
+    const p = getProp(m.id), A = UI.nbAdd, pin = A.mode === 'pin';
+    const q = A.q.trim();
+    const res = !pin && q.length >= 2 && !A.pick ? [q, `${q}, ${shortLoc(p.locality)}`, `${q}, ${p.city}`].map(n => { const d = mockKm(n + p.id, [0.3, 6]); return { name: n, km: d.km, min: d.min }; }) : [];
+    const catSel = fld('Category', `<select data-chg="nbAddF" data-k="cat">${options(placeCats().map(c => c.name), A.cat)}</select>`);
+    const stSel = fld('Status', `<select data-chg="nbAddF" data-k="status">${options(INFRA_STATUSES, A.status)}</select>`, { hint: pin ? 'Planned and proposed places are shown as “coming up”, never as existing' : '' });
+    return {
+      title: 'Add a nearby place', submit: 'Add place',
+      html: `<div class="nb-seg nba-mode"><button type="button" class="${pin ? '' : 'on'}" data-act="nbAddMode" data-v="search">🔍 Search Google</button><button type="button" class="${pin ? 'on' : ''}" data-act="nbAddMode" data-v="pin">📌 Not on Google yet</button></div>
+        ${pin ? `<p class="muted">For a place Google doesn’t have yet — a new IT park, an upcoming metro station, a planned bypass.</p>
+          <div class="fgrid c2">${fld('Name', `<input id="nba-name" data-inp="nbAddF" data-k="name" value="${esc(A.name)}" placeholder="e.g. Metro Phase 2 — Sholinganallur station">`, { req: 1, cls: 'span2' })}
+            ${catSel}${stSel}
+            ${fld('Distance (km, approx.)', `<input id="nba-km" type="number" step="any" min="0" data-inp="nbAddF" data-k="km" value="${esc(A.km)}">`)}
+            ${fld('Source', `<input id="nba-how" data-inp="nbAddF" data-k="how" value="${esc(A.how)}" placeholder="e.g. CMRL Phase 2 plan, 2026">`, { hint: 'Where this information comes from' })}</div>`
+        : A.pick ? `<div class="nba-pick"><span class="nb-ic">${nbIcon(A.cat)}</span><span class="nb-tx"><b>${esc(A.pick.name)}</b><small>${A.pick.km} km · ${A.pick.min} min by road · Google (mock)</small></span><button type="button" class="linkbtn" data-act="nbAddPick" data-i="-1">Change</button></div>
+          <div class="fgrid c2" style="margin-top:12px">${catSel}${stSel}</div>`
+        : `<input id="nba-q" data-inp="nbAddQ" value="${esc(A.q)}" placeholder="Type a name — e.g. Apollo hospital, Kendriya Vidyalaya, Murugan temple" autocomplete="off" style="width:100%">
+          ${res.length ? `<div class="loc-sugg static">${res.map((r2, i) => `<button type="button" data-act="nbAddPick" data-i="${i}" data-n="${esc(r2.name)}" data-km="${r2.km}" data-min="${r2.min}">${nbIcon(guessCat(r2.name))} <b>${esc(r2.name)}</b> <small class="muted">· ${r2.km} km</small></button>`).join('')}</div>` : '<p class="muted" style="margin:8px 0 0">Results come from Google Places (mock).</p>'}`}`,
+    };
+  },
+  /* Mark route checked: the spec's rule — only after the actual route and travel conditions were checked */
+  nbRoute: m => {
+    const p = getProp(m.id), x = p.location.nearby.find(n => n.id === m.x);
+    return {
+      title: 'Mark the route as checked', submit: '✓ Route checked',
+      html: `<p style="margin-top:0">${nbIcon(x.cat)} <b>${esc(x.name)}</b> <span class="muted">from ${esc(p.locality)}</span></p>
+        <div class="fgrid c2">${fld('Distance by road (km)', `<input type="number" step="any" min="0" name="km" value="${esc(x.distanceKm)}" required>`, { hint: x.source === 'google' ? 'Google said ' + x.distanceKm + ' km — correct it if the route differs' : '' })}
+          ${fld('Travel time (min)', `<input type="number" min="0" name="min" value="${esc(x.durationMin)}">`)}
+          ${fld('How was it checked?', `<select name="how">${options(ROUTE_CHECKS, ROUTE_CHECKS[0])}</select>`, { cls: 'span2' })}
+          ${fld('Conditions on the way', `<input name="note" placeholder="e.g. narrow lane near the temple; 10 min more at peak hours">`, { cls: 'span2' })}</div>
+        <p class="muted" style="margin-bottom:0">Once checked, it appears in the customer view, the brochure and WhatsApp messages. Checked by ${esc(currentUser())}, ${fmtDate(DEMO_TODAY)}.</p>`,
+    };
+  },
+});
+Object.assign(MODAL_SUBMIT, {
+  nbLoc: m => {
+    const p = getProp(m.id), L = normLoc(p), E = UI.locEd;
+    if (!E.locality.trim()) { toast('Locality is required'); return; }
+    const pinNow = E.moved, first = pinNow && !E.exact;
+    const moved = pinNow && E.exact && Math.hypot((E.lat - L.lat) * 111, (E.lng - L.lng) * 109) > 0.3;
+    const ch = [];
+    if (E.locality.trim() !== p.locality || E.city !== p.city) ch.push(`${E.locality.trim()}, ${E.city}`);
+    if (E.address.trim() !== L.address) ch.push('address');
+    if (E.pincode.trim() !== L.pincode) ch.push('pincode ' + E.pincode.trim());
+    if (first) ch.push(`exact map location (${E.how})`); else if (moved) ch.push(`map pin moved (${E.how})`);
+    const rd = roadOf(p), roadCh = E.roadType !== rd.type || String(E.roadWidth) !== String(rd.width);
+    if (roadCh) ch.push(`road (${[E.roadType, E.roadWidth !== '' ? E.roadWidth + ' ft' : ''].filter(Boolean).join(', ') || 'cleared'})`);
+    // a different locality without a new pin: the old pin no longer applies — back to approximate
+    const relocated = (E.locality.trim() !== p.locality || E.city !== p.city) && !pinNow;
+    Object.assign(p, { locality: E.locality.trim(), city: E.city, state: 'Tamil Nadu' });
+    Object.assign(L, { address: E.address.trim(), pincode: E.pincode.trim(), district: (CITIES[E.city] || {}).district || E.city });
+    if (roadCh) setRoad(p, E.roadType, E.roadWidth);
+    if (pinNow) Object.assign(L, { lat: E.lat, lng: E.lng, pinOk: true, pinBy: currentUser(), pinAt: DEMO_TODAY });
+    if (relocated) Object.assign(L, { lat: '', lng: '', pinOk: false });
+    if (first) L.suggestPending = true; // look up the places around the new exact location once
+    if (ch.length) logHistory(p, `Location updated: ${ch.join(', ')}`);
+    save(); UI.modal = null; UI.locEd = null;
+    toast(first ? 'Exact location saved — looking up places nearby' : moved && L.nearby.length ? 'Location saved — the pin moved, so re-check the distances to nearby places' : 'Location saved'); render();
+  },
+  nbFind: (m, fd) => {
+    const p = getProp(m.id), picks = fd.getAll('pick'), got = (UI.nbCand || []).filter(x => picks.includes(x.id));
+    if (!got.length) { toast('Tick at least one place'); return; }
+    got.forEach(x => p.location.nearby.push({ id: 'nb' + Date.now() + nbHash(x.name), cat: x.cat, name: x.name, distanceKm: x.distanceKm, durationMin: x.durationMin, status: 'Existing',
+      routeChecked: false, source: 'google', placeId: x.placeId, addedBy: currentUser(), addedAt: DEMO_TODAY }));
+    const toCheck = got.filter(x => needsCheck(x.cat)).length;
+    logHistory(p, `${got.length} nearby place${got.length > 1 ? 's' : ''} added from Google (${got.map(x => x.name).join(', ')})${toCheck ? ` — ${toCheck} need${toCheck > 1 ? '' : 's'} a route check before advertising` : ''}`);
+    UI.nbOpen = catOf(got[0].cat).group; UI.nbView = 'team'; p.location.suggestPending = false;
+    save(); UI.modal = null; UI.nbCand = null; toast(`${got.length} place${got.length > 1 ? 's' : ''} added${toCheck ? ` — ${toCheck} need${toCheck > 1 ? '' : 's'} a route check before it is advertised` : ''}`); render();
+  },
+  nbAdd: m => {
+    const p = getProp(m.id), A = UI.nbAdd, pin = A.mode === 'pin';
+    const name = pin ? A.name.trim() : A.pick && A.pick.name;
+    if (!name) { toast(pin ? 'Type the place’s name' : 'Search for the place and pick it from the results'); return; }
+    const x = { id: 'nb' + Date.now(), cat: A.cat, name, distanceKm: pin ? (A.km === '' ? '' : Number(A.km)) : A.pick.km, durationMin: pin ? '' : A.pick.min, status: A.status,
+      routeChecked: false, source: pin ? 'user' : 'google', addedBy: currentUser(), addedAt: DEMO_TODAY };
+    if (!pin) x.placeId = 'gp-' + nbHash(name + '|' + p.city);
+    if (pin && A.how.trim()) x.checkHow = 'Source: ' + A.how.trim();
+    p.location.nearby.push(x);
+    logHistory(p, `Nearby place added: ${name} (${A.cat}, ${A.status}${pin ? ', not on Google' : ', from Google'})`);
+    UI.nbOpen = catOf(A.cat).group; UI.nbSel = x.id; UI.nbView = 'team';
+    save(); UI.modal = null; UI.nbAdd = null; toast(`${name} added`); render();
+  },
+  nbRoute: (m, fd) => {
+    const p = getProp(m.id), x = p.location.nearby.find(n => n.id === m.x);
+    const note = (fd.get('note') || '').trim(), how = fd.get('how');
+    Object.assign(x, { routeChecked: true, distanceKm: Number(fd.get('km')), durationMin: fd.get('min') === '' ? '' : Number(fd.get('min')), checkedBy: currentUser(), checkedAt: DEMO_TODAY, checkHow: how + (note ? ' — ' + note : '') });
+    logHistory(p, `Route checked: ${x.name}, ${x.distanceKm} km (${how.toLowerCase()})`);
+    save(); UI.modal = null; toast(`${x.name} can now be advertised`); render();
+  },
+});
+Object.assign(ACTIONS, {
+  nbGroup: d => { UI.nbOpen = d.k; UI.nbSel = null; UI.nbEdit = null; render(); },
+  nbSel: d => { UI.nbSel = UI.nbSel === d.x ? null : d.x; UI.nbEdit = null; render(); },
+  nbView: d => { UI.nbView = d.v; UI.nbSel = null; UI.nbEdit = null; render(); },
+  nbEdit: d => { UI.nbEdit = d.x || null; render(); },
+  nbRemove: d => { const p = getProp(d.id), x = p.location.nearby.find(n => n.id === d.x); p.location.nearby = p.location.nearby.filter(n => n !== x); logHistory(p, `Nearby place removed: ${x.name}`); UI.nbSel = null; save(); toast(`${x.name} removed`); render(); },
+  nbUncheck: d => { const p = getProp(d.id), x = p.location.nearby.find(n => n.id === d.x); Object.assign(x, { routeChecked: false, checkedBy: '', checkedAt: '' }); logHistory(p, `Route check undone: ${x.name} — no longer advertised`); save(); render(); },
+  nbRouteOpen: d => openModal({ kind: 'nbRoute', id: d.id, x: d.x }),
+  nbFoundHide: d => { getProp(d.id).location.suggestPending = false; save(); render(); },
+  nbFindOpen: d => { UI.nbCand = nbCandidates(getProp(d.id)); openModal({ kind: 'nbFind', id: d.id }); },
+  nbfAll: d => document.querySelectorAll('.modal input[name="pick"]').forEach(c => { c.checked = d.v === '1'; }),
+  nbAddOpen: d => { UI.nbAdd = { mode: 'search', q: '', pick: null, cat: 'Other', status: 'Existing', name: '', km: '', how: '' }; openModal({ kind: 'nbAdd', id: d.id }); },
+  nbAddMode: d => { const A = UI.nbAdd; A.mode = d.v; A.status = d.v === 'pin' ? 'Planned' : 'Existing'; render(); },
+  nbAddPick: d => { const A = UI.nbAdd; if (d.i === '-1') { A.pick = null; } else { A.pick = { name: d.n, km: +d.km, min: +d.min }; A.cat = guessCat(d.n); } render(); },
+  nbLocOpen: d => {
+    const p = getProp(d.id), L = normLoc(p), g = geoOf(p.city, p.locality), has = nbExact(L);
+    UI.locEd = { q: '', lat: has ? +L.lat : g.lat, lng: has ? +L.lng : g.lng, address: L.address, locality: p.locality, city: p.city, pincode: L.pincode || g.pin, roadType: roadOf(p).type, roadWidth: roadOf(p).width,
+      exact: has, moved: false, how: '', more: false };
+    Object.assign(UI.locEd, { cLat: UI.locEd.lat, cLng: UI.locEd.lng });
+    openModal({ kind: 'nbLoc', id: p.id });
+  },
+  locPick: d => { const E = UI.locEd, g = geoOf(d.c, d.l); Object.assign(E, { city: d.c, locality: d.l, pincode: g.pin, lat: g.lat, lng: g.lng, cLat: g.lat, cLng: g.lng, q: '', moved: false, how: '' }); render(); },
+  locMap: (d, el, e) => {
+    const E = UI.locEd, b = el.getBoundingClientRect(), span = 0.04;
+    E.lng = +(E.cLng + ((e.clientX - b.left) / b.width - 0.5) * span).toFixed(5);
+    E.lat = +(E.cLat - ((e.clientY - b.top) / b.height - 0.5) * span).toFixed(5);
+    const n = nearestLocality(E.city, E.lat, E.lng); // reverse geocoding (mock)
+    if (n && Math.hypot(n.g.lat - E.lat, n.g.lng - E.lng) < 0.02) { E.locality = n.l; E.pincode = n.g.pin; }
+    E.moved = true; E.how = 'placed on the map';
+    render();
+  },
+  locHere: () => { // the browser's location in the real build; a point in the locality here (mock)
+    const E = UI.locEd, g = geoOf(E.city, E.locality), j = Date.now() % 997;
+    Object.assign(E, { lat: +(g.lat + ((j % 21) - 10) / 2500).toFixed(5), lng: +(g.lng + (((j >> 3) % 21) - 10) / 2500).toFixed(5), moved: true, how: 'your current location' });
+    Object.assign(E, { cLat: E.lat, cLng: E.lng }); render();
+  },
+  locLink: () => {
+    const E = UI.locEd, el = document.getElementById('loc-link'), v = el ? el.value.trim() : '';
+    if (!v) { toast('Paste a Google Maps link or a WhatsApp location first'); return; }
+    const m = v.match(/(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
+    let ll = null;
+    if (m) ll = { lat: +m[1], lng: +m[2] };
+    else if (/maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google|google\.[a-z.]+\/maps|wa\.me/i.test(v)) { const g = geoOf(E.city, E.locality), h = nbHash(v); ll = { lat: +(g.lat + ((h % 21) - 10) / 2000).toFixed(5), lng: +(g.lng + (((h >> 4) % 21) - 10) / 2000).toFixed(5) }; }
+    if (!ll) { toast('That doesn’t look like a map link — in Google Maps use Share → Copy link'); return; }
+    Object.assign(E, ll, { cLat: ll.lat, cLng: ll.lng, moved: true, how: 'from the pasted link' });
+    const n = nearestLocality(E.city, E.lat, E.lng); if (n && Math.hypot(n.g.lat - E.lat, n.g.lng - E.lng) < 0.02) { E.locality = n.l; E.pincode = n.g.pin; }
+    render();
+  },
+  locMore: () => { UI.locEd.more = !UI.locEd.more; render(); },
+});
+Object.assign(INPUTS, {
+  locQ: el => { UI.locEd.q = el.value; render(); },
+  locF: el => { UI.locEd[el.dataset.k] = el.value; },
+  nbAddQ: el => { UI.nbAdd.q = el.value; render(); },
+  nbAddF: el => { UI.nbAdd[el.dataset.k] = el.value; },
+});
+document.addEventListener('keydown', e => { // Enter in a search box searches; it must not submit the dialog
+  if (e.key === 'Enter' && e.target && (e.target.id === 'loc-q' || e.target.id === 'nba-q')) e.preventDefault();
+});
+Object.assign(CHANGES, {
+  locCity: el => { const E = UI.locEd, g = geoOf(el.value, ''); Object.assign(E, { city: el.value, locality: '', pincode: g.pin, lat: g.lat, lng: g.lng, cLat: g.lat, cLng: g.lng, moved: false, how: '' }); render(); },
+  locRoad: el => { UI.locEd.roadType = el.value; },
+  nbAddF: el => { UI.nbAdd[el.dataset.k] = el.value; render(); },
+});
+
 function propLegal(p) {
   const s = legalSummary(p), mand = MANDATORY_BY_TYPE[p.type];
   const rows = p.legal.map((d, i) => {
@@ -400,21 +779,11 @@ function propMatches(p) {
     <div class="tbl-wrap"><table><thead><tr><th>Customer</th><th>Purpose</th><th>Budget</th><th>Match</th><th class="num">Fit score</th><th>Readiness</th><th>Stage</th><th>Owner</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="8" class="empty">No active customer passes the hard filters for this property.</td></tr>'}</tbody></table></div></div>`;
 }
-function propMedia(p) {
-  const tiles = Array.from({ length: p.images || 0 }, (_, i) => `<div class="ph">Image ${i + 1}<br>${i === 0 ? '(cover)' : ''}</div>`).join('');
-  const docs = p.legal.filter(d => d.file);
-  return `
-  <div class="card"><div class="card-head"><h2>Images</h2><span class="sp"></span><button class="btn sm" data-act="addImage" data-id="${p.id}">⤒ Upload image</button>${p.images ? `<button class="btn sm danger" data-act="rmImage" data-id="${p.id}">Remove last</button>` : ''}</div>
-    <div class="media">${tiles || '<div class="empty">No images yet.</div>'}</div></div>
-  <div class="card"><h2>Documents</h2>${docs.length ? `<ul class="why">${docs.map(d => `<li class="mono">📄 ${esc(d.file)} — ${LEGAL_DOCS[d.key].n} ${chip(LEGAL_STATUS[d.status].l, LEGAL_STATUS[d.status].tone)}</li>`).join('')}</ul>` : '<p class="muted">No documents uploaded. Upload from the Legal &amp; documents tab.</p>'}</div>`;
-}
 function propHistory(p) {
   return `<div class="card"><h2>Change history</h2><ul class="tl">${(p.history || []).map(h => `<li><div class="when">${fmtDate(h.date)} · ${esc(h.by)}</div>${esc(h.text)}</li>`).join('') || '<li>No history.</li>'}</ul></div>`;
 }
 Object.assign(ACTIONS, {
   clearFilters: d => { UI.filters[d.scope] = d.scope === 'custs' ? { sort: 'readiness' } : {}; render(); },
-  addNearby: d => { const p = getProp(d.id); p.location.nearby.push({ id: 'nb' + Date.now(), cat: 'School', name: '', distanceKm: '', routeChecked: false, status: 'Existing' }); save(); render(); },
-  rmNearby: d => { const p = getProp(d.id); p.location.nearby.splice(+d.i, 1); save(); render(); },
   addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); save(); render(); },
   rmComp: d => { const p = getProp(d.id); p.valuation.comparables.splice(+d.i, 1); save(); render(); },
   uploadDoc: d => {
@@ -422,17 +791,24 @@ Object.assign(ACTIONS, {
     doc.file = `${doc.key}-scan.pdf`; if (doc.status === 'not') doc.status = 'pending'; doc.date = doc.date || DEMO_TODAY;
     logHistory(p, `Document uploaded: ${LEGAL_DOCS[doc.key].n} (pending verification)`); save(); toast('Uploaded (mock) — status set to “Collected, pending verification”'); render();
   },
-  addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; save(); render(); },
-  rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); save(); render(); },
+  addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; logHistory(p, `Photo uploaded (${p.images} in all)`); save(); toast('Photo uploaded (mock)'); render(); },
+  rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); logHistory(p, 'Photo removed'); save(); render(); },
 });
 /* ---------- archive / restore / delete ---------- */
 const MANAGE_TITLE = 'disabled title="Admin / Sales manager only"';
 function propHeaderActions(p) {
   const dis = canEditSettings() ? '' : MANAGE_TITLE;
   if (p.archived) return `${chip('Archived', 'outline')}<button class="btn" data-act="propRestore" data-id="${p.id}" ${dis}>↺ Restore</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
+  const menu = (k, btn, items) => `<div class="hd-menu">${btn}${UI.propMenu === k ? `<div class="hd-pop">${items}</div>` : ''}</div>`;
   return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn primary" href="#/properties/${p.id}/edit" title="Tell the AI assistant what changed">✨ Edit with AI</a>
-    <button class="btn" data-act="propArchiveOpen" data-id="${p.id}" ${dis}>🗄 Archive</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
+    ${menu('share', `<button class="btn" data-act="propMenu" data-k="share">↗ Share ▾</button>`,
+      `<button data-act="propShare" data-id="${p.id}" data-how="wa">💬 Send on WhatsApp</button><button data-act="propShare" data-id="${p.id}" data-how="link">🔗 Copy link</button><button data-act="propShare" data-id="${p.id}" data-how="pdf">📄 Download brochure (PDF)</button>`)}
+    ${menu('more', `<button class="btn icon" data-act="propMenu" data-k="more" title="More actions">⋯</button>`,
+      `<button data-act="propArchiveOpen" data-id="${p.id}" ${dis}>🗄 Archive</button><button class="danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`)}`;
 }
+document.addEventListener('click', e => { // close the header menus when clicking elsewhere
+  if (UI.propMenu && (!e.target.closest('.hd-menu') || e.target.closest('.hd-pop'))) { UI.propMenu = null; render(); }
+});
 /** Customers whose records point at this property (recommendation, site visit, negotiation or appointment). */
 function propertyLinks(pid) {
   return DB.customers.map(c => {
@@ -502,6 +878,8 @@ Object.assign(MODAL_SUBMIT, {
   },
 });
 Object.assign(ACTIONS, {
+  propMenu: d => { UI.propMenu = UI.propMenu === d.k ? null : d.k; render(); },
+  propShare: d => { const p = getProp(d.id); toast(d.how === 'wa' ? `WhatsApp message ready for ${p.id} — title, price, locality and the listing link (mock)` : d.how === 'link' ? `Link to ${p.id} copied (mock)` : `Brochure for ${p.id} downloaded — photos, key facts and approvals (mock)`); },
   propArchiveOpen: d => { if (canEditSettings()) openModal({ kind: 'propArchive', id: d.id }); },
   propDeleteOpen: d => { if (canEditSettings()) openModal({ kind: 'propDelete', id: d.id }); },
   propRestore: d => {

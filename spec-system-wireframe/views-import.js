@@ -174,12 +174,13 @@ function impApply() {
         id: 'PROP-' + (++DB.counters.prop), title: d.title, type: I.type, purpose: d.purpose || 'Sale', status: d.status || 'Available', listingDate: d.listing_date || DEMO_TODAY,
         city: d.city, locality: d.locality, state: 'Tamil Nadu', facing: d.facing || '', area: impNum(d.area_sqft), price: impNum(d.asking_price),
         amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: 0, specs,
-        location: { lat: d.latitude ? impNum(d.latitude) : '', lng: d.longitude ? impNum(d.longitude) : '', roadType: '', roadWidth: '', highway: { name: '', distanceKm: '', route: '' }, nearby: [] },
+        location: { lat: d.latitude ? impNum(d.latitude) : '', lng: d.longitude ? impNum(d.longitude) : '', address: '', pincode: d.pincode || '', district: '', pinOk: false, roadType: '', roadWidth: '', nearby: [] },
         legal: LEGAL_BY_TYPE[I.type].map(k => ({ key: k, status: 'not', verifiedBy: '', date: '', file: '', note: '' })),
         valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
       };
       logHistory(p, `Created by bulk import ${batch} (${I.file}, line ${r.line})`);
       DB.properties.unshift(p); created.push(p.id);
+      if (typeof addDefaultPlaces === 'function') addDefaultPlaces(p);
     } else {
       const p = r.existing;
       cols.forEach(c => {

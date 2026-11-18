@@ -59,6 +59,11 @@ const CORE_FIELDS = {
   agri: ['acres', 'waterSource', 'roadAccess'],
   industrial: ['subType', 'powerKva', 'roadWidth'],
 };
+/* The key details required to publish — two per type. The type's other details are optional and can come later. */
+const REQ_DETAILS = {
+  plot: ['length', 'width'], flat: ['bhk', 'floor'], house: ['subType', 'bedrooms'],
+  commercial: ['commCategory', 'occupancy'], agri: ['acres', 'waterSource'], industrial: ['subType', 'powerKva'],
+};
 /* The few optional extras offered as one-tap chips under “Add a detail”; anything else via “Something else”. */
 const SUGGESTED_FIELDS = {
   plot: ['surveyNo', 'water', 'electricity'],
@@ -128,6 +133,8 @@ function shownFields(p) {
   return fieldsFor(p.type).filter(f => core.includes(f.k) || f.added || !isEmpty(p.specs[f.k]) || (p.shownFields || []).includes(f.k));
 }
 const coreFields = p => fieldsFor(p.type).filter(f => (CORE_FIELDS[p.type] || []).includes(f.k));
+const reqDetails = p => fieldsFor(p.type).filter(f => (REQ_DETAILS[p.type] || []).includes(f.k));
+const shortLabel = f => f.l.replace(/ \(.*\)$/, '');
 function labelOf(p, path) {
   const MAIN = { type: 'Property type', category: 'Category', purpose: 'Purpose', title: 'Title', facing: 'Facing', price: 'Price', priceOnRequest: 'Price on request', amenities: 'Amenities', approvals: 'Approvals', avail: 'Availability',
     'loc.address': 'Address', 'loc.locality': 'Locality', 'loc.city': 'City', 'loc.district': 'District', 'loc.state': 'State', 'loc.country': 'Country', 'loc.pincode': 'Pincode' };
@@ -206,6 +213,18 @@ function parseFor(type, path, value) {
   return CAP1(value);
 }
 
+/** A map location from a pasted Google Maps link, a WhatsApp location or plain coordinates.
+    Short links (maps.app.goo.gl) are resolved by Google in the real build — here they land near the locality (mock). */
+function pinFromText(t, p) {
+  let m;
+  if ((m = t.match(/@(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/)) || (m = t.match(/[?&](?:q|query|ll)=(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/)) || (m = t.match(/(?:^|\s)(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/)))
+    return { lat: +m[1], lng: +m[2], q: m[0].trim() };
+  if ((m = t.match(/\b(?:https?:\/\/)?(?:maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.com\/\S*|wa\.me\/\S*location)\/?[\w?=&.-]*/i)) && p && p.loc && p.loc.city && typeof geoOf === 'function') {
+    const g = geoOf(p.loc.city, p.loc.locality), h = hash(m[0]);
+    return { lat: +(g.lat + ((h % 21) - 10) / 2000).toFixed(5), lng: +(g.lng + (((h >> 4) % 21) - 10) / 2000).toFixed(5), q: m[0].trim() };
+  }
+  return null;
+}
 function extract(text, p) {
   const t = ' ' + String(text || '').replace(/\s+/g, ' ') + ' ';
   const x = { raw: text, f: {}, amen: [], newAmen: [], custom: [], removeAmen: [], badges: [], unbadges: [], notes: [], avail: null, latlng: null };
@@ -215,8 +234,7 @@ function extract(text, p) {
   if ((m = text.match(/^\s*address\s*(?::|is|=)\s*(.+)$/i))) put('loc.address', m[1].trim(), m[0]);
 
   // map pin: a Google Maps link or plain coordinates
-  if ((m = t.match(/@(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/)) || (m = t.match(/[?&]q=(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/)) || (m = t.match(/(?:^|\s)(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/)))
-    x.latlng = { lat: +m[1], lng: +m[2], q: m[0].trim() };
+  x.latlng = pinFromText(t, p);
 
   // property type (commercial words first: “commercial plot” is commercial)
   if ((m = t.match(/\b(agricultural|agri land|farm ?land|farm|coconut (grove|farm)|mango (grove|farm)|paddy (field|land)|nanjai|punjai)\b/i))) put('type', 'agri', m[0]);
@@ -473,6 +491,17 @@ function handle(p, text) {
   else x = extract(t, p);
   // a short answer to “Which locality?” is the locality, even if I don’t know the place
   if (p.asking === 'locality' && !foundSomething(x) && t.split(/\s+/).length <= 4 && /^[a-z][a-z .'-]+$/i.test(t)) x.f['loc.locality'] = { v: CAPW(t), q: t };
+  // a short answer to “What should the listing be called?” is the title
+  if (p.asking === 'title' && !x.f.title && !foundSomething(x)) x.f.title = { v: t, q: t };
+  // a short answer to “What’s the floor number?” / “Which BHK configuration?” fills that detail
+  if (p.asking && p.asking.startsWith('specs.') && !x.f[p.asking] && t.split(/\s+/).length <= 5) {
+    const f = fieldsFor(p.type).find(y => 'specs.' + y.k === p.asking);
+    let v = null;
+    if (f && f.t === 'number') { const n = t.match(/\d[\d,]*(\.\d+)?/); v = n ? numOf(n[0]) : /\bground\b/i.test(t) ? 0 : null; }
+    else if (f && f.t === 'select') v = f.o.map(o => (typeof o === 'object' ? o.v : o)).find(o => o && (normKey(o) === normKey(t) || normKey(o).startsWith(normKey(t)) || normKey(t).includes(normKey(o)))) || null;
+    else if (f) v = t;
+    if (v != null) x.f[p.asking] = { v, q: t };
+  }
   // “residential” or “commercial” as an answer to the category question sets only the category
   // “skip”, “no”, “later”, “done” move past the photos or amenities step
   if ((p.asking === 'media' || p.asking === 'amenities') && /^(skip|no|nope|not now|later|none|nothing|done|no thanks|that'?s all|next)\b/i.test(t)) return skipStep(p, p.asking, false);
@@ -511,8 +540,9 @@ function commit(p, x, kind) {
 }
 
 /* ---------- what is required, and how complete a listing is ----------
-   Required to publish: purpose, property type, city, locality, price and area (plot size).
-   Everything else is optional and counts towards the completion score (100%).
+   Required to publish: purpose, property type, city, locality, price, area (plot size), the title (the AI suggests one)
+   and two key details of the type (REQ_DETAILS). Everything else is optional and counts towards the completion score (100%).
+   The exact map location is optional too: without it the property shows on the map as its locality (approximate).
    Approval badges (RERA, building approval) are optional and can be ticked any time; their documents follow later. */
 const otherDocs = type => (type ? LEGAL_BY_TYPE[type].filter(k => !['rera', 'layout', 'plan'].includes(k)) : []);
 const docName = k => (approvalOf(k) ? approvalOf(k).doc : LEGAL_DOCS[k] ? LEGAL_DOCS[k].n : k);
@@ -524,9 +554,11 @@ function missing(p) {
   if (!p.loc.locality) m.push({ k: 'locality', l: 'Locality' });
   if (!(p.price > 0)) m.push({ k: 'price', l: p.purpose === 'Rent' ? 'Monthly rent' : 'Price' });
   if (!(p.area > 0)) m.push({ k: 'area', l: p.type ? areaLabel(p) : 'Area / plot size' });
+  reqDetails(p).filter(f => isEmpty(p.specs[f.k])).forEach(f => m.push({ k: 'specs.' + f.k, l: shortLabel(f), detail: 1 }));
+  if (!String(p.title || '').trim()) m.push({ k: 'title', l: 'Title' });
   return m;
 }
-const totalNeeded = () => 6;
+const BASIC_KEYS = ['purpose', 'type', 'city', 'locality', 'price', 'area', 'title'];
 /** Completion: the six required items (10 each), then the optional ones up to 100%. */
 function completionItems(p) {
   const core = coreFields(p), filled = core.filter(f => !isEmpty(p.specs[f.k])).length;
@@ -579,11 +611,14 @@ function publishToMain(p, approvedBy) {
     amenities: p.amenities.slice(), images: p.photos, videos: p.videos, specs,
     badges: p.approvals.map(k => ({ l: approvalOf(k).long, doc: !!p.docs[k] })),
     extra: p.custom.map(c => ({ label: c.label, value: c.value })),
-    location: { lat: '', lng: '', roadType: specs.roadInfra || '', roadWidth: specs.roadWidth || '', highway: { name: '', distanceKm: '', route: '' }, nearby: [] },
+    location: { address: p.loc.address || '', pincode: p.loc.pincode || '', district: p.loc.district || (CITIES[p.loc.city] || {}).district || p.loc.city,
+      lat: p.loc.lat, lng: p.loc.lng, pinOk: !!p.loc.pinOk, roadType: specs.roadInfra || '', roadWidth: specs.roadWidth || '', nearby: [],
+      suggestPending: !!(p.loc.pinOk && p.loc.lat !== '') }, // an exact location → look up the places around it once
     legal, valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] },
     history: [{ date: DEMO_TODAY, text: `Published${approvedBy ? ` (approved by ${approvedBy})` : ''} — created with the AI assistant as draft ${p.id}, ${completeness(p)}% complete`, by: me() }],
   };
   DB.properties.unshift(old);
+  if (typeof addDefaultPlaces === 'function') addDefaultPlaces(old); // the important places nearby, shown by default
   S.props = S.props.filter(x => x !== p);
   window.save(); save();
   return old;
@@ -604,7 +639,9 @@ function editCopy(old) {
     amenities: (old.amenities || []).slice(), approvals: appr, photos: old.images || 0, videos: old.videos || 0,
     dupChecked: true, // it is the property itself — no duplicate check
   });
-  Object.assign(p.loc, { city: old.city, locality: old.locality, state: old.state || 'Tamil Nadu', district: (CITIES[old.city] || {}).district || old.city, country: 'India' });
+  const OL = old.location || {};
+  Object.assign(p.loc, { city: old.city, locality: old.locality, state: old.state || 'Tamil Nadu', district: OL.district || (CITIES[old.city] || {}).district || old.city, country: 'India',
+    address: OL.address || '', pincode: OL.pincode || '', lat: OL.lat ?? '', lng: OL.lng ?? '', pinOk: !!(OL.lat !== '' && OL.lat != null && OL.pinOk !== false), precise: true });
   (old.badges || []).forEach((b, i) => { if (b.doc && appr[i]) p.docs[appr[i]] = { status: 'collected', file: `${appr[i]}-document.pdf`, at: old.listingDate, by: '' }; });
   // documents already in the property's legal checklist count as collected here too
   (old.legal || []).forEach(d => { if (d.status !== 'not' && !p.docs[d.key]) p.docs[d.key] = { status: d.status === 'verified' ? 'verified' : 'collected', file: d.file || d.key + '.pdf', at: d.date || old.listingDate, by: d.verifiedBy || '' }; });
@@ -635,6 +672,11 @@ function syncEdit(p) {
     badges: p.approvals.map(k => ({ l: approvalOf(k).long, doc: !!p.docs[k] })),
     extra: p.custom.map(c => ({ label: c.label, value: c.value })),
   });
+  // the address and map pin (nearby places stay as they are — they are managed on the property page)
+  old.location = old.location || { nearby: [] };
+  const wasExact = old.location.lat !== '' && old.location.lat != null && old.location.pinOk !== false, isExact = p.loc.lat !== '' && p.loc.lat != null && !!p.loc.pinOk;
+  if (isExact && !wasExact) old.location.suggestPending = true;
+  Object.assign(old.location, { address: p.loc.address || '', pincode: p.loc.pincode || '', district: p.loc.district || old.location.district || '', lat: p.loc.lat, lng: p.loc.lng, pinOk: !!p.loc.pinOk });
   // new documents land in the legal checklist as "collected, pending verification"
   Object.entries(p.docs).forEach(([k, d]) => {
     const key = k === 'building' ? ((LEGAL_BY_TYPE[old.type] || []).includes('layout') ? 'layout' : 'plan') : k;
@@ -695,7 +737,13 @@ function nextStep(p) {
   else if (first.k === 'city') ask = 'Which city is it in?';
   else if (first.k === 'locality') ask = `Which locality in ${p.loc.city}?`;
   else if (first.k === 'price') ask = p.purpose === 'Rent' ? 'What’s the monthly rent?' : 'What’s the price?';
-  else ask = p.type === 'agri' ? 'How big is the land? (acres or sq.ft.)' : `What’s the ${(p.type ? areaLabel(p) : 'area').toLowerCase()} in sq.ft.?`;
+  else if (first.k === 'area') ask = p.type === 'agri' ? 'How big is the land? (acres or sq.ft.)' : `What’s the ${(p.type ? areaLabel(p) : 'area').toLowerCase()} in sq.ft.?`;
+  else if (first.k === 'title') { ask = 'What should the listing be called?'; const tt = suggestTitle(p); if (tt) buttons = [{ act: 'ans', k: 'title', v: tt, l: '✓ ' + tt }]; }
+  else { // a required key detail of the type
+    const f = fieldsFor(p.type).find(x => 'specs.' + x.k === first.k), l = shortLabel(f), lc = /^[A-Z][a-z]/.test(l) ? l[0].toLowerCase() + l.slice(1) : l;
+    ask = f.t === 'select' ? `Which ${lc}?` : `What’s the ${lc}?`;
+    if (f.t === 'select') buttons = f.o.map(o => (typeof o === 'object' ? o.v : o)).filter(Boolean).slice(0, 8).map(v => ({ act: 'ans', k: first.k, v, l: v }));
+  }
   return { key: first.k, ask, html: esc(ask), buttons };
 }
 /** Move past the optional photos or amenities step. */
@@ -903,6 +951,27 @@ function progressSentence(p) {
   if (completeness(p) >= 100) return 'Complete — every detail is in';
   return p.status === 'published' ? 'Published — add more to reach 100%' : 'Ready to publish — the rest is optional';
 }
+/** Optional exact location: the sales executive's current location, or a pasted Maps / WhatsApp link. Without it the
+    property is shown on the map as its locality (approximate). */
+function pinCtl(p, dis) {
+  const L = p.loc, exact = L.lat !== '' && L.lat != null && L.pinOk;
+  if (exact) {
+    const s = p.src['loc.lat'];
+    return `<div class="pin-line ok"><span>📍 <b>Exact location set</b> <span class="muted">${L.lat}, ${L.lng}${s && s.q ? ' · ' + esc(String(s.q).length > 40 ? String(s.q).slice(0, 40) + '…' : s.q) : ''}</span></span>
+      <a href="https://www.google.com/maps?q=${L.lat},${L.lng}" target="_blank" rel="noopener">View on map ↗</a>${dis ? '' : `<button type="button" class="linkbtn danger" data-ap="pinClear" data-id="${p.id}">Remove</button>`}</div>`;
+  }
+  return `<div class="pin-line">
+      <div class="pin-ctl"><button type="button" class="btn sm" data-ap="pinHere" data-id="${p.id}" ${dis}>📍 Use my current location</button><span class="muted">or</span>
+        <input id="${fid('pin')}" placeholder="Paste a Google Maps link or WhatsApp location" ${dis}><button type="button" class="btn sm" data-ap="pinLink" data-id="${p.id}" ${dis}>Use link</button></div>
+      <span class="hint">${L.locality ? `Skip it if you like — the map will show <b>${esc(L.locality)}</b> as an approximate location until it is set.` : 'Skip it if you like — the map shows the locality until it is set.'}</span></div>`;
+}
+function setPin(p, ll, how) {
+  if (!canEdit(p)) { toast('Only an Admin or Sales manager can change a published property'); return; }
+  const ch = [{ path: 'pin', from: p.loc.lat !== '' ? `${p.loc.lat}, ${p.loc.lng}` : '', to: `${ll.lat}, ${ll.lng}`, q: how, ll }];
+  applyChanges(p, ch, 'form'); afterUpdate(p, ch);
+  if (!p.loc.pincode && typeof geoOf === 'function' && p.loc.city) p.loc.pincode = geoOf(p.loc.city, p.loc.locality).pin; // Google fills the pincode from the pin
+  p.updatedAt = TODAY; save(); toast('Exact location set'); render();
+}
 function detailsTab(p) {
   const dis = canEdit(p) ? '' : 'disabled', t = p.type ? PROPERTY_TYPES[p.type] : null, L = p.loc;
   const typeList = p.category ? typesIn(p.category).map(k => ({ v: k, l: PROPERTY_TYPES[k].label })) : [];
@@ -911,8 +980,9 @@ function detailsTab(p) {
   // only a few suggested extras are offered as chips; anything else via “Something else” (or by telling the AI)
   const more = fieldsFor(p.type).filter(f => (SUGGESTED_FIELDS[p.type] || []).includes(f.k) && !shown.includes(f));
   const rmBtn = (act, attr, name) => (dis ? '' : `<button type="button" class="rm-field" data-ap="${act}" data-id="${p.id}" ${attr} title="Remove ${esc(name)}" aria-label="Remove ${esc(name)}">✕</button>`);
-  const specs = shown.map(x => fieldHtml(p, 'specs.' + x.k, esc(x.l) + (x.added ? ' <span class="newtag">New field</span>' : '') + (coreKeys.includes(x.k) ? '' : rmBtn('hideField', `data-k="${x.k}"`, x.l)),
-    x.t === 'select' ? selectCtl(p, 'specs.' + x.k, x.o, p.specs[x.k], dis) : inputCtl(p, 'specs.' + x.k, p.specs[x.k], x.t === 'number' ? 'number' : x.t === 'month' ? 'month' : 'text', dis), { hint: x.h })).join('');
+  const reqKeys = REQ_DETAILS[p.type] || [];
+  const specs = shown.slice().sort((a, b) => reqKeys.includes(b.k) - reqKeys.includes(a.k)).map(x => fieldHtml(p, 'specs.' + x.k, esc(x.l) + (x.added ? ' <span class="newtag">New field</span>' : '') + (coreKeys.includes(x.k) ? '' : rmBtn('hideField', `data-k="${x.k}"`, x.l)),
+    x.t === 'select' ? selectCtl(p, 'specs.' + x.k, x.o, p.specs[x.k], dis) : inputCtl(p, 'specs.' + x.k, p.specs[x.k], x.t === 'number' ? 'number' : x.t === 'month' ? 'month' : 'text', dis), { hint: x.h, req: reqKeys.includes(x.k) })).join('');
   const custom = p.custom.map(c => `<div class="f"><label for="${fid('custom.' + c.label)}">${esc(c.label)} <span class="newtag">This property only</span>${rmBtn('rmCustom', `data-l="${esc(c.label)}"`, c.label)}</label>${inputCtl(p, 'custom.' + c.label, c.value, 'text', dis)}</div>`).join('');
   const addOpen = AUI.addOpen || {};
   const addLink = (k, label) => (dis ? '' : `<div class="sec-tools"><button type="button" class="linkbtn" data-ap="openAdd" data-k="${k}">＋ ${label}</button></div>`);
@@ -925,24 +995,30 @@ function detailsTab(p) {
   }).join('');
   // four sections joined by a vertical step indicator; each can be collapsed with its arrow
   const m = missing(p), core = coreFields(p), coreIn = core.filter(f => !isEmpty(p.specs[f.k])).length;
+  const req = reqDetails(p), reqIn = req.filter(f => !isEmpty(p.specs[f.k])).length, basicLeft = m.filter(x => BASIC_KEYS.includes(x.k)).length;
   const appr = p.approvals.map(k => `${approvalOf(k).l}${p.docs[k] ? '' : ' · document pending'}`).join(', ');
+  const aiTitle = p.src.title && p.src.title.s === 'ai';
   const steps = [
-    { k: 'basic', title: 'Required details', done: !m.length, status: m.length ? `${6 - m.length} of 6 filled` : 'Complete', req: true,
+    { k: 'basic', title: 'Required details', done: !basicLeft, status: basicLeft ? `${BASIC_KEYS.length - basicLeft} of ${BASIC_KEYS.length} filled` : 'Complete', req: true,
       body: `<div class="fgrid c2">
+          ${fieldHtml(p, 'title', 'Listing title', inputCtl(p, 'title', p.title, 'text', dis, 'placeholder="Suggested for you once the type and locality are known"'),
+            { req: 1, cls: 'span3', hint: p.title ? (aiTitle ? '✨ Suggested by the AI from the type and locality — change it any time' : 'Your title — the AI won’t change it') : '' })}
           ${fieldHtml(p, 'purpose', 'I want to', pillsCtl(p, 'purpose', LISTING_PURPOSES.map(v => ({ v, l: PURPOSE_LABEL[v] })), p.purpose, dis), { req: 1 })}
           ${fieldHtml(p, 'category', 'Category', pillsCtl(p, 'category', CATEGORIES.map(v => ({ v, l: v })), p.category, dis, 'fcat'), { req: 1, hint: 'Agricultural and industrial land are under Commercial' })}
           ${fieldHtml(p, 'type', 'Property type', p.category ? pillsCtl(p, 'type', typeList, p.type, dis) : '<div class="pick-first" id="f-type" tabindex="-1">Choose a category first — the types depend on it.</div>', { req: 1, cls: 'span3' })}
           ${fieldHtml(p, 'loc.city', 'City / town', selectCtl(p, 'loc.city', Object.keys(CITY_CENTRE), L.city, dis), { req: 1 })}
           ${fieldHtml(p, 'loc.locality', 'Locality', inputCtl(p, 'loc.locality', L.locality, 'text', dis, `list="loc-list" placeholder="e.g. ${esc(localities[0] || 'Anna Nagar')}"`) + `<datalist id="loc-list">${localities.map(l => `<option value="${esc(l)}">`).join('')}</datalist>`, { req: 1, hint: L.city ? `${esc([L.district && L.district + ' district', L.state, L.country].filter(Boolean).join(', '))} — filled in automatically` : '' })}
+          ${fieldHtml(p, 'pin', 'Exact location <span class="opt-tag">Optional</span>', pinCtl(p, dis), { cls: 'span3' })}
           ${fieldHtml(p, 'price', p.purpose === 'Rent' ? 'Monthly rent (₹)' : 'Price (₹)', inputCtl(p, 'price', p.price, 'number', dis), { req: 1, hint: p.price > 0 ? inrShort(p.price) + (p.area > 0 ? ` · ${inr(Math.round(p.price / p.area))}/sq.ft.` : '') : '' })}
           ${fieldHtml(p, 'area', t ? t.areaLabel : 'Area / plot size (sq.ft.)', inputCtl(p, 'area', p.area, 'number', dis), { req: 1 })}
           <div class="f span3"><label class="check"><input type="checkbox" id="${fid('priceOnRequest')}" data-f="priceOnRequest" data-id="${p.id}" ${p.priceOnRequest ? 'checked' : ''} ${dis}> Hide the price on the listing (“price on request”)</label></div>
         </div>` },
-    { k: 'details', title: t ? `${esc(t.label)} details` : 'Property details', done: core.length > 0 && coreIn === core.length, status: t ? `${coreIn} of ${core.length} key details` : 'Choose the type first',
+    { k: 'details', title: t ? `${esc(t.label)} details` : 'Property details', done: req.length > 0 && reqIn === req.length, req: true,
+      status: t ? (reqIn < req.length ? `${reqIn} of ${req.length} required filled` : `Required filled · ${coreIn} of ${core.length} key details`) : 'Choose the type first',
       body: t ? `<div class="fgrid">
+            ${specs}
             ${fieldHtml(p, 'facing', 'Facing', selectCtl(p, 'facing', FACINGS, p.facing, dis))}
-            ${specs}${custom}
-            ${fieldHtml(p, 'title', 'Listing title', inputCtl(p, 'title', p.title, 'text', dis, 'placeholder="Written for you once the type and locality are known"'), { cls: 'span3' })}
+            ${custom}
           </div>
           <p class="muted" style="margin:10px 0 0;font-size:12.5px"><b style="color:var(--ink2)">Description</b> <span class="srcmini s-ai">✨ AI-written</span> — ${esc(description(p))}</p>
           ${dis ? '' : `<div class="more-details"><span class="muted">Add a detail:</span>${more.map(f => `<button type="button" class="add-chip" data-ap="showField" data-id="${p.id}" data-k="${f.k}">＋ ${esc(f.l.replace(/ \(.*\)$/, ''))}</button>`).join('')}<button type="button" class="add-chip own" data-ap="customOpen">＋ Something else</button></div>
@@ -1055,8 +1131,10 @@ function summaryCard(p) {
   // purpose and type (required)
   if (p.purpose && t) rows.push(row(true, `${PURPOSE_LABEL[p.purpose]} · ${typeLabel(t)}`, { ai: byAI('purpose', 'type'), cls: hit('purpose', 'type') }));
   else rows.push(row(false, !p.purpose && !t ? 'Purpose and property type' : !p.purpose ? `Purpose <span class="muted">· ${typeLabel(t)}</span>` : `Property type <span class="muted">· ${PURPOSE_LABEL[p.purpose]}</span>`, { req: 1, cls: hit('purpose', 'type'), btn: btn('Add', 'goItem', `data-k="${!p.purpose ? 'purpose' : 'type'}"`) }));
-  // location (required) — no map pin during creation
-  if (L.city && L.locality) rows.push(row(true, `${esc(L.locality)}, ${esc(L.city)}`, { ai: byAI('loc.city', 'loc.locality'), cls: hit('loc.city', 'loc.locality') }));
+  // location (required: city and locality) — the exact map location is optional
+  const exact = L.lat !== '' && L.lat != null && L.pinOk;
+  if (L.city && L.locality) rows.push(row(true, `${esc(L.locality)}, ${esc(L.city)} <span class="muted">· ${exact ? '📍 exact location' : 'approximate on the map'}</span>`,
+    { ai: byAI('loc.city', 'loc.locality'), cls: hit('loc.city', 'loc.locality', 'pin'), btn: exact ? '' : btn('📍 Exact', 'goItem', 'data-k="pin"') }));
   else rows.push(row(false, L.city ? `Locality <span class="muted">· ${esc(L.city)}</span>` : 'City and locality', { req: 1, cls: hit('loc.city'), btn: btn('Add', 'goItem', `data-k="${L.city ? 'locality' : 'city'}"`) }));
   // price and area (both required)
   const pr = p.price > 0 ? inrShort(p.price) + (p.priceOnRequest ? ' (hidden on listing)' : '') : '', ar = p.area > 0 ? `${num(p.area)} sq.ft.` : '';
@@ -1065,8 +1143,10 @@ function summaryCard(p) {
   // type details
   if (t) {
     const fs = coreFields(p), all = fieldsFor(t), filled = all.filter(f => !isEmpty(p.specs[f.k])), coreIn = fs.filter(f => !isEmpty(p.specs[f.k])).length, enough = fs.length > 0 && coreIn === fs.length;
-    rows.push(row(enough, filled.length ? `${esc(filled.slice(0, 3).map(f => shortFact(p, f)).join(' · '))} <span class="muted">· ${coreIn} of ${fs.length} key details</span>` : `${typeLabel(t)} details`,
-      { ai: filled.some(f => byAI('specs.' + f.k)), pts: 15, cls: hit('specs'), btn: enough ? '' : btn('Add', 'goItem', 'data-k="details"') }));
+    const reqLeft = reqDetails(p).filter(f => isEmpty(p.specs[f.k]));
+    rows.push(row(enough, reqLeft.length ? `${esc(reqLeft.map(shortLabel).join(' and '))} <span class="muted">· required</span>`
+        : filled.length ? `${esc(filled.slice(0, 3).map(f => shortFact(p, f)).join(' · '))} <span class="muted">· ${coreIn} of ${fs.length} key details</span>` : `${typeLabel(t)} details`,
+      { ai: filled.some(f => byAI('specs.' + f.k)), pts: reqLeft.length ? 0 : 15, req: reqLeft.length > 0, cls: hit('specs'), btn: enough ? '' : btn('Add', 'goItem', `data-k="${reqLeft.length ? 'specs.' + reqLeft[0].k : 'details'}"`) }));
   }
   // amenities
   rows.push(row(p.amenities.length > 0, p.amenities.length ? esc(p.amenities.slice(0, 3).join(', ') + (p.amenities.length > 3 ? ` +${p.amenities.length - 3}` : '')) : 'Amenities',
@@ -1087,7 +1167,10 @@ function summaryCard(p) {
     : p.status === 'draft' ?`<button class="btn primary block" data-ap="publish" data-id="${p.id}" ${m.length ? 'disabled' : ''}>${isMgr() ? 'Publish' : 'Submit for approval'}</button>`
     : p.status === 'pending' && isMgr() ? `<div class="row" style="gap:8px"><button class="btn" data-ap="sendback" data-id="${p.id}">Send back</button><button class="btn primary" style="flex:1;justify-content:center" data-ap="approve" data-id="${p.id}">✓ Approve & publish</button></div>` : '';
   return `<div class="card sumcard">
-    <div class="sum-top">${ring(score, 60)}<div style="min-width:0"><h2>${esc(p.title || 'New property')}</h2>
+    <div class="sum-top">${ring(score, 60)}<div style="min-width:0;flex:1">${AUI.titleEdit === p.id
+      ? `<div class="title-ed"><input id="sum-title" value="${esc(p.title)}" placeholder="Listing title" aria-label="Listing title"><button type="button" class="btn sm primary" data-ap="titleSave" data-id="${p.id}">Save</button><button type="button" class="btn sm" data-ap="titleEdit" data-id="${p.id}" data-v="0">Cancel</button></div>`
+      : `<h2 class="sum-title">${esc(p.title || 'New property')}${can && p.title ? ` <button type="button" class="title-pen" data-ap="titleEdit" data-id="${p.id}" title="Change the title" aria-label="Change the title">✎</button>` : ''}</h2>`}
+      ${p.title && p.src.title && p.src.title.s === 'ai' && AUI.titleEdit !== p.id ? '<small class="muted ai-title">✨ Suggested title — click ✎ to change it</small>' : ''}
       <div class="row" style="gap:5px;margin-top:4px">${chip(REC_STATUS[p.status][0], REC_STATUS[p.status][1])}${p.status === 'published' ? chip(esc(p.avail), AVAIL_TONE[p.avail]) : ''}${badgesInline(p)}</div></div></div>
     <ul class="sfacts">${rows.join('')}</ul>
     ${status}
@@ -1244,7 +1327,8 @@ function edit(id, arg) {
   const p = startEdit(id);
   if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to properties</a></div>' };
   let tab = '';
-  if (arg && arg.startsWith('field-')) { const k = arg.slice(6); if (!p.shownFields.includes(k)) p.shownFields.push(k); AUI.focus = fid('specs.' + k); tab = '/details'; save(); }
+  if (arg === 'field-title' || arg === 'location') { AUI.focus = fid(arg === 'location' ? 'pin' : 'title'); tab = '/details'; }
+  else if (arg && arg.startsWith('field-')) { const k = arg.slice(6); if (!p.shownFields.includes(k)) p.shownFields.push(k); AUI.focus = fid('specs.' + k); tab = '/details'; save(); }
   else if (['details', 'media', 'legal'].includes(arg)) tab = '/' + arg;
   setTimeout(() => location.replace('#/properties/draft/' + id + tab), 0);
   return { title: 'Edit ' + id, crumbs: 'Specification data / <a href="#/properties">Properties</a> / <b>' + id + '</b>', html: '' };
@@ -1253,7 +1337,7 @@ function onSend(id, text) {
   const p = getP(id); if (!p || !text.trim()) return;
   talk(p, text); save(); render();
 }
-const GO_ITEM = { purpose: ['details', 'purpose'], type: ['details', 'type'], city: ['details', 'loc.city'], locality: ['details', 'loc.locality'], price: ['details', 'price'], area: ['details', 'area'], details: ['details', 'sec-details'], amenities: ['details', 'sec-amen'], pin: ['details', 'pin'], photos: ['media', ''], docs: ['legal', ''] };
+const GO_ITEM = { title: ['details', 'title'], purpose: ['details', 'purpose'], type: ['details', 'type'], city: ['details', 'loc.city'], locality: ['details', 'loc.locality'], price: ['details', 'price'], area: ['details', 'area'], details: ['details', 'sec-details'], amenities: ['details', 'sec-amen'], pin: ['details', 'pin'], photos: ['media', ''], docs: ['legal', ''] };
 const AP_ACTIONS = {
   q: d => { const p = getP(d.id); if (resolve(p, d.c) === 'nav') return; save(); render(); },
   ans: d => {
@@ -1261,6 +1345,31 @@ const AP_ACTIONS = {
     youSay(p, esc(d.k === 'type' ? typeLabel(d.v) : d.k === 'purpose' ? PURPOSE_LABEL[d.v] : d.v));
     commit(p, { raw: 'type', f: { [d.k]: { v: d.v, q: d.v } }, amen: [], newAmen: [], custom: [], removeAmen: [], badges: [], notes: [] }, 'chat');
     save(); render();
+  },
+  pinHere: d => { // the browser's location in the real build; here a point in the locality (mock)
+    const p = getP(d.id);
+    if (!p.loc.city) { toast('Choose the city first'); return; }
+    const g = geoOf(p.loc.city, p.loc.locality), j = Date.now() % 997;
+    setPin(p, { lat: +(g.lat + ((j % 21) - 10) / 2500).toFixed(5), lng: +(g.lng + (((j >> 3) % 21) - 10) / 2500).toFixed(5) }, 'current location of ' + me());
+  },
+  pinLink: d => {
+    const p = getP(d.id), el = document.getElementById(fid('pin')), v = el ? el.value.trim() : '';
+    if (!v) { toast('Paste a Google Maps link or a WhatsApp location first'); return; }
+    if (!p.loc.city && !/\d\.\d{3,}/.test(v)) { toast('Choose the city first'); return; }
+    const ll = pinFromText(v, p);
+    if (!ll) { toast('That doesn’t look like a map link — try Share → Copy link in Google Maps'); return; }
+    setPin(p, ll, ll.q);
+  },
+  pinClear: d => {
+    const p = getP(d.id); if (!canEdit(p)) return;
+    hist(p, `Map pin removed (${p.loc.lat}, ${p.loc.lng}) — back to the locality (form)`);
+    Object.assign(p.loc, { lat: '', lng: '', pinOk: false }); delete p.src['loc.lat']; p.updatedAt = TODAY; save(); render();
+  },
+  titleEdit: d => { AUI.titleEdit = d.v === '0' ? null : d.id; render(); if (AUI.titleEdit) setTimeout(() => { const el = document.getElementById('sum-title'); if (el) { el.focus(); el.select(); } }, 0); },
+  titleSave: d => {
+    const p = getP(d.id), el = document.getElementById('sum-title'), v = el ? el.value.trim() : '';
+    if (!v) { toast('The title can’t be empty'); return; }
+    AUI.titleEdit = null; setField(p, 'title', v); render();
   },
   pinok: d => { const p = getP(d.id); p.loc.pinOk = true; p.queue = p.queue.filter(q => q.kind !== 'pin'); hist(p, `Map pin confirmed (${p.loc.lat}, ${p.loc.lng})`); if (d.via === 'chat') { youSay(p, 'The pin is right'); aiSay(p, 'Pin confirmed.'); } save(); toast('Map pin confirmed'); render(); },
   upload: d => { const p = getP(d.id); if (!canEdit(p)) return; AUI.attach = false; if (d.via === 'chat') freezeNext(p); upload(p, d.doc, d.via === 'chat'); save(); toast(`${docName(d.doc)} uploaded — pending verification`); render(); },
@@ -1332,9 +1441,9 @@ const AP_ACTIONS = {
   },
   rmCustom: d => { const p = getP(d.id); p.custom = p.custom.filter(c => c.label !== d.l); hist(p, `Detail removed: ${d.l}`); save(); render(); },
   goItem: d => {
-    const p = getP(d.id), [tab, target] = GO_ITEM[d.k] || ['details', ''];
+    const p = getP(d.id), [tab, target] = GO_ITEM[d.k] || (String(d.k).startsWith('specs.') ? ['details', d.k] : ['details', '']);
     // open the section that holds the field, if it was collapsed
-    if (tab === 'details' && AUI.collapsed) delete AUI.collapsed[target.startsWith('sec-') ? target.slice(4) : 'basic'];
+    if (tab === 'details' && AUI.collapsed) delete AUI.collapsed[target.startsWith('sec-') ? target.slice(4) : target.startsWith('specs.') ? 'details' : 'basic'];
     AUI.focus = target ? (target.startsWith('sec-') ? target : fid(target)) : null;
     const h = `#/properties/draft/${p.id}/${tab}`; if (location.hash === h) render(); else go(h);
   },
@@ -1354,6 +1463,8 @@ document.addEventListener('submit', e => {
   e.preventDefault(); onSend(f.dataset.id, String(new FormData(f).get('msg') || ''));
 });
 document.addEventListener('keydown', e => {
+  if (e.target.id === 'sum-title' && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); const b = document.querySelector(e.key === 'Enter' ? '[data-ap="titleSave"]' : '[data-ap="titleEdit"][data-v="0"]'); if (b) b.click(); return; }
+  if (e.target.id === fid('pin') && e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('[data-ap="pinLink"]'); if (b) b.click(); return; }
   if (e.key === 'Escape' && document.querySelector('.drawer')) { const m = location.hash.match(/#\/properties\/draft\/(D-\d+)/); if (m) go('#/properties/draft/' + m[1]); return; }
   if (e.target.id === 'msg' && e.key === 'Enter' && !e.shiftKey && e.target.form && e.target.form.dataset.apform) { e.preventDefault(); e.target.form.requestSubmit(); }
   if ((e.target.id === 'f-new-amen' || e.target.id === 'f-new-value' || e.target.id === 'f-new-approval') && e.key === 'Enter') { e.preventDefault(); const b = e.target.parentElement.querySelector('button'); if (b) b.click(); }
