@@ -85,7 +85,8 @@ function legalSummary(p) {
 }
 
 function valuationSummary(p, settings) {
-  const comps = (p.valuation.comparables || []).filter(c => Number(c.pricePerSqft) > 0);
+  // every comparable: found automatically in our records + added from outside (compsOf, views-properties.js)
+  const comps = (typeof compsOf === 'function' ? compsOf(p) : (p.valuation.comparables || [])).filter(c => Number(c.pricePerSqft) > 0);
   const ppsf = pricePerSqft(p);
   const out = { ppsf, count: comps.length };
   if (comps.length) {

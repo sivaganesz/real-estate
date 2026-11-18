@@ -676,3 +676,4 @@ td.ctr .check { justify-content: center; margin: 0; }
 .ov-price p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; }
 .ov-price-all { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line2); font-size: 13px; }
 .ov-price-all b { font-weight: 600; } .ov-price-all small { flex-basis: 100%; font-size: 11.5px; }
+.pr-auto { margin: -4px 0 10px; font-size: 12.5px; color: var(--muted); }

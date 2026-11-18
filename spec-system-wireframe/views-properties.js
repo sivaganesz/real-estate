@@ -269,11 +269,10 @@ function propOverview(p) {
 function priceCard(p) {
   const v = valuationSummary(p, DB.settings), href = `#/properties/${p.id}/pricing`;
   const where = !v.count ? null : v.position.startsWith('Within') ? ['In line with', 'green', ''] : v.position.startsWith('Below') ? ['Below', 'amber', ' — check for differences'] : ['Above', 'amber', ' — review the price'];
-  const found = v.count ? 0 : compCandidates(p).length;
   return `<div class="card ov-price"><div class="card-head"><h2>Price check</h2><span class="sp"></span><a href="${href}">Details →</a></div>
     <div class="ov-price-n"><b>${inr(v.ppsf)}</b><small>/sq.ft.</small></div>
     ${where ? `<p>${chip(where[0] + ' the market', where[1])} <span class="muted">${v.count} similar: ${v.min === v.max ? inr(v.min) : `${inr(v.min)} – ${inr(v.max)}`}/sq.ft.${where[2]}</span></p>`
-      : `<p class="muted">Not compared yet${found ? ` — <a href="${href}">${found} similar propert${found > 1 ? 'ies' : 'y'} found</a>` : ''}.</p>`}
+      : `<p class="muted">Not compared yet — no similar properties in our records. <a href="${href}">Add one</a></p>`}
     <div class="ov-price-all"><span>Total for the buyer</span><b>${inr(v.allIn)}</b><small class="muted">incl. stamp duty &amp; registration</small></div>
   </div>`;
 }
@@ -793,10 +792,11 @@ document.addEventListener('keydown', e => { // Enter in the small "new" forms
   e.preventDefault(); const b = document.querySelector(e.target.id === 'doc-new-name' ? '[data-act="docNewSave"]' : '[data-act="apNewSave"]'); if (b) b.click();
 });
 /* ---------- Price: is the asking price reasonable, and how do we say it without overselling? ----------
-   Comparables are found in our own records (same type and city, area within ±25%, listed or sold in the last 12 months);
-   the team keeps the ones that are truly similar, and can add outside ones (portal listings, registered sales).
-   valuation.comparables[] = { ref (property ID, for ours), location, type, area, pricePerSqft, kind: 'Asking' | 'Transaction',
-                               date, source, differences }   valuation.dismissed[] = property IDs marked "not similar" */
+   Fully automatic: the price is judged against every similar property in our own records (same type and city, area within
+   ±25%, listed or sold in the last 12 months) — worked out live, so a nearby sale counts as soon as it is marked Sold.
+   The team only removes ones that aren't really similar, or adds outside ones (portal listings, registered sales).
+   valuation.comparables[] = the outside ones { location, type, area, pricePerSqft, kind: 'Asking' | 'Transaction', date, source, differences }
+   valuation.dismissed[]   = IDs of our properties marked "not similar" for this one */
 const COMP_DAYS = 365, COMP_AREA = 0.25;
 function compDiffs(p, o) { // what differs, in a few words — the AI's note, which the team can change
   const d = [], pct = Math.round((o.area - p.area) / p.area * 100);
@@ -814,27 +814,34 @@ function compFrom(p, o) {
   return { ref: o.id, location: `${o.locality}, ${o.city}`, type: typeLabel(o.type), area: o.area, pricePerSqft: Math.round(o.price / o.area),
     kind: sold ? 'Transaction' : 'Asking', date: sold && when ? when : o.listingDate, source: `Our records · ${o.id}${sold ? ' (' + o.status.toLowerCase() + ')' : ''}`, differences: compDiffs(p, o) };
 }
-/** Similar properties in our own records that are not on the list yet. */
+/** Similar properties in our own records (not marked "not similar"). */
 function compCandidates(p) {
-  const V = p.valuation, have = new Set((V.comparables || []).map(c => c.ref).filter(Boolean)), no = new Set(V.dismissed || []), today = new Date(DEMO_TODAY);
+  const V = p.valuation, no = new Set(V.dismissed || []), today = new Date(DEMO_TODAY);
   return DB.properties.filter(o => o.id !== p.id && !o.archived && o.type === p.type && o.city === p.city && o.area > 0 && o.price > 0 && p.area > 0
-      && Math.abs(o.area - p.area) / p.area <= COMP_AREA && (today - new Date(o.listingDate)) / 864e5 <= COMP_DAYS && !have.has(o.id) && !no.has(o.id))
+      && Math.abs(o.area - p.area) / p.area <= COMP_AREA && (today - new Date(o.listingDate)) / 864e5 <= COMP_DAYS && !no.has(o.id))
     .sort((a, b) => (b.locality === p.locality) - (a.locality === p.locality) || Math.abs(a.area - p.area) - Math.abs(b.area - p.area))
     .map(o => compFrom(p, o));
 }
+/** Everything the price is judged against: found in our records (live) + added from outside. Ones from our records that
+    an older version stored by hand are dropped — they now come in live. */
+function compsOf(p) {
+  const V = p.valuation;
+  if ((V.comparables || []).some(c => c.ref)) V.comparables = V.comparables.filter(c => !c.ref);
+  return compCandidates(p).map(c => ({ ...c, auto: true })).concat(V.comparables || []);
+}
 function propPricing(p) {
-  const v = valuationSummary(p, DB.settings), V = p.valuation, cands = compCandidates(p), noun = typeLabel(p.type).toLowerCase();
+  const v = valuationSummary(p, DB.settings), V = p.valuation, auto = compCandidates(p), all = auto.concat(V.comparables), noun = typeLabel(p.type).toLowerCase();
   const tone = !v.count ? 'grey' : v.position.startsWith('Within') ? 'green' : 'amber';
   const pos = !v.count ? '' : v.position.startsWith('Within') ? 'within the range' : v.position.startsWith('Below') ? 'below the range' : 'above the range';
   // the headline: the price, and where it sits among similar properties
-  const vals = [v.ppsf || 0, ...V.comparables.map(c => Number(c.pricePerSqft) || 0)].filter(x => x > 0);
+  const vals = [v.ppsf || 0, ...all.map(c => Number(c.pricePerSqft) || 0)].filter(x => x > 0);
   const maxP = Math.max(...vals, 1), lo = Math.min(...vals, maxP) * 0.85; // start the scale just below the lowest, so differences show
-  const bars = [{ l: 'This property (asking)', val: v.ppsf, me: 1 }].concat(V.comparables.filter(c => Number(c.pricePerSqft) > 0).map(c => ({ l: `${c.location}${c.ref ? ' · ' + c.ref : ''} · ${c.kind === 'Transaction' ? 'sold' : 'asking'}`, val: Number(c.pricePerSqft) })))
+  const bars = [{ l: 'This property (asking)', val: v.ppsf, me: 1 }].concat(all.filter(c => Number(c.pricePerSqft) > 0).map(c => ({ l: `${c.location}${c.ref ? ' · ' + c.ref : ''} · ${c.kind === 'Transaction' ? 'sold' : 'asking'}`, val: Number(c.pricePerSqft) })))
     .map(b => `<div class="bar-row ${b.me ? 'me' : ''}"><span>${esc(b.l)}</span>${meter((b.val - lo) / ((maxP - lo) || 1) * 100, b.me ? '' : 'grey')}<span class="num">${num(b.val)}</span></div>`).join('');
   const head = `<div class="card pr-head">
       <div class="pr-top"><div><div class="pr-price">${inr(p.price)}</div><div class="muted">${inr(v.ppsf)} / sq.ft. · ${num(p.area)} sq.ft.${p.priceOnRequest ? ' · hidden on the listing' : ''}</div></div>
         <div class="pr-verdict">${v.count ? `${chip(v.position.split(' — ')[0], tone)}<p>${inr(v.ppsf)}/sq.ft. is <b>${pos}</b> of ${v.count} similar propert${v.count > 1 ? 'ies' : 'y'} (${inr(v.min)} – ${inr(v.max)}/sq.ft.)${v.txnAvg ? `; recent sales average <b>${inr(v.txnAvg)}</b>` : ''}.${v.position.includes(' — ') ? ` <span class="muted">${esc(v.position.split(' — ')[1].replace(/^./, c => c.toUpperCase()))}.</span>` : ''}</p>`
-          : `${chip('Not compared yet', 'grey')}<p class="muted">${cands.length ? `Keep a few of the ${cands.length} similar properties found below to compare the price.` : 'Add a similar property to compare the price.'}</p>`}</div></div>
+          : `${chip('Not compared yet', 'grey')}<p class="muted">No similar ${noun}s in ${esc(p.city)} in our records yet. Add one from outside — a portal listing or a registered sale — to compare the price.</p>`}</div></div>
       ${v.count ? `<div class="pr-bars">${bars}</div>` : ''}
       <p class="pr-rule">Say it neutrally — never “bargain” or “best price” just because another seller asks more.</p>
     </div>`;
@@ -847,14 +854,16 @@ function propPricing(p) {
     : `<div class="pr-row"><span class="pr-ppsf"><b>${c.pricePerSqft ? inr(c.pricePerSqft) : '—'}</b><small>/sq.ft.</small></span>
         <div class="pr-main"><div><b>${esc(c.location)}</b> ${chip(c.kind === 'Transaction' ? 'Sold' : 'Asking', c.kind === 'Transaction' ? 'green' : '')} ${c.ref ? `<a class="mono small" href="#/properties/${c.ref}">${c.ref}</a>` : ''}</div>
           <small>${num(c.area)} sq.ft. · ${c.date ? fmtDate(c.date) : 'no date'} · ${esc(c.source || 'source not given')}${c.differences ? ` · <i>${esc(c.differences)}</i>` : ''}</small></div>
-        <div class="lg-acts">${c.ref ? '' : `<button class="btn sm ghost" data-act="compEdit" data-id="${p.id}" data-i="${i}">✎ Edit</button>`}<button class="btn sm ghost danger" data-act="rmComp" data-id="${p.id}" data-i="${i}" title="Remove" aria-label="Remove">✕</button></div></div>`;
-  const sugg = cands.map(c => `<div class="pr-row sugg"><span class="pr-ppsf"><b>${inr(c.pricePerSqft)}</b><small>/sq.ft.</small></span>
+        <div class="lg-acts"><button class="btn sm ghost" data-act="compEdit" data-id="${p.id}" data-i="${i}">✎ Edit</button><button class="btn sm ghost danger" data-act="rmComp" data-id="${p.id}" data-i="${i}" title="Remove" aria-label="Remove">✕</button></div></div>`;
+  const found = auto.map(c => `<div class="pr-row"><span class="pr-ppsf"><b>${inr(c.pricePerSqft)}</b><small>/sq.ft.</small></span>
       <div class="pr-main"><div><b>${esc(c.location)}</b> ${chip(c.kind === 'Transaction' ? 'Sold' : 'Asking', c.kind === 'Transaction' ? 'green' : '')} <a class="mono small" href="#/properties/${c.ref}">${c.ref}</a></div>
         <small>${num(c.area)} sq.ft. · ${fmtDate(c.date)} · <i>${esc(c.differences)}</i></small></div>
-      <div class="lg-acts"><button class="btn sm" data-act="compKeep" data-id="${p.id}" data-r="${c.ref}">＋ Keep</button><button class="btn sm ghost" data-act="compNo" data-id="${p.id}" data-r="${c.ref}">Not similar</button></div></div>`).join('');
+      <div class="lg-acts"><button class="btn sm ghost" data-act="compNo" data-id="${p.id}" data-r="${c.ref}" title="Leave it out of the comparison">Not similar</button></div></div>`).join('');
   const comps = `<div class="card"><div class="card-head"><h2>Similar properties</h2>${v.count ? chip(String(v.count)) : ''}<span class="sp"></span><button class="btn sm" data-act="addComp" data-id="${p.id}" title="A portal listing or a registered sale outside our records">＋ Add from outside</button></div>
-      ${V.comparables.length ? V.comparables.map(row).join('') : '<p class="muted" style="margin:0 0 6px">None kept yet.</p>'}
-      ${cands.length ? `<div class="pr-found"><div class="pr-found-h">✨ ${cands.length} similar ${noun}${cands.length > 1 ? 's' : ''} found in our records <span class="muted">· ${esc(p.city)}, area within ±25%, last 12 months</span>${cands.length > 1 ? `<button class="linkbtn" data-act="compKeepAll" data-id="${p.id}">Keep all</button>` : ''}</div>${sugg}</div>` : ''}
+      <p class="pr-auto">✨ Found automatically in our records — ${esc(noun)}s in ${esc(p.city)}, area within ±25%, listed or sold in the last 12 months. A new sale nearby is included as soon as it is marked Sold. Leave out any that aren’t really similar.</p>
+      ${found || '<p class="muted" style="margin:0 0 6px">None in our records yet.</p>'}
+      ${V.comparables.length ? `<div class="pr-found"><div class="pr-found-h">Added from outside</div>${V.comparables.map(row).join('')}</div>` : ''}
+      ${(V.dismissed || []).length ? `<p class="pr-auto">${V.dismissed.length} left out as not similar (${V.dismissed.join(', ')}) · <button class="linkbtn" data-act="compUndo" data-id="${p.id}">Bring back</button></p>` : ''}
     </div>`;
   // all-in cost for the buyer, and the price review
   const costs = `<div class="card"><div class="card-head"><h2>All-in cost for the buyer</h2><span class="sp"></span><b>${inr(v.allIn)}</b></div>
@@ -868,15 +877,8 @@ function propPricing(p) {
   return `${head}${comps}<div class="grid g2">${costs}${review}</div>`;
 }
 Object.assign(ACTIONS, {
-  compKeep: d => {
-    const p = getProp(d.id), o = getProp(d.r); if (!o) return;
-    p.valuation.comparables.push(compFrom(p, o)); logHistory(p, `Comparable kept: ${o.id} (${o.locality}, ${inr(Math.round(o.price / o.area))}/sq.ft.)`); save(); render();
-  },
-  compKeepAll: d => {
-    const p = getProp(d.id), list = compCandidates(p);
-    list.forEach(c => p.valuation.comparables.push(c)); logHistory(p, `${list.length} comparables kept from our records (${list.map(c => c.ref).join(', ')})`); save(); toast(`${list.length} similar properties kept`); render();
-  },
-  compNo: d => { const p = getProp(d.id); (p.valuation.dismissed = p.valuation.dismissed || []).push(d.r); save(); toast(`${d.r} won’t be suggested for ${p.id} again`); render(); },
+  compNo: d => { const p = getProp(d.id); (p.valuation.dismissed = p.valuation.dismissed || []).push(d.r); logHistory(p, `Comparable left out as not similar: ${d.r}`); save(); toast(`${d.r} left out of the comparison`); render(); },
+  compUndo: d => { const p = getProp(d.id); logHistory(p, `Comparables brought back: ${p.valuation.dismissed.join(', ')}`); p.valuation.dismissed = []; save(); render(); },
   compEdit: d => { UI.compEdit = d.i === '' || d.i == null ? null : d.id + ':' + d.i; render(); },
 });
 function propMatches(p) {
