@@ -650,3 +650,29 @@ td.ctr .check { justify-content: center; margin: 0; }
 .lg-new { margin-top: 12px; padding: 12px; border: 1px dashed #c4cad6; border-radius: 10px; background: #fafbfc; }
 .lg-new input { width: 100%; }
 .opt-tag { font-size: 11px; font-weight: 500; color: var(--muted); background: var(--grey-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; }
+/* Price tab */
+.pr-head .pr-top { display: grid; grid-template-columns: minmax(200px, auto) 1fr; gap: 20px; align-items: start; }
+.pr-price { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+.pr-verdict p { margin: 6px 0 0; font-size: 13.5px; color: var(--ink2); }
+.pr-bars { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line2); }
+.pr-bars .bar-row { grid-template-columns: minmax(180px, 34%) 1fr 54px; font-size: 12.5px; }
+.pr-bars .bar-row.me { font-weight: 600; }
+.pr-rule { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.pr-row { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 1px solid var(--line2); border-radius: 10px; margin-bottom: 8px; }
+.pr-row.edit { display: block; background: #fafbfc; }
+.pr-row.edit .fgrid { margin-bottom: 10px; }
+.pr-row.sugg { border-style: dashed; background: #fcfcfe; }
+.pr-ppsf { width: 92px; flex: none; line-height: 1.15; }
+.pr-ppsf b { font-size: 15px; display: block; } .pr-ppsf small { color: var(--muted); font-size: 11px; }
+.pr-main { flex: 1; min-width: 0; }
+.pr-main b { font-weight: 600; margin-right: 4px; }
+.pr-main small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.pr-found { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line2); }
+.pr-found-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.pr-found-h .linkbtn { margin-left: auto; }
+@media (max-width: 800px) { .pr-head .pr-top { grid-template-columns: 1fr; } }
+/* Overview: price check */
+.ov-price-n b { font-size: 20px; font-weight: 700; } .ov-price-n small { color: var(--muted); margin-left: 2px; }
+.ov-price p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; }
+.ov-price-all { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line2); font-size: 13px; }
+.ov-price-all b { font-weight: 600; } .ov-price-all small { flex-basis: 100%; font-size: 11.5px; }

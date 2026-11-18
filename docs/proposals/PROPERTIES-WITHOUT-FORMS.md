@@ -192,6 +192,7 @@ A property with no approval badges is not penalised.
 | Read the input and fill the facts | Publishing | Mark a document verified |
 | Suggest the title; write the description and highlights | Changing the price or status | Add a fact without a source |
 | Show the important nearby places; work out price per sq.ft. | Keeping the extra nearby places it found | Advertise planned infrastructure as existing |
+| Find similar properties in our records to compare the price | Keeping them as comparables | Call a price a "bargain" or "best price" |
 | Flag possible duplicates; list what's missing | Merging duplicates; choosing between conflicting facts | Mark a route as checked |
 
 ---

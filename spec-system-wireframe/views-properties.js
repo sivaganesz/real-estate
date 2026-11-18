@@ -169,7 +169,7 @@ FORMS.property = (f, fd) => {
 };
 /* ---------- detail ---------- */
 /* five tabs: Location and Media now live on the Overview (old #/…/location and #/…/media links land there) */
-const PROP_TABS = [['overview', 'Overview'], ['legal', 'Legal & documents'], ['pricing', 'Pricing & valuation'], ['matches', 'Matching customers'], ['history', 'History']];
+const PROP_TABS = [['overview', 'Overview'], ['legal', 'Legal & documents'], ['pricing', 'Price'], ['matches', 'Matching customers'], ['history', 'History']];
 function viewProperty(id, tab) {
   const p = getProp(id);
   if (!p) return { title: 'Not found', html: '<div class="card empty">Property not found. <a href="#/properties">Back to list</a></div>' };
@@ -258,12 +258,25 @@ function propOverview(p) {
     </div>
     <div class="ov-side">
       ${live ? '' : dealCard(p)}
+      ${live ? priceCard(p) : ''}
       ${todo}
       ${live ? buyers : ''}
     </div>
   </div>`;
 }
 /** For a property that is no longer on offer: who it went to (or is going to), the offer against the asking price, and when. */
+/** The price answer in one glance — what a buyer or owner asks: is it fair, what is the total? (details on the Price tab) */
+function priceCard(p) {
+  const v = valuationSummary(p, DB.settings), href = `#/properties/${p.id}/pricing`;
+  const where = !v.count ? null : v.position.startsWith('Within') ? ['In line with', 'green', ''] : v.position.startsWith('Below') ? ['Below', 'amber', ' — check for differences'] : ['Above', 'amber', ' — review the price'];
+  const found = v.count ? 0 : compCandidates(p).length;
+  return `<div class="card ov-price"><div class="card-head"><h2>Price check</h2><span class="sp"></span><a href="${href}">Details →</a></div>
+    <div class="ov-price-n"><b>${inr(v.ppsf)}</b><small>/sq.ft.</small></div>
+    ${where ? `<p>${chip(where[0] + ' the market', where[1])} <span class="muted">${v.count} similar: ${v.min === v.max ? inr(v.min) : `${inr(v.min)} – ${inr(v.max)}`}/sq.ft.${where[2]}</span></p>`
+      : `<p class="muted">Not compared yet${found ? ` — <a href="${href}">${found} similar propert${found > 1 ? 'ies' : 'y'} found</a>` : ''}.</p>`}
+    <div class="ov-price-all"><span>Total for the buyer</span><b>${inr(v.allIn)}</b><small class="muted">incl. stamp duty &amp; registration</small></div>
+  </div>`;
+}
 function dealCard(p) {
   const c = DB.customers.find(x => x.negotiation && x.negotiation.prop === p.id), n = c && c.negotiation;
   const when = (p.history || []).find(h => /^Status changed/.test(h.text));
@@ -779,64 +792,93 @@ document.addEventListener('keydown', e => { // Enter in the small "new" forms
   if (e.key !== 'Enter' || !e.target || !['ap-new-name', 'ap-new-doc', 'doc-new-name'].includes(e.target.id)) return;
   e.preventDefault(); const b = document.querySelector(e.target.id === 'doc-new-name' ? '[data-act="docNewSave"]' : '[data-act="apNewSave"]'); if (b) b.click();
 });
-function propPricing(p) {
-  const v = valuationSummary(p, DB.settings), V = p.valuation;
-  const compRows = V.comparables.map((c, i) => `<tr>
-    <td>${bIn('p', p.id, `valuation.comparables.${i}.location`, c.location)}</td>
-    <td>${bIn('p', p.id, `valuation.comparables.${i}.type`, c.type)}</td>
-    <td style="width:100px">${bIn('p', p.id, `valuation.comparables.${i}.area`, c.area, 'number')}</td>
-    <td style="width:110px">${bIn('p', p.id, `valuation.comparables.${i}.pricePerSqft`, c.pricePerSqft, 'number')}</td>
-    <td style="width:130px">${bSel('p', p.id, `valuation.comparables.${i}.kind`, c.kind, ['Asking', 'Transaction'])}</td>
-    <td style="width:145px">${bIn('p', p.id, `valuation.comparables.${i}.date`, c.date, 'date')}</td>
-    <td>${bIn('p', p.id, `valuation.comparables.${i}.source`, c.source)}</td>
-    <td>${bIn('p', p.id, `valuation.comparables.${i}.differences`, c.differences)}</td>
-    <td><button class="btn ghost sm danger" data-act="rmComp" data-id="${p.id}" data-i="${i}">✕</button></td></tr>`).join('');
-  const maxP = Math.max(v.ppsf || 0, ...V.comparables.map(c => Number(c.pricePerSqft) || 0)) || 1;
-  const bars = [{ l: 'This property (asking)', val: v.ppsf, me: 1 }].concat(V.comparables.map(c => ({ l: `${c.location} · ${c.kind}`, val: Number(c.pricePerSqft) })))
-    .map(b => `<div class="bar-row"><span style="font-size:12px">${esc(b.l)}</span>${meter(b.val / maxP * 100, b.me ? '' : 'grey')}<span class="num" style="font-size:12px">${num(b.val)}</span></div>`).join('');
-  const posTone = !v.count ? 'grey' : v.position.startsWith('Within') ? 'green' : 'amber';
-  return `
-  <div class="grid g2">
-    <div class="card"><h2>E. Asking price</h2>
-      <div class="fgrid c2">
-        ${fld('Asking price (₹)', bIn('p', p.id, 'price', p.price, 'number'))}
-        ${fld(PROPERTY_TYPES[p.type].areaLabel, bIn('p', p.id, 'area', p.area, 'number'))}
-        ${fld('Price review date', bIn('p', p.id, 'valuation.reviewDate', V.reviewDate, 'date'))}
-        ${fld('Asking price per sq.ft.', `<input value="${inr(v.ppsf)}" disabled>`)}
-      </div>
-      <div class="formula" style="margin-top:12px">Price per sq.ft. = Total property price ÷ Area in sq.ft.<br>${inr(p.price)} ÷ ${num(p.area)} = <b>${inr(v.ppsf)}</b></div>
-    </div>
-    <div class="card"><h2>Value positioning</h2>
-      ${v.count ? `
-      <div class="dl3" style="grid-template-columns:repeat(2,1fr)">
-        <div><span>Average comparable</span><b>${inr(v.avg)}/sq.ft.</b></div>
-        <div><span>Transaction-only average</span><b>${v.txnAvg ? inr(v.txnAvg) + '/sq.ft.' : '—'}</b></div>
-        <div><span>Comparable range</span><b>${inr(v.min)} – ${inr(v.max)}</b></div>
-        <div><span>Asking vs average</span><b>${v.diffPct > 0 ? '+' : ''}${v.diffPct.toFixed(1)}%</b></div>
-      </div>
-      <div style="margin-top:10px">${chip(v.position, posTone)}</div>` : '<p class="muted">Add at least one comparable to position the price.</p>'}
-      <div class="note amber" style="margin-top:12px">Never call a price a “bargain” just because another seller asks more. Compare similar properties in the same micro-market with similar approvals, access, dimensions and condition.</div>
-    </div>
-  </div>
-  <div class="card"><div class="card-head"><h2>Comparable properties</h2><span class="sp"></span><button class="btn sm" data-act="addComp" data-id="${p.id}">＋ Add comparable</button></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Location</th><th>Type</th><th>Area</th><th>₹ / sq.ft.</th><th>Asking or transaction</th><th>Date</th><th>Source</th><th>Differences affecting price</th><th></th></tr></thead>
-    <tbody>${compRows || '<tr><td colspan="9" class="empty">No comparables yet.</td></tr>'}</tbody></table></div>
-    <div style="margin-top:14px">${bars}</div>
-    <p class="muted" style="margin:8px 0 0">Illustrative numbers — not actual market prices.</p>
-  </div>
-  <div class="grid g2">
-    <div class="card"><h2>Estimated transaction costs</h2>
-      <div class="kv"><dt>Stamp duty</dt><dd>${DB.settings.costs.stampDutyPct}%</dd><dt>Registration fee</dt><dd>${DB.settings.costs.registrationPct}%</dd><dt>Other (legal, misc.)</dt><dd>${DB.settings.costs.otherPct}%</dd>
-        <dt>Estimated costs</dt><dd><b>${inr(v.txnCosts)}</b></dd><dt>Estimated all-in cost</dt><dd><b>${inr(v.allIn)}</b></dd></div>
-      <p class="muted" style="margin:10px 0 0">Rates are editable assumptions in <a href="#/settings">Settings</a>; confirm current rates and the guideline value before quoting. Helps clarify whether a customer’s budget includes these costs.</p>
-    </div>
-    <div class="card"><h2>Valuation evidence</h2>
-      ${fld('Valuation professional’s report', bIn('p', p.id, 'valuation.valuerReport', V.valuerReport, 'text', 'placeholder="e.g. Registered valuer, report date"'))}
-      <div style="height:10px"></div>
-      ${fld('Valuation notes', `<textarea class="inline-in" data-bind="${bkey('p', p.id, 'valuation.notes')}">${esc(V.notes)}</textarea>`)}
-    </div>
-  </div>`;
+/* ---------- Price: is the asking price reasonable, and how do we say it without overselling? ----------
+   Comparables are found in our own records (same type and city, area within ±25%, listed or sold in the last 12 months);
+   the team keeps the ones that are truly similar, and can add outside ones (portal listings, registered sales).
+   valuation.comparables[] = { ref (property ID, for ours), location, type, area, pricePerSqft, kind: 'Asking' | 'Transaction',
+                               date, source, differences }   valuation.dismissed[] = property IDs marked "not similar" */
+const COMP_DAYS = 365, COMP_AREA = 0.25;
+function compDiffs(p, o) { // what differs, in a few words — the AI's note, which the team can change
+  const d = [], pct = Math.round((o.area - p.area) / p.area * 100);
+  if (o.locality !== p.locality) d.push(`in ${o.locality}`);
+  if (pct) d.push(`${Math.abs(pct)}% ${pct > 0 ? 'larger' : 'smaller'}`);
+  const a = p.specs || {}, b = o.specs || {};
+  if (a.corner && b.corner && a.corner !== b.corner) d.push(b.corner.toLowerCase());
+  if (a.roadWidth && b.roadWidth && a.roadWidth !== b.roadWidth) d.push(`${b.roadWidth} ft road`);
+  if (a.bhk && b.bhk && a.bhk !== b.bhk) d.push(b.bhk);
+  if (a.floor !== undefined && b.floor !== undefined && a.floor !== '' && b.floor !== '' && a.floor !== b.floor) d.push(`floor ${b.floor}`);
+  return d.slice(0, 3).join(', ') || 'very similar';
 }
+function compFrom(p, o) {
+  const sold = ['Sold', 'Booked'].includes(o.status), when = ((o.history || []).find(h => /^Status changed/.test(h.text)) || {}).date;
+  return { ref: o.id, location: `${o.locality}, ${o.city}`, type: typeLabel(o.type), area: o.area, pricePerSqft: Math.round(o.price / o.area),
+    kind: sold ? 'Transaction' : 'Asking', date: sold && when ? when : o.listingDate, source: `Our records · ${o.id}${sold ? ' (' + o.status.toLowerCase() + ')' : ''}`, differences: compDiffs(p, o) };
+}
+/** Similar properties in our own records that are not on the list yet. */
+function compCandidates(p) {
+  const V = p.valuation, have = new Set((V.comparables || []).map(c => c.ref).filter(Boolean)), no = new Set(V.dismissed || []), today = new Date(DEMO_TODAY);
+  return DB.properties.filter(o => o.id !== p.id && !o.archived && o.type === p.type && o.city === p.city && o.area > 0 && o.price > 0 && p.area > 0
+      && Math.abs(o.area - p.area) / p.area <= COMP_AREA && (today - new Date(o.listingDate)) / 864e5 <= COMP_DAYS && !have.has(o.id) && !no.has(o.id))
+    .sort((a, b) => (b.locality === p.locality) - (a.locality === p.locality) || Math.abs(a.area - p.area) - Math.abs(b.area - p.area))
+    .map(o => compFrom(p, o));
+}
+function propPricing(p) {
+  const v = valuationSummary(p, DB.settings), V = p.valuation, cands = compCandidates(p), noun = typeLabel(p.type).toLowerCase();
+  const tone = !v.count ? 'grey' : v.position.startsWith('Within') ? 'green' : 'amber';
+  const pos = !v.count ? '' : v.position.startsWith('Within') ? 'within the range' : v.position.startsWith('Below') ? 'below the range' : 'above the range';
+  // the headline: the price, and where it sits among similar properties
+  const vals = [v.ppsf || 0, ...V.comparables.map(c => Number(c.pricePerSqft) || 0)].filter(x => x > 0);
+  const maxP = Math.max(...vals, 1), lo = Math.min(...vals, maxP) * 0.85; // start the scale just below the lowest, so differences show
+  const bars = [{ l: 'This property (asking)', val: v.ppsf, me: 1 }].concat(V.comparables.filter(c => Number(c.pricePerSqft) > 0).map(c => ({ l: `${c.location}${c.ref ? ' · ' + c.ref : ''} · ${c.kind === 'Transaction' ? 'sold' : 'asking'}`, val: Number(c.pricePerSqft) })))
+    .map(b => `<div class="bar-row ${b.me ? 'me' : ''}"><span>${esc(b.l)}</span>${meter((b.val - lo) / ((maxP - lo) || 1) * 100, b.me ? '' : 'grey')}<span class="num">${num(b.val)}</span></div>`).join('');
+  const head = `<div class="card pr-head">
+      <div class="pr-top"><div><div class="pr-price">${inr(p.price)}</div><div class="muted">${inr(v.ppsf)} / sq.ft. · ${num(p.area)} sq.ft.${p.priceOnRequest ? ' · hidden on the listing' : ''}</div></div>
+        <div class="pr-verdict">${v.count ? `${chip(v.position.split(' — ')[0], tone)}<p>${inr(v.ppsf)}/sq.ft. is <b>${pos}</b> of ${v.count} similar propert${v.count > 1 ? 'ies' : 'y'} (${inr(v.min)} – ${inr(v.max)}/sq.ft.)${v.txnAvg ? `; recent sales average <b>${inr(v.txnAvg)}</b>` : ''}.${v.position.includes(' — ') ? ` <span class="muted">${esc(v.position.split(' — ')[1].replace(/^./, c => c.toUpperCase()))}.</span>` : ''}</p>`
+          : `${chip('Not compared yet', 'grey')}<p class="muted">${cands.length ? `Keep a few of the ${cands.length} similar properties found below to compare the price.` : 'Add a similar property to compare the price.'}</p>`}</div></div>
+      ${v.count ? `<div class="pr-bars">${bars}</div>` : ''}
+      <p class="pr-rule">Say it neutrally — never “bargain” or “best price” just because another seller asks more.</p>
+    </div>`;
+  // comparables kept: compact rows; an outside one can be edited
+  const row = (c, i) => UI.compEdit === p.id + ':' + i ? `<div class="pr-row edit"><div class="fgrid">
+        ${fld('Location', bIn('p', p.id, `valuation.comparables.${i}.location`, c.location))}${fld('Area (sq.ft.)', bIn('p', p.id, `valuation.comparables.${i}.area`, c.area, 'number'))}${fld('₹ / sq.ft.', bIn('p', p.id, `valuation.comparables.${i}.pricePerSqft`, c.pricePerSqft, 'number'))}
+        ${fld('Asking or sold', bSel('p', p.id, `valuation.comparables.${i}.kind`, c.kind, [{ v: 'Asking', l: 'Asking price' }, { v: 'Transaction', l: 'Sold (transaction)' }]))}${fld('Date', bIn('p', p.id, `valuation.comparables.${i}.date`, c.date, 'date'))}${fld('Source', bIn('p', p.id, `valuation.comparables.${i}.source`, c.source, 'text', 'placeholder="e.g. Registered sale, portal listing"'))}
+        ${fld('What differs', bIn('p', p.id, `valuation.comparables.${i}.differences`, c.differences, 'text', 'placeholder="e.g. corner plot, older layout"'), { cls: 'span3' })}</div>
+        <button class="btn sm primary" data-act="compEdit" data-id="${p.id}" data-i="">Done</button></div>`
+    : `<div class="pr-row"><span class="pr-ppsf"><b>${c.pricePerSqft ? inr(c.pricePerSqft) : '—'}</b><small>/sq.ft.</small></span>
+        <div class="pr-main"><div><b>${esc(c.location)}</b> ${chip(c.kind === 'Transaction' ? 'Sold' : 'Asking', c.kind === 'Transaction' ? 'green' : '')} ${c.ref ? `<a class="mono small" href="#/properties/${c.ref}">${c.ref}</a>` : ''}</div>
+          <small>${num(c.area)} sq.ft. · ${c.date ? fmtDate(c.date) : 'no date'} · ${esc(c.source || 'source not given')}${c.differences ? ` · <i>${esc(c.differences)}</i>` : ''}</small></div>
+        <div class="lg-acts">${c.ref ? '' : `<button class="btn sm ghost" data-act="compEdit" data-id="${p.id}" data-i="${i}">✎ Edit</button>`}<button class="btn sm ghost danger" data-act="rmComp" data-id="${p.id}" data-i="${i}" title="Remove" aria-label="Remove">✕</button></div></div>`;
+  const sugg = cands.map(c => `<div class="pr-row sugg"><span class="pr-ppsf"><b>${inr(c.pricePerSqft)}</b><small>/sq.ft.</small></span>
+      <div class="pr-main"><div><b>${esc(c.location)}</b> ${chip(c.kind === 'Transaction' ? 'Sold' : 'Asking', c.kind === 'Transaction' ? 'green' : '')} <a class="mono small" href="#/properties/${c.ref}">${c.ref}</a></div>
+        <small>${num(c.area)} sq.ft. · ${fmtDate(c.date)} · <i>${esc(c.differences)}</i></small></div>
+      <div class="lg-acts"><button class="btn sm" data-act="compKeep" data-id="${p.id}" data-r="${c.ref}">＋ Keep</button><button class="btn sm ghost" data-act="compNo" data-id="${p.id}" data-r="${c.ref}">Not similar</button></div></div>`).join('');
+  const comps = `<div class="card"><div class="card-head"><h2>Similar properties</h2>${v.count ? chip(String(v.count)) : ''}<span class="sp"></span><button class="btn sm" data-act="addComp" data-id="${p.id}" title="A portal listing or a registered sale outside our records">＋ Add from outside</button></div>
+      ${V.comparables.length ? V.comparables.map(row).join('') : '<p class="muted" style="margin:0 0 6px">None kept yet.</p>'}
+      ${cands.length ? `<div class="pr-found"><div class="pr-found-h">✨ ${cands.length} similar ${noun}${cands.length > 1 ? 's' : ''} found in our records <span class="muted">· ${esc(p.city)}, area within ±25%, last 12 months</span>${cands.length > 1 ? `<button class="linkbtn" data-act="compKeepAll" data-id="${p.id}">Keep all</button>` : ''}</div>${sugg}</div>` : ''}
+    </div>`;
+  // all-in cost for the buyer, and the price review
+  const costs = `<div class="card"><div class="card-head"><h2>All-in cost for the buyer</h2><span class="sp"></span><b>${inr(v.allIn)}</b></div>
+      <div class="kv"><dt>Asking price</dt><dd>${inr(p.price)}</dd><dt>Stamp duty (${DB.settings.costs.stampDutyPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.stampDutyPct / 100))}</dd>
+        <dt>Registration (${DB.settings.costs.registrationPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.registrationPct / 100))}</dd><dt>Other — legal, misc. (${DB.settings.costs.otherPct}%)</dt><dd>${inr(Math.round(p.price * DB.settings.costs.otherPct / 100))}</dd></div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">Use it when a customer’s budget includes registration. Rates are assumptions in <a href="#/settings">Settings</a> — confirm the current rates and guideline value before quoting.</p></div>`;
+  const review = `<div class="card"><h2>Price review</h2>
+      <div class="fgrid c2">${fld('Asking price (₹)', bIn('p', p.id, 'price', p.price, 'number'))}${fld('Last reviewed', bIn('p', p.id, 'valuation.reviewDate', V.reviewDate, 'date'))}</div>
+      <div style="height:8px"></div>${fld('Valuer’s report <span class="opt-tag">Optional</span>', bIn('p', p.id, 'valuation.valuerReport', V.valuerReport, 'text', 'placeholder="e.g. Registered valuer, report date"'))}
+      <div style="height:8px"></div>${fld('Notes', `<textarea class="inline-in" rows="2" data-bind="${bkey('p', p.id, 'valuation.notes')}" placeholder="e.g. Owner open to ₹27 L for a quick sale">${esc(V.notes)}</textarea>`)}</div>`;
+  return `${head}${comps}<div class="grid g2">${costs}${review}</div>`;
+}
+Object.assign(ACTIONS, {
+  compKeep: d => {
+    const p = getProp(d.id), o = getProp(d.r); if (!o) return;
+    p.valuation.comparables.push(compFrom(p, o)); logHistory(p, `Comparable kept: ${o.id} (${o.locality}, ${inr(Math.round(o.price / o.area))}/sq.ft.)`); save(); render();
+  },
+  compKeepAll: d => {
+    const p = getProp(d.id), list = compCandidates(p);
+    list.forEach(c => p.valuation.comparables.push(c)); logHistory(p, `${list.length} comparables kept from our records (${list.map(c => c.ref).join(', ')})`); save(); toast(`${list.length} similar properties kept`); render();
+  },
+  compNo: d => { const p = getProp(d.id); (p.valuation.dismissed = p.valuation.dismissed || []).push(d.r); save(); toast(`${d.r} won’t be suggested for ${p.id} again`); render(); },
+  compEdit: d => { UI.compEdit = d.i === '' || d.i == null ? null : d.id + ':' + d.i; render(); },
+});
 function propMatches(p) {
   const list = matchesForProperty(p, DB);
   const rows = list.map(({ cust: c, m }) => {
@@ -857,8 +899,8 @@ function propHistory(p) {
 }
 Object.assign(ACTIONS, {
   clearFilters: d => { UI.filters[d.scope] = d.scope === 'custs' ? { sort: 'readiness' } : {}; render(); },
-  addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); save(); render(); },
-  rmComp: d => { const p = getProp(d.id); p.valuation.comparables.splice(+d.i, 1); save(); render(); },
+  addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); UI.compEdit = p.id + ':' + (p.valuation.comparables.length - 1); save(); render(); },
+  rmComp: d => { const p = getProp(d.id), c = p.valuation.comparables.splice(+d.i, 1)[0]; UI.compEdit = null; if (c) logHistory(p, `Comparable removed: ${c.ref || c.location}`); save(); render(); },
   addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; logHistory(p, `Photo uploaded (${p.images} in all)`); save(); toast('Photo uploaded (mock)'); render(); },
   rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); logHistory(p, 'Photo removed'); save(); render(); },
 });
