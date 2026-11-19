@@ -98,7 +98,7 @@ function toast(msg) {
   if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
   t.textContent = msg; t.style.display = 'block'; clearTimeout(AUI.toastTimer); AUI.toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
-const hist = (p, text) => p.history.unshift({ at: TODAY, by: me(), text });
+const hist = (p, text) => p.history.unshift({ at: TODAY, ts: Date.now(), by: me(), text });
 const areaLabel = p => (p.type ? PROPERTY_TYPES[p.type].areaLabel.replace(' (sq.ft.)', '') : 'Area');
 const meter = (v, tone = '') => `<div class="meter ${tone}"><i style="width:${clamp(v)}%"></i></div>`;
 function hash(s) { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 100003; return h; }
@@ -686,7 +686,7 @@ function syncEdit(p) {
   if (fresh > 0) {
     old.history = old.history || [];
     const how = text => (/ \(chat\)$/.test(text) ? text.replace(/ \(chat\)$/, ' — via AI chat') : / \(form\)$/.test(text) ? text.replace(/ \(form\)$/, ' — in the details form') : text + ' — via the AI assistant');
-    p.history.slice(0, fresh).reverse().forEach(h => old.history.unshift({ date: DEMO_TODAY, by: h.by, text: how(h.text) }));
+    p.history.slice(0, fresh).reverse().forEach(h => old.history.unshift({ date: DEMO_TODAY, ts: h.ts || Date.now(), by: h.by, text: how(h.text) }));
     p.syncedHist = p.history.length;
   }
   window.save();

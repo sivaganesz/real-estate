@@ -78,8 +78,8 @@ function toast(msg) {
   clearTimeout(UI.toastTimer); UI.toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
 function meter(v, tone = '') { return `<div class="meter ${tone}"><i style="width:${clamp(v)}%"></i></div>`; }
-function logActivity(c, type, text) { c.activity.unshift({ date: DEMO_TODAY, type, text, by: currentUser() }); }
-function logHistory(p, text) { (p.history = p.history || []).unshift({ date: DEMO_TODAY, text, by: currentUser() }); }
+function logActivity(c, type, text) { c.activity.unshift({ date: DEMO_TODAY, ts: Date.now(), type, text, by: currentUser() }); }
+function logHistory(p, text) { (p.history = p.history || []).unshift({ date: DEMO_TODAY, ts: Date.now(), text, by: currentUser() }); }
 
 /* ---------- router ---------- */
 function parseRoute() {

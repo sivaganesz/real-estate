@@ -880,24 +880,136 @@ Object.assign(ACTIONS, {
   compUndo: d => { const p = getProp(d.id); logHistory(p, `Comparables brought back: ${p.valuation.dismissed.join(', ')}`); p.valuation.dismissed = []; save(); render(); },
   compEdit: d => { UI.compEdit = d.i === '' || d.i == null ? null : d.id + ':' + d.i; render(); },
 });
+/* ---------- Matching customers: who should hear about this property, why, and what to do next ----------
+   Uses the same matching engine as the customer pages (logic.js matchScore). Actions are the customer's own:
+   recommend (told the buyer — by call, WhatsApp or in person) and book a site visit (views-customers.js), logged on the customer's timeline.
+   Sending the property itself (details, photos, brochure) is in the header's Share menu. */
+const PURPOSE_ICON = { 'Own use': '🏠', Investment: '📈', 'Rental income': '💰', 'Business use': '🏢', 'Second home': '🌴', Other: '•' };
+/** The talking points for this buyer, chosen by their purchase purpose (spec: purpose changes what matters). */
+function pitchFor(c, p) {
+  const L = normLoc(p), sp = p.specs || {}, rd = roadOf(p), v = valuationSummary(p, DB.settings), out = [];
+  const near = cat => L.nearby.filter(x => x.cat === cat && nbOK(x)).sort((a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99))[0];
+  const placeTxt = (cat, label) => { const x = near(cat); if (x) out.push(`${label} ${x.distanceKm} km`); };
+  const road = (r => r && !/road/.test(r) ? r + ' road' : r)([rd.width ? rd.width + ' ft' : '', rd.type ? rd.type.toLowerCase() : ''].filter(Boolean).join(' '));
+  const market = () => { if (v.count) out.push(`${v.position.startsWith('Within') ? 'In line with the market' : v.position.startsWith('Below') ? 'Below the market' : 'Above the market'} (similar ${inr(v.min)}–${inr(v.max)}/sq.ft.)`); if (v.txnAvg) out.push(`recent sales avg ${inr(v.txnAvg)}/sq.ft.`); };
+  const upcoming = () => { const f = L.nearby.filter(x => x.name && x.status !== 'Existing').sort((a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99))[0]; if (f) out.push(`${f.status.toLowerCase()}: ${f.name} (~${f.distanceKm} km)`); };
+  const approvals = () => { const ok = p.approvals.filter(a => a.status !== 'pending').map(a => approvalOf(a.k).long); if (ok.length) out.push(ok.join(', ') + ' ✓'); };
+  switch (c.purpose) {
+    case 'Own use': case 'Second home':
+      placeTxt('School', 'School'); placeTxt('Hospital', 'Hospital'); placeTxt('Bus stop', 'Bus stop');
+      if (road) out.push(road);
+      if (sp.water) out.push('water: ' + String(sp.water).toLowerCase());
+      if (p.type === 'plot') approvals(); else if (sp.possession) out.push(String(sp.possession).toLowerCase());
+      break;
+    case 'Investment':
+      market(); upcoming(); approvals();
+      break;
+    case 'Rental income':
+      if (sp.occupancy) out.push(String(sp.occupancy).toLowerCase());
+      if (sp.rentalIncome) out.push(`rent ${inr(sp.rentalIncome)}/month (${(sp.rentalIncome * 12 / p.price * 100).toFixed(1)}% a year)`);
+      if (sp.maintenance) out.push(`maintenance ${inr(sp.maintenance)}/month`);
+      placeTxt('Railway station', 'Railway'); placeTxt('Bus stop', 'Bus stop'); market();
+      break;
+    case 'Business use':
+      if (sp.commCategory) out.push(sp.commCategory);
+      if (sp.frontage) out.push(sp.frontage + ' ft frontage');
+      if (road) out.push(road);
+      if (sp.permittedUsage) out.push('permitted: ' + String(sp.permittedUsage).toLowerCase());
+      if (sp.parking) out.push('parking: ' + String(sp.parking).toLowerCase());
+      { const h = near('Highway'); if (h) out.push(`${h.name} ${h.distanceKm} km`); }
+      break;
+    default: market();
+  }
+  return out.slice(0, 5);
+}
 function propMatches(p) {
-  const list = matchesForProperty(p, DB);
-  const rows = list.map(({ cust: c, m }) => {
-    const rd = readiness(c, DB);
-    return `<tr class="click" data-href="#/customers/${c.id}/matches">
-      <td><b>${esc(c.name)}</b><br><small class="mono">${c.id}</small></td><td>${c.purpose}</td>
-      <td>${inrShort(c.budget.min)} – ${inrShort(c.budget.max)}</td><td>${chip(m.label, m.tone)}</td>
-      <td class="num"><b>${m.M}</b></td><td>${chip(rd.total + ' · ' + rd.band.l, rd.band.tone)}</td><td>${chip(c.stage, stageTone(c.stage))}</td><td><small>${esc(execName(DB, c.owner))}</small></td></tr>`;
-  }).join('');
-  return `
-  ${p.status !== 'Available' ? `<div class="note amber" style="margin-bottom:12px">This property is <b>${p.status}</b>, so it is excluded by the hard filter for every customer.</div>` : ''}
-  <div class="card"><div class="card-head"><h2>Customers whose requirements this property fits</h2><span class="sp"></span><small>Active leads only · hard filters applied first</small></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Customer</th><th>Purpose</th><th>Budget</th><th>Match</th><th class="num">Fit score</th><th>Readiness</th><th>Stage</th><th>Owner</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="8" class="empty">No active customer passes the hard filters for this property.</td></tr>'}</tbody></table></div></div>`;
+  const live = p.status === 'Available' && !p.archived;
+  const list = matchesForProperty(p, DB).map(x => ({ ...x, rd: readiness(x.cust, DB) }));
+  if (UI.matchSort === 'ready') list.sort((a, b) => b.rd.total - a.rd.total || b.m.M - a.m.M);
+  const n = l => list.filter(x => x.m.label === l).length;
+  // close but over budget — worth a conversation about the budget gap
+  const close = live ? DB.customers.filter(c => isActive(c)).map(c => ({ cust: c, m: matchScore(c, p, DB.settings) }))
+    .filter(x => x.m.label === 'Budget mismatch' && p.price <= x.m.ceiling * 1.15).sort((a, b) => a.m.ceiling - b.m.ceiling).reverse() : [];
+  const visitOf = c => (c.siteVisits || []).filter(v => v.prop === p.id).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  const card = ({ cust: c, m, rd }) => {
+    const rec = (c.recommended || []).includes(p.id), sv = visitOf(c), r = c.req || {};
+    const want = [r.size ? `${num(r.size)} sq.ft.` : '', (r.localities || []).length ? 'in ' + r.localities.slice(0, 2).join(', ') : (r.cities || []).length ? 'in ' + r.cities.join(', ') : ''].filter(Boolean).join(' ');
+    const reasons = m.why.filter(w => !/^⚠/.test(w)).slice(0, 4), warn = m.why.filter(w => /^⚠/.test(w));
+    return `<div class="mc-card">
+      <div class="mc-top"><span class="ov-av">${esc(initials(c.name))}</span>
+        <div class="mc-who"><a href="#/customers/${c.id}"><b>${esc(c.name)}</b></a> <span class="mono small muted">${c.id}</span> <span class="mc-purpose" title="${esc(c.purposeNote || (PURPOSES.find(x => x.v === c.purpose) || {}).d || '')}">${PURPOSE_ICON[c.purpose] || '•'} ${esc(c.purpose || 'Purpose not asked')}</span> ${chip(esc(c.stage), stageTone(c.stage))}
+          <small>Budget ${inrShort(c.budget.min)} – ${inrShort(c.budget.max)}${want ? ' · wants ' + esc(want) : ''} · ${esc(execName(DB, c.owner))}</small></div>
+        <div class="mc-fit"><b>${m.M}</b><small>fit</small>${chip(m.label, m.tone)}</div></div>
+      <div class="mc-why">${reasons.map(w => `<span class="${/^✗/.test(w) ? 'no' : /not in preferred/.test(w) ? 'part' : 'ok'}">${esc(w.replace(/^[✓✗]\s*/, ''))}</span>`).join('')}</div>
+      ${warn.map(w => `<div class="mc-warn">${esc(w)}</div>`).join('')}
+      ${(() => { const pts = pitchFor(c, p); return pts.length ? `<div class="mc-pitch"><b>What to tell ${esc(c.name.split(' ')[0])}</b><span>${c.purpose ? `for ${esc(c.purpose.toLowerCase())}` : ''}${c.purposeNote ? ` — ${esc(c.purposeNote.toLowerCase())}` : ''}</span><p>${pts.map(esc).join(' · ')}</p></div>` : ''; })()}
+      <div class="mc-foot">
+        <span class="mc-state">${chip(`Ready to buy ${rd.total}`, rd.band.tone, rd.band.l)}${rec ? ' <span class="t-green">✓ Recommended</span>' : ''}${sv ? ` <span class="muted">· site visit ${fmtDate(sv.date)} (${esc(sv.status.toLowerCase())})</span>` : ''}</span>
+        <span class="sp"></span>
+        ${live ? `${rec ? `<button class="btn sm ghost" data-act="unrecommend" data-id="${c.id}" data-p="${p.id}">Undo recommend</button>` : `<button class="btn sm ${m.legalOk ? 'primary' : ''}" data-act="recommend" data-id="${c.id}" data-p="${p.id}" title="${m.legalOk ? 'You told this buyer about it — by call, WhatsApp or in person. Adds it to their shortlist and moves the lead on.' : 'An approval document is pending — explain before recommending'}">✓ Recommend</button>`}
+          ${sv && sv.status === 'Scheduled' ? '' : `<button class="btn sm" data-act="visitModal" data-id="${c.id}" data-p="${p.id}">📅 Book site visit</button>`}` : ''}
+        <a class="btn sm ghost" href="#/customers/${c.id}">Open lead →</a></div>
+    </div>`;
+  };
+  const head = `<div class="mc-head"><div><h2>${list.length ? `${list.length} buyer${list.length > 1 ? 's' : ''} fit this property` : 'No buyer fits this property yet'}</h2>
+      <div class="row">${n('Strong match') ? chip(n('Strong match') + ' strong', 'green') : ''}${n('Good match') ? chip(n('Good match') + ' good', 'blue') : ''}${n('Weak match') ? chip(n('Weak match') + ' weak') : ''}${n('Conditional match') ? chip(n('Conditional match') + ' conditional', 'amber') : ''}${close.length ? chip(close.length + ' close on budget', 'outline') : ''}${(() => { const ps = [...new Set(list.map(x => x.cust.purpose).filter(Boolean))]; return ps.length ? `<span class="mc-purposes">${ps.map(x => `${PURPOSE_ICON[x] || '•'} ${list.filter(y => y.cust.purpose === x).length} ${esc(x.toLowerCase())}`).join(' · ')}</span>` : ''; })()}</div></div>
+      <span class="sp"></span>${list.length > 1 ? `<div class="nb-seg"><button class="${UI.matchSort === 'ready' ? '' : 'on'}" data-act="matchSort" data-v="fit">Best fit</button><button class="${UI.matchSort === 'ready' ? 'on' : ''}" data-act="matchSort" data-v="ready">Most ready to buy</button></div>` : ''}</div>`;
+  return `${!live ? `<div class="note amber" style="margin-bottom:12px">This property is <b>${esc(p.archived ? 'archived' : p.status)}</b>, so it is not offered to buyers — matching shows it to nobody until it is available again.</div>` : ''}
+  <div class="card">${head}
+    <p class="muted mc-rule">Only active leads, after the hard filters (available, type, city, budget + flexibility). Ranked by fit; an approval document pending makes it a Conditional match.</p>
+    ${list.map(card).join('') || '<p class="muted" style="margin:0">When a lead’s requirement fits — type, city and budget — they appear here automatically.</p>'}
+  </div>
+  ${close.length ? `<div class="card"><h2>Close — over budget</h2><p class="muted" style="margin:-4px 0 10px">Everything fits except the price. Worth a call about the budget gap or a small price move.</p>
+    ${close.map(({ cust: c, m }) => { const gap = p.price - c.budget.max; return `<div class="pr-row"><span class="ov-av">${esc(initials(c.name))}</span>
+      <div class="pr-main"><div><a href="#/customers/${c.id}"><b>${esc(c.name)}</b></a> ${chip(esc(c.stage), stageTone(c.stage))}</div><small>Budget up to ${inrShort(c.budget.max)}${c.budget.flexPct ? ` (+${c.budget.flexPct}% flexible)` : ''} · <b class="t-amber">${inrShort(gap)} over the maximum</b> (+${Math.round(gap / c.budget.max * 100)}%)</small></div>
+      <div class="lg-acts"><a class="btn sm ghost" href="#/customers/${c.id}">Open lead →</a></div></div>`; }).join('')}</div>` : ''}`;
+}
+
+/* ---------- History: everything that happened to this property, and to the buyers around it ---------- */
+const HIST_CATS = [
+  { k: 'details', l: 'Details', i: '✎' }, { k: 'price', l: 'Price', i: '₹' }, { k: 'status', l: 'Status', i: '🏷' }, { k: 'location', l: 'Location', i: '📍' },
+  { k: 'docs', l: 'Documents', i: '📄' }, { k: 'media', l: 'Photos', i: '📷' }, { k: 'buyers', l: 'Buyers', i: '👤' },
+];
+function histCat(t) {
+  return /price|comparable/i.test(t) ? 'price'
+    : /^status|archiv|restored|sold|reserved|booked/i.test(t) ? 'status'
+    : /approval|document|legal|verified|valuation report/i.test(t) ? 'docs'
+    : /location|nearby|route|pin|place|address|pincode|road/i.test(t) ? 'location'
+    : /photo|video/i.test(t) ? 'media' : 'details';
 }
 function propHistory(p) {
-  return `<div class="card"><h2>Change history</h2><ul class="tl">${(p.history || []).map(h => `<li><div class="when">${fmtDate(h.date)} · ${esc(h.by)}</div>${esc(h.text)}</li>`).join('') || '<li>No history.</li>'}</ul></div>`;
+  const items = (p.history || []).map((h, i) => {
+    let text = h.text, via = '';
+    const m = text.match(/ — (via AI chat|in the details form|via the AI assistant)$/);
+    if (m) { text = text.slice(0, -m[0].length); via = /form/.test(m[1]) ? 'Form' : '✨ AI'; }
+    if (/^(Property listed|Published)/.test(text)) via = via || (/AI assistant/.test(text) ? '✨ AI' : '');
+    return { date: h.date || h.at, ts: h.ts || 0, by: h.by, text, via, cat: /^(Property listed|Published)/.test(text) ? 'details' : histCat(text), order: i };
+  });
+  // the buyers' side: anything on a customer's timeline about this property (recommended, shared, site visits, offers)
+  DB.customers.forEach(c => (c.activity || []).filter(a => a.text && a.text.includes(p.id)).forEach((a, i) =>
+    items.push({ date: a.date, ts: a.ts || 0, by: a.by, text: a.text, who: c, type: a.type, cat: 'buyers', order: 1000 + i })));
+  items.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : (b.ts - a.ts) || a.order - b.order));
+  const f = UI.histF && UI.histF.id === p.id ? UI.histF.k : 'all';
+  const count = k => items.filter(x => x.cat === k).length;
+  const shown = f === 'all' ? items : items.filter(x => x.cat === f);
+  const chips = [`<button class="hs-chip ${f === 'all' ? 'on' : ''}" data-act="histF" data-id="${p.id}" data-k="all">All <small>${items.length}</small></button>`]
+    .concat(HIST_CATS.filter(c => count(c.k)).map(c => `<button class="hs-chip ${f === c.k ? 'on' : ''}" data-act="histF" data-id="${p.id}" data-k="${c.k}">${c.i} ${c.l} <small>${count(c.k)}</small></button>`)).join('');
+  let last = '';
+  const rows = shown.map(x => {
+    const day = x.date !== last ? `<div class="hs-day">${fmtDate(x.date)}</div>` : ''; last = x.date;
+    const cat = HIST_CATS.find(c => c.k === x.cat) || HIST_CATS[0];
+    return `${day}<div class="hs-row"><span class="hs-ic c-${x.cat}">${cat.i}</span>
+      <div class="hs-main">${x.who ? `<a href="#/customers/${x.who.id}"><b>${esc(x.who.name)}</b></a> · ` : ''}${esc(x.text)}
+        <small>${esc(x.by || '')}${x.via ? ` · <span class="hs-via">${esc(x.via)}</span>` : ''}${x.type && x.type !== 'Note' ? ` · ${esc(x.type)}` : ''}</small></div></div>`;
+  }).join('');
+  return `<div class="card"><div class="card-head"><h2>History</h2><span class="sp"></span><small class="muted">Changes to the property, and what happened with buyers</small></div>
+    <div class="hs-chips">${chips}</div>
+    ${rows || '<p class="muted" style="margin:0">Nothing here yet.</p>'}</div>`;
 }
+Object.assign(ACTIONS, {
+  matchSort: d => { UI.matchSort = d.v; render(); },
+  histF: d => { UI.histF = { id: d.id, k: d.k }; render(); },
+});
 Object.assign(ACTIONS, {
   clearFilters: d => { UI.filters[d.scope] = d.scope === 'custs' ? { sort: 'readiness' } : {}; render(); },
   addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); UI.compEdit = p.id + ':' + (p.valuation.comparables.length - 1); save(); render(); },
