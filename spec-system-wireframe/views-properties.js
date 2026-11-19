@@ -891,9 +891,9 @@ function pitchFor(c, p) {
   const near = cat => L.nearby.filter(x => x.cat === cat && nbOK(x)).sort((a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99))[0];
   const placeTxt = (cat, label) => { const x = near(cat); if (x) out.push(`${label} ${x.distanceKm} km`); };
   const road = (r => r && !/road/.test(r) ? r + ' road' : r)([rd.width ? rd.width + ' ft' : '', rd.type ? rd.type.toLowerCase() : ''].filter(Boolean).join(' '));
-  const market = () => { if (v.count) out.push(`${v.position.startsWith('Within') ? 'In line with the market' : v.position.startsWith('Below') ? 'Below the market' : 'Above the market'} (similar ${inr(v.min)}–${inr(v.max)}/sq.ft.)`); if (v.txnAvg) out.push(`recent sales avg ${inr(v.txnAvg)}/sq.ft.`); };
-  const upcoming = () => { const f = L.nearby.filter(x => x.name && x.status !== 'Existing').sort((a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99))[0]; if (f) out.push(`${f.status.toLowerCase()}: ${f.name} (~${f.distanceKm} km)`); };
-  const approvals = () => { const ok = p.approvals.filter(a => a.status !== 'pending').map(a => approvalOf(a.k).long); if (ok.length) out.push(ok.join(', ') + ' ✓'); };
+  const market = () => { if (v.count) out.push(`${v.position.startsWith('Within') ? 'In line with the market' : v.position.startsWith('Below') ? 'Below the market' : 'Above the market'} (${inr(v.min)}–${inr(v.max)}/sq.ft.)`); if (v.txnAvg) out.push(`recent sales ${inr(v.txnAvg)}/sq.ft.`); };
+  const upcoming = () => { const f = L.nearby.filter(x => x.name && x.status !== 'Existing').sort((a, b) => (+a.distanceKm || 99) - (+b.distanceKm || 99))[0]; if (f) out.push(`${f.status.toLowerCase()} ${f.name.charAt(0).toLowerCase() + f.name.slice(1)} ~${f.distanceKm} km`); };
+  const approvals = () => { const ok = p.approvals.filter(a => a.status !== 'pending').map(a => approvalOf(a.k).l); if (ok.length) out.push(ok.join(' + ') + ' ✓'); };
   switch (c.purpose) {
     case 'Own use': case 'Second home':
       placeTxt('School', 'School'); placeTxt('Hospital', 'Hospital'); placeTxt('Bus stop', 'Bus stop');
@@ -931,24 +931,29 @@ function propMatches(p) {
   const close = live ? DB.customers.filter(c => isActive(c)).map(c => ({ cust: c, m: matchScore(c, p, DB.settings) }))
     .filter(x => x.m.label === 'Budget mismatch' && p.price <= x.m.ceiling * 1.15).sort((a, b) => a.m.ceiling - b.m.ceiling).reverse() : [];
   const visitOf = c => (c.siteVisits || []).filter(v => v.prop === p.id).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-  const card = ({ cust: c, m, rd }) => {
-    const rec = (c.recommended || []).includes(p.id), sv = visitOf(c), r = c.req || {};
+  const card = ({ cust: c, m, rd }) => { // one compact row per buyer; the reasons open on "Why?"
+    const rec = (c.recommended || []).includes(p.id), sv = visitOf(c), r = c.req || {}, open = UI.mcOpen === p.id + ':' + c.id;
     const want = [r.size ? `${num(r.size)} sq.ft.` : '', (r.localities || []).length ? 'in ' + r.localities.slice(0, 2).join(', ') : (r.cities || []).length ? 'in ' + r.cities.join(', ') : ''].filter(Boolean).join(' ');
-    const reasons = m.why.filter(w => !/^⚠/.test(w)).slice(0, 4), warn = m.why.filter(w => /^⚠/.test(w));
+    const reasons = m.why.filter(w => !/^⚠/.test(w)), warn = m.why.filter(w => /^⚠/.test(w)), pts = pitchFor(c, p);
+    const actions = live ? `${rec ? `<button class="btn sm ghost mc-rec on" data-act="unrecommend" data-id="${c.id}" data-p="${p.id}" title="Click to undo">✓ Recommended</button>`
+        : `<button class="btn sm ${m.legalOk ? 'primary' : ''}" data-act="recommend" data-id="${c.id}" data-p="${p.id}" title="${m.legalOk ? 'You told this buyer about it — by call, WhatsApp or in person. Adds it to their shortlist and moves the lead on.' : 'An approval document is pending — explain before recommending'}">✓ Recommend</button>`}
+        ${sv && sv.status === 'Scheduled' ? `<span class="mc-visit">📅 ${fmtDate(sv.date)}</span>` : `<button class="btn sm" data-act="visitModal" data-id="${c.id}" data-p="${p.id}" title="Book a site visit">📅 Visit</button>`}` : '';
     return `<div class="mc-card">
-      <div class="mc-top"><span class="ov-av">${esc(initials(c.name))}</span>
-        <div class="mc-who"><a href="#/customers/${c.id}"><b>${esc(c.name)}</b></a> <span class="mono small muted">${c.id}</span> <span class="mc-purpose" title="${esc(c.purposeNote || (PURPOSES.find(x => x.v === c.purpose) || {}).d || '')}">${PURPOSE_ICON[c.purpose] || '•'} ${esc(c.purpose || 'Purpose not asked')}</span> ${chip(esc(c.stage), stageTone(c.stage))}
-          <small>Budget ${inrShort(c.budget.min)} – ${inrShort(c.budget.max)}${want ? ' · wants ' + esc(want) : ''} · ${esc(execName(DB, c.owner))}</small></div>
-        <div class="mc-fit"><b>${m.M}</b><small>fit</small>${chip(m.label, m.tone)}</div></div>
-      <div class="mc-why">${reasons.map(w => `<span class="${/^✗/.test(w) ? 'no' : /not in preferred/.test(w) ? 'part' : 'ok'}">${esc(w.replace(/^[✓✗]\s*/, ''))}</span>`).join('')}</div>
-      ${warn.map(w => `<div class="mc-warn">${esc(w)}</div>`).join('')}
-      ${(() => { const pts = pitchFor(c, p); return pts.length ? `<div class="mc-pitch"><b>What to tell ${esc(c.name.split(' ')[0])}</b><span>${c.purpose ? `for ${esc(c.purpose.toLowerCase())}` : ''}${c.purposeNote ? ` — ${esc(c.purposeNote.toLowerCase())}` : ''}</span><p>${pts.map(esc).join(' · ')}</p></div>` : ''; })()}
-      <div class="mc-foot">
-        <span class="mc-state">${chip(`Ready to buy ${rd.total}`, rd.band.tone, rd.band.l)}${rec ? ' <span class="t-green">✓ Recommended</span>' : ''}${sv ? ` <span class="muted">· site visit ${fmtDate(sv.date)} (${esc(sv.status.toLowerCase())})</span>` : ''}</span>
-        <span class="sp"></span>
-        ${live ? `${rec ? `<button class="btn sm ghost" data-act="unrecommend" data-id="${c.id}" data-p="${p.id}">Undo recommend</button>` : `<button class="btn sm ${m.legalOk ? 'primary' : ''}" data-act="recommend" data-id="${c.id}" data-p="${p.id}" title="${m.legalOk ? 'You told this buyer about it — by call, WhatsApp or in person. Adds it to their shortlist and moves the lead on.' : 'An approval document is pending — explain before recommending'}">✓ Recommend</button>`}
-          ${sv && sv.status === 'Scheduled' ? '' : `<button class="btn sm" data-act="visitModal" data-id="${c.id}" data-p="${p.id}">📅 Book site visit</button>`}` : ''}
-        <a class="btn sm ghost" href="#/customers/${c.id}">Open lead →</a></div>
+      <span class="ov-av">${esc(initials(c.name))}</span>
+      <div class="mc-main">
+        <div class="mc-l1"><a href="#/customers/${c.id}" title="Open lead ${c.id}"><b>${esc(c.name)}</b></a>
+          <span class="mc-purpose" title="${esc(c.purposeNote || (PURPOSES.find(x => x.v === c.purpose) || {}).d || '')}">${PURPOSE_ICON[c.purpose] || '•'} ${esc(c.purpose || 'Purpose not asked')}</span>
+          <span class="mc-dim">${esc(c.stage)} · ready to buy <b class="t-${rd.band.tone}" title="${esc(rd.band.l)}">${rd.total}</b></span></div>
+        <div class="mc-l2">${inrShort(c.budget.min)} – ${inrShort(c.budget.max)}${want ? ' · ' + esc(want) : ''} · ${esc(execName(DB, c.owner).replace(/^Executive \d+ — /, ''))}</div>
+        ${pts.length ? `<div class="mc-say" title="What to tell ${esc(c.name.split(' ')[0])}${c.purpose ? ' — for ' + esc(c.purpose.toLowerCase()) : ''}">💬 ${pts.map(esc).join(' · ')}</div>` : ''}
+        ${warn.map(w => `<div class="mc-warn">${esc(w)}</div>`).join('')}
+        ${open ? `<div class="mc-why">${reasons.map(w => `<span class="${/^✗/.test(w) ? 'no' : /not in preferred/.test(w) ? 'part' : 'ok'}">${esc(w.replace(/^[✓✗]\s*/, ''))}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="mc-side">
+        <div class="mc-fit"><b class="t-${m.tone}">${m.M}</b><span>${esc(m.label)}</span></div>
+        <button class="linkbtn mc-whybtn" data-act="mcWhy" data-k="${p.id}:${c.id}">${open ? 'Hide reasons' : `Why ${m.M}?`}</button>
+        <div class="mc-acts">${actions}</div>
+      </div>
     </div>`;
   };
   const head = `<div class="mc-head"><div><h2>${list.length ? `${list.length} buyer${list.length > 1 ? 's' : ''} fit this property` : 'No buyer fits this property yet'}</h2>
@@ -1008,6 +1013,7 @@ function propHistory(p) {
 }
 Object.assign(ACTIONS, {
   matchSort: d => { UI.matchSort = d.v; render(); },
+  mcWhy: d => { UI.mcOpen = UI.mcOpen === d.k ? null : d.k; render(); },
   histF: d => { UI.histF = { id: d.id, k: d.k }; render(); },
 });
 Object.assign(ACTIONS, {
