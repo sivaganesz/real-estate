@@ -63,6 +63,12 @@ function viewPipeline() {
         <div class="row"><span class="nm">${esc(c.name)}</span><span class="sp"></span>${chip(rd.total, rd.band.tone, rd.band.l)}</div>
         <div class="ln">${esc(reqSummary(c))}</div>
         <div class="ln">${inrShort(c.budget.max)} max · ${esc((execName(DB, c.owner).split('—')[1] || '').trim())}</div>
+        ${(() => { // what this buyer has been offered, and the next site visit
+          const recs = (c.recommended || []).filter(id => getProp(id));
+          const sv = (c.siteVisits || []).filter(v => v.status === 'Scheduled' && v.date >= DEMO_TODAY).sort((a, b) => (a.date > b.date ? 1 : -1))[0];
+          return (recs.length ? `<div class="ln k-recs" title="Recommended properties">🏠 <b>${recs.length} recommended:</b> ${recs.slice(0, 3).map(id => `<a href="#/properties/${id}">${id}</a>`).join(', ')}${recs.length > 3 ? ` +${recs.length - 3}` : ''}</div>` : '')
+            + (sv ? `<div class="ln k-visit">📅 visit ${fmtDate(sv.date)} · <a href="#/properties/${sv.prop}">${sv.prop}</a></div>` : '');
+        })()}
         <div class="ln row">${stage === LOST_STAGE ? chip(c.lostReason, 'red') : followUpCell(c)}<span class="sp"></span><span title="Days in this stage">${stuck ? '⚠ ' : ''}${days}d</span></div>
       </div>`;
     }).join('');

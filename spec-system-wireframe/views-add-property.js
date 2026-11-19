@@ -18,7 +18,7 @@ const CITY_CENTRE = Object.fromEntries(Object.keys(CITIES).map(c => [c, true]));
 const CITY_ALIASES = { trichy: 'Tiruchirappalli', tiruchi: 'Tiruchirappalli', kovai: 'Coimbatore', madras: 'Chennai', tanjore: 'Thanjavur', nellai: 'Tirunelveli' };
 const AVAIL_TONE = { Available: 'green', 'Under negotiation': 'purple', Reserved: 'blue', Booked: 'blue', 'On hold': 'amber', Sold: 'grey' };
 const REC_STATUS = { draft: ['Draft', 'amber'], pending: ['Waiting for approval', 'blue'], published: ['Published', 'green'] };
-const SRC = { chat: ['💬', 'From chat'], form: ['📝', 'Entered in the form'], google: ['🗺', 'Google Maps (mock)'], ai: ['✨', 'Written by AI'], derived: ['↳', 'Worked out'], calc: ['🧮', 'Calculated'], upload: ['📎', 'Uploaded'] };
+const SRC = { chat: ['💬', 'From chat'], form: ['📝', 'Entered in the form'], google: ['🗺', 'Google Maps (mock)'], ai: ['✨', 'Written by AI'], derived: ['↳', 'Worked out'], calc: ['🧮', 'Calculated'], upload: ['📎', 'Uploaded'], import: ['📄', 'From the import file'] };
 const AMENITY_WORDS = [[/gated/i, 'Gated community'], [/security|watchman/i, 'Security'], [/\bpark\b|open space/i, 'Park / open space'],
   [/power back ?up|generator/i, 'Power backup'], [/\blifts?\b|elevator/i, 'Lift'], [/\bgym\b|fitness/i, 'Gym'], [/swimming pool|\bpool\b/i, 'Swimming pool'],
   [/club ?house/i, 'Clubhouse'], [/rain ?water/i, 'Rainwater harvesting'], [/\bcctv\b/i, 'CCTV'], [/visitor parking/i, 'Visitor parking'], [/loading (bay|dock)/i, 'Loading bay']];
@@ -55,10 +55,7 @@ const CORE_FIELDS = {
   industrial: ['subType', 'powerKva', 'roadWidth'],
 };
 /* The key details required to publish — two per type. The type's other details are optional and can come later. */
-const REQ_DETAILS = {
-  plot: ['length', 'width'], flat: ['bhk', 'floor'], house: ['subType', 'bedrooms'],
-  commercial: ['commCategory', 'occupancy'], agri: ['acres', 'waterSource'], industrial: ['subType', 'powerKva'],
-};
+const REQ_DETAILS = REQUIRED_DETAILS; // data.js — shared with Bulk import
 /* The few optional extras offered as one-tap chips under “Add a detail”; anything else via “Something else”. */
 const SUGGESTED_FIELDS = {
   plot: ['surveyNo', 'water', 'electricity'],
@@ -924,7 +921,7 @@ function badgesInline(p) {
 const fid = path => 'f-' + path.replace(/[^a-zA-Z0-9]+/g, '-');
 function srcMini(s) {
   if (!s) return '';
-  const m = { chat: ['✨ AI', 'Filled in by the AI assistant'], google: ['🗺 Google', 'From Google Maps (mock)'], ai: ['✨ AI-written', 'Written by the AI from the details'], derived: ['auto', 'Worked out automatically'] }[s.s];
+  const m = { chat: ['✨ AI', 'Filled in by the AI assistant'], google: ['🗺 Google', 'From Google Maps (mock)'], ai: ['✨ AI-written', 'Written by the AI from the details'], derived: ['auto', 'Worked out automatically'], import: ['📄 File', 'From the import file'] }[s.s];
   return m ? `<span class="srcmini s-${s.s}" title="${esc(m[1] + (s.q ? ` — “${s.q}”` : ''))}">${m[0]}</span>` : '';
 }
 const inputCtl = (p, path, val, type, dis, extra = '') => `<input id="${fid(path)}" data-f="${esc(path)}" data-id="${p.id}" type="${type}" ${type === 'number' ? 'step="any" min="0"' : ''} value="${esc(val ?? '')}" ${dis} ${extra}>`;
@@ -1485,5 +1482,25 @@ save();
 const mainReset = ACTIONS.doReset;
 ACTIONS.doReset = (...args) => { S = null; seed(); save(); return mainReset(...args); };
 // search on the drafts page
-window.AddProperty = { ring, startNew, edit, view, draftsList, draftsButton, draftsStrip, listedScore, miniRing, searchItems };
+/** Bulk import: a row missing required details is saved as a draft instead of being rejected. */
+function importDraft(d, meta) {
+  const p = newRecord(), q = `${meta.file}, line ${meta.line}`;
+  const put = (path, v) => { if (v === '' || v == null || (Array.isArray(v) && !v.length)) return; setPath(p, path, v); p.src[path] = { s: 'import', q, by: me(), at: TODAY }; };
+  if (d.type) setType(p, d.type);
+  put('purpose', d.purpose); put('title', d.title); put('facing', d.facing); put('area', d.area); put('price', d.price);
+  put('loc.city', d.city); put('loc.locality', d.locality); put('loc.pincode', d.pincode); put('loc.address', d.address);
+  Object.entries(d.specs || {}).forEach(([k, v]) => put('specs.' + k, v));
+  if (d.lat !== '' && d.lng !== '' && d.lat != null && d.lng != null) { Object.assign(p.loc, { lat: d.lat, lng: d.lng, pinOk: true, precise: true }); p.src['loc.lat'] = { s: 'import', q, by: me(), at: TODAY }; }
+  p.amenities = (d.amenities || []).slice(); p.approvals = (d.approvals || []).slice();
+  p.shownFields = Object.keys(p.specs).filter(k => !isEmpty(p.specs[k]));
+  afterUpdate(p, []); // district / state, a suggested title, the duplicate check
+  const need = missing(p).map(x => x.l);
+  hist(p, `Imported from ${q} (${meta.batch}) — saved as a draft${need.length ? ': ' + need.join(', ') + ' still needed' : ''}`);
+  aiSay(p, `I imported this from <b>${esc(meta.file)}</b> (line ${meta.line}).${need.length ? ` Still needed to publish: ${need.map(esc).join(', ')}.` : ' Everything needed is here.'}`);
+  save();
+  return { id: p.id, missing: need };
+}
+/** A suggested title for a property that has none (Bulk import uses it too). */
+const titleFor = o => suggestTitle({ type: o.type, facing: o.facing || '', specs: o.specs || {}, loc: { locality: o.locality || '', city: o.city || '' } });
+window.AddProperty = { ring, startNew, edit, view, draftsList, draftsButton, draftsStrip, listedScore, miniRing, searchItems, importDraft, titleFor };
 })();

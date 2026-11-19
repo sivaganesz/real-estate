@@ -187,6 +187,11 @@ const LEGAL_BY_TYPE = {
   agri: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'tax'],
   industrial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'plan', 'fire', 'tax'],
 };
+/* The key details required to publish — two per type (Add property, Bulk import). The type's other details are optional. */
+const REQUIRED_DETAILS = {
+  plot: ['length', 'width'], flat: ['bhk', 'floor'], house: ['subType', 'bedrooms'],
+  commercial: ['commCategory', 'occupancy'], agri: ['acres', 'waterSource'], industrial: ['subType', 'powerKva'],
+};
 /* Approval badges a property can carry. RERA and building approval come by default; the team can create more
    (Settings → Approval badges, or "New approval" on a property). A ticked approval needs its document. */
 const APPROVAL_TYPES = [
