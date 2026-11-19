@@ -85,7 +85,7 @@ Everything else is optional: more details, photos, the exact location, approvals
 | Voice | Speech-to-text, then the AI | Search box only |
 | Brochure PDF, one or many pages | The AI reads the text and the page images | Planned |
 | Photos (a sign board, a printed page) | The AI reads the image; also offered as listing photos | Planned |
-| Excel | Existing bulk import; later, columns matched by the AI | Yes (template) |
+| Excel (.xlsx) or CSV — our template or any sheet | The columns are matched by the AI ("Plot Size" → area, "Rate" → price); "30 L" or "1,200 sqft" are read; rows missing required details become drafts | Yes (simulated) |
 
 **The AI step:**
 - One request per input. It sends the text, the instructions and the known-facts list.
