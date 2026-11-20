@@ -1492,6 +1492,8 @@ function importDraft(d, meta) {
   Object.entries(d.specs || {}).forEach(([k, v]) => put('specs.' + k, v));
   if (d.lat !== '' && d.lng !== '' && d.lat != null && d.lng != null) { Object.assign(p.loc, { lat: d.lat, lng: d.lng, pinOk: true, precise: true }); p.src['loc.lat'] = { s: 'import', q, by: me(), at: TODAY }; }
   p.amenities = (d.amenities || []).slice(); p.approvals = (d.approvals || []).slice();
+  // columns with no field of their own ("Owner remarks") come in as this property's own details, as written
+  p.custom = (d.extra || []).map(x => ({ label: x.label, value: x.value, vtype: 'text', by: me(), at: TODAY, q }));
   p.shownFields = Object.keys(p.specs).filter(k => !isEmpty(p.specs[k]));
   afterUpdate(p, []); // district / state, a suggested title, the duplicate check
   const need = missing(p).map(x => x.l);

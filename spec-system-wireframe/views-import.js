@@ -9,7 +9,7 @@
           approval badges can be listed (they start as "document pending"); documents are added on the property page.
    ===================================================================== */
 
-UI.imp = { type: 'plot', rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', update: true, result: null };
+UI.imp = { type: 'plot', rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', update: true, result: null, sender: '' };
 const IMP_MAX_ROWS = 500;
 const IMP_MAIN = [
   { k: 'property_id', l: 'Property ID', t: 'text', hint: 'Leave blank for a new property · existing ID to update it' },
@@ -94,11 +94,11 @@ function impSample(type) {
 
 /* ---------- validation ---------- */
 const impNum = v => Number(String(v).replace(/,/g, '').trim());
-function impValidate(objs, type) {
+function impValidate(objs, type, lines) {
   const cols = impColumns(type), seen = {};
   return objs.map((obj, i) => {
-    const line = i + 2; // header is line 1
-    const r = { line, data: {}, errors: [], warnings: [], needs: [], notes: [], mode: 'new', existing: null, changes: [] };
+    const line = lines ? lines[i] : i + 2; // the line in the file (headings may sit below a title)
+    const r = { line, data: {}, errors: [], warnings: [], needs: [], notes: [], mode: 'new', existing: null, changes: [], extra: (obj._extra || []).filter(x => x.value) };
     cols.forEach(c => { r.data[c.k] = String(obj[c.k] ?? '').trim(); });
     const d = r.data, id = d.property_id;
     if (id) {
@@ -142,6 +142,7 @@ function impValidate(objs, type) {
       const dup = DB.properties.find(p => !p.archived && p.type === type && p.locality.toLowerCase() === d.locality.toLowerCase() && (d.title && p.title.toLowerCase() === d.title.toLowerCase() || (area > 0 && Math.abs(p.area - area) / p.area <= 0.1)));
       if (dup) r.warnings.push(`Possible duplicate of ${dup.id} (${dup.title} — same locality, similar size); it will still be added`);
     }
+    if (r.extra.length) r.notes.push(`Kept as extra detail${r.extra.length > 1 ? 's' : ''}: ${r.extra.map(x => `${x.label} “${x.value}”`).join(', ')}`);
     if (r.mode === 'update' && !r.errors.length) {
       cols.forEach(c => {
         if (c.k === 'property_id' || !d[c.k]) return;
@@ -149,6 +150,7 @@ function impValidate(objs, type) {
         const nv = impValue(c, d[c.k]);
         if (JSON.stringify(cur ?? '') !== JSON.stringify(nv)) r.changes.push({ l: c.l, from: cur, to: nv });
       });
+      r.extra.forEach(x => { const cur = ((r.existing.extra || []).find(e => impNorm(e.label) === impNorm(x.label)) || {}).value; if ((cur || '') !== x.value) r.changes.push({ l: x.label, from: cur, to: x.value, extra: true }); });
       if (!r.changes.length) r.warnings.push('No changes — this row will be skipped');
     }
     return r;
@@ -169,7 +171,9 @@ const impWillImport = r => { const s = impStatus(r); return s === 'new' || s ===
    A file made from our template goes straight to the review. Any other file (an owner's or a channel partner's own
    sheet) gets a "Match columns" step first: each column is matched to a field by its heading — with synonyms and a look
    at the values ("Area" with numbers is the size; with names it is the locality) — and the team confirms or changes it.
-   Confirmed matches are remembered for the next file (DB.importMemory). In the real build the AI does the matching. */
+   Confirmed matches are remembered for the next file (DB.importMemory), and the whole format is saved per sender
+   (DB.importMappings — "ABC Realty's format recognised"). Columns with no field are kept as extra details, never dropped.
+   The headings may sit below a title; total rows at the bottom are skipped. In the real build the AI does the matching. */
 const impNorm = h => String(h || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
 const IMP_SYN = {
   property_id: ['propertyid', 'id', 'propid', 'refno', 'reference'],
@@ -195,23 +199,26 @@ const IMP_SYN = {
 };
 const isNumish = v => /^\s*(₹|rs\.?)?\s*[\d,.]+\s*(l|lac|lakh|lakhs|cr|crore|crores|k|sq\.?\s*ft\.?|sqft|ft|feet|cents|acres?)?\s*$/i.test(String(v));
 /** Match a file's column headings to the template's fields: exact → remembered → AI (synonyms + the values). */
-function impAutoMap(headers, rows, type) {
-  const cols = impColumns(type), mem = DB.importMemory || {}, used = new Set();
+const IMP_EXTRA = '_extra'; // "Keep as extra detail" — a column with no field of its own
+const impKeyOk = (k, cols) => k === '' || k === IMP_EXTRA || cols.some(c => c.k === k);
+function impAutoMap(headers, rows, type, format) {
+  const cols = impColumns(type), mem = DB.importMemory || {}, used = new Set(), fm = (format && format.map) || {};
   const out = headers.map((h, i) => {
     const n = impNorm(h), samples = rows.map(r => r[i]).filter(v => String(v ?? '').trim() !== '').slice(0, 3);
     if (!n) return { h, key: '', how: 'none', samples };
     let col = cols.find(c => impNorm(c.k) === n || impNorm(c.l) === n);
     if (col) return { h, key: col.k, how: 'exact', samples };
-    if (mem[n] !== undefined && (mem[n] === '' || cols.some(c => c.k === mem[n]))) return { h, key: mem[n], how: 'remembered', samples };
+    if (fm[n] !== undefined && impKeyOk(fm[n], cols)) return { h, key: fm[n], how: 'format', samples };
+    if (mem[n] !== undefined && impKeyOk(mem[n], cols)) return { h, key: mem[n], how: 'remembered', samples };
     // ambiguous headings: decide by the values
     if (['area', 'location', 'areaname'].includes(n) && samples.length) {
       const num = samples.filter(isNumish).length >= Math.ceil(samples.length / 2);
       return { h, key: num ? 'area_sqft' : 'locality', how: 'ai', samples, why: num ? 'the values are sizes' : 'the values are place names' };
     }
     const hit = cols.find(c => (IMP_SYN[c.k] || []).map(impNorm).includes(n)) || cols.find(c => (IMP_SYN[c.k] || []).map(impNorm).some(s => s.length > 3 && (n.includes(s) || s.includes(n))));
-    return hit ? { h, key: hit.k, how: 'ai', samples } : { h, key: '', how: 'none', samples };
+    return hit ? { h, key: hit.k, how: 'ai', samples } : samples.length ? { h, key: IMP_EXTRA, how: 'extra', samples } : { h, key: '', how: 'none', samples };
   });
-  out.forEach(m => { if (m.key && used.has(m.key) && m.how !== 'exact') { m.key = ''; m.how = 'none'; } else if (m.key) used.add(m.key); });
+  out.forEach(m => { if (!m.key || m.key === IMP_EXTRA) return; if (used.has(m.key) && m.how !== 'exact') { m.key = m.samples.length ? IMP_EXTRA : ''; m.how = m.key ? 'extra' : 'none'; } else used.add(m.key); });
   return out;
 }
 /** Values from people's own sheets: "30 L", "1.2 Cr", "1,200 sqft", "30 ft", Excel dates. */
@@ -229,16 +236,43 @@ function impClean(key, v, type) {
   return { v: s };
 }
 /** Rows (first = headings) → the review, through the "Match columns" step when the headings aren't ours. */
+/** The heading row: the first row (of the first 15) that is nearly as wide as the table and mostly text — a title
+    or "Prepared by…" line above it is skipped. */
+function impFindHeader(rows) {
+  const filled = r => r.filter(c => c.trim() !== '').length, wide = Math.max(...rows.slice(0, 40).map(filled));
+  for (let i = 0; i < Math.min(rows.length - 1, 15); i++) {
+    const f = filled(rows[i]); if (f < Math.max(2, Math.ceil(wide * 0.6))) continue;
+    if (rows[i].filter(c => c.trim() !== '' && !isNumish(c)).length / f >= 0.7) return i;
+  }
+  return 0;
+}
+/** A saved format: the same set of headings (80%+ alike) from an earlier file of the same type. */
+const impSig = headers => [...new Set(headers.map(impNorm).filter(Boolean))];
+function impFindFormat(headers, type) {
+  const sig = impSig(headers); let best = null, bestScore = 0;
+  (DB.importMappings || []).filter(f => f.type === type).forEach(f => { const same = f.sig.filter(x => sig.includes(x)).length, score = same / Math.max(f.sig.length, sig.length); if (score >= 0.8 && score > bestScore) { best = f; bestScore = score; } });
+  return best;
+}
+/** Rows → the review. Headings found (even below a title), totals skipped, columns matched. */
 function impPrepare(rows, fileName) {
   const I = UI.imp;
-  rows = rows.map(r => r.map(c => String(c ?? ''))).filter(r => r.some(c => c.trim() !== ''));
-  Object.assign(I, { result: null, filter: '', fileNotes: [], rows: null, src: null, colsOpen: false });
-  if (rows.length < 2) { toast(rows.length ? 'The file has headings but no rows' : 'The file is empty'); render(); return; }
-  const headers = rows[0].map(h => h.trim()); let data = rows.slice(1), limited = false;
-  if (data.length > IMP_MAX_ROWS) { data = data.slice(0, IMP_MAX_ROWS); limited = true; }
-  const mapping = impAutoMap(headers, data, I.type);
-  I.file = fileName;
-  I.src = { headers, data, mapping, limited, template: mapping.every(m => m.how === 'exact' || !m.h) };
+  const all = rows.map((r, i) => ({ r: (r || []).map(c => String(c ?? '')), line: i + 1 })).filter(x => x.r.some(c => c.trim() !== ''));
+  Object.assign(I, { result: null, filter: '', fileNotes: [], rows: null, src: null, colsOpen: false, sender: '' });
+  if (all.length < 2) { toast(all.length ? 'The file has headings but no rows' : 'The file is empty'); render(); return; }
+  const hi = impFindHeader(all.map(x => x.r)), found = [];
+  const headers = all[hi].r.map(h => h.trim());
+  if (all[hi].line > 1) found.push(`Headings found on line ${all[hi].line}${hi ? ` — skipped above them: ${all.slice(0, hi).map(x => '“' + x.r.filter(c => c.trim()).join(' ') + '”').join(', ')}` : ''}`);
+  let body = all.slice(hi + 1), limited = false;
+  // "Total: 4 plots" / "Grand total" rows at the bottom
+  const isTotal = r => /^\s*(grand\s+|sub\s*)?total\b/i.test(r.find(c => c.trim()) || '') && r.filter(c => c.trim()).length <= Math.ceil(headers.filter(Boolean).length / 2);
+  const totals = body.filter(x => isTotal(x.r)); body = body.filter(x => !isTotal(x.r));
+  if (totals.length) found.push(`Skipped ${totals.length} total row${totals.length > 1 ? 's' : ''} (line ${totals.map(x => x.line).join(', ')})`);
+  if (!body.length) { toast('The file has headings but no rows'); render(); return; }
+  if (body.length > IMP_MAX_ROWS) { body = body.slice(0, IMP_MAX_ROWS); limited = true; }
+  const data = body.map(x => x.r), format = impFindFormat(headers, I.type);
+  const mapping = impAutoMap(headers, data, I.type, format);
+  I.file = fileName; I.sender = format ? format.sender : '';
+  I.src = { headers, data, lines: body.map(x => x.line), mapping, limited, found, format, template: mapping.every(m => m.how === 'exact' || !m.h) };
   impRun();
 }
 /** (Re)check every row with the current column matches — runs again whenever a match is changed. */
@@ -251,21 +285,27 @@ function impRun() {
   const objs = data.map((r, ri) => {
     const o = {}; conv[ri] = [];
     // "30 ft", "32 lakhs", Excel dates — read the same way in every column
-    mapping.forEach((m, i) => { if (!m.key) return; const c = impClean(m.key, r[i], I.type); o[m.key] = c.v; if (c.note) conv[ri].push(c.note); });
+    mapping.forEach((m, i) => {
+      if (!m.key) return;
+      if (m.key === IMP_EXTRA) { (o._extra = o._extra || []).push({ label: m.h, value: String(r[i] ?? '').trim() }); return; }
+      const c = impClean(m.key, r[i], I.type); o[m.key] = c.v; if (c.note) conv[ri].push(c.note);
+    });
     return o;
   });
-  I.rows = impValidate(objs, I.type);
+  I.rows = impValidate(objs, I.type, I.src.lines);
   I.rows.forEach((row, ri) => { (conv[ri] || []).forEach(n => row.notes.push(n)); });
   render();
 }
 function impLoad(text, fileName) { impPrepare(parseCSV(text), fileName); }
 /* An owner's own sheet — different headings, lakh prices, units in the cells — to try the matching. */
 function impOwnerSample() {
-  return [['Plot Name', 'Area Name', 'Town', 'Plot Size', 'Rate', 'Facing', 'Length', 'Breadth', 'Road', 'Survey No', 'Approval', 'Contact person'],
-    ['Sunrise Nagar plot', 'Vilangudi', 'Madurai', '1200 sqft', '30 L', 'East', '40', '30', '30 ft', '112/3', 'DTCP', 'Mr. Kumar'],
-    ['', 'Thirunagar', 'Madurai', '1,500', '36 lakhs', 'North', '50', '30', '40 ft', '', 'Building approval', ''],
-    ['Corner plot near temple', 'Ponmeni', 'Madurai', '1350', '31,00,000', 'North-East', '45', '30', '', '61/4', '', 'Mrs. Latha'],
-    ['Budget plot', 'Kappalur', 'Madurai', '1000', '18 L', 'South', '', '', '20 ft', '', '', '']];
+  return [['ABC Realty – Plot list, November 2026'], ['Prepared for the sales team'], [],
+    ['Plot Name', 'Area Name', 'Town', 'Plot Size', 'Rate', 'Facing', 'Length', 'Breadth', 'Road', 'Survey No', 'Approval', 'Contact person', 'Owner remarks'],
+    ['Sunrise Nagar plot', 'Vilangudi', 'Madurai', '1200 sqft', '30 L', 'East', '40', '30', '30 ft', '112/3', 'DTCP', 'Mr. Kumar', 'Clear title, ready to register'],
+    ['', 'Thirunagar', 'Madurai', '1,500', '36 lakhs', 'North', '50', '30', '40 ft', '', 'Building approval', '', ''],
+    ['Corner plot near temple', 'Ponmeni', 'Madurai', '1350', '31,00,000', 'North-East', '45', '30', '', '61/4', '', 'Mrs. Latha', 'Price slightly negotiable'],
+    ['Budget plot', 'Kappalur', 'Madurai', '1000', '18 L', 'South', '', '', '20 ft', '', '', '', ''],
+    ['Total: 4 plots']];
 }
 
 /* ---------- Excel (.xlsx), read in the browser: an .xlsx file is a zip of XML files ---------- */
@@ -309,23 +349,35 @@ async function readXlsx(buf) {
 function impColsHtml() {
   const I = UI.imp, M = I.src, cols = impColumns(I.type);
   if (!M || M.template) return '';
-  const used = M.mapping.filter(m => m.h && m.key), unused = M.mapping.filter(m => m.h && !m.key), ai = used.filter(m => m.how === 'ai').length;
-  const dupKeys = M.mapping.map(m => m.key).filter((k, i, a) => k && a.indexOf(k) !== i);
+  const used = M.mapping.filter(m => m.h && m.key && m.key !== IMP_EXTRA), kept = M.mapping.filter(m => m.h && m.key === IMP_EXTRA), unused = M.mapping.filter(m => m.h && !m.key), ai = used.filter(m => m.how === 'ai').length;
+  const dupKeys = M.mapping.map(m => m.key).filter((k, i, a) => k && k !== IMP_EXTRA && a.indexOf(k) !== i);
+  const senders = [...new Set((DB.importMappings || []).map(f => f.sender).filter(Boolean))];
+  const from = `<div class="im-from">${M.format ? `<span class="im-known">📁 <b>${esc(M.format.sender || 'This')}’s format recognised</b> — columns matched as last time${M.format.uses ? ` (used ${M.format.uses}×)` : ''}</span>` : '<span class="muted">New format — it will be saved for next time.</span>'}
+      <label>Sent by <input data-chg="impSender" list="im-senders" value="${esc(I.sender || '')}" placeholder="e.g. ABC Realty"></label><datalist id="im-senders">${senders.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>`;
   const label = k => (cols.find(c => c.k === k) || { l: k }).l.replace(/ \(.*\)$/, '');
   const conv = (I.rows || []).reduce((n, r) => n + r.notes.filter(x => / read as /.test(x)).length, 0), ex = ((I.rows || []).flatMap(r => r.notes).find(x => / read as /.test(x)) || '').replace(/^“(.*)” read as (.*)$/, '$1 → $2');
-  const summary = `<div class="im-cols"><span>✨ <b>${used.length} of ${used.length + unused.length} columns matched</b>${ai ? ` · ${ai} by the AI` : ''}${unused.length ? ` · not used: ${esc(unused.map(m => m.h).join(', '))}` : ''}${conv ? ` · ${conv} value${conv > 1 ? 's' : ''} read from other formats (e.g. ${esc(ex)})` : ''}</span>
+  const summary = from + `<div class="im-cols"><span>✨ <b>${used.length} of ${used.length + kept.length + unused.length} columns matched</b>${ai ? ` · ${ai} by the AI` : ''}${kept.length ? ` · kept as extra details: ${esc(kept.map(m => m.h).join(', '))}` : ''}${unused.length ? ` · not used: ${esc(unused.map(m => m.h).join(', '))}` : ''}${conv ? ` · ${conv} value${conv > 1 ? 's' : ''} read from other formats (e.g. ${esc(ex)})` : ''}</span>
       <button class="linkbtn" data-act="impColsOpen">${I.colsOpen ? 'Done' : 'Check / change'}</button></div>`;
   if (!I.colsOpen) return summary + (dupKeys.length ? '<div class="note red" style="margin-top:6px">Two columns go into the same field — open “Check / change” and fix one.</div>' : '');
-  const opt = m => `<option value="">— Don’t use —</option>${cols.map(c => `<option value="${c.k}" ${m.key === c.k ? 'selected' : ''}>${esc(c.l)}</option>`).join('')}`;
+  const opt = m => `<option value="">— Don’t use —</option><option value="${IMP_EXTRA}" ${m.key === IMP_EXTRA ? 'selected' : ''}>Keep as extra detail</option>${cols.map(c => `<option value="${c.k}" ${m.key === c.k ? 'selected' : ''}>${esc(c.l)}</option>`).join('')}`;
   return summary + `<div class="im-colgrid">${M.mapping.map((m, i) => m.h ? `<div class="im-col ${dupKeys.includes(m.key) ? 'dup' : ''}">
-      <div><b>${esc(m.h)}</b> ${m.how === 'ai' ? '<span class="srcmini s-ai" title="Matched by the AI">✨</span>' : m.how === 'remembered' ? '<small class="muted">remembered</small>' : ''}<small class="muted">${m.samples.slice(0, 2).map(esc).join(' · ') || 'empty'}</small></div>
+      <div><b>${esc(m.h)}</b> ${m.how === 'ai' ? '<span class="srcmini s-ai" title="Matched by the AI">✨</span>' : m.how === 'remembered' || m.how === 'format' ? '<small class="muted">as last time</small>' : ''}<small class="muted">${m.samples.slice(0, 2).map(esc).join(' · ') || 'empty'}</small></div>
       <select data-chg="impMapSel" data-i="${i}">${opt(m)}</select></div>` : '').join('')}</div>
-    <p class="muted" style="margin:6px 0 0;font-size:12px">Your choices are remembered for the next file.${dupKeys.length ? ' <b class="t-amber">Two columns go into the same field.</b>' : ''}</p>`;
+    <p class="muted" style="margin:6px 0 0;font-size:12px">Your choices are saved with this sender’s format for the next file. “Keep as extra detail” adds the column to the property as written.${dupKeys.length ? ' <b class="t-amber">Two columns go into the same field.</b>' : ''}</p>`;
 }
 /* ---------- import ---------- */
 function impApply() {
   const I = UI.imp; if (!DB.imports) DB.imports = [];
-  if (I.src && !I.src.template) { DB.importMemory = DB.importMemory || {}; I.src.mapping.forEach(m => { if (m.h && m.how !== 'exact') DB.importMemory[impNorm(m.h)] = m.key; }); }
+  if (I.src && !I.src.template) {
+    DB.importMemory = DB.importMemory || {}; I.src.mapping.forEach(m => { if (m.h && m.how !== 'exact') DB.importMemory[impNorm(m.h)] = m.key; });
+    // the whole format, saved per sender — recognised next time even when the sender isn't named again
+    DB.importMappings = DB.importMappings || [];
+    const sig = impSig(I.src.headers), sender = (I.sender || '').trim(), map = {};
+    I.src.mapping.forEach(m => { if (impNorm(m.h)) map[impNorm(m.h)] = m.key; });
+    let f = I.src.format || DB.importMappings.find(x => x.type === I.type && x.sender && x.sender.toLowerCase() === sender.toLowerCase() && x.sig.join() === sig.join());
+    if (!f) { f = { id: 'FMT-' + String(DB.importMappings.length + 1).padStart(3, '0'), type: I.type, uses: 0, created: DEMO_TODAY, by: currentUser() }; DB.importMappings.push(f); }
+    Object.assign(f, { sender: sender || f.sender || '', sig, headers: I.src.headers.filter(Boolean), map, uses: (f.uses || 0) + 1, last: DEMO_TODAY });
+  }
   const cols = impColumns(I.type), batch = 'IMP-' + String(DB.imports.length + 1).padStart(3, '0');
   const created = [], updated = [], skipped = [], drafts = [];
   I.rows.forEach(r => {
@@ -336,7 +388,7 @@ function impApply() {
       PROPERTY_TYPES[I.type].fields.forEach(f => { const c = cols.find(x => x.k === f.k); if (d[f.k]) specs[f.k] = impValue(c, d[f.k]); });
       const res = AddProperty.importDraft({ type: I.type, purpose: d.purpose || 'Sale', title: d.title, facing: d.facing, area: d.area_sqft ? impNum(d.area_sqft) : '', price: d.asking_price ? impNum(d.asking_price) : '',
         city: d.city, locality: d.locality, pincode: d.pincode, address: d.address, lat: d.latitude && d.longitude ? impNum(d.latitude) : '', lng: d.latitude && d.longitude ? impNum(d.longitude) : '',
-        specs, amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], approvals: impApprovals(d.approvals) }, { file: I.file, line: r.line, batch });
+        specs, amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], approvals: impApprovals(d.approvals), extra: r.extra }, { file: I.file, line: r.line, batch });
       drafts.push(res);
       return;
     }
@@ -346,12 +398,12 @@ function impApply() {
       const p = {
         id: 'PROP-' + (++DB.counters.prop), title: d.title || r.suggestedTitle || typeLabel(I.type), type: I.type, purpose: d.purpose || 'Sale', status: d.status || 'Available', listingDate: d.listing_date || DEMO_TODAY,
         city: d.city, locality: d.locality, state: 'Tamil Nadu', facing: d.facing || '', area: impNum(d.area_sqft), price: impNum(d.asking_price),
-        amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: 0, specs,
+        amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: 0, specs, extra: r.extra.map(x => ({ label: x.label, value: x.value })),
         location: (ll => ({ lat: ll ? impNum(d.latitude) : '', lng: ll ? impNum(d.longitude) : '', address: d.address || '', pincode: d.pincode || '', district: (CITIES[d.city] || {}).district || d.city, pinOk: ll, suggestPending: ll, roadType: '', roadWidth: '', nearby: [] }))(!!(d.latitude && d.longitude)),
         approvals: impApprovals(d.approvals).map(k => ({ k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' })), documents: [],
         valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
       };
-      logHistory(p, `Created by bulk import ${batch} (${I.file}, line ${r.line})${d.title ? '' : ' — title suggested by the AI'}`);
+      logHistory(p, `Created by bulk import ${batch} (${I.file}, line ${r.line}${I.sender ? ', from ' + I.sender : ''})${d.title ? '' : ' — title suggested by the AI'}`);
       DB.properties.unshift(p); created.push(p.id);
       if (typeof addDefaultPlaces === 'function') addDefaultPlaces(p);
     } else {
@@ -362,11 +414,12 @@ function impApply() {
         if (c.k === 'approvals') { impApprovals(d.approvals).forEach(k => { normLegal(p); if (!p.approvals.some(a => a.k === k)) p.approvals.push({ k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' }); }); return; }
         if (c.spec) p.specs[c.k] = v; else setPath(p, IMP_FIELD_MAP[c.k], v);
       });
+      r.extra.forEach(x => { p.extra = p.extra || []; const e = p.extra.find(y => impNorm(y.label) === impNorm(x.label)); if (e) e.value = x.value; else p.extra.push({ label: x.label, value: x.value }); });
       logHistory(p, `Updated by bulk import ${batch}: ${r.changes.map(x => x.l).join(', ')}`);
       updated.push(p.id);
     }
   });
-  const rec = { id: batch, date: DEMO_TODAY, by: currentUser(), type: I.type, file: I.file, total: I.rows.length, created, updated, drafts, skipped: skipped.length, errors: I.rows.filter(r => r.errors.length).length };
+  const rec = { id: batch, date: DEMO_TODAY, by: currentUser(), type: I.type, file: I.file, sender: (I.sender || '').trim(), total: I.rows.length, created, updated, drafts, skipped: skipped.length, errors: I.rows.filter(r => r.errors.length).length };
   DB.imports.unshift(rec); save();
   I.result = rec; I.rows = null;
   toast(`${batch}: ${created.length} created, ${drafts.length} saved as drafts, ${updated.length} updated, ${skipped.length} skipped`);
@@ -395,7 +448,7 @@ function impStartHtml() {
         <input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-chg="impFile" style="display:none">
         <span class="im-drop-ic">📄</span><b>Drop an Excel or CSV file here</b><small>or click to choose · our template or your own sheet · up to ${IMP_MAX_ROWS} rows</small></label>
       <div class="im-links"><button class="linkbtn" data-act="impTemplate">⤓ Download the ${esc(t.label.toLowerCase())} template</button><span>·</span><button class="linkbtn" data-act="impUseSample">Try a sample</button><span>·</span><button class="linkbtn" data-act="impUseOwner">Try an owner’s own sheet</button></div>
-      <p class="im-promise">✨ Columns with other names are matched for you · “30 L” or “1,200 sqft” are read · rows missing details are saved as drafts — nothing is lost.</p>
+      <p class="im-promise">✨ Columns with other names are matched for you · a title above the headings is fine · “30 L” or “1,200 sqft” are read · other columns are kept as extra details · rows missing details become drafts — nothing is lost.</p>
     </div>
     <details class="card im-more"><summary>Which columns can the file have? <span class="muted">(${cols.length} for a ${esc(t.label.toLowerCase())})</span></summary>
       <div class="im-colref">${cols.filter(c => c.k !== 'property_id').map(c => `<span class="${c.req ? 'req' : ''}" title="${esc(c.hint || '')}">${esc(c.l.replace(/ \(.*\)$/, ''))}</span>`).join('')}</div>
@@ -428,6 +481,7 @@ function impReviewHtml() {
   return `<div class="card">
     <div class="card-head"><h2>${esc(I.file)}</h2>${chip(typeLabel(I.type), 'blue')}<span class="muted" style="font-size:13px">${rows.length} row${rows.length === 1 ? '' : 's'}</span><span class="sp"></span><button class="btn sm" data-act="impReset">Choose another file</button></div>
     ${impColsHtml()}
+    ${(I.src && I.src.found || []).map(x => `<p class="im-found">🔎 ${esc(x)}</p>`).join('')}
     ${I.fileNotes.map(x => `<div class="note amber" style="margin:8px 0 0">${esc(x)}</div>`).join('')}
     <div class="im-fs">${chips}</div>
     <div class="im-list">${list || '<p class="muted" style="margin:10px 0">No rows here.</p>'}</div>
@@ -449,20 +503,30 @@ function impResultHtml(r) {
     <div class="row" style="margin-top:12px">${r.created.length ? '<a class="btn" href="#/properties">Open properties</a>' : ''}${dr.length ? '<a class="btn" href="#/properties/drafts">Open drafts</a>' : ''}<span class="sp"></span><button class="btn primary" data-act="impReset">Import another file</button></div>
   </div>`;
 }
+function impFormatsHtml() {
+  const list = DB.importMappings || [];
+  if (!list.length) return '';
+  return `<details class="card im-more"><summary>Saved formats <span class="muted">(${list.length}) — recognised automatically next time</span></summary>
+    <div class="tbl-wrap"><table><thead><tr><th>Sender</th><th>Type</th><th>Columns</th><th class="num">Used</th><th>Last used</th><th></th></tr></thead><tbody>
+    ${list.map(f => `<tr><td><b>${esc(f.sender || 'Unnamed')}</b></td><td>${esc(typeLabel(f.type))}</td><td><small>${esc(f.headers.slice(0, 6).join(', '))}${f.headers.length > 6 ? ` +${f.headers.length - 6}` : ''}</small></td><td class="num">${f.uses}</td><td>${fmtDate(f.last)}</td>
+      <td><button class="btn sm ghost" data-act="impFmtForget" data-id="${f.id}">Forget</button></td></tr>`).join('')}
+    </tbody></table></div></details>`;
+}
 function impHistoryHtml() {
   const list = DB.imports || [];
-  if (!list.length) return '';
+  if (!list.length) return impFormatsHtml();
   return `<details class="card im-more"><summary>Past imports <span class="muted">(${list.length})</span></summary>
     <div class="tbl-wrap"><table><thead><tr><th>Batch</th><th>Date</th><th>By</th><th>File</th><th class="num">Added</th><th class="num">Drafts</th><th class="num">Updated</th><th class="num">Skipped</th></tr></thead><tbody>
-    ${list.map(b => `<tr><td class="mono">${b.id}</td><td>${fmtDate(b.date)}</td><td><small>${esc(b.by)}</small></td><td><small>${esc(b.file)}</small></td><td class="num">${b.created.length}</td><td class="num">${(b.drafts || []).length}</td><td class="num">${b.updated.length}</td><td class="num">${b.skipped}</td></tr>`).join('')}
-    </tbody></table></div></details>`;
+    ${list.map(b => `<tr><td class="mono">${b.id}</td><td>${fmtDate(b.date)}</td><td><small>${esc(b.by)}</small></td><td><small>${esc(b.file)}</small>${b.sender ? `<br><small class="muted">from ${esc(b.sender)}</small>` : ''}</td><td class="num">${b.created.length}</td><td class="num">${(b.drafts || []).length}</td><td class="num">${b.updated.length}</td><td class="num">${b.skipped}</td></tr>`).join('')}
+    </tbody></table></div></details>` + impFormatsHtml();
 }
 /* ---------- events ---------- */
 Object.assign(ACTIONS, {
   impTemplate: () => { const cols = impColumns(UI.imp.type); downloadFile(`property-import-template-${UI.imp.type}.csv`, toCSV([cols.map(c => c.k)])); toast('Template downloaded'); },
   impSampleCsv: () => { const cols = impColumns(UI.imp.type); downloadFile(`property-import-sample-${UI.imp.type}.csv`, toCSV([cols.map(c => c.k), ...impSample(UI.imp.type).map(o => cols.map(c => o[c.k] ?? ''))])); },
   impUseSample: () => { const cols = impColumns(UI.imp.type); impLoad(toCSV([cols.map(c => c.k), ...impSample(UI.imp.type).map(o => cols.map(c => o[c.k] ?? ''))]), `sample-${UI.imp.type}.csv`); },
-  impReset: () => { Object.assign(UI.imp, { rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', result: null }); render(); },
+  impReset: () => { Object.assign(UI.imp, { rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', result: null, sender: '' }); render(); },
+  impFmtForget: d => { DB.importMappings = (DB.importMappings || []).filter(f => f.id !== d.id); save(); toast('Format forgotten — the next file like it is matched afresh'); render(); },
   impTypePick: d => { UI.imp.type = d.k; render(); },
   impF: d => { UI.imp.filter = d.k; render(); },
   impColsOpen: () => { UI.imp.colsOpen = !UI.imp.colsOpen; render(); },
@@ -478,6 +542,7 @@ Object.assign(CHANGES, {
   impFilter: el => { UI.imp.filter = el.value; render(); },
   impUpdate: el => { UI.imp.update = el.checked; render(); },
   impFile: el => impReadFile(el.files && el.files[0]),
+  impSender: el => { UI.imp.sender = el.value.trim(); },
   impMapSel: el => { const m = UI.imp.src.mapping[+el.dataset.i]; m.key = el.value; m.how = 'you'; impRun(); },
 });
 function impReadFile(file) {

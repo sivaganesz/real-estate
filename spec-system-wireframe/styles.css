@@ -781,6 +781,11 @@ td.ctr .check { justify-content: center; margin: 0; }
 .im-colref span { font-size: 12.5px; border-radius: 99px; padding: 2px 10px; background: var(--grey-soft); color: var(--ink2); }
 .im-colref span.req { background: var(--amber-soft); color: #8a5a10; font-weight: 600; }
 .im-cols { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 10px; background: #f6f3ff; border: 1px solid #e3dafb; font-size: 13px; }
+.im-from { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.im-from label { display: flex; align-items: center; gap: 6px; color: var(--ink2); font-size: 12.5px; }
+.im-from input { width: 180px; padding: 5px 9px; font-size: 13px; }
+.im-known { color: var(--green); }
+.im-found { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
 .im-colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-top: 8px; }
 .im-col { border: 1px solid var(--line2); border-radius: 9px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
 .im-col.dup { border-color: #e0786f; background: var(--red-soft); }
