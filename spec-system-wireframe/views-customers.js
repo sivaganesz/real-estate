@@ -127,7 +127,9 @@ function viewCustomerForm(id) {
           ${fld('Preferred contact method', `<select name="contactPref">${options(CONTACT_PREFS, c.contactPref)}</select>`)}
           ${fld('Lead source', `<select name="source">${options(LEAD_SOURCES, c.source)}</select>`)}
           ${fld('Enquiry date', `<input type="date" name="enquiryDate" value="${esc(c.enquiryDate)}">`)}
-          ${fld('Assigned sales executive', `<select name="owner">${options(DB.settings.executives.map(e => ({ v: e.id, l: e.name })), c.owner, 'Auto-assign (least loaded)')}</select>`)}
+          ${canEditSettings() ? fld('Assigned sales executive', `<select name="owner">${options(DB.settings.executives.map(e => ({ v: e.id, l: e.name })), c.owner, 'Auto-assign (least loaded)')}</select>`)
+            // a Sales executive's new lead is theirs; reassigning is a manager's job
+            : fld('Assigned sales executive', `<input type="hidden" name="owner" value="${esc(c.owner || 'EX01')}"><input value="${esc(execName(DB, c.owner || 'EX01'))}" disabled>`, { hint: 'Only an Admin or Sales manager can reassign a lead' })}
           ${fld('Sales stage', `<select name="stage">${options([...STAGES, LOST_STAGE], c.stage)}</select>`)}
         </div>
         <div class="note blue" style="margin-top:12px"><label class="check"><input type="checkbox" name="consent" ${c.consent && c.consent.followUp ? 'checked' : ''}> <b>Customer consents to follow-up</b> on the preferred contact method.</label>
@@ -251,7 +253,7 @@ function viewCustomer(id, tab) {
         <div class="row muted" style="margin-top:6px">📞 ${esc(c.mobile)} · prefers ${esc(c.contactPref)} · ${esc(c.source)} · enquired ${fmtDate(c.enquiryDate)} · ${consentOk ? chip('Consent for follow-up ✓', 'green') : chip('No follow-up consent', 'red')}</div>
       </div>
       <div class="stack" style="min-width:250px">
-        <div class="row"><small style="width:96px">Owner</small>${bSel('c', c.id, 'owner', c.owner, DB.settings.executives.map(e => ({ v: e.id, l: e.name })), 'style="flex:1;width:auto"')}</div>
+        <div class="row"><small style="width:96px">Owner</small>${canEditSettings() ? bSel('c', c.id, 'owner', c.owner, DB.settings.executives.map(e => ({ v: e.id, l: e.name })), 'style="flex:1;width:auto"') : `<span title="Only an Admin or Sales manager can reassign a lead">${esc(execName(DB, c.owner))} 🔒</span>`}</div>
         <div class="row"><small style="width:96px">Next follow-up</small>${bIn('c', c.id, 'nextFollowUp', c.nextFollowUp, 'date', `style="flex:1;width:auto" ${consentOk ? '' : 'disabled title="Record consent first"'}`)}</div>
         <div class="row" style="justify-content:flex-end"><a class="btn sm" href="#/customers/${c.id}/edit">✎ Edit</a><button class="btn sm" data-act="stageModal" data-id="${c.id}">Move stage</button><a class="btn sm primary" href="#/customers/${c.id}/followups">＋ Log activity</a></div>
       </div>

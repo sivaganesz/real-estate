@@ -100,7 +100,7 @@ function route(r) {
       if (b === 'draft') return AddProperty.view(c, r.parts[3]);
       if (b === 'drafts') return AddProperty.draftsList(); // drafts, in the property list’s layout
       if (c === 'edit') return AddProperty.edit(b, r.parts[3]); // edit with the AI assistant (views-add-property.js)
-      if (c === 'form') return viewPropertyForm(b); // the classic form, kept as a fallback
+      if (c === 'form') return AddProperty.edit(b); // old link to the classic form → Edit with AI
       if (c === 'share') return viewPropShare(b); // the brochure the customer receives (views-share.js)
       return viewProperty(b, c || 'overview');
     case 'customers':
@@ -220,6 +220,8 @@ const BIND_HOOKS = {
       toast('Record the customer’s consent before scheduling a follow-up.'); return false;
     }
     if (kind === 's' && !canEditSettings()) { toast('Only Admin / Sales manager can change business rules.'); return false; }
+    if (kind === 'p' && path === 'status' && !canEditSettings()) { toast('Only Admin / Sales manager can change a property’s status.'); return false; }
+    if (kind === 'c' && path === 'owner' && !canEditSettings()) { toast('Only Admin / Sales manager can reassign a lead.'); return false; }
     return true;
   },
   after(kind, t, path, v, old) {

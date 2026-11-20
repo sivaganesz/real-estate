@@ -1500,9 +1500,11 @@ function importDraft(d, meta) {
   const need = missing(p).map(x => x.l);
   hist(p, `Imported from ${q} (${meta.batch}) — saved as a draft${need.length ? ': ' + need.join(', ') + ' still needed' : ''}`);
   const conf = meta.confirm || [];
+  // a Sales executive's complete row goes straight to "Waiting for approval" — as when they press Submit
+  if (meta.submit && !need.length && !conf.length) { p.status = 'pending'; p.submittedBy = me(); hist(p, 'Submitted for approval (bulk import)'); }
   aiSay(p, `I imported this from <b>${esc(meta.file)}</b> (${esc(meta.where || 'line ' + meta.line)}).${need.length ? ` Still needed to publish: ${need.map(esc).join(', ')}.` : ' Everything needed is here.'}${conf.length ? ` Please confirm: ${conf.map(esc).join('; ')}${conf.some(c => /price/i.test(c)) && p.price ? ` — I read the price as ${esc(inr(p.price))}` : ''}.` : ''}`);
   save();
-  return { id: p.id, missing: need, confirm: conf };
+  return { id: p.id, missing: need, confirm: conf, pending: p.status === 'pending' };
 }
 /** A suggested title for a property that has none (Bulk import uses it too). */
 const titleFor = o => suggestTitle({ type: o.type, facing: o.facing || '', specs: o.specs || {}, loc: { locality: o.locality || '', city: o.city || '' } });

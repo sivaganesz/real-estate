@@ -66,107 +66,6 @@ function viewProperties() {
 }
 
 
-/* ---------- add / edit form ---------- */
-function blankProperty() {
-  return { id: '', title: '', type: 'plot', purpose: 'Sale', status: 'Available', listingDate: DEMO_TODAY, city: 'Madurai', locality: '', state: 'Tamil Nadu', facing: 'East', area: '', price: '', amenities: [], images: 0, specs: {} };
-}
-function specFieldsHtml(type, specs) {
-  return PROPERTY_TYPES[type].fields.map(fd => fld(fd.l, inputFor(fd, specs[fd.k], 'spec.' + fd.k), { hint: fd.h })).join('');
-}
-function viewPropertyForm(id) {
-  const src = id ? getProp(id) : null;
-  if (id && !src) return { title: 'Not found', html: '<div class="card empty">Property not found.</div>' };
-  const p = src ? clone(src) : blankProperty();
-  const t = PROPERTY_TYPES[p.type];
-  const typeOpts = CATEGORIES.map(cat => `<optgroup label="${cat}">${Object.entries(PROPERTY_TYPES).filter(([, v]) => v.category === cat).map(([k, v]) => `<option value="${k}" ${k === p.type ? 'selected' : ''}>${v.label}</option>`).join('')}</optgroup>`).join('');
-  const ppsf = p.area > 0 && p.price > 0 ? inr(Math.round(p.price / p.area)) : '—';
-  return {
-    title: id ? 'Edit property' : 'Add property',
-    crumbs: `Specification data / <a href="#/properties">Properties</a> / <b>${id ? 'Edit ' + id : 'Add property'}</b>`,
-    html: `
-    <div class="page-head"><div><h1>${id ? 'Edit ' + esc(p.title) : 'Add property'}</h1><p>Main information is common to all properties. The specification section below changes with the property type.</p></div></div>
-    <form data-form="property" data-id="${id || ''}" class="card">
-      <div class="form-sec"><h2><span class="num">1</span>Main property information</h2>
-        <div class="fgrid">
-          ${fld('Property ID', `<input value="${esc(p.id || 'Auto: PROP-' + (DB.counters.prop + 1))}" disabled>`, { hint: 'Unique — never rely on the title alone' })}
-          ${fld('Property title', `<input name="title" value="${esc(p.title)}" required placeholder="e.g. Premium residential plot">`, { req: 1, cls: 'span2' })}
-          ${fld('Property type', `<select name="type" data-chg="ptype">${typeOpts}</select>`, { req: 1 })}
-          ${fld('Property category', `<input id="cat-display" value="${t.category}" disabled>`, { hint: 'Derived from type' })}
-          ${fld('Listing purpose', `<select name="purpose">${options(LISTING_PURPOSES, p.purpose)}</select>`, { req: 1 })}
-          ${fld('State', `<input name="state" value="${esc(p.state)}">`)}
-          ${fld('City / district', `<select name="city" data-chg="pcity">${options(Object.keys(CITIES), p.city)}</select>`, { req: 1 })}
-          ${fld('Locality', `<input name="locality" list="loc-list" value="${esc(p.locality)}" required><datalist id="loc-list">${(CITIES[p.city] || { localities: [] }).localities.map(l => `<option value="${esc(l)}">`).join('')}</datalist>`, { req: 1, hint: 'Actual locality name' })}
-          ${fld('Facing', `<select name="facing">${options(FACINGS, p.facing)}</select>`)}
-          ${fld(`<span id="area-label">${t.areaLabel}</span>`, `<input type="number" name="area" min="1" step="any" value="${esc(p.area)}" required data-inp="ppsf">`, { req: 1 })}
-          ${fld('Asking price (₹)', `<input type="number" name="price" min="1" step="any" value="${esc(p.price)}" required data-inp="ppsf">`, { req: 1 })}
-          ${fld('Asking price per sq.ft.', `<input id="ppsf-live" value="${ppsf}" disabled>`, { hint: 'Total price ÷ area (auto)' })}
-          ${fld('Property status', `<select name="status">${options(PROPERTY_STATUSES, p.status)}</select>`)}
-          ${fld('Listing date', `<input type="date" name="listingDate" value="${esc(p.listingDate)}">`)}
-        </div>
-      </div>
-      <div class="form-sec"><h2><span class="num">2</span>Property-specific specifications <span class="chip blue" id="type-chip">${t.label}</span></h2>
-        <p class="muted" style="margin-top:-4px">Only the fields relevant to this type are shown — a plot never asks for BHK, a flat never asks for survey subdivision.</p>
-        <div class="fgrid" id="spec-fields">${specFieldsHtml(p.type, p.specs)}</div>
-      </div>
-      <div class="form-sec"><h2><span class="num">3</span>Features &amp; amenities</h2>
-        <div class="checks">${AMENITIES.map(a => `<label class="check"><input type="checkbox" name="amenities" value="${esc(a)}" ${p.amenities.includes(a) ? 'checked' : ''}> ${a}</label>`).join('')}</div>
-      </div>
-      <div class="form-sec"><h2><span class="num">4</span>Location, legal documents and valuation</h2>
-        <div class="note blue">After saving, complete the <b>Location</b> (GPS, measured distances, existing vs planned infrastructure), <b>Legal &amp; documents</b> (three-status verification) and <b>Pricing &amp; valuation</b> (comparables) tabs on the property page.</div>
-      </div>
-      <div class="form-actions"><a class="btn" href="${id ? '#/properties/' + id : '#/properties'}">Cancel</a><button class="btn primary">${id ? 'Save changes' : 'Save property'}</button></div>
-    </form>`,
-  };
-}
-Object.assign(CHANGES, {
-  ptype: el => {
-    const t = PROPERTY_TYPES[el.value];
-    document.getElementById('spec-fields').innerHTML = specFieldsHtml(el.value, {});
-    document.getElementById('area-label').textContent = t.areaLabel;
-    document.getElementById('cat-display').value = t.category;
-    document.getElementById('type-chip').textContent = t.label;
-  },
-  pcity: el => {
-    const dl = document.getElementById('loc-list');
-    if (dl) dl.innerHTML = (CITIES[el.value] || { localities: [] }).localities.map(l => `<option value="${esc(l)}">`).join('');
-  },
-});
-Object.assign(INPUTS, {
-  ppsf: el => {
-    const f = el.form, a = Number(f.elements.area.value), pr = Number(f.elements.price.value);
-    document.getElementById('ppsf-live').value = a > 0 && pr > 0 ? inr(Math.round(pr / a)) : '—';
-  },
-});
-FORMS.property = (f, fd) => {
-  const id = f.dataset.id;
-  const type = fd.get('type');
-  const specs = {};
-  PROPERTY_TYPES[type].fields.forEach(x => { const v = fd.get('spec.' + x.k); specs[x.k] = x.t === 'number' ? (v === '' ? '' : Number(v)) : v; });
-  const data = {
-    title: fd.get('title').trim(), type, purpose: fd.get('purpose'), state: fd.get('state'), city: fd.get('city'), locality: fd.get('locality').trim(),
-    facing: fd.get('facing'), area: Number(fd.get('area')), price: Number(fd.get('price')), status: fd.get('status'), listingDate: fd.get('listingDate'),
-    amenities: fd.getAll('amenities'), specs,
-  };
-  if (!data.title || !(data.area > 0) || !(data.price > 0)) { toast('Title, area and price are required.'); return; }
-  let p;
-  if (id) {
-    p = getProp(id);
-    Object.assign(p, data);
-    logHistory(p, 'Specification updated');
-  } else {
-    p = Object.assign(data, {
-      id: 'PROP-' + (++DB.counters.prop), images: 0,
-      location: { address: '', pincode: '', district: '', lat: '', lng: '', pinOk: false, roadType: '', roadWidth: '', nearby: [] },
-      approvals: [], documents: [],
-      valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
-    });
-    logHistory(p, 'Property listed');
-    DB.properties.unshift(p);
-    addDefaultPlaces(p);
-  }
-  save(); toast(id ? 'Property saved' : `Property ${p.id} created — now add location, legal and valuation details`);
-  go(`#/properties/${p.id}/${id ? 'specs' : 'location'}`);
-};
 /* ---------- detail ---------- */
 /* five tabs: Location and Media now live on the Overview (old #/…/location and #/…/media links land there) */
 const PROP_TABS = [['overview', 'Overview'], ['legal', 'Legal & documents'], ['pricing', 'Price'], ['matches', 'Matching customers'], ['history', 'History']];
@@ -185,7 +84,7 @@ function viewProperty(id, tab) {
     html: `
     <div class="ent-head">
       ${n ? `<a class="av ph-thumb" href="#/properties/${p.id}" title="${n} photo${n > 1 ? 's' : ''}">🏠<small>${n} 📷</small></a>` : `<div class="av">${p.type === 'plot' ? '▦' : p.type === 'flat' ? '🏢' : p.type === 'house' ? '🏡' : '🏬'}</div>`}
-      <div class="meta"><h1>${esc(p.title)}${p.archived ? '' : ` <a class="title-pen" href="#/properties/${p.id}/edit/field-title" title="Change the title" aria-label="Change the title">✎</a>`}</h1>
+      <div class="meta"><h1>${esc(p.title)}${p.archived || !canEditSettings() ? '' : ` <a class="title-pen" href="#/properties/${p.id}/edit/field-title" title="Change the title" aria-label="Change the title">✎</a>`}</h1>
         <div class="row">${chip(p.id, 'outline mono')} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${p.approvals.map(a => a.status === 'pending'
             ? `<a class="chip amber hd-warn" href="#/properties/${p.id}/legal" title="Upload the document — until then matching shows this property only as a Conditional match">⚠ ${esc(approvalOf(a.k).long)} · document pending</a>`
             : chip((a.status === 'verified' ? '✓ ' : '') + esc(approvalOf(a.k).long), 'blue', a.status === 'verified' ? 'Document verified' : 'Document uploaded')).join(' ')}</div>
@@ -212,7 +111,7 @@ function propOverview(p) {
   const photos = n
     ? `<div class="ov-photos">${Array.from({ length: Math.min(n, 4) }, (_, i) => `<div class="ov-ph ${i === 0 ? 'cover' : ''}">${i === 0 ? '🏠' : '🖼'}<small>${i === 0 ? 'Cover' : 'Photo ' + (i + 1)}</small>${i === 3 && n > 4 ? `<b class="ov-more">+${n - 4}</b>` : ''}</div>`).join('')}
         <button class="ov-ph add" data-act="addImage" data-id="${p.id}">＋<small>Upload photo</small></button></div>
-      <div class="ov-photo-bar"><span class="muted">${n} photo${n > 1 ? 's' : ''}${p.videos ? ` · ${p.videos} video${p.videos > 1 ? 's' : ''}` : ''}</span><button class="linkbtn danger" data-act="rmImage" data-id="${p.id}">Remove last photo</button></div>`
+      <div class="ov-photo-bar"><span class="muted">${n} photo${n > 1 ? 's' : ''}${p.videos ? ` · ${p.videos} video${p.videos > 1 ? 's' : ''}` : ''}</span>${canEditSettings() ? `<button class="linkbtn danger" data-act="rmImage" data-id="${p.id}">Remove last photo</button>` : ''}</div>`
     : `<button class="ov-nophoto" data-act="addImage" data-id="${p.id}"><span>📷</span><div><b>No photos yet</b><small>Listings with photos get far more enquiries — add some (+10%)</small></div><span class="btn sm">＋ Upload photo</span></button>`;
   // details (filled only) + amenities, in one card; the empty fields become one-click chips that open the assistant on that field
   const addChips = empty.slice(0, 6).map(f => `<a class="ov-add" href="${edit}/field-${f.k}">＋ ${esc(f.l.replace(/ \(.*\)$/, ''))}</a>`).join('') + (empty.length > 6 ? `<a class="ov-add more" href="${edit}/details">+${empty.length - 6} more</a>` : '');
@@ -223,13 +122,13 @@ function propOverview(p) {
     [esc(t.areaLabel.replace(' (sq.ft.)', '')), `${num(p.area)} sq.ft. <small class="muted">· ${inr(pricePerSqft(p))}/sq.ft.</small>`],
     ['Location', `${L.address ? esc(L.address) + ', ' : ''}${esc(p.locality)}, ${esc(p.city)}${p.state ? `, ${esc(p.state)}` : ''}${L.pincode ? ' – ' + esc(L.pincode) : ''}`], ['Facing', p.facing ? esc(p.facing) : '<span class="muted">—</span>'],
     ['Status', chip(p.status, STATUS_TONE[p.status])], ['Listed on', fmtDate(p.listingDate)]];
-  const detailsCard = `<div class="card"><div class="card-head"><h2>Property details</h2><span class="sp"></span><a class="btn sm" href="${edit}">✨ Edit with AI</a></div>
+  const detailsCard = `<div class="card"><div class="card-head"><h2>Property details</h2><span class="sp"></span>${canEditSettings() ? `<a class="btn sm" href="${edit}">✨ Edit with AI</a>` : ''}</div>
       <div class="ov-sec first"><span class="ov-lbl">Main property information</span></div>
       ${dl(main)}
       <div class="ov-sec"><span class="ov-lbl">${esc(t.label)} specifications</span><small class="muted">${filled.length} of ${t.fields.length} filled in</small></div>
       ${details.length ? dl(details) : '<p class="muted" style="margin:0">No details yet.</p>'}
       <div class="ov-amen"><span class="ov-lbl">Amenities</span>${p.amenities.length ? p.amenities.map(a => `<span class="ov-amen-chip">${esc(a)}</span>`).join('') : `<span class="muted">None added yet (+5%)</span> <a class="ov-add" href="${edit}/details">＋ Add amenities</a>`}</div>
-      ${empty.length && p.status === 'Available' ? `<div class="ov-adds"><span class="ov-lbl">Add</span>${addChips}</div>` : ''}</div>`;
+      ${empty.length && p.status === 'Available' && canEditSettings() ? `<div class="ov-adds"><span class="ov-lbl">Add</span>${addChips}</div>` : ''}</div>`;
   // side: one "To do" list (what needs attention + what is missing), or — once the property is no longer on offer — the deal
   const live = p.status === 'Available';
   const sc = typeof AddProperty !== 'undefined' ? AddProperty.listedScore(p) : { score: 100, missing: [] };
@@ -702,7 +601,7 @@ function propLegal(p) {
       <div class="lg-acts">${a.file
         ? `<button class="btn sm" data-act="lgView" data-f="${esc(a.file)}">View</button><button class="btn sm ghost" data-act="apUpload" data-id="${p.id}" data-k="${a.k}">Replace</button>${mgr ? `<button class="btn sm ghost" data-act="apVerify" data-id="${p.id}" data-k="${a.k}">${a.status === 'verified' ? 'Undo verified' : '✓ Mark verified'}</button>` : ''}`
         : `<button class="btn sm primary" data-act="apUpload" data-id="${p.id}" data-k="${a.k}">⤒ Upload document</button>`}
-        <button class="btn sm ghost danger" data-act="apRemove" data-id="${p.id}" data-k="${a.k}" title="Remove this badge" aria-label="Remove ${esc(t.long)}">✕</button></div>
+        ${mgr ? `<button class="btn sm ghost danger" data-act="apRemove" data-id="${p.id}" data-k="${a.k}" title="Remove this badge" aria-label="Remove ${esc(t.long)}">✕</button>` : ''}</div>
     </div>`;
   };
   const addable = approvalTypes().filter(t => !on.includes(t.k));
@@ -711,7 +610,7 @@ function propLegal(p) {
         ${fld('Its document <span class="opt-tag">Optional</span>', '<input id="ap-new-doc" placeholder="e.g. Fire NOC certificate">')}</div>
       <p class="muted" style="margin:8px 0">A new approval is available on <b>every property</b> from then on (Settings → Approval badges).</p>
       <div class="row"><button class="btn sm primary" data-act="apNewSave" data-id="${p.id}">Create and add to ${p.id}</button><button class="btn sm" data-act="apNewOpen" data-id="${p.id}">Cancel</button></div></div>` : '';
-  const approvalsCard = `<div class="card"><div class="card-head"><h2>Approvals</h2><span class="opt-tag">Optional</span><span class="sp"></span><button class="btn sm" data-act="apNewOpen" data-id="${p.id}">＋ New approval</button></div>
+  const approvalsCard = `<div class="card"><div class="card-head"><h2>Approvals</h2><span class="opt-tag">Optional</span><span class="sp"></span>${mgr ? `<button class="btn sm" data-act="apNewOpen" data-id="${p.id}">＋ New approval</button>` : ''}</div>
     <p class="muted lg-intro">Tick the approvals this property has. A badge shows on the listing once its document is uploaded — until then it says <b>document pending</b>, and matching shows the property only as a Conditional match.</p>
     ${p.approvals.length ? p.approvals.map(apRow).join('') : '<p class="muted" style="margin:0 0 4px">No approval badges.</p>'}
     ${addable.length ? `<div class="lg-add"><span class="muted">Add a badge:</span>${addable.map(t => `<button class="ov-add" data-act="apAdd" data-id="${p.id}" data-k="${t.k}">＋ ${esc(t.long)}</button>`).join('')}</div>` : ''}
@@ -722,7 +621,7 @@ function propLegal(p) {
       <div class="lg-main"><div><b>${esc(d.name)}</b> ${d.verified ? chip('✓ Verified', 'green') : ''}</div>
         <small>${esc(d.file)}${who(d.uploadedBy, d.uploadedAt) ? ' · uploaded ' + who(d.uploadedBy, d.uploadedAt) : ''}${d.verified && who(d.verifiedBy, d.verifiedAt) ? ` · verified ${who(d.verifiedBy, d.verifiedAt)}` : ''}</small></div>
       <div class="lg-acts"><button class="btn sm" data-act="lgView" data-f="${esc(d.file)}">View</button>${mgr ? `<button class="btn sm ghost" data-act="docVerify" data-id="${p.id}" data-d="${d.id}">${d.verified ? 'Undo verified' : '✓ Mark verified'}</button>` : ''}
-        <button class="btn sm ghost danger" data-act="docRemove" data-id="${p.id}" data-d="${d.id}" title="Remove" aria-label="Remove ${esc(d.name)}">✕</button></div>
+        ${mgr ? `<button class="btn sm ghost danger" data-act="docRemove" data-id="${p.id}" data-d="${d.id}" title="Remove" aria-label="Remove ${esc(d.name)}">✕</button>` : ''}</div>
     </div>`;
   const usual = (LEGAL_BY_TYPE[p.type] || []).concat('valuer').filter(k => !OLD_APPROVAL_DOCS[k] && !p.documents.some(d => d.kind === k));
   const docsCard = `<div class="card"><div class="card-head"><h2>Other documents</h2><span class="opt-tag">Optional</span><span class="sp"></span><button class="btn sm" data-act="docNewOpen" data-id="${p.id}">⤒ Upload document</button></div>
@@ -754,11 +653,13 @@ Object.assign(ACTIONS, {
     logHistory(p, `${approvalOf(d.k).long}: ${v ? 'document verified' : 'verification undone'}`); save(); render();
   },
   apRemove: d => {
+    if (!canEditSettings()) return;
     const p = getProp(d.id); p.approvals = p.approvals.filter(x => x.k !== d.k);
     logHistory(p, `Approval badge removed: ${approvalOf(d.k).long}`); save(); toast(`${approvalOf(d.k).long} removed`); render();
   },
   apNewOpen: d => { UI.apNew = UI.apNew === d.id ? null : d.id; render(); if (UI.apNew) setTimeout(() => { const el = document.getElementById('ap-new-name'); if (el) el.focus(); }, 0); },
   apNewSave: d => {
+    if (!canEditSettings()) return;
     const p = getProp(d.id), name = (document.getElementById('ap-new-name').value || '').trim(), doc = (document.getElementById('ap-new-doc').value || '').trim();
     if (!name) { toast('Type the approval’s name'); return; }
     const before = approvalTypes().length, k = addApprovalType(name, doc), created = approvalTypes().length > before;
@@ -785,7 +686,7 @@ Object.assign(ACTIONS, {
     Object.assign(x, x.verified ? { verified: false, verifiedBy: '', verifiedAt: '' } : { verified: true, verifiedBy: currentUser(), verifiedAt: DEMO_TODAY });
     logHistory(p, `${x.name}: ${x.verified ? 'verified' : 'verification undone'}`); save(); render();
   },
-  docRemove: d => { const p = getProp(d.id), x = p.documents.find(y => y.id === d.d); p.documents = p.documents.filter(y => y !== x); logHistory(p, `Document removed: ${x.name}`); save(); toast(`${x.name} removed`); render(); },
+  docRemove: d => { if (!canEditSettings()) return; const p = getProp(d.id), x = p.documents.find(y => y.id === d.d); p.documents = p.documents.filter(y => y !== x); logHistory(p, `Document removed: ${x.name}`); save(); toast(`${x.name} removed`); render(); },
 });
 document.addEventListener('keydown', e => { // Enter in the small "new" forms
   if (e.key !== 'Enter' || !e.target || !['ap-new-name', 'ap-new-doc', 'doc-new-name'].includes(e.target.id)) return;
@@ -1021,7 +922,7 @@ Object.assign(ACTIONS, {
   addComp: d => { const p = getProp(d.id); p.valuation.comparables.push({ location: p.locality + ', ' + p.city, type: typeLabel(p.type), area: p.area, pricePerSqft: '', kind: 'Transaction', date: DEMO_TODAY, source: '', differences: '' }); UI.compEdit = p.id + ':' + (p.valuation.comparables.length - 1); save(); render(); },
   rmComp: d => { const p = getProp(d.id), c = p.valuation.comparables.splice(+d.i, 1)[0]; UI.compEdit = null; if (c) logHistory(p, `Comparable removed: ${c.ref || c.location}`); save(); render(); },
   addImage: d => { const p = getProp(d.id); p.images = (p.images || 0) + 1; logHistory(p, `Photo uploaded (${p.images} in all)`); save(); toast('Photo uploaded (mock)'); render(); },
-  rmImage: d => { const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); logHistory(p, 'Photo removed'); save(); render(); },
+  rmImage: d => { if (!canEditSettings()) return; const p = getProp(d.id); p.images = Math.max(0, (p.images || 0) - 1); logHistory(p, 'Photo removed'); save(); render(); },
 });
 /* ---------- archive / restore / delete ---------- */
 const MANAGE_TITLE = 'disabled title="Admin / Sales manager only"';
@@ -1029,6 +930,8 @@ function propHeaderActions(p) {
   const dis = canEditSettings() ? '' : MANAGE_TITLE;
   if (p.archived) return `${chip('Archived', 'outline')}<button class="btn" data-act="propRestore" data-id="${p.id}" ${dis}>↺ Restore</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
   const menu = (k, btn, items) => `<div class="hd-menu">${btn}${UI.propMenu === k ? `<div class="hd-pop">${items}</div>` : ''}</div>`;
+  if (!canEditSettings()) return `${chip(p.status, STATUS_TONE[p.status])}<a class="btn" href="#/properties/${p.id}/share" title="See the brochure the customer receives, then copy the link or download the PDF">↗ Share</a>
+    <span class="hd-ro" title="Only an Admin or Sales manager can change a published property — add photos, documents and nearby places here, or ask them for other changes">🔒 Changes by a manager</span>`;
   return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn primary" href="#/properties/${p.id}/edit" title="Tell the AI assistant what changed">✨ Edit with AI</a>
     <a class="btn" href="#/properties/${p.id}/share" title="See the brochure the customer receives, then copy the link or download the PDF">↗ Share</a>
     ${menu('more', `<button class="btn icon" data-act="propMenu" data-k="more" title="More actions">⋯</button>`,
