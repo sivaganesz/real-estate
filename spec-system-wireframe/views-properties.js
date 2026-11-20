@@ -1030,8 +1030,7 @@ function propHeaderActions(p) {
   if (p.archived) return `${chip('Archived', 'outline')}<button class="btn" data-act="propRestore" data-id="${p.id}" ${dis}>↺ Restore</button><button class="btn danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`;
   const menu = (k, btn, items) => `<div class="hd-menu">${btn}${UI.propMenu === k ? `<div class="hd-pop">${items}</div>` : ''}</div>`;
   return `${bSel('p', p.id, 'status', p.status, PROPERTY_STATUSES, 'style="width:auto" title="Change status"')}<a class="btn primary" href="#/properties/${p.id}/edit" title="Tell the AI assistant what changed">✨ Edit with AI</a>
-    ${menu('share', `<button class="btn" data-act="propMenu" data-k="share">↗ Share ▾</button>`,
-      `<button data-act="propShare" data-id="${p.id}" data-how="wa">💬 Send on WhatsApp</button><button data-act="propShare" data-id="${p.id}" data-how="link">🔗 Copy link</button><button data-act="propShare" data-id="${p.id}" data-how="pdf">📄 Download brochure (PDF)</button>`)}
+    <a class="btn" href="#/properties/${p.id}/share" title="See the brochure the customer receives, then copy the link or download the PDF">↗ Share</a>
     ${menu('more', `<button class="btn icon" data-act="propMenu" data-k="more" title="More actions">⋯</button>`,
       `<button data-act="propArchiveOpen" data-id="${p.id}" ${dis}>🗄 Archive</button><button class="danger" data-act="propDeleteOpen" data-id="${p.id}" ${dis}>🗑 Delete</button>`)}`;
 }
@@ -1108,7 +1107,6 @@ Object.assign(MODAL_SUBMIT, {
 });
 Object.assign(ACTIONS, {
   propMenu: d => { UI.propMenu = UI.propMenu === d.k ? null : d.k; render(); },
-  propShare: d => { const p = getProp(d.id); toast(d.how === 'wa' ? `WhatsApp message ready for ${p.id} — title, price, locality and the listing link (mock)` : d.how === 'link' ? `Link to ${p.id} copied (mock)` : `Brochure for ${p.id} downloaded — photos, key facts and approvals (mock)`); },
   propArchiveOpen: d => { if (canEditSettings()) openModal({ kind: 'propArchive', id: d.id }); },
   propDeleteOpen: d => { if (canEditSettings()) openModal({ kind: 'propDelete', id: d.id }); },
   propRestore: d => {

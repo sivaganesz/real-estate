@@ -101,6 +101,7 @@ function route(r) {
       if (b === 'drafts') return AddProperty.draftsList(); // drafts, in the property list’s layout
       if (c === 'edit') return AddProperty.edit(b, r.parts[3]); // edit with the AI assistant (views-add-property.js)
       if (c === 'form') return viewPropertyForm(b); // the classic form, kept as a fallback
+      if (c === 'share') return viewPropShare(b); // the brochure the customer receives (views-share.js)
       return viewProperty(b, c || 'overview');
     case 'customers':
       if (!b) return viewCustomers();
