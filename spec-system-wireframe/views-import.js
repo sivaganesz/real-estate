@@ -1,5 +1,5 @@
 /* =====================================================================
-   Bulk import — properties from a CSV file (Specification data)
+   Bulk import — properties from a spreadsheet, a brochure, a catalogue or a photo (Specification data)
    Flow: choose type → download template → upload → validate & preview → import.
    Rules: one template per property type (fields differ by type);
           blank Property ID = new property, existing ID = update only the filled cells;
@@ -161,10 +161,11 @@ function impValue(c, v) {
   if (c.t === 'list') return v.split(';').map(s => s.trim()).map(a => AMENITIES.find(x => x.toLowerCase() === a.toLowerCase())).filter(Boolean);
   return v;
 }
-const impStatus = r => r.errors.length ? 'error' : r.mode === 'update' ? (r.changes.length ? 'update' : 'nochange') : r.needs.length ? 'draft' : 'new';
+const impStatus = r => r.errors.length ? 'error' : r.mode === 'update' ? (r.changes.length ? 'update' : 'nochange') : r.needs.length || (r.confirm || []).length ? 'draft' : 'new';
 /** An approval badge named in the file (by its short or long name). */
 const impApproval = name => approvalTypes().find(a => [a.l, a.long, a.k].some(x => String(x).toLowerCase() === String(name).toLowerCase()));
 const impApprovals = v => [...new Set(String(v || '').split(';').map(x => impApproval(x.trim())).filter(Boolean).map(a => a.k))];
+const impWhere = r => r.page ? (UI.imp.src && UI.imp.src.doc && UI.imp.src.doc.kind === 'image' ? 'the photo' : 'page ' + r.page) : 'line ' + r.line;
 const impWillImport = r => { const s = impStatus(r); return s === 'new' || s === 'draft' || (s === 'update' && UI.imp.update); };
 
 /* ---------- reading any spreadsheet: the columns are matched for you ----------
@@ -294,6 +295,8 @@ function impRun() {
   });
   I.rows = impValidate(objs, I.type, I.src.lines);
   I.rows.forEach((row, ri) => { (conv[ri] || []).forEach(n => row.notes.push(n)); });
+  const doc = I.src.doc;
+  if (doc) I.rows.forEach((row, ri) => { const it = doc.items[ri] || {}; Object.assign(row, { page: it.page, quote: it.quote, photos: it.photos || 0, confirm: (it.confirm || []).slice() }); (it.notes || []).forEach(n => row.notes.push(n)); });
   render();
 }
 function impLoad(text, fileName) { impPrepare(parseCSV(text), fileName); }
@@ -306,6 +309,53 @@ function impOwnerSample() {
     ['Corner plot near temple', 'Ponmeni', 'Madurai', '1350', '31,00,000', 'North-East', '45', '30', '', '61/4', '', 'Mrs. Latha', 'Price slightly negotiable'],
     ['Budget plot', 'Kappalur', 'Madurai', '1000', '18 L', 'South', '', '', '20 ft', '', '', '', ''],
     ['Total: 4 plots']];
+}
+
+/* ---------- brochures, catalogues and photos (PDF / images): the AI reads them ----------
+   Same pattern as a spreadsheet: the AI reads the document and returns JSON — one entry per property, each with the page
+   and the words it was read from, notes on what it worked out, and what it is unsure of. Code checks it like any row;
+   entries the AI is unsure of become drafts, so a person confirms them in the assistant. Photos in the file are attached.
+   Real build: PDF text + page images → the AI (vision) with our field list → JSON checked by code.
+   In the wireframe the AI is mocked: a sample result is shown for any PDF or image. */
+const IMP_DOC_EXT = /\.(pdf|png|jpe?g|webp|heic)$/i;
+function impDocSample(kind) {
+  if (kind === 'image') return { kind: 'image', pages: 1, type: 'plot', what: 'a photo of a “Plot for sale” board',
+    items: [{ page: 1, photos: 1, quote: 'PLOT FOR SALE · 30 × 40 · EAST FACING · PONMENI · 24 L · CALL 98XXX XXXXX',
+      f: { city: 'Madurai', locality: 'Ponmeni', facing: 'East', width: '30', length: '40', area_sqft: '1200', asking_price: '24 L' },
+      notes: ['City worked out from the locality (Ponmeni is in Madurai)', 'Area worked out from 30 × 40 ft', 'The photo is kept as the first photo'],
+      extra: [{ label: 'Phone on the board', value: '98XXX XXXXX' }] }] };
+  const common = { city: 'Madurai', locality: 'K.K. Nagar', totalFloors: '5', possession: 'Under construction', possessionDate: '2027-12', amenities: 'Lift;Power backup;Gym;Security;CCTV', approvals: 'RERA' };
+  const extra = [{ label: 'Builder', value: 'Green Homes Pvt. Ltd.' }, { label: 'RERA number', value: 'TN/35/Building/0123/2026' }];
+  return { kind: 'pdf', pages: 8, type: 'flat', what: 'a builder’s project brochure — Green Meadows, K.K. Nagar',
+    items: [
+      { page: 3, photos: 4, quote: '2 BHK · 1,150 sq.ft. (carpet 920 sq.ft.) · ₹68 Lakhs onwards', f: Object.assign({ title: 'Green Meadows — 2 BHK', bhk: '2 BHK', area_sqft: '1150', carpet: '920', asking_price: '68 Lakhs' }, common),
+        notes: ['“G + 4 floors” read as 5 floors', 'Possession “December 2027” read as 2027-12'], confirm: ['the price says “onwards”'], extra },
+      { page: 3, photos: 4, quote: '3 BHK · 1,480 sq.ft. (carpet 1,190 sq.ft.) · ₹89 Lakhs onwards', f: Object.assign({ title: 'Green Meadows — 3 BHK', bhk: '3 BHK', area_sqft: '1480', carpet: '1190', asking_price: '89 Lakhs' }, common),
+        notes: ['“G + 4 floors” read as 5 floors'], confirm: ['the price says “onwards”'], extra },
+      { page: 4, photos: 3, quote: '3 BHK Premium, east-facing · 1,720 sq.ft. · ₹1.05 Cr · 4th floor', f: Object.assign({ title: 'Green Meadows — 3 BHK Premium', bhk: '3 BHK', facing: 'East', floor: '4', area_sqft: '1720', asking_price: '1.05 Cr' }, common),
+        notes: ['“G + 4 floors” read as 5 floors'], extra },
+    ] };
+}
+/** The AI's entries → the same rows and Check screen as a spreadsheet (its keys are our field names). */
+function impDocLoad(doc, fileName, real) {
+  const I = UI.imp; I.type = doc.type;
+  const keys = [...new Set(doc.items.flatMap(it => Object.keys(it.f)))], xl = [...new Set(doc.items.flatMap(it => (it.extra || []).map(x => x.label)))];
+  impPrepare([[...keys, ...xl], ...doc.items.map(it => [...keys.map(k => it.f[k] ?? ''), ...xl.map(l => ((it.extra || []).find(x => x.label === l) || {}).value || '')])], fileName);
+  if (!I.src) return;
+  Object.assign(I.src, { doc: Object.assign({ real }, doc), format: null, found: [] }); I.sender = '';
+  I.src.mapping.forEach(m => { if (xl.includes(m.h)) { m.key = IMP_EXTRA; m.how = 'extra'; } });
+  impRun();
+}
+function impDocRead(name, kind, real) {
+  const I = UI.imp; Object.assign(I, { reading: name, rows: null, result: null, src: null }); render();
+  setTimeout(() => { I.reading = ''; impDocLoad(impDocSample(kind), name, real); }, 900);
+}
+function impDocHtml(doc) {
+  const photos = doc.items.reduce((n, it) => n + (it.photos || 0), 0), n = doc.items.length;
+  return `<div class="im-doc"><span class="im-doc-ic">${doc.kind === 'pdf' ? '📕' : '🖼'}</span><div>
+      <b>✨ Read by the AI:</b> ${esc(doc.what)} ${doc.kind === 'pdf' ? ` · ${doc.pages} pages` : ''} · <b>${n} propert${n > 1 ? 'ies' : 'y'} found</b>${photos ? ` · ${photos} photo${photos > 1 ? 's' : ''} attached` : ''} · type: ${esc(typeLabel(doc.type))}
+      <small>Each row shows the words it was read from. Anything the AI isn’t sure of becomes a draft for you to confirm — nothing is saved until you import.</small>
+      ${doc.real ? '<small class="t-amber">Wireframe: a sample result is shown — the real build sends your file to the AI.</small>' : ''}</div></div>`;
 }
 
 /* ---------- Excel (.xlsx), read in the browser: an .xlsx file is a zip of XML files ---------- */
@@ -348,6 +398,7 @@ async function readXlsx(buf) {
 /* ---------- columns: a one-line summary on the review; "Check / change" opens the matches inline ---------- */
 function impColsHtml() {
   const I = UI.imp, M = I.src, cols = impColumns(I.type);
+  if (M && M.doc) return impDocHtml(M.doc);
   if (!M || M.template) return '';
   const used = M.mapping.filter(m => m.h && m.key && m.key !== IMP_EXTRA), kept = M.mapping.filter(m => m.h && m.key === IMP_EXTRA), unused = M.mapping.filter(m => m.h && !m.key), ai = used.filter(m => m.how === 'ai').length;
   const dupKeys = M.mapping.map(m => m.key).filter((k, i, a) => k && k !== IMP_EXTRA && a.indexOf(k) !== i);
@@ -368,7 +419,8 @@ function impColsHtml() {
 /* ---------- import ---------- */
 function impApply() {
   const I = UI.imp; if (!DB.imports) DB.imports = [];
-  if (I.src && !I.src.template) {
+  const doc = I.src && I.src.doc, where = impWhere;
+  if (I.src && !I.src.template && !doc) {
     DB.importMemory = DB.importMemory || {}; I.src.mapping.forEach(m => { if (m.h && m.how !== 'exact') DB.importMemory[impNorm(m.h)] = m.key; });
     // the whole format, saved per sender — recognised next time even when the sender isn't named again
     DB.importMappings = DB.importMappings || [];
@@ -388,7 +440,7 @@ function impApply() {
       PROPERTY_TYPES[I.type].fields.forEach(f => { const c = cols.find(x => x.k === f.k); if (d[f.k]) specs[f.k] = impValue(c, d[f.k]); });
       const res = AddProperty.importDraft({ type: I.type, purpose: d.purpose || 'Sale', title: d.title, facing: d.facing, area: d.area_sqft ? impNum(d.area_sqft) : '', price: d.asking_price ? impNum(d.asking_price) : '',
         city: d.city, locality: d.locality, pincode: d.pincode, address: d.address, lat: d.latitude && d.longitude ? impNum(d.latitude) : '', lng: d.latitude && d.longitude ? impNum(d.longitude) : '',
-        specs, amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], approvals: impApprovals(d.approvals), extra: r.extra }, { file: I.file, line: r.line, batch });
+        specs, amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], approvals: impApprovals(d.approvals), extra: r.extra, photos: r.photos || 0 }, { file: I.file, line: r.line, where: where(r), batch, confirm: r.confirm || [] });
       drafts.push(res);
       return;
     }
@@ -398,12 +450,12 @@ function impApply() {
       const p = {
         id: 'PROP-' + (++DB.counters.prop), title: d.title || r.suggestedTitle || typeLabel(I.type), type: I.type, purpose: d.purpose || 'Sale', status: d.status || 'Available', listingDate: d.listing_date || DEMO_TODAY,
         city: d.city, locality: d.locality, state: 'Tamil Nadu', facing: d.facing || '', area: impNum(d.area_sqft), price: impNum(d.asking_price),
-        amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: 0, specs, extra: r.extra.map(x => ({ label: x.label, value: x.value })),
+        amenities: d.amenities ? impValue({ t: 'list' }, d.amenities) : [], images: r.photos || 0, specs, extra: r.extra.map(x => ({ label: x.label, value: x.value })),
         location: (ll => ({ lat: ll ? impNum(d.latitude) : '', lng: ll ? impNum(d.longitude) : '', address: d.address || '', pincode: d.pincode || '', district: (CITIES[d.city] || {}).district || d.city, pinOk: ll, suggestPending: ll, roadType: '', roadWidth: '', nearby: [] }))(!!(d.latitude && d.longitude)),
         approvals: impApprovals(d.approvals).map(k => ({ k, status: 'pending', file: '', uploadedBy: '', uploadedAt: '', verifiedBy: '', verifiedAt: '' })), documents: [],
         valuation: { reviewDate: '', valuerReport: '', notes: '', comparables: [] }, history: [],
       };
-      logHistory(p, `Created by bulk import ${batch} (${I.file}, line ${r.line}${I.sender ? ', from ' + I.sender : ''})${d.title ? '' : ' — title suggested by the AI'}`);
+      logHistory(p, `Created by bulk import ${batch} (${I.file}, ${where(r)}${I.sender ? ', from ' + I.sender : ''}${r.photos ? `, ${r.photos} photo${r.photos > 1 ? 's' : ''} from the file` : ''})${d.title ? '' : ' — title suggested by the AI'}`);
       DB.properties.unshift(p); created.push(p.id);
       if (typeof addDefaultPlaces === 'function') addDefaultPlaces(p);
     } else {
@@ -419,7 +471,7 @@ function impApply() {
       updated.push(p.id);
     }
   });
-  const rec = { id: batch, date: DEMO_TODAY, by: currentUser(), type: I.type, file: I.file, sender: (I.sender || '').trim(), total: I.rows.length, created, updated, drafts, skipped: skipped.length, errors: I.rows.filter(r => r.errors.length).length };
+  const rec = { id: batch, date: DEMO_TODAY, by: currentUser(), type: I.type, file: I.file, photos: created.length && I.rows.some(r => r.photos), sender: (I.sender || '').trim(), total: I.rows.length, created, updated, drafts, skipped: skipped.length, errors: I.rows.filter(r => r.errors.length).length };
   DB.imports.unshift(rec); save();
   I.result = rec; I.rows = null;
   toast(`${batch}: ${created.length} created, ${drafts.length} saved as drafts, ${updated.length} updated, ${skipped.length} skipped`);
@@ -429,26 +481,26 @@ function impApply() {
 /* ---------- view: drop a file → check → import ---------- */
 function viewImport() {
   const I = UI.imp;
-  const body = I.result ? impResultHtml(I.result) : I.rows ? impReviewHtml() : impStartHtml();
+  const body = I.result ? impResultHtml(I.result) : I.reading ? `<div class="card im-reading"><span class="im-spin"></span><b>The AI is reading ${esc(I.reading)}…</b><small>finding each property, its details and photos</small></div>` : I.rows ? impReviewHtml() : impStartHtml();
   // a slim horizontal stepper: ① Upload file ── ② Check ── ③ Done
   const at = I.result ? 2 : I.rows ? 1 : 0;
   const stepper = `<div class="im-steps">${['Upload file', 'Check', 'Done'].map((l, i) => `${i ? `<span class="im-line ${i <= at ? 'on' : ''}"></span>` : ''}<span class="im-step ${i < at || at === 2 ? 'done' : i === at ? 'on' : ''}"><b>${i < at || at === 2 ? '✓' : i + 1}</b>${l}</span>`).join('')}</div>`;
   return {
     title: 'Bulk import', crumbs: 'Specification data / <b>Bulk import</b>',
-    html: `<div class="page-head"><div><h1>Bulk import</h1><p>Add or update many properties at once from a spreadsheet.</p></div><span class="sp"></span><a class="btn" href="#/properties">← Properties</a></div>
+    html: `<div class="page-head"><div><h1>Bulk import</h1><p>Add or update many properties at once — from a spreadsheet, a brochure or catalogue, or photos.</p></div><span class="sp"></span><a class="btn" href="#/properties">← Properties</a></div>
       ${stepper}${body}${impHistoryHtml()}`,
   };
 }
 function impStartHtml() {
   const I = UI.imp, t = PROPERTY_TYPES[I.type], cols = impColumns(I.type);
   return `<div class="card im-start">
-      <div class="im-q">What’s in the file?</div>
+      <div class="im-q">What’s in the file? <small class="muted">(for a brochure or photo the AI finds it)</small></div>
       <div class="pills im-types">${Object.entries(PROPERTY_TYPES).map(([k, v]) => `<button type="button" class="pill ${k === I.type ? 'on' : ''}" data-act="impTypePick" data-k="${k}">${esc(v.label)}</button>`).join('')}</div>
       <label class="im-drop" data-filedrop>
-        <input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-chg="impFile" style="display:none">
-        <span class="im-drop-ic">📄</span><b>Drop an Excel or CSV file here</b><small>or click to choose · our template or your own sheet · up to ${IMP_MAX_ROWS} rows</small></label>
-      <div class="im-links"><button class="linkbtn" data-act="impTemplate">⤓ Download the ${esc(t.label.toLowerCase())} template</button><span>·</span><button class="linkbtn" data-act="impUseSample">Try a sample</button><span>·</span><button class="linkbtn" data-act="impUseOwner">Try an owner’s own sheet</button></div>
-      <p class="im-promise">✨ Columns with other names are matched for you · a title above the headings is fine · “30 L” or “1,200 sqft” are read · other columns are kept as extra details · rows missing details become drafts — nothing is lost.</p>
+        <input type="file" accept=".xlsx,.csv,.pdf,image/*,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-chg="impFile" style="display:none">
+        <span class="im-drop-ic">📄</span><b>Drop a file here</b><small>or click to choose · Excel or CSV (our template or your own sheet) · a brochure or catalogue (PDF) · photos</small></label>
+      <div class="im-links"><span class="muted">Try:</span><button class="linkbtn" data-act="impUseSample">our template</button><span>·</span><button class="linkbtn" data-act="impUseOwner">an owner’s own sheet</button><span>·</span><button class="linkbtn" data-act="impUseDoc" data-k="pdf">a builder’s brochure (PDF)</button><span>·</span><button class="linkbtn" data-act="impUseDoc" data-k="image">a photo of a “For sale” board</button><span class="sp"></span><button class="linkbtn" data-act="impTemplate">⤓ Download the ${esc(t.label.toLowerCase())} template</button></div>
+      <p class="im-promise">✨ Brochures and photos are read by the AI · columns with other names are matched for you · a title above the headings is fine · “30 L” or “1,200 sqft” are read · other columns are kept as extra details · rows missing details become drafts — nothing is lost.</p>
     </div>
     <details class="card im-more"><summary>Which columns can the file have? <span class="muted">(${cols.length} for a ${esc(t.label.toLowerCase())})</span></summary>
       <div class="im-colref">${cols.filter(c => c.k !== 'property_id').map(c => `<span class="${c.req ? 'req' : ''}" title="${esc(c.hint || '')}">${esc(c.l.replace(/ \(.*\)$/, ''))}</span>`).join('')}</div>
@@ -465,21 +517,21 @@ function impReviewHtml() {
   const what = r => {
     const st = impStatus(r);
     if (st === 'error') return `<span class="t-red">✗ ${esc(r.errors[0])}</span>${r.errors.length > 1 ? ` <small class="muted">+${r.errors.length - 1} more</small>` : ''}`;
-    const main = st === 'draft' ? `<span class="t-amber">Draft — the AI will ask for <b>${esc(r.needs.join(', '))}</b></span>`
+    const main = st === 'draft' ? `<span class="t-amber">Draft — the AI will ask ${r.needs.length ? `for <b>${esc(r.needs.join(', '))}</b>` : ''}${r.needs.length && (r.confirm || []).length ? ' and ' : ''}${(r.confirm || []).length ? `to confirm: <b>${esc(r.confirm.join('; '))}</b>` : ''}</span>`
       : st === 'update' ? `Update: ${r.changes.map(c => `${esc(c.l.replace(/ \(.*\)$/, ''))} ${/price|₹/i.test(c.l) && +c.from ? `<s class="muted">${inrShort(+c.from)}</s> ` : ''}→ <b>${/price|₹/i.test(c.l) && +c.to ? inrShort(+c.to) : esc(Array.isArray(c.to) ? c.to.join('; ') : c.to)}</b>`).join(', ')}`
       : st === 'nochange' ? '<span class="muted">No change — skipped</span>' : '<span class="t-green">Ready</span>';
     const extra = [...r.warnings.map(w => `<span class="t-amber">⚠ ${esc(w)}</span>`), ...r.notes.filter(x => !/ read as /.test(x)).map(x => esc(x))];
-    return main + (extra.length ? `<small class="im-extra">${extra.join(' · ')}</small>` : '');
+    return main + (r.quote ? `<small class="im-quote">${impWhere(r) === 'the photo' ? '🖼 On the photo' : '📄 ' + impWhere(r).replace(/^./, c => c.toUpperCase())}: “${esc(r.quote)}”</small>` : '') + (extra.length ? `<small class="im-extra">${extra.join(' · ')}</small>` : '');
   };
   const DOT = { new: 'green', draft: 'amber', update: 'blue', nochange: 'grey', error: 'red' };
   const list = shown.map(r => { const st = impStatus(r), d = r.data, p = r.existing, title = d.title || (p && p.title) || r.suggestedTitle || '—';
     return `<div class="im-row"><span class="im-dot ${DOT[st]}" title="Line ${r.line}"></span>
       <div class="im-prop"><b>${esc(title)}</b>${!d.title && r.suggestedTitle ? ' <span class="srcmini s-ai" title="Title suggested by the AI">✨</span>' : ''}
-        <small>${p ? `<a class="mono" href="#/properties/${p.id}">${p.id}</a> · ` : ''}${esc(d.locality || (p && p.locality) || '')}${d.city || p ? ', ' + esc(d.city || p.city) : ''} · line ${r.line}</small></div>
+        <small>${p ? `<a class="mono" href="#/properties/${p.id}">${p.id}</a> · ` : ''}${esc(d.locality || (p && p.locality) || '')}${d.city || p ? ', ' + esc(d.city || p.city) : ''} · ${impWhere(r)}${r.photos ? ` · 📷 ${r.photos}` : ''}</small></div>
       <div class="im-nums">${d.area_sqft && !isNaN(impNum(d.area_sqft)) ? num(impNum(d.area_sqft)) + ' sq.ft.' : esc(d.area_sqft || '')}<br>${d.asking_price && !isNaN(impNum(d.asking_price)) ? inrShort(impNum(d.asking_price)) : esc(d.asking_price || '')}</div>
       <div class="im-what">${what(r)}</div></div>`; }).join('');
   return `<div class="card">
-    <div class="card-head"><h2>${esc(I.file)}</h2>${chip(typeLabel(I.type), 'blue')}<span class="muted" style="font-size:13px">${rows.length} row${rows.length === 1 ? '' : 's'}</span><span class="sp"></span><button class="btn sm" data-act="impReset">Choose another file</button></div>
+    <div class="card-head"><h2>${esc(I.file)}</h2>${chip(typeLabel(I.type), 'blue')}<span class="muted" style="font-size:13px">${rows.length} ${I.src && I.src.doc ? (rows.length === 1 ? 'property' : 'properties') : rows.length === 1 ? 'row' : 'rows'}</span><span class="sp"></span><button class="btn sm" data-act="impReset">Choose another file</button></div>
     ${impColsHtml()}
     ${(I.src && I.src.found || []).map(x => `<p class="im-found">🔎 ${esc(x)}</p>`).join('')}
     ${I.fileNotes.map(x => `<div class="note amber" style="margin:8px 0 0">${esc(x)}</div>`).join('')}
@@ -497,9 +549,9 @@ function impResultHtml(r) {
   return `<div class="card im-done">
     <h2>✅ Imported ${esc(r.file)}</h2>
     <div class="im-fs">${r.created.length ? `<span class="im-f green on">Added <b>${r.created.length}</b></span>` : ''}${dr.length ? `<span class="im-f amber on">Drafts to finish <b>${dr.length}</b></span>` : ''}${r.updated.length ? `<span class="im-f blue on">Updated <b>${r.updated.length}</b></span>` : ''}${r.skipped ? `<span class="im-f">Skipped <b>${r.skipped}</b></span>` : ''}</div>
-    ${r.created.length ? `<p><b>Added:</b> ${r.created.map(link).join(', ')} <span class="muted">— nearby places already shown; add photos when you have them.</span></p>` : ''}
+    ${r.created.length ? `<p><b>Added:</b> ${r.created.map(link).join(', ')} <span class="muted">— nearby places already shown${r.photos ? '; photos from the file attached' : '; add photos when you have them'}.</span></p>` : ''}
     ${r.updated.length ? `<p><b>Updated:</b> ${r.updated.map(link).join(', ')}</p>` : ''}
-    ${dr.length ? `<p><b>Drafts:</b> ${dr.map(x => `<a class="mono" href="#/properties/draft/${x.id}">${x.id}</a> <small class="muted">(needs ${esc(x.missing.join(', '))})</small>`).join(', ')} <span class="muted">— open one and the AI asks for what’s missing.</span></p>` : ''}
+    ${dr.length ? `<p><b>Drafts:</b> ${dr.map(x => `<a class="mono" href="#/properties/draft/${x.id}">${x.id}</a> <small class="muted">(${[x.missing.length ? 'needs ' + esc(x.missing.join(', ')) : '', (x.confirm || []).length ? 'confirm ' + esc(x.confirm.join('; ')) : ''].filter(Boolean).join(' · ')})</small>`).join(', ')} <span class="muted">— open one and the AI asks for what’s missing.</span></p>` : ''}
     <div class="row" style="margin-top:12px">${r.created.length ? '<a class="btn" href="#/properties">Open properties</a>' : ''}${dr.length ? '<a class="btn" href="#/properties/drafts">Open drafts</a>' : ''}<span class="sp"></span><button class="btn primary" data-act="impReset">Import another file</button></div>
   </div>`;
 }
@@ -525,11 +577,12 @@ Object.assign(ACTIONS, {
   impTemplate: () => { const cols = impColumns(UI.imp.type); downloadFile(`property-import-template-${UI.imp.type}.csv`, toCSV([cols.map(c => c.k)])); toast('Template downloaded'); },
   impSampleCsv: () => { const cols = impColumns(UI.imp.type); downloadFile(`property-import-sample-${UI.imp.type}.csv`, toCSV([cols.map(c => c.k), ...impSample(UI.imp.type).map(o => cols.map(c => o[c.k] ?? ''))])); },
   impUseSample: () => { const cols = impColumns(UI.imp.type); impLoad(toCSV([cols.map(c => c.k), ...impSample(UI.imp.type).map(o => cols.map(c => o[c.k] ?? ''))]), `sample-${UI.imp.type}.csv`); },
-  impReset: () => { Object.assign(UI.imp, { rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', result: null, sender: '' }); render(); },
+  impReset: () => { Object.assign(UI.imp, { rows: null, src: null, colsOpen: false, file: '', fileNotes: [], filter: '', result: null, sender: '', reading: '' }); render(); },
   impFmtForget: d => { DB.importMappings = (DB.importMappings || []).filter(f => f.id !== d.id); save(); toast('Format forgotten — the next file like it is matched afresh'); render(); },
   impTypePick: d => { UI.imp.type = d.k; render(); },
   impF: d => { UI.imp.filter = d.k; render(); },
   impColsOpen: () => { UI.imp.colsOpen = !UI.imp.colsOpen; render(); },
+  impUseDoc: d => impDocRead(d.k === 'image' ? 'board-photo.jpg' : 'green-meadows-brochure.pdf', d.k, false),
   impUseOwner: () => { UI.imp.type = 'plot'; impPrepare(impOwnerSample(), 'owner-plots.xlsx'); },
   impApply: () => impApply(),
   impErrors: () => {
@@ -551,8 +604,9 @@ function impReadFile(file) {
     file.arrayBuffer().then(readXlsx).then(rows => impPrepare(rows, file.name)).catch(e => toast('Couldn’t read this Excel file (' + e.message + ') — try saving it again, or as CSV'));
     return;
   }
+  if (IMP_DOC_EXT.test(file.name)) { impDocRead(file.name, /\.pdf$/i.test(file.name) ? 'pdf' : 'image', true); return; }
   if (/\.xls$/i.test(file.name)) { toast('Old Excel (.xls) files can’t be read — in Excel use File → Save As → Excel Workbook (.xlsx)'); return; }
-  if (!/\.csv$/i.test(file.name)) { toast('Please upload an Excel (.xlsx) or CSV file'); return; }
+  if (!/\.csv$/i.test(file.name)) { toast('Please upload an Excel or CSV file, a PDF, or photos'); return; }
   const rd = new FileReader();
   rd.onload = () => impLoad(String(rd.result), file.name);
   rd.readAsText(file);

@@ -1484,7 +1484,7 @@ ACTIONS.doReset = (...args) => { S = null; seed(); save(); return mainReset(...a
 // search on the drafts page
 /** Bulk import: a row missing required details is saved as a draft instead of being rejected. */
 function importDraft(d, meta) {
-  const p = newRecord(), q = `${meta.file}, line ${meta.line}`;
+  const p = newRecord(), q = `${meta.file}, ${meta.where || 'line ' + meta.line}`;
   const put = (path, v) => { if (v === '' || v == null || (Array.isArray(v) && !v.length)) return; setPath(p, path, v); p.src[path] = { s: 'import', q, by: me(), at: TODAY }; };
   if (d.type) setType(p, d.type);
   put('purpose', d.purpose); put('title', d.title); put('facing', d.facing); put('area', d.area); put('price', d.price);
@@ -1494,13 +1494,15 @@ function importDraft(d, meta) {
   p.amenities = (d.amenities || []).slice(); p.approvals = (d.approvals || []).slice();
   // columns with no field of their own ("Owner remarks") come in as this property's own details, as written
   p.custom = (d.extra || []).map(x => ({ label: x.label, value: x.value, vtype: 'text', by: me(), at: TODAY, q }));
+  if (d.photos) { p.photos = d.photos; p.steps.media = true; } // photos found in a brochure or the photo itself
   p.shownFields = Object.keys(p.specs).filter(k => !isEmpty(p.specs[k]));
   afterUpdate(p, []); // district / state, a suggested title, the duplicate check
   const need = missing(p).map(x => x.l);
   hist(p, `Imported from ${q} (${meta.batch}) — saved as a draft${need.length ? ': ' + need.join(', ') + ' still needed' : ''}`);
-  aiSay(p, `I imported this from <b>${esc(meta.file)}</b> (line ${meta.line}).${need.length ? ` Still needed to publish: ${need.map(esc).join(', ')}.` : ' Everything needed is here.'}`);
+  const conf = meta.confirm || [];
+  aiSay(p, `I imported this from <b>${esc(meta.file)}</b> (${esc(meta.where || 'line ' + meta.line)}).${need.length ? ` Still needed to publish: ${need.map(esc).join(', ')}.` : ' Everything needed is here.'}${conf.length ? ` Please confirm: ${conf.map(esc).join('; ')}${conf.some(c => /price/i.test(c)) && p.price ? ` — I read the price as ${esc(inr(p.price))}` : ''}.` : ''}`);
   save();
-  return { id: p.id, missing: need };
+  return { id: p.id, missing: need, confirm: conf };
 }
 /** A suggested title for a property that has none (Bulk import uses it too). */
 const titleFor = o => suggestTitle({ type: o.type, facing: o.facing || '', specs: o.specs || {}, loc: { locality: o.locality || '', city: o.city || '' } });
