@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { ChevronDown, LogOut, Search, Sparkles } from 'lucide-react';
+import { LogOut, Search, Sparkles } from 'lucide-react';
 import { ROLE_LABEL } from '@estate/shared';
 import { useAuth } from '../lib/auth';
 import { NAV, TOP_NAV_ROLES, type NavItem } from '../nav';
@@ -40,27 +40,23 @@ export function Layout() {
   );
 }
 
-/** Executives on desktop: logo, menu, ask box, reminders, assistant and account in one bar. */
+/** Executives on desktop: a light bar — menu words, one "Ask anything" pill, bell and avatar. */
 function TopNavbar({ items }: { items: NavItem[] }) {
   const assistant = useAssistant();
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
+    <header className="sticky top-0 z-30 bg-slate-50/80 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
         <Brand />
-        <nav className="hidden h-full items-center gap-1 lg:flex" aria-label="Main">
+        <nav className="ml-4 hidden items-center gap-0.5 lg:flex" aria-label="Main">
           {items.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.to === '/'}
               className={({ isActive }) =>
-                clsx(
-                  'relative flex h-full items-center gap-2 px-3 text-sm font-medium transition',
-                  isActive ? 'text-brand-800 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-brand-700' : 'text-slate-500 hover:text-slate-900',
-                )
+                clsx('rounded-full px-3.5 py-1.5 text-sm transition', isActive ? 'bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70' : 'text-slate-500 hover:text-slate-900')
               }
             >
-              {n.icon}
               {n.label}
             </NavLink>
           ))}
@@ -68,16 +64,23 @@ function TopNavbar({ items }: { items: NavItem[] }) {
         <div className="flex min-w-0 flex-1 justify-end lg:hidden">
           <AskBox />
         </div>
-        <div className="ml-auto hidden min-w-0 items-center gap-2 lg:flex">
-          <div className="hidden w-72 xl:block">
-            <AskBox short />
-          </div>
-          <button onClick={() => assistant.setOpen(true)} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm hover:bg-slate-50 xl:hidden" aria-label="Ask or search">
-            <Search className="h-4 w-4" />
-          </button>
+        <button
+          onClick={() => assistant.setOpen(true)}
+          className="ml-auto hidden items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-slate-800 lg:flex"
+        >
+          <Sparkles className="h-4 w-4 text-ai-600" />
+          Ask anything
+          <kbd className="hidden text-[10px] text-slate-400 xl:inline">Ctrl K</kbd>
+        </button>
+        <div className="hidden lg:block">
+          <Reminders plain />
         </div>
-        <Reminders />
-        <AssistantButton labelFrom="xl" />
+        <div className="lg:hidden">
+          <Reminders />
+        </div>
+        <div className="lg:hidden">
+          <AssistantButton labelFrom="xl" />
+        </div>
         <UserMenu />
       </div>
     </header>
@@ -209,9 +212,8 @@ function UserMenu() {
   if (!user) return null;
   return (
     <div ref={ref} className="relative hidden shrink-0 lg:block">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-1 rounded-xl p-1 hover:bg-slate-100" aria-label="Account" aria-expanded={open}>
+      <button onClick={() => setOpen(!open)} className="rounded-full p-0.5 transition hover:ring-2 hover:ring-slate-200" aria-label="Account" aria-expanded={open}>
         <Avatar name={user.name} />
-        <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
       </button>
       {open && (
         <div className="absolute right-0 z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-pop">

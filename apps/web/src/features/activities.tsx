@@ -397,7 +397,7 @@ export function AgendaCard({ a, overdue, showOwner }: { a: AgendaItem; overdue?:
 }
 
 /** In-app reminders: a nudge 15 minutes before anything planned. */
-export function Reminders() {
+export function Reminders({ plain }: { plain?: boolean } = {}) {
   const toast = useToast();
   const shown = useRef(new Set<string>());
   const [open, setOpen] = useState(false);
@@ -414,7 +414,7 @@ export function Reminders() {
   }, [soon, toast]);
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm hover:bg-slate-50" aria-label="Coming up">
+      <button onClick={() => setOpen(!open)} className={plain ? 'relative rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm hover:bg-slate-50'} aria-label="Coming up">
         <Bell className="h-4 w-4" />
         {soon.length > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">{soon.length}</span>}
       </button>
