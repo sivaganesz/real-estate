@@ -1,0 +1,200 @@
+/*
+ * RealSpec theme — the one place colours, fonts, rounding and shadows are defined.
+ * Light: the current wireframe's light-blue look (spec-system-wireframe/styles.css).
+ * Dark: the original v1 dark (warm near-black, orange) — defined, not switched on yet.
+ * Screens never hard-code a colour: they use these tokens (bg-primary, text-success, bg-warning-soft …).
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource/noto-sans-tamil/400.css";
+@import "@fontsource/noto-sans-tamil/500.css";
+@import "@fontsource/noto-sans-tamil/600.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Inter for Latin text; Tamil characters fall through to Noto Sans Tamil */
+  --font-sans: 'Inter Variable', 'Noto Sans Tamil', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* status tones: text colour + soft background, from the wireframe's chips */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --shadow-card: var(--card-shadow);
+}
+
+:root {
+  --radius: 10px;
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.03);
+
+  --background: #f3f4f7;
+  --foreground: #1b2130;
+  --card: #ffffff;
+  --card-foreground: #1b2130;
+  --popover: #ffffff;
+  --popover-foreground: #1b2130;
+  --primary: #2f5bea;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f4;
+  --secondary-foreground: #3a4254;
+  --muted: #eff1f4;
+  --muted-foreground: #6b7385;
+  --accent: #e9efff;
+  --accent-foreground: #2f5bea;
+  --destructive: #b42318;
+  --border: #e1e4ea;
+  --input: #d5d9e1;
+  --ring: #2f5bea;
+
+  --success: #11743f;
+  --success-soft: #e3f4ea;
+  --warning: #995400;
+  --warning-soft: #fff1d9;
+  --danger: #b42318;
+  --danger-soft: #fdeceb;
+  --info: #1958c9;
+  --info-soft: #e7effd;
+  --violet: #6a3fc4;
+  --violet-soft: #f0eaff;
+  --neutral: #4b5363;
+  --neutral-soft: #eff1f4;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3a4254;
+  --sidebar-primary: #2f5bea;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9efff;
+  --sidebar-accent-foreground: #2f5bea;
+  --sidebar-border: #e1e4ea;
+  --sidebar-ring: #2f5bea;
+
+  --chart-1: #2f5bea;
+  --chart-2: #11743f;
+  --chart-3: #995400;
+  --chart-4: #6a3fc4;
+  --chart-5: #b42318;
+}
+
+/* The original v1 dark theme (kept by decision, 16 Nov): warm near-black surfaces, orange accent. Not switched on yet. */
+.dark {
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+
+  --background: #0f0d12;
+  --foreground: #ece9f0;
+  --card: #17151b;
+  --card-foreground: #ece9f0;
+  --popover: #17151b;
+  --popover-foreground: #ece9f0;
+  --primary: #f26a2e;
+  --primary-foreground: #ffffff;
+  --secondary: #221f27;
+  --secondary-foreground: #d9d4df;
+  --muted: #221f27;
+  --muted-foreground: #9a93a3;
+  --accent: #2c1d16;
+  --accent-foreground: #f68a5a;
+  --destructive: #f2706a;
+  --border: #2a2630;
+  --input: #35303c;
+  --ring: #f26a2e;
+
+  --success: #4cc985;
+  --success-soft: #12261b;
+  --warning: #f0a94b;
+  --warning-soft: #2b2010;
+  --danger: #f2706a;
+  --danger-soft: #2d1515;
+  --info: #7aa7f5;
+  --info-soft: #141f33;
+  --violet: #b39af0;
+  --violet-soft: #221a33;
+  --neutral: #b3acbb;
+  --neutral-soft: #221f27;
+
+  --sidebar: #17151b;
+  --sidebar-foreground: #d9d4df;
+  --sidebar-primary: #f26a2e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2c1d16;
+  --sidebar-accent-foreground: #f68a5a;
+  --sidebar-border: #2a2630;
+  --sidebar-ring: #f26a2e;
+
+  --chart-1: #f26a2e;
+  --chart-2: #4cc985;
+  --chart-3: #f0a94b;
+  --chart-4: #b39af0;
+  --chart-5: #f2706a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
