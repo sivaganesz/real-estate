@@ -9,6 +9,7 @@ import { App } from './App';
 import './features/pipeline';
 import './features/activities';
 import './features/matching';
+import './features/deals';
 import './index.css';
 
 const queryClient = new QueryClient({

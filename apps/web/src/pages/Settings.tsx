@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserPlus } from 'lucide-react';
 import { ROLE_LABEL, ROLES, PERMISSIONS, type Role } from '@estate/shared';
 import { api } from '../lib/api';
@@ -54,6 +54,8 @@ export function Settings() {
           </ul>
         )}
       </Card>
+
+      <ApprovalRules />
 
       <Card className="mt-5 overflow-x-auto p-5">
         <SectionTitle>What each role can do</SectionTitle>
@@ -172,5 +174,48 @@ function UserModal({ user, managers, onClose }: { user: User | null; managers: U
         <ErrorNote error={save.error} />
       </div>
     </Modal>
+  );
+}
+
+type OrgSettings = { companyName: string; discountLimitPct: { executive: number; manager: number }; holdDays: number };
+
+/** Who may agree how much discount without asking, and how long holds last. */
+function ApprovalRules() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const q = useQuery({ queryKey: ['settings'], queryFn: () => api.get<OrgSettings>('/settings') });
+  const [f, setF] = useState<{ executive: string; manager: string; holdDays: string } | null>(null);
+  const cur = f ?? (q.data ? { executive: String(q.data.discountLimitPct.executive), manager: String(q.data.discountLimitPct.manager), holdDays: String(q.data.holdDays) } : null);
+  const save = useMutation({
+    mutationFn: () => api.patch('/settings', { discountLimitPct: { executive: Number(cur!.executive), manager: Number(cur!.manager) }, holdDays: Number(cur!.holdDays) }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['settings'] });
+      toast('Approval rules saved');
+      setF(null);
+    },
+  });
+  if (!cur) return null;
+  return (
+    <Card className="mt-5 p-5">
+      <SectionTitle>Price approvals and holds</SectionTitle>
+      <p className="-mt-1 mb-4 text-sm text-slate-500">A discount up to the limit is agreed at once by that person. Above an executive's limit it goes to a manager; above a manager's, to an admin.</p>
+      <div className="grid max-w-xl grid-cols-3 gap-3">
+        <Field label="Executive limit (% off)">
+          <Input type="number" step="0.5" min={0} max={10} value={cur.executive} onChange={(e) => setF({ ...cur, executive: e.target.value })} />
+        </Field>
+        <Field label="Manager limit (% off)">
+          <Input type="number" step="0.5" min={0} max={25} value={cur.manager} onChange={(e) => setF({ ...cur, manager: e.target.value })} />
+        </Field>
+        <Field label="Hold a unit for (days)">
+          <Input type="number" min={1} max={30} value={cur.holdDays} onChange={(e) => setF({ ...cur, holdDays: e.target.value })} />
+        </Field>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <Button size="sm" variant="primary" disabled={!f} loading={save.isPending} onClick={() => save.mutate()}>
+          Save
+        </Button>
+        <ErrorNote error={save.error} />
+      </div>
+    </Card>
   );
 }

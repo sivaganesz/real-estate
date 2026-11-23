@@ -15,6 +15,7 @@ import { Import } from './pages/Import';
 import { Leads } from './pages/Leads';
 import { LeadDetail } from './pages/LeadDetail';
 import { Calendar } from './pages/Calendar';
+import { Deals } from './pages/Deals';
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ export function App() {
         <Route path="leads" element={<Leads />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="calendar" element={<Calendar />} />
+        <Route path="deals" element={<Deals />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route

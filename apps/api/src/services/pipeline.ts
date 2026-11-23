@@ -69,11 +69,10 @@ export async function moveStage(
       if (!pid) throw new StageGate('Which property are they negotiating on?', 'property');
       const p = await Property.findById(pid).select('title').lean();
       if (!p) throw badRequest('Property not found');
-      const item = lead.shortlist.find((s) => String(s.propertyId) === pid);
-      if (item) item.status = 'liked';
-      else lead.shortlist.push({ propertyId: new mongoose.Types.ObjectId(pid), status: 'liked', at: new Date() });
-      await setStage(lead, to, actor, `negotiating on ${p.title}${opts.note ? ` — ${opts.note}` : ''}`);
-      return lead.toObject();
+      // Negotiating means a deal on that property: it shortlists it and moves the stage.
+      const { startDeal } = await import('./deals');
+      await startDeal(leadId, pid, actor, { note: opts.note });
+      return (await Lead.findById(lead._id))!.toObject();
     }
   }
   await setStage(lead, to, actor, opts.note ?? (forward ? 'moved on' : 'moved back'));
