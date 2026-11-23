@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "RealSpec CRM",
-    "tagline": "Property + Customer specs"
+    "name": "RealSpec CRM"
   },
   "language": {
     "label": "Language",
@@ -38,7 +37,9 @@
     "leadPipeline": "Lead pipeline",
     "matchingEngine": "Matching engine",
     "hniQual": "HNI qualification",
-    "settingsRules": "Settings & rules"
+    "settingsRules": "Settings & rules",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "role": {
     "admin": "Admin",

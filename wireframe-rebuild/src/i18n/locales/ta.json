@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "RealSpec CRM",
-    "tagline": "சொத்து + வாடிக்கையாளர் விவரங்கள்"
+    "name": "RealSpec CRM"
   },
   "language": {
     "label": "மொழி",
@@ -38,7 +37,9 @@
     "leadPipeline": "லீட் பைப்லைன்",
     "matchingEngine": "பொருத்தப் பொறி",
     "hniQual": "HNI தகுதி",
-    "settingsRules": "அமைப்புகள் & விதிகள்"
+    "settingsRules": "அமைப்புகள் & விதிகள்",
+    "collapse": "பக்கப்பட்டியைச் சுருக்கு",
+    "expand": "பக்கப்பட்டியை விரி"
   },
   "role": {
     "admin": "நிர்வாகி",

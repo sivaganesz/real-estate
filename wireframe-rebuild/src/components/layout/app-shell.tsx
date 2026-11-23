@@ -19,7 +19,7 @@ function Ribbon() {
       <span className="flex-1" />
       <span>{t('shell.demoDate', { date: fmtDate(DEMO_TODAY, i18n.language) })}</span>
       <button type="button" onClick={() => { resetDemo(); toast.success(t('demo.resetDone')) }}
-        className="rounded-md border border-[#3c4559] px-2 py-0.5 text-xs hover:border-[#6b7385] hover:text-white">{t('demo.reset')}</button>
+        className="rounded-md border border-[#3c4559] px-2 py-px text-xs hover:border-[#6b7385] hover:text-white">{t('demo.reset')}</button>
     </div>
   )
 }
