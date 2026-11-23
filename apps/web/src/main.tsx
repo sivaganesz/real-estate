@@ -6,6 +6,7 @@ import { AuthProvider } from './lib/auth';
 import { AssistantProvider } from './ai/assistant';
 import { ToastProvider } from './components/toast';
 import { App } from './App';
+import './features/pipeline';
 import './index.css';
 
 const queryClient = new QueryClient({

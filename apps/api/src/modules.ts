@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { propertiesRouter, projectsRouter } from './modules/properties';
 import { importsRouter } from './modules/imports';
 import { leadsRouter } from './modules/leads';
+import { pipelineRouter } from './modules/pipeline';
 import { publicProperty } from './services/properties';
 
 /**
@@ -13,6 +14,7 @@ export const modules: { path: string; router: Router }[] = [
   { path: '/projects', router: projectsRouter },
   { path: '/imports', router: importsRouter },
   { path: '/leads', router: leadsRouter },
+  { path: '/pipeline', router: pipelineRouter },
 ];
 
 /** Routes buyers can open without signing in. */
