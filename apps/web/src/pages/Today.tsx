@@ -128,7 +128,7 @@ export function Today() {
         <PageLoader />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             {d.overdue.length > 0 && (
               <section>
                 <SectionTitle>
@@ -164,7 +164,7 @@ export function Today() {
             ))}
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <section>
               <SectionTitle>
                 <span className="flex items-center gap-1.5">
@@ -174,7 +174,7 @@ export function Today() {
               {d.newLeads.length ? (
                 <Card className="divide-y divide-slate-100">
                   {d.newLeads.map((l) => (
-                    <LeadRow key={l.id} l={l} showOwner={manager} />
+                    <LeadRow key={l.id} l={l} showOwner={manager} compact />
                   ))}
                 </Card>
               ) : (

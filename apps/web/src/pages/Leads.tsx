@@ -174,7 +174,8 @@ export function Leads() {
   );
 }
 
-export function LeadRow({ l, showOwner, right }: { l: Lead; showOwner?: boolean; right?: ReactNode }) {
+/** One customer in a list. `compact` is for narrow side columns: details move under the name. */
+export function LeadRow({ l, showOwner, right, compact }: { l: Lead; showOwner?: boolean; right?: ReactNode; compact?: boolean }) {
   return (
     <Link to={`/leads/${l.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-slate-50">
       <div className="relative">
@@ -184,12 +185,19 @@ export function LeadRow({ l, showOwner, right }: { l: Lead; showOwner?: boolean;
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-medium text-slate-900">{l.name}</p>
-          <Badge tone={STAGE_TONE[l.stage]}>{STAGE_META[l.stage].label}</Badge>
-          {l.stale && <Badge tone="amber">{l.daysInStage}d in stage</Badge>}
+          <Badge tone={STAGE_TONE[l.stage]} className="shrink-0">{STAGE_META[l.stage].label}</Badge>
+          {l.stale && !compact && <Badge tone="amber" className="shrink-0">{l.daysInStage}d in stage</Badge>}
         </div>
         <p className="truncate text-xs text-slate-500">{l.summary}</p>
+        {compact && (
+          <p className="truncate text-xs text-slate-400">
+            {showOwner && `${l.ownerName ?? 'Unassigned'} · `}
+            {LEAD_SOURCE_LABEL[l.source]}
+            {l.stale && ` · ${l.daysInStage}d waiting`}
+          </p>
+        )}
       </div>
-      <div className="hidden shrink-0 text-right text-xs sm:block">
+      <div className={clsx('shrink-0 text-right text-xs', compact ? 'hidden' : 'hidden sm:block')}>
         {l.nextAction?.dueAt ? (
           <p className={l.overdue ? 'font-medium text-rose-600' : 'text-slate-700'}>
             {l.nextAction.title ?? l.nextAction.type} · {relativeDay(l.nextAction.dueAt)}

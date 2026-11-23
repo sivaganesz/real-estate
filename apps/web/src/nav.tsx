@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Sun, Settings, Building2, Users, CalendarDays, Handshake } from 'lucide-react';
-import type { Permission } from '@estate/shared';
+import type { Permission, Role } from '@estate/shared';
 
 export type NavItem = { to: string; label: string; icon: ReactNode; permission?: Permission; mobile?: boolean };
 
@@ -13,3 +13,6 @@ export const NAV: NavItem[] = [
   { to: '/deals', label: 'Deals', icon: <Handshake className="h-[18px] w-[18px]" />, permission: 'deal.create' },
   { to: '/settings', label: 'Settings', icon: <Settings className="h-[18px] w-[18px]" />, permission: 'settings.manage' },
 ];
+
+/** Roles that get a top navbar instead of the sidebar on desktop (fewer sections, quicker to scan). */
+export const TOP_NAV_ROLES: Role[] = ['executive'];
