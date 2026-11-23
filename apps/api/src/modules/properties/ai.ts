@@ -258,6 +258,7 @@ const PROPERTY_WORDS = /\b(bhk|flat|flats|apartment|apartments|villa|villas|plot
 registerIntents(
   {
     name: 'publish-this',
+    priority: 10,
     example: 'Publish this property (on a property page)',
     match: (t, ctx) => /\bpublish\b/.test(t) && ctx.context?.entity === 'property' && ctx.context.entityId,
     run: async (_a, ctx, out) => {

@@ -9,6 +9,8 @@ import type { AssistantContext, ToolCtx } from './tools';
  */
 export type Intent = {
   name: string;
+  /** Higher runs first: intents that depend on the current page beat general ones. */
+  priority?: number;
   /** Example shown in the help reply. */
   example: string;
   match: (text: string, ctx: ToolCtx) => unknown | null | undefined | false;
@@ -25,7 +27,8 @@ export async function offlineAssistant(text: string, context: AssistantContext |
   const out: AssistantReply = { mode: 'offline', reply: '', records: [], proposals: [], done: [] };
   const ctx: ToolCtx = { actor: { ...actor, viaAI: true }, context };
   const t = text.trim();
-  for (const intent of intents) {
+  const ordered = [...intents].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  for (const intent of ordered) {
     const args = intent.match(t.toLowerCase(), ctx);
     if (args) {
       out.reply = await intent.run(args, ctx, out);

@@ -41,8 +41,9 @@ export type PropertyFilters = {
   skip?: number;
 };
 
-export function serialiseProperty(p: PropertyDoc | (Record<string, unknown> & { _id: unknown })) {
-  const { _id, __v, shareToken, ...rest } = p as Record<string, unknown> & { _id: unknown };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function serialiseProperty(p: Record<string, any>): Record<string, any> & { id: string; readiness: ReturnType<typeof propertyReadiness> } {
+  const { _id, __v, shareToken, ...rest } = p;
   void __v;
   void shareToken;
   const readiness = propertyReadiness(rest as Parameters<typeof propertyReadiness>[0]);

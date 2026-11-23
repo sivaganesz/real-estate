@@ -4,6 +4,7 @@ import { importsRouter } from './modules/imports';
 import { leadsRouter } from './modules/leads';
 import { pipelineRouter } from './modules/pipeline';
 import { activitiesRouter } from './modules/activities';
+import { matchingRouter } from './modules/matching';
 import './modules/activities-seed';
 import { publicProperty } from './services/properties';
 
@@ -18,6 +19,7 @@ export const modules: { path: string; router: Router }[] = [
   { path: '/leads', router: leadsRouter },
   { path: '/pipeline', router: pipelineRouter },
   { path: '/activities', router: activitiesRouter },
+  { path: '/matching', router: matchingRouter },
 ];
 
 /** Routes buyers can open without signing in. */

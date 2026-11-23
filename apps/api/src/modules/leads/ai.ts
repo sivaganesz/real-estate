@@ -220,6 +220,7 @@ const onLead = (ctx: { context?: { entity?: string; entityId?: string } }) => (c
 registerIntents(
   {
     name: 'lead-summary',
+    priority: 10,
     example: 'Summarise this customer (on a lead page)',
     match: (t, ctx) => /\b(summar|brief|who is|tell me about|recap)/.test(t) && onLead(ctx),
     run: async (id, ctx, out) => {
@@ -238,6 +239,7 @@ registerIntents(
   },
   {
     name: 'lead-note',
+    priority: 10,
     example: 'Note: wants east facing only (on a lead page)',
     match: (t, ctx) => onLead(ctx) && /^(add (a )?)?note[:\s]/.test(t),
     run: async () => 'Type the note in the box on the lead page, or set an AI key so I can add it for you.',

@@ -8,6 +8,7 @@ import { ToastProvider } from './components/toast';
 import { App } from './App';
 import './features/pipeline';
 import './features/activities';
+import './features/matching';
 import './index.css';
 
 const queryClient = new QueryClient({
