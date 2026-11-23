@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-23
 
-**Overall:** Phases 0–6 built and committed. Phase 7 (negotiations and bookings) is in progress: backend done and tested, web UI being built now. The AI assistant now uses Google Gemini at the owner's request (code and tests done; waiting for the key).
+**Overall:** Phases 0–7 built and committed. The AI assistant uses Google Gemini (code and tests done; waiting for the key). Now on final polish: inventory insights and end-to-end tests.
 
 ## Phases
 
@@ -15,45 +15,26 @@ Last updated: 2026-11-23
 | 4 · Sales pipeline | Stages with checked entry rules and stuck-after limits, a board, lost reasons, where leads leak | ✅ Done | `784af33` | [04-sales-pipeline.md](docs/04-sales-pipeline.md) |
 | 5 · Appointments and activities | One "activity" type for calls, visits, meetings, tasks; next step on every lead; clashes, visit feedback, in-app reminders | ✅ Done | `84a7334` | [05-appointments-and-activities.md](docs/05-appointments-and-activities.md) |
 | 6 · Property matching | Fit labels with reasons (no black-box score), both directions (customer → properties, property → customers), one tap to send | ✅ Done | `4a05a72` | [06-property-matching.md](docs/06-property-matching.md) |
-| 7 · Negotiations and bookings | Deals, price proposals with discount limits, holds, booking and confirmation, payment plan, registration, cancellation | 🟡 In progress | — | not written yet |
-| Gemini switch | Assistant uses Google Gemini | ✅ Done (code + tests) | — | [00-foundation.md](docs/00-foundation.md) |
-| Final polish | Manager Team/insights view, Settings for approval rules | ⬜ Not started | — | — |
-| End-to-end tests | Playwright smoke tests | ⬜ Not started | — | — |
+| 7 · Negotiations and bookings | Deals, offers, discount limits with approvals, holds, booking and confirmation, payment plan, registration, cancellation | ✅ Done | `51cd35b` | [07-negotiations-and-bookings.md](docs/07-negotiations-and-bookings.md) |
+| Gemini switch | Assistant uses Google Gemini | ✅ Done (code + tests) | `aad82e1` | [00-foundation.md](docs/00-foundation.md) |
+| Final polish | Inventory insights: most-enquired properties, slow-moving projects | 🟡 In progress | — | — |
+| End-to-end tests | Playwright smoke tests | 🟡 In progress | — | — |
 | Docs refresh | Final README and docs pass | ⬜ Not started | — | — |
 
 ## In progress now
 
-**Phase 7 — Negotiations and bookings** (not committed yet)
+**Final polish**
 
-- Backend: done and tested.
-  - Deal model.
-  - Price proposals with discount limits: executive up to 1%, manager up to 5%, anything above needs admin approval.
-  - Holds on units.
-  - Booking requested by the executive, confirmed by the manager.
-  - Payment plan, registration, cancellation.
-  - Assistant tools for deals.
-- Web UI: being built now.
-  - Deals page and deal drawer.
-  - Deal card on the lead page.
-  - Approvals on the Today page.
-  - Admin settings for approval limits.
+- Inventory insights: most-enquired properties, slow-moving projects.
+- Playwright end-to-end tests.
 
-**Done — assistant switched to Google Gemini** (owner's request; not committed yet)
-
-- Uses the official `@google/genai` SDK. Key from `GEMINI_API_KEY` in `apps/api/.env`; model from `GEMINI_MODEL`, default `gemini-2.5-flash`.
-- Chat uses Gemini function calling over the same role-scoped tools. Confirm-before-acting proposals and "via assistant" in the audit log work as before.
-- Brochure and text reading, unknown sheet headings and requirements use Gemini's JSON mode. Every answer is checked again, and if Gemini fails, typed text, PDFs and requirements fall back to the rule-based readers.
-- Without a key the assistant runs in the labelled, rule-based offline mode, so the app works either way.
-- Tested with a scripted fake Gemini client (`apps/api/test/gemini.test.ts`). No real Gemini call has been made yet; that needs the key.
+**Assistant on Google Gemini** (committed `aad82e1`): uses `GEMINI_API_KEY` in `apps/api/.env`, model from `GEMINI_MODEL` (default `gemini-2.5-flash`). Without a key it runs in the labelled offline mode. Tested with a fake Gemini client only; no real call yet.
 
 ## Next up
 
-1. Finish Phase 7 web UI, test, commit.
-2. Try the assistant against real Gemini once the key arrives.
-3. Final polish: manager Team/insights view, Settings for approval rules.
-4. Playwright end-to-end smoke tests.
-5. Final README and docs refresh.
-6. Push to the owner's git remote (none set up yet).
+1. Try the assistant against real Gemini once the key arrives.
+2. Final README and docs refresh.
+3. Push to the owner's git remote (none set up yet).
 
 **Deferred by design** (documented in `docs/`, not planned for this build):
 
@@ -69,7 +50,7 @@ Last updated: 2026-11-23
 |---|---|---|
 | 1 | **Gemini API key** | Needed for the live AI assistant. Until then it runs in offline mode. |
 | 2 | **Git remote URL** | There is no remote yet; the code can't be pushed until you share the repo link. |
-| 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins will be able to change them in Settings, but the defaults should be right. |
+| 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
 | 4 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
 
 ## How to run
