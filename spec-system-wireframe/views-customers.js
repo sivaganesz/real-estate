@@ -67,10 +67,10 @@ function viewCustomers() {
     </tr>`).join('');
   const bands = ['High-priority lead', 'Qualified lead', 'Developing lead', 'Early-stage enquiry'];
   return {
-    title: 'Customers', crumbs: 'Specification data / <b>Customers</b>',
+    title: 'Leads', crumbs: 'Specification data / <b>Leads</b>',
     html: `
-    <div class="page-head"><div><h1>Customer specification database</h1><p>What each customer wants, why, what they can realistically buy, when — and which conditions the property must satisfy.</p></div><span class="sp"></span>
-      <a class="btn" href="#/enquiry">📝 Public enquiry form</a><a class="btn primary" href="#/customers/new">＋ Add customer</a></div>
+    <div class="page-head"><div><h1>Leads</h1><p>What each customer wants, why, what they can realistically buy, when — and which conditions the property must satisfy.</p></div><span class="sp"></span>
+      <a class="btn" href="#/enquiry">📝 Public enquiry form</a><a class="btn primary" href="#/customers/new">＋ Add lead</a></div>
     <div class="filters">
       <input type="search" id="cf-q" placeholder="Search name, ID, mobile, city…" value="${esc(f.q || '')}" data-inp="filter" data-scope="custs" data-key="q">
       <select data-chg="filter" data-scope="custs" data-key="stage">${options([...STAGES, LOST_STAGE], f.stage, 'All stages')}</select>
@@ -114,7 +114,7 @@ function viewCustomerForm(id) {
   const typeOpts = Object.entries(PROPERTY_TYPES).map(([v, t]) => ({ v, l: t.label }));
   return {
     title: id ? 'Edit customer' : 'Add customer',
-    crumbs: `Specification data / <a href="#/customers">Customers</a> / <b>${id ? 'Edit ' + id : 'Add customer'}</b>`,
+    crumbs: `Specification data / <a href="#/customers">Leads</a> / <b>${id ? 'Edit ' + id : 'Add customer'}</b>`,
     html: `
     <div class="page-head"><div><h1>${id ? 'Edit ' + esc(c.name) : 'Add customer'}</h1><p>Collect only necessary information, explain why, and record consent for follow-up.</p></div></div>
     <form data-form="customer" data-id="${id || ''}" class="card">
@@ -244,7 +244,7 @@ function viewCustomer(id, tab) {
   const consentOk = c.consent && c.consent.followUp;
   const hniCls = cls === 'Potential HNI' || cls === 'Verified HNI';
   return {
-    title: c.name, crumbs: `Specification data / <a href="#/customers">Customers</a> / <b>${c.id}</b>`,
+    title: c.name, crumbs: `Specification data / <a href="#/customers">Leads</a> / <b>${c.id}</b>`,
     html: `
     <div class="ent-head">
       <div class="av">${initials(c.name)}</div>

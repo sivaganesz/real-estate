@@ -53,14 +53,43 @@ function viewDashboard() {
 }
 
 /* ---------- pipeline ---------- */
+/* Each stage has its own colour — the funnel, the column and the cards share it. */
+const STAGE_COLOR = { 'New enquiry': '#64748b', Contacted: '#2f5bea', Qualified: '#6a3fc4', 'Property recommended': '#0e8a8a', 'Site visit scheduled': '#c27a0e', Negotiation: '#d9622b', 'Booking / Closed': '#11743f' };
+const stageColor = s => STAGE_COLOR[s] || '#b42318';
+const TONE_COLOR = { green: 'var(--green)', amber: '#d08a12', red: 'var(--red)', blue: 'var(--blue)', purple: 'var(--purple)', grey: '#8a93a3' };
 function viewPipeline() {
   const f = UI.filters.pipe, S = DB.settings;
   const list = DB.customers.filter(c => !f.owner || c.owner === f.owner);
-  const cols = [...STAGES, LOST_STAGE].map(stage => {
+  const active = list.filter(isActive), money = cs => cs.reduce((t, c) => t + (c.budget.max || 0), 0);
+  const stuckN = active.filter(c => daysBetween(c.stageSince, DEMO_TODAY) > S.stuckDays).length;
+  const closed = list.filter(c => c.stage === 'Booking / Closed'), lost = list.filter(c => c.stage === LOST_STAGE);
+  const visits = list.reduce((n, c) => n + (c.siteVisits || []).filter(v => v.status === 'Scheduled' && v.date >= DEMO_TODAY && daysBetween(DEMO_TODAY, v.date) <= 7).length, 0);
+  // the headline numbers
+  const kpi = (ic, tone, n, l, sub) => `<div class="pk"><span class="pk-ic" style="--c:${tone}">${ic}</span><div><b>${n}</b><span>${l}</span>${sub ? `<small>${sub}</small>` : ''}</div></div>`;
+  const kpis = `<div class="pk-row">
+      ${kpi('👥', '#2f5bea', active.length, 'Active leads', `${list.filter(c => c.stage === 'New enquiry').length} new enquiries`)}
+      ${kpi('₹', '#0e8a8a', inrShort(money(active)), 'Pipeline value', 'sum of maximum budgets')}
+      ${kpi('📅', '#c27a0e', visits, 'Site visits this week', 'scheduled')}
+      ${kpi('⚠', '#d9622b', stuckN, 'Stuck leads', `more than ${S.stuckDays} days in a stage`)}
+      ${kpi('🏁', '#11743f', closed.length, 'Closed', `${inrShort(money(closed))} · ${lost.length} lost`)}</div>`;
+  // the funnel: how many leads are at each stage, and how many reached the next one
+  const live = list.filter(c => c.stage !== LOST_STAGE), reached = i => live.filter(c => stageIndex(c.stage) >= i).length;
+  const maxN = Math.max(1, ...STAGES.map(s => live.filter(c => c.stage === s).length));
+  const funnel = `<div class="card pf"><div class="pf-head"><h2>Sales funnel</h2><small class="muted">Bar = leads at the stage now · arrow = share of leads that got at least that far</small></div>
+    <div class="pf-row">${STAGES.map((s, i) => {
+      const at = live.filter(c => c.stage === s), conv = i && reached(i - 1) ? Math.round(reached(i) / reached(i - 1) * 100) : null;
+      return `${i ? `<span class="pf-arrow" title="${reached(i)} of ${reached(i - 1)} leads reached ${esc(s)}">›<small>${conv}%</small></span>` : ''}
+        <button class="pf-step ${UI.pipeFocus === s ? 'on' : ''}" style="--c:${stageColor(s)}" data-act="pipeFocus" data-k="${esc(s)}" title="Show only this stage">
+          <span class="pf-bar"><i style="height:${Math.max(8, at.length / maxN * 100)}%"></i></span><b>${at.length}</b><span class="pf-l">${esc(s)}</span><small>${at.length ? inrShort(money(at)) : '—'}</small></button>`;
+    }).join('')}</div></div>`;
+  const shownStages = UI.pipeFocus ? [UI.pipeFocus] : [...STAGES, LOST_STAGE];
+  const cols = shownStages.map(stage => {
     const cards = list.filter(c => c.stage === stage).map(c => {
       const rd = readiness(c, DB), days = daysBetween(c.stageSince, DEMO_TODAY), stuck = isActive(c) && days > S.stuckDays;
-      return `<div class="kcard ${stuck ? 'stuck' : ''}" draggable="true" data-drag="${c.id}" data-href="#/customers/${c.id}">
-        <div class="row"><span class="nm">${esc(c.name)}</span><span class="sp"></span>${chip(rd.total, rd.band.tone, rd.band.l)}</div>
+      const pct = Math.round(rd.total / (rd.maxTotal || 100) * 100);
+      return `<div class="kcard ${stuck ? 'stuck' : ''}" draggable="true" data-drag="${c.id}" data-href="#/customers/${c.id}" style="--c:${stageColor(stage)}">
+        <div class="row"><span class="k-av" style="--t:${TONE_COLOR[rd.band.tone] || '#8a93a3'}">${esc(initials(c.name))}</span><span class="nm">${esc(c.name)}</span><span class="sp"></span><span class="k-purp" title="${esc(c.purpose || '')}">${typeof PURPOSE_ICON !== 'undefined' && c.purpose ? PURPOSE_ICON[c.purpose] || '' : ''}</span></div>
+        <div class="k-ready" title="Purchase readiness ${rd.total} — ${esc(rd.band.l)}"><span><i style="width:${pct}%;background:${TONE_COLOR[rd.band.tone] || '#8a93a3'}"></i></span><small>${rd.total} · ${esc(rd.band.l)}</small></div>
         <div class="ln">${esc(reqSummary(c))}</div>
         <div class="ln">${inrShort(c.budget.max)} max · ${esc((execName(DB, c.owner).split('—')[1] || '').trim())}</div>
         ${(() => { // what this buyer has been offered, and the next site visit
@@ -72,17 +101,21 @@ function viewPipeline() {
         <div class="ln row">${stage === LOST_STAGE ? chip(c.lostReason, 'red') : followUpCell(c)}<span class="sp"></span><span title="Days in this stage">${stuck ? '⚠ ' : ''}${days}d</span></div>
       </div>`;
     }).join('');
-    const n = list.filter(c => c.stage === stage).length;
-    return `<div class="col" data-drop="${stage}"><div class="col-head">${stage}<span class="chip">${n}</span></div>${cards || '<div class="muted" style="font-size:12px;padding:6px">Drop here</div>'}</div>`;
+    const inStage = list.filter(c => c.stage === stage), n = inStage.length;
+    return `<div class="col ${stage === LOST_STAGE ? 'lost' : ''}" data-drop="${stage}" style="--c:${stageColor(stage)}"><div class="col-head"><span class="col-dot"></span>${stage}<span class="chip">${n}</span></div>
+      <div class="col-sum">${n ? inrShort(money(inStage)) + ' in budgets' : 'No leads'}</div>${cards || '<div class="col-empty">Drop a lead here</div>'}</div>`;
   }).join('');
   return {
     title: 'Lead pipeline', crumbs: 'Sales &amp; qualification / <b>Lead pipeline</b>',
     html: `
     <div class="page-head"><div><h1>Lead pipeline</h1><p>Drag a card to move a lead to the next stage. Moving to <b>Lost</b> asks for a reason. ⚠ marks leads stuck more than ${S.stuckDays} days.</p></div><span class="sp"></span>
       <select data-chg="filter" data-scope="pipe" data-key="owner" style="width:auto">${options(DB.settings.executives.map(e => ({ v: e.id, l: e.name })), f.owner, 'All executives')}</select></div>
-    <div class="board">${cols}</div>`,
+    ${kpis}${funnel}
+    ${UI.pipeFocus ? `<div class="pf-focus">Showing <b>${esc(UI.pipeFocus)}</b> only <button class="linkbtn" data-act="pipeFocus" data-k="">Show all stages</button></div>` : ''}
+    <div class="board ${UI.pipeFocus ? 'one' : ''}">${cols}</div>`,
   };
 }
+Object.assign(ACTIONS, { pipeFocus: d => { UI.pipeFocus = d.k && UI.pipeFocus !== d.k ? d.k : ''; render(); } });
 
 /* ---------- matching engine ---------- */
 function viewMatching(cid) {

@@ -125,10 +125,9 @@ function route(r) {
 const NAV = [
   { sec: 'Overview' },
   { r: 'dashboard', i: '📊', l: 'Sales dashboard' },
-  { r: 'about', i: '🧭', l: 'System map' },
   { sec: 'Specification data' },
   { r: 'properties', i: '🏠', l: 'Properties', cnt: () => DB.properties.filter(p => p.status === 'Available' && !p.archived).length },
-  { r: 'customers', i: '👤', l: 'Customers', cnt: () => DB.customers.filter(isActive).length },
+  { r: 'customers', i: '👤', l: 'Leads', cnt: () => DB.customers.filter(isActive).length },
   { r: 'import', i: '📥', l: 'Bulk import' },
   { sec: 'Sales & qualification' },
   { r: 'pipeline', i: '🗂️', l: 'Lead pipeline' },
@@ -140,6 +139,7 @@ const NAV = [
   { r: 'enquiry', i: '📝', l: 'Public enquiry form' },
   { r: 'test', i: '🧪', l: 'Test scenario 001' },
   { r: 'settings', i: '⚙️', l: 'Settings & rules' },
+  { r: 'about', i: '🧭', l: 'System map' }, // help only — at the bottom (CTO review, 20 Nov)
 ];
 
 function shell(view, r) {
@@ -158,7 +158,7 @@ function shell(view, r) {
       <div class="topbar">
         <div class="crumbs">${view.crumbs || esc(view.title)}</div><span class="sp"></span>
         <a class="btn sm" href="#/enquiry">📝 Public enquiry</a>
-        <a class="btn sm" href="#/customers/new">＋ Customer</a>
+        <a class="btn sm" href="#/customers/new">＋ Lead</a>
         <a class="btn sm" href="#/properties/new">＋ Property</a>
         <label class="row" style="gap:6px;font-size:12px;color:var(--muted)">Viewing as
           <select data-chg="role" style="width:auto">${options(ROLES, UI.role)}</select></label>
