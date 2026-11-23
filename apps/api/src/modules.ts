@@ -7,6 +7,7 @@ import { activitiesRouter } from './modules/activities';
 import { matchingRouter } from './modules/matching';
 import { dealsRouter, settingsRouter } from './modules/deals';
 import './modules/deals-seed';
+import { insightsRouter } from './modules/insights';
 import './modules/activities-seed';
 import { publicProperty } from './services/properties';
 
@@ -24,6 +25,7 @@ export const modules: { path: string; router: Router }[] = [
   { path: '/matching', router: matchingRouter },
   { path: '/deals', router: dealsRouter },
   { path: '/settings', router: settingsRouter },
+  { path: '/insights', router: insightsRouter },
 ];
 
 /** Routes buyers can open without signing in. */

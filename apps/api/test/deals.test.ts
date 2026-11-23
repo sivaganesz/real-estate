@@ -47,6 +47,10 @@ describe('negotiations and bookings', () => {
     expect(waiting).toContain(deal.id);
     const counter = await admin.post(`/api/deals/${deal.id}/decision`).send({ decision: 'counter', counterPrice: 46 * L, note: 'Best we can do' });
     expect(counter.body.deal).toMatchObject({ status: 'negotiating', currentPrice: 46 * L });
+    // Agreeing at the countered price needs no second approval.
+    const agreed = await priya.post(`/api/deals/${deal.id}/price`).send({ price: 46 * L });
+    expect(agreed.body).toMatchObject({ needsApproval: false, deal: { status: 'approved', agreedPrice: 46 * L } });
+    expect(agreed.body.deal.approval.decidedByName).toBe('Anitha Rao');
   });
 
   it('lets a manager approve a discount within their limit, not their own request', async () => {

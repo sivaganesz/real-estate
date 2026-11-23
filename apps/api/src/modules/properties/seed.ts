@@ -1,5 +1,6 @@
 import { registerSeeder } from '../../db/seed';
 import { Property } from '../../models/property';
+import { Audit } from '../../models/audit';
 import { createProject, generateUnits, publishReadyUnits } from '../../services/projects';
 import { createProperty, setListing } from '../../services/properties';
 import type { Actor } from '../../lib/auth';
@@ -67,20 +68,25 @@ registerSeeder('properties', async ({ users }) => {
   await publishReadyUnits(String(palm._id), actor);
 
   // Realistic movement: some units already sold, booked or held.
-  const mark = async (projectId: unknown, n: number, availability: string) => {
+  // Sales history, spread back over `overDays`, so sales pace per project is real.
+  const mark = async (projectId: unknown, n: number, availability: string, overDays = 0) => {
     const units = await Property.find({ projectId, availability: 'available', listing: 'live' }).sort({ unitNumber: 1 }).limit(n);
-    for (const u of units) {
+    for (const [i, u] of units.entries()) {
       u.availability = availability as 'sold';
       if (availability === 'held') u.heldUntil = new Date(Date.now() + 2 * 86_400_000);
       await u.save();
+      if (availability === 'sold' || availability === 'booked') {
+        const ago = overDays ? Math.round(overDays - (i * overDays) / Math.max(1, units.length)) : 1;
+        await Audit.create({ actorId: actor.id, actorName: actor.name, entity: 'property', entityId: u._id, action: 'availability', summary: `Available → ${availability === 'sold' ? 'Sold' : 'Booked'}`, createdAt: new Date(Date.now() - ago * 86_400_000) });
+      }
     }
   };
-  await mark(meadows._id, 9, 'sold');
-  await mark(meadows._id, 4, 'booked');
+  await mark(meadows._id, 9, 'sold', 240);
+  await mark(meadows._id, 4, 'booked', 60);
   await mark(meadows._id, 1, 'held');
-  await mark(sunrise._id, 21, 'sold');
-  await mark(sunrise._id, 3, 'booked');
-  await mark(palm._id, 1, 'booked');
+  await mark(sunrise._id, 21, 'sold', 300);
+  await mark(sunrise._id, 3, 'booked', 45);
+  await mark(palm._id, 1, 'booked', 150);
 
   // Standalone listings: resale homes, land, commercial, a rental.
   const standalone: Parameters<typeof createProperty>[0][] = [

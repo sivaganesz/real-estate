@@ -246,6 +246,7 @@ function PropertyTable({ items }: { items: Property[] }) {
 
 function Projects() {
   const projects = useProjects();
+  const movement = useQuery({ queryKey: ['movement'], queryFn: () => api.get<{ projects: { id: string; slow: boolean; movedInWindow: number; monthsOfStock: number | null; perMonth: number }[] }>('/insights/movement') });
   if (projects.isLoading) return <PageLoader />;
   if (!projects.data?.length) return <EmptyState icon={<Building2 className="h-5 w-5" />} title="No projects yet" body="A project groups the units of one development — towers, a plotted layout or a villa community." />;
   return (
@@ -277,6 +278,16 @@ function Projects() {
                 <b className="text-emerald-700">{inv.available}</b> available · {inv.held} on hold · {sold} sold or booked of {inv.total} · {pct}% gone
                 {inv.draft > 0 && <span className="text-amber-700"> · {inv.draft} drafts</span>}
               </p>
+              {(() => {
+                const m = movement.data?.projects.find((x) => x.id === p.id);
+                if (!m) return null;
+                return (
+                  <p className={clsx('mt-1 text-xs', m.slow ? 'font-medium text-amber-700' : 'text-slate-500')}>
+                    {m.slow ? '⚠ Slow: ' : ''}
+                    {m.movedInWindow} sold or booked in 90 days{m.monthsOfStock ? ` · ~${m.monthsOfStock} months of stock at this pace` : ''}
+                  </p>
+                );
+              })()}
             </div>
           </Link>
         );

@@ -110,10 +110,13 @@ export async function proposePrice(dealId: string, input: { price: number; note?
   const discountLimitPct = { executive: 1, manager: 5, ...((await getSettings()).discountLimitPct ?? {}) };
   const discountPct = Math.max(0, Math.round(((deal.listPrice - input.price) / deal.listPrice) * 1000) / 10);
   const mine = limitFor(actor.role, discountLimitPct);
-  if (discountPct <= mine) {
+  // A manager's counter is an approval up to that price: agreeing at or above it needs no new request.
+  const counter = deal.approval?.decision === 'countered' ? deal.approval.counterPrice ?? undefined : undefined;
+  const preApproved = counter !== undefined && input.price >= counter;
+  if (discountPct <= mine || preApproved) {
     deal.agreedPrice = input.price;
     deal.status = 'approved';
-    deal.approval = { price: input.price, discountPct, note: input.note, requestedBy: new mongoose.Types.ObjectId(actor.id), requestedByName: actor.name, requestedAt: new Date(), decision: 'approved', decidedByName: actor.name, decidedAt: new Date(), decisionNote: discountPct ? `Within ${actor.name.split(' ')[0]}'s ${mine}% limit` : 'At list price' } as never;
+    deal.approval = { price: input.price, discountPct, note: input.note, requestedBy: new mongoose.Types.ObjectId(actor.id), requestedByName: actor.name, requestedAt: new Date(), decision: 'approved', decidedAt: new Date(), decisionNote: preApproved && discountPct > mine ? `Within the counter approved by ${deal.approval?.decidedByName}` : discountPct ? `Within ${actor.name.split(' ')[0]}'s ${mine}% limit` : 'At list price', decidedByName: preApproved && discountPct > mine ? deal.approval?.decidedByName : actor.name } as never;
     await deal.save();
     await audit(actor, 'deal', deal._id, 'price', `Price agreed at ${formatINR(input.price)}${discountPct ? ` (${discountPct}% off)` : ''}`);
     return { deal: deal.toObject(), needsApproval: false };
