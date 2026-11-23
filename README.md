@@ -6,7 +6,7 @@ Real-estate sales and inventory, built around each person's day and an AI assist
 
 ```bash
 pnpm install          # also downloads an embedded MongoDB the first time
-cp .env.example apps/api/.env   # optional: add ANTHROPIC_API_KEY
+cp .env.example apps/api/.env   # optional: add GEMINI_API_KEY
 pnpm dev              # API on :4000, web on http://localhost:5173
 ```
 
@@ -24,7 +24,7 @@ Demo sign-ins (password `demo1234`):
 
 ## AI
 
-Set `ANTHROPIC_API_KEY` in `apps/api/.env` to use Claude (`claude-opus-5-5` by default; change it with `AI_MODEL`). Without a key the assistant runs in a clearly labelled offline mode that understands common requests.
+Set `GEMINI_API_KEY` in `apps/api/.env` to use Google Gemini (`gemini-2.5-flash` by default; change it with `GEMINI_MODEL`, since Google renames Flash models often). Without a key the assistant runs in a clearly labelled offline mode that understands common requests.
 
 ## Checks
 

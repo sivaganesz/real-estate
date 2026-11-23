@@ -56,7 +56,7 @@ The assistant is a panel on every screen (button in the top bar, **Ctrl/⌘ K**,
   - *confirm*: consequential changes (publish, reassign, approve a discount, confirm a booking). These become a proposal card with **Confirm** and **Not now**. Nothing happens until the person confirms.
 - **Offline mode.** Without an AI key the same panel understands a fixed set of requests ("2 BHK under 70 L in Porur", "leads without follow-ups") by pattern-matching and calling the same tools. It says plainly that it's offline.
 
-Model: Claude Opus 5.5 (`claude-opus-5-5`) through the Messages API with tool use. The server-side refusal fallback is on, and effort is set to `medium`.
+Model: Google Gemini through the official `@google/genai` SDK. The key comes from `GEMINI_API_KEY`; the model from `GEMINI_MODEL`, default `gemini-2.5-flash` (configurable because Google renames Flash models often). Chat uses Gemini function calling, with the tool list generated from the same role-filtered tool registry. Structured reads (brochures and text, unknown sheet headings, requirements) use Gemini's JSON mode, and every answer is checked again on our side; if Gemini fails or returns something unusable, typed text, PDFs and requirements fall back to the rule-based readers.
 
 ## 5. Architecture
 

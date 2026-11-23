@@ -53,7 +53,7 @@ Brochures and photos skip step 2. The AI finds one entry per unit type, and each
 | Step | AI? | Why |
 |---|---|---|
 | Template, saved format, synonyms, value sniffing | No | Free, instant, predictable; covers most files |
-| Unknown headings | Yes, one small call per file (`effort: low`) | Unfamiliar layouts without a rules list growing forever |
+| Unknown headings | Yes, one small Gemini call per file | Unfamiliar layouts without a rules list growing forever |
 | Brochures and photos | Yes | Only practical way to read them; each value carries its source quote |
 | Final decision | Person | The Check screen is mandatory |
 

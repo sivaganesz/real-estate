@@ -64,7 +64,7 @@ A business sells two kinds of stock:
 | Share | Drafts the buyer WhatsApp message from the facts | Sends |
 | Assistant actions | Creates drafts directly | Confirms **publish**, **price or fact edits** and **availability** changes |
 
-Offline (no AI key), typed text and PDFs are read by rules. Photos need the AI.
+Offline (no AI key), or if Gemini fails or returns something unusable, typed text and PDFs are read by rules. Photos need the AI.
 
 ## 5. Screens
 
