@@ -7,6 +7,7 @@ import { AssistantProvider } from './ai/assistant';
 import { ToastProvider } from './components/toast';
 import { App } from './App';
 import './features/pipeline';
+import './features/activities';
 import './index.css';
 
 const queryClient = new QueryClient({

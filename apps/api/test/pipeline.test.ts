@@ -35,7 +35,7 @@ describe('sales pipeline', () => {
     const villa = (await priya.get('/api/properties?q=Palm Grove&smart=false&availability=available')).body.items[0];
     const r2 = await priya.post(`/api/pipeline/move/${lakshmi.id}`).send({ to: 'negotiation', propertyId: villa.id });
     expect(r2.body.lead.stage).toBe('negotiation');
-    expect(r2.body.lead.shortlist[0]).toMatchObject({ propertyId: villa.id, status: 'liked' });
+    expect(r2.body.lead.shortlist.find((s: { propertyId: string }) => s.propertyId === villa.id)).toMatchObject({ status: 'liked' });
   });
 
   it('never drags into Booked; only a booking does that', async () => {

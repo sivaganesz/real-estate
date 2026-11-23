@@ -1,3 +1,6 @@
+// Business runs on Indian time; "tomorrow 11 am" means 11 am IST wherever the server is.
+process.env.TZ ??= 'Asia/Kolkata';
+
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

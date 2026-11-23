@@ -8,6 +8,7 @@ import { NAV } from '../nav';
 import { Avatar } from './ui';
 import { AssistantPanel } from '../ai/AssistantPanel';
 import { useAssistant } from '../ai/assistant';
+import { Reminders } from '../features/activities';
 
 export function Layout() {
   const { user, can, signOut, ai } = useAuth();
@@ -67,7 +68,7 @@ export function Layout() {
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
             <img src="/favicon.svg" className="h-7 w-7 lg:hidden" alt="" />
             <form
-              className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus-within:border-ai-500 focus-within:ring-2 focus-within:ring-ai-100"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus-within:border-ai-500 focus-within:ring-2 focus-within:ring-ai-100"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (q.trim()) assistant.ask(q);
@@ -84,6 +85,7 @@ export function Layout() {
               />
               <kbd className="hidden rounded-md border border-slate-200 px-1.5 text-[10px] text-slate-400 sm:block">Ctrl K</kbd>
             </form>
+            <Reminders />
             <button
               onClick={() => assistant.setOpen(!assistant.open)}
               aria-label="Assistant"

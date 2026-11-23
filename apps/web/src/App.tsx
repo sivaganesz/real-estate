@@ -14,6 +14,7 @@ import { SharePage } from './pages/SharePage';
 import { Import } from './pages/Import';
 import { Leads } from './pages/Leads';
 import { LeadDetail } from './pages/LeadDetail';
+import { Calendar } from './pages/Calendar';
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ export function App() {
         <Route index element={<Today />} />
         <Route path="leads" element={<Leads />} />
         <Route path="leads/:id" element={<LeadDetail />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route

@@ -253,3 +253,58 @@ export function extractFromText(raw: string, places: Places): Extracted {
     unsure,
   };
 }
+
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * "tomorrow 11am", "sat 4:30 pm", "on 3 dec at 10", "in 2 days", "this evening".
+ * Returns null when no day or time is mentioned, so the caller can ask.
+ */
+export function parseWhen(text: string, now = new Date()): Date | null {
+  const t = text.toLowerCase();
+  const d = new Date(now);
+  let dayFound = false;
+  if (/\btoday\b|\bthis (morning|afternoon|evening)\b|\btonight\b/.test(t)) dayFound = true;
+  else if (/\btomorrow\b|\btmrw\b/.test(t)) {
+    d.setDate(d.getDate() + 1);
+    dayFound = true;
+  } else if (/\bday after tomorrow\b/.test(t)) {
+    d.setDate(d.getDate() + 2);
+    dayFound = true;
+  } else {
+    const inDays = t.match(/\bin (\d+) days?\b/);
+    const dayName = DAYS.findIndex((n) => new RegExp(`\\b(next )?${n.slice(0, 3)}(${n.slice(3)})?\\b`).test(t));
+    const dm = t.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+    if (inDays) {
+      d.setDate(d.getDate() + Number(inDays[1]));
+      dayFound = true;
+    } else if (dm) {
+      d.setMonth(MONTHS.indexOf(dm[2]), Number(dm[1]));
+      if (d < now) d.setFullYear(d.getFullYear() + 1);
+      dayFound = true;
+    } else if (dayName >= 0) {
+      const diff = (dayName - d.getDay() + 7) % 7 || 7;
+      d.setDate(d.getDate() + diff);
+      dayFound = true;
+    }
+  }
+  const tm = t.match(/\b(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/) ?? t.match(/\bat\s*(\d{1,2})(?::(\d{2}))?\b/);
+  let hour: number | null = null;
+  let minute = 0;
+  if (tm) {
+    hour = Number(tm[1]);
+    minute = Number(tm[2] ?? 0);
+    const ap = tm[3]?.replace(/\./g, '');
+    if (ap === 'pm' && hour < 12) hour += 12;
+    if (ap === 'am' && hour === 12) hour = 0;
+    // "at 4" without am/pm during business hours means 4 pm.
+    if (!ap && hour >= 1 && hour <= 7) hour += 12;
+  } else if (/\bmorning\b/.test(t)) hour = 10;
+  else if (/\bafternoon\b/.test(t)) hour = 15;
+  else if (/\bevening\b|\btonight\b/.test(t)) hour = 18;
+  if (!dayFound && hour === null) return null;
+  d.setHours(hour ?? 11, minute, 0, 0);
+  if (!dayFound && d < now) d.setDate(d.getDate() + 1);
+  return d;
+}
