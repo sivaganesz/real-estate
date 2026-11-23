@@ -1,15 +1,18 @@
 # Properties without forms — proposal
 
-**Date:** 17 November 2026, revised 19 November 2026 · **For:** leadership and the development team · **Status:** for CTO review
+**Date:** 17 November 2026, revised 20 November 2026 · **For:** leadership and the development team · **Status:** for CTO review
 **Scope:** properties only. Covers action items 2, 3, 4, 5 and 9 from the [17 Nov demo review](../meetings/MoM-2026-11-17-Demo-Review.pdf). Leads, matching and site visits come in a later proposal.
 
 **What changed in this revision.** Since 17 Nov the design has been built in the clickable wireframe (`spec-system-wireframe/`, branch `spec-system-wireframe`). This version describes what was built:
 - the AI assistant and a short form, side by side;
 - what is required to publish;
 - the location and nearby places;
-- the simpler Legal & documents section.
+- the simpler Legal & documents section;
+- Bulk import that reads any spreadsheet, brochure, catalogue or photo (new on 20 Nov);
+- the Share page: the brochure the customer receives (new on 20 Nov);
+- what a Sales executive can and can't do (new on 20 Nov).
 
-Sections 1, 4, 5, 6 and 9 changed the most.
+Sections 3, 8 and 9 changed on 20 Nov; sections 1, 4, 5 and 6 on 19 Nov.
 
 ---
 
@@ -83,9 +86,9 @@ Everything else is optional: more details, photos, the exact location, approvals
 | Chat (typed) | The AI reads the sentence | Yes (simulated) |
 | Pasted Google Maps link or WhatsApp location | Read as the exact location | Yes (simulated) |
 | Voice | Speech-to-text, then the AI | Search box only |
-| Brochure PDF, one or many pages | The AI reads the text and the page images | Planned |
-| Photos (a sign board, a printed page) | The AI reads the image; also offered as listing photos | Planned |
-| Excel (.xlsx) or CSV — our template or any sheet | The columns are matched by the AI ("Plot Size" → area, "Rate" → price); "30 L" or "1,200 sqft" are read; rows missing required details become drafts | Yes (simulated) |
+| Brochure or catalogue PDF, one or many pages | The AI reads the text and the page images and finds each property in it | Yes (simulated), in Bulk import |
+| Photos (a sign board, a printed page) | The AI reads the image; the photo becomes a listing photo | Yes (simulated), in Bulk import |
+| Excel (.xlsx) or CSV — our template or any sheet | The columns are matched by name, then by the AI ("Plot Size" → area, "Rate" → price); "30 L" or "1,200 sqft" are read | Yes |
 
 **The AI step:**
 - One request per input. It sends the text, the instructions and the known-facts list.
@@ -93,6 +96,35 @@ Everything else is optional: more details, photos, the exact location, approvals
 - Code then checks the numbers: lakh and crore units, area × rate against the price, and impossible values.
 
 **When two sources disagree** (the brochure says 2,650 sq.ft., the deed says 2,600), the person is shown both and chooses one.
+
+### Bulk import (built on 20 Nov)
+
+One drop zone takes any file. **The AI suggests, a person confirms, the system remembers.**
+
+**Owners' own spreadsheets.** Columns are matched in four steps, cheapest first:
+
+| Step | How | Cost |
+|---|---|---|
+| 1. Our template | The headings equal our field names | Free |
+| 2. Saved format | The same sender's layout seen before ("ABC Realty's format recognised") | Free |
+| 3. Rules | Synonyms, plus a look at the values ("Area" with numbers is the size; with names, the locality) | Free |
+| 4. AI | Only for headings still unknown: headings + 3 sample rows + our field list → JSON with a confidence level | 1 call per file |
+
+- **Messy sheets are handled:** a title above the headings, total rows at the bottom, "30 L", "1.2 Cr", "1,200 sqft", Excel dates.
+- **Nothing is dropped.** A column with no field ("Owner remarks") is kept as an **extra detail** on the property, internal unless someone shows it to customers.
+- **Saved formats:** the team types who sent the file; that sender's column choices are saved and reused next time, with no AI call. Managers can forget a format.
+
+**Brochures, catalogues and photos.**
+- The AI finds each property in the file (a builder's brochure → one entry per unit type), its details and the photos.
+- **Every row shows the page and words it was read from**, and what the AI worked out ("G + 4" → 5 floors; the area from 30 × 40 ft).
+- **Anything the AI is unsure of becomes a draft** (e.g. a price that says "onwards"), and the assistant asks the person to confirm it.
+
+**The same for every file:**
+- **One Check screen** before anything is saved: each row is *Ready*, *Draft* (something missing or to confirm), *Update* or *Needs fixing*.
+- Drafts open in the AI assistant, which asks only for what is missing.
+- A **Sales executive's** ready rows go to *Waiting for approval*, as in Add property, and they can't update published properties.
+
+**For development:** files are read on the server (Express + SheetJS or ExcelJS; PDF text and page images for the AI). Every AI answer comes back as fixed-shape JSON and is checked by code (a schema per property type) before anyone sees it. Saved formats live in an `importMappings` collection, keyed by sender and set of headings.
 
 ---
 
@@ -194,6 +226,7 @@ A property with no approval badges is not penalised.
 | Show the important nearby places; work out price per sq.ft. | Keeping the extra nearby places it found | Advertise planned infrastructure as existing |
 | Find similar properties in our records and compare the price with them | Leaving out ones that aren't really similar; adding outside ones | Call a price a "bargain" or "best price" |
 | Flag possible duplicates; list what's missing | Merging duplicates; choosing between conflicting facts | Mark a route as checked |
+| Match a sheet's columns; read a brochure or photo into properties | Every imported row (Check screen); anything it is unsure of, as a draft | Save an import without the Check screen |
 
 ---
 
@@ -206,6 +239,12 @@ A property with no approval badges is not penalised.
   - the approval badges whose documents are uploaded.
 - **Only confirmed facts appear.** The listing never says "100% legally clear".
 - **Documents are shared with a customer only on request.**
+- **Built on 20 Nov — the Share page.** *↗ Share* on a property shows the brochure the customer receives, built from the same facts:
+  - photos, price and the approximate total for the buyer (stamp duty and registration);
+  - key facts and amenities, the nearby places in Customer view, and only **verified** approvals as badges;
+  - never the owner's contact, internal notes, the price check, documents, or survey and layout numbers;
+  - copy a link or download a PDF. Sharing with a buyer logs it on their timeline and counts as a recommendation, so the Lead pipeline shows it.
+  - WhatsApp sending comes with the WhatsApp integration.
 - The experiment includes one generated landing page. The full website comes later.
 
 ---
@@ -217,6 +256,8 @@ A property with no approval badges is not penalised.
 2. **Exact location is optional.** The locality is shown as approximate until it is set (section 5).
 3. **Advertising rule for distances:** a route check only for everyday places close by, set per category in Settings (section 5).
 4. **Legal & documents is optional.** An approval badge shows on the listing once its document is uploaded, and *Verified* is an optional extra (section 6).
+5. **Bulk import never saves without the Check screen.** Unsure values become drafts; unmatched columns are kept as extra details (section 3).
+6. **What a Sales executive can do:** add properties (they wait for approval, from Add property or Bulk import), upload photos and documents, check routes, recommend and share. Only an Admin or Sales manager changes a published property, its status or its documents, creates approval badges, or reassigns a lead.
 
 **Still open:**
 1. **AI service.**
@@ -229,9 +270,10 @@ A property with no approval badges is not penalised.
    - A new property makes about 5 lookups for the default places plus the route distances.
    - "Find more places" makes about 6–8.
 4. **Who can publish:** Admin and Sales manager only (current rule), or Sales executives as well.
-5. **Who can create approval badges:** everyone (current) or Admin and Sales manager only.
-6. **Voice-note languages:** Tamil, English, or both mixed.
-7. **Sample data:** 5–10 real brochures from a client for the experiment.
+5. **Property status:** may a Sales executive change it, e.g. to *Under negotiation*? Currently managers only.
+6. **Which leads a Sales executive sees:** all leads (current) or only their own.
+7. **Voice-note languages:** Tamil, English, or both mixed.
+8. **Sample data:** 5–10 real brochures and owner sheets from a client for the experiment.
 
 **Risks and how we handle them:**
 - **AI mistakes in numbers:** every fact has a source, code checks the numbers, and a person reviews before publishing.
@@ -248,8 +290,8 @@ A property with no approval badges is not penalised.
 | 1–2 | Fact format; AI extraction tried on 5–10 real brochures | Accuracy sheet |
 | 3–4 | Chat and short form, fact review, edits with AI | Working screens |
 | 5 | Google Places, map pin and default nearby places | Nearby places filled automatically |
-| 6 | Voice notes; Excel without a template | |
-| 7 | Landing page preview | |
+| 6 | Voice notes; owner sheets and brochures in Bulk import (real AI) | |
+| 7 | Landing page from the Share page's brochure | |
 | 8–10 | Measure, fix, prepare the demo | Demo with no long forms |
 
 **How we judge it:**
