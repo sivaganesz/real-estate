@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-23
 
-**Overall:** All planned phases are complete, committed and tested. Waiting on two things from you: the Gemini API key and the git remote to push to.
+**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). Waiting on two things from you: the Gemini API key and the git remote to push to.
 
 ## Phases
 
@@ -20,42 +20,32 @@ Last updated: 2026-11-23
 | Inventory insights | Most-enquired properties, slow-moving projects; counters pre-approve | ✅ Done | `1e882d0` | — |
 | End-to-end tests | Playwright journeys for each role, desktop and phone | ✅ Done | `70c43a1` | — |
 | Docs refresh | README, STATUS and docs pass | ✅ Done | — | — |
+| 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
 
 ## Done since last update
 
-**Inventory insights** (`1e882d0`)
+**Projects v2, from your wireframes 8–11** (`a885a80`, details in [08-projects-v2.md](docs/08-projects-v2.md))
 
-- **Property interest ranking:** enquiries, shares, visits/likes and deals per property.
-- **Project sales pace:** units sold or booked in the last 90 days and months of stock left; slow movers are flagged on the Projects cards.
-- Assistant tools `property_interest` and `project_movement`. Offline, it answers "Which properties receive the most enquiries?" and "Which projects have low inventory movement?".
+- **Layout described once:** towers with a per-floor plan of flat types, or blocks of plots (width × length), or rows of villas. Every unit, its number (A503, A-07), facing and price follow from it.
+- **Pricing:** base ₹/sq.ft, floor rise, corner premium. Booked and sold units keep their price.
+- **Protected units:** a layout change that would remove a held, booked, sold or negotiating unit is refused, and the units are listed.
+- **Draft / publish** with a completion % and next steps. Executives only see published projects.
+- **Approvals** (RERA, DTCP/CMDA, bank, OC/CC) uploaded once on the project, shown on every unit.
+- **Screens:** Projects tab with totals and inventory bars; 3-step wizard with live preview; project page with filters, Grid and an illustrated Master plan (site plan or tower elevation).
+- **One change from the wireframe:** units are not marked Booked/Sold by a click. Clicking an available unit offers **Start a deal for a customer**, so every booking still has its price approval, booking amount and payment plan. "Sold outside the app" stays on the unit's page, with a reason.
+- **AI** reads a DTCP/CMDA layout drawing into blocks and plot sizes (Gemini; offline, it asks for the key).
 
-**Counters pre-approve** (`1e882d0`)
-
-- A manager's counter now counts as approval up to that price. An executive agreeing at the countered price is agreed at once, with no second approval.
-
-**End-to-end tests** (`70c43a1`)
-
-- 11 Playwright journeys, run on desktop and phone:
-  - Executive's Today, and working a new lead
-  - Matches with reasons, and WhatsApp share of two properties
-  - Executives can't open other executives' customers
-  - Manager adds a property by describing it, and publishes
-  - Manager imports `docs/samples/owner-sheet-sri-balaji.xlsx` through the Check screen
-  - Manager approves a discount
-  - A stage move without evidence asks for it
-  - Assistant answers business questions offline
-  - Buyer share page hides internal notes
-- The offline reader now recognises a locality it hasn't seen before ("in Kodambakkam, Chennai") and flags it for a spelling check.
-
-**Assistant on Google Gemini** (`aad82e1`): uses `GEMINI_API_KEY` in `apps/api/.env`, model from `GEMINI_MODEL` (default `gemini-2.5-flash`). Without a key it runs in the labelled offline mode. Tested with a scripted fake Gemini client only; nothing has called real Gemini yet.
+**Earlier** (in the table above): inventory insights and counters that pre-approve (`1e882d0`), Playwright journeys (`70c43a1`), assistant on Gemini (`aad82e1`, `GEMINI_API_KEY` in `apps/api/.env`; tested with a scripted fake client only, nothing has called real Gemini yet).
 
 ## Next up
 
 Suggestions once the key arrives:
 
-1. Try real Gemini on the sample brochure (describe-a-property) and in the assistant chat.
+1. Try real Gemini on the sample brochure (describe-a-property), in the assistant chat, and on a real DTCP layout drawing.
 2. Push to your git remote.
 3. Pick up any of the deferred items below.
+
+**Projects, not built yet** (doc 08 §7): plot sizes edited one by one (only via the layout map today), a site plan drawn from the actual drawing, more than one flat plan per tower (e.g. penthouse floors), project photos and brochure.
 
 **Deferred by design** (documented in `docs/`, not planned for this build):
 
@@ -69,7 +59,7 @@ Suggestions once the key arrives:
 
 | # | Decision | Why it matters |
 |---|---|---|
-| 1 | **Gemini API key** | Needed for the live AI assistant. Until then it runs in offline mode. |
+| 1 | **Gemini API key** | Needed for the live AI assistant and for reading layout drawings. Until then it runs in offline mode. |
 | 2 | **Git remote URL** | There is no remote yet; the code can't be pushed until you share the repo link. |
 | 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
 | 4 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
@@ -99,8 +89,8 @@ Demo sign-ins (password `demo1234`):
 
 | Check | Command | Last result |
 |---|---|---|
-| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 65 passing |
-| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 11 journeys passing |
+| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 71 passing |
+| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 13 journeys passing (11 on desktop, 2 also on phone) |
 | Typecheck | `pnpm typecheck` | Clean |
 | Web build | `pnpm build` | Clean |
 
