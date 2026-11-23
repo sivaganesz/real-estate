@@ -11,5 +11,10 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm --filter @estate/web build"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
 }

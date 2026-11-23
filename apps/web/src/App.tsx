@@ -7,6 +7,10 @@ import { PageLoader, EmptyState } from './components/ui';
 import { Login } from './pages/Login';
 import { Today } from './pages/Today';
 import { Settings } from './pages/Settings';
+import { Properties } from './pages/Properties';
+import { PropertyDetail } from './pages/PropertyDetail';
+import { ProjectDetail } from './pages/ProjectDetail';
+import { SharePage } from './pages/SharePage';
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,6 +29,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/p/:token" element={<SharePage />} />
       <Route
         element={
           <Protected>
@@ -33,6 +38,9 @@ export function App() {
         }
       >
         <Route index element={<Today />} />
+        <Route path="properties" element={<Properties />} />
+        <Route path="properties/:id" element={<PropertyDetail />} />
+        <Route path="projects/:id" element={<ProjectDetail />} />
         <Route
           path="settings"
           element={

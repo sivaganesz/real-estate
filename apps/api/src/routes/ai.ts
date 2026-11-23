@@ -28,10 +28,10 @@ aiRouter.post('/chat', async (req, res) => {
 });
 
 aiRouter.post('/proposals/:id/confirm', async (req, res) => {
-  res.json(await confirmProposal(req.params.id, req.actor));
+  res.json(await confirmProposal(String(req.params.id), req.actor));
 });
 
 aiRouter.post('/proposals/:id/dismiss', async (req, res) => {
-  await dismissProposal(req.params.id, req.actor);
+  await dismissProposal(String(req.params.id), req.actor);
   res.json({ ok: true });
 });

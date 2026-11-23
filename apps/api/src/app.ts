@@ -6,7 +6,7 @@ import { requireAuth } from './lib/auth';
 import { authRouter } from './routes/auth';
 import { usersRouter } from './routes/users';
 import { aiRouter } from './routes/ai';
-import { modules } from './modules';
+import { modules, publicRouter } from './modules';
 
 export function createApp() {
   const app = express();
@@ -19,6 +19,7 @@ export function createApp() {
   });
   app.use('/uploads', express.static(config.uploadDir, { maxAge: '7d' }));
   app.use('/api/auth', authRouter);
+  app.use('/api/public', publicRouter);
 
   const api = express.Router();
   api.use(requireAuth);

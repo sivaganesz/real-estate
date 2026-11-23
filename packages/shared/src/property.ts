@@ -18,15 +18,15 @@ export type Purpose = (typeof PURPOSES)[number];
 
 /**
  * Two separate questions, two fields:
- *  - listing:      can the team and the AI see/offer it?  draft → review → live → archived
- *  - availability: can it still be sold?                  available → held → booked → sold
+ *  - listing:      can the team, the AI and buyers see/offer it?  draft → live → archived
+ *  - availability: can it still be sold?                          available → held → booked → sold
  * The old single "status" mixed both (a property could not be "live" and "held").
+ * No separate review state: only managers and admins load properties and both may publish.
  */
-export const LISTING_STATES = ['draft', 'review', 'live', 'archived'] as const;
+export const LISTING_STATES = ['draft', 'live', 'archived'] as const;
 export type ListingState = (typeof LISTING_STATES)[number];
 export const LISTING_LABEL: Record<ListingState, string> = {
   draft: 'Draft',
-  review: 'Waiting for approval',
   live: 'Live',
   archived: 'Archived',
 };
@@ -128,7 +128,7 @@ export const PropertyInput = z.object({
   address: z.string().trim().max(300).nullish(),
   pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode has 6 digits').nullish().or(z.literal('')),
   details: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
-  extras: z.array(z.object({ label: z.string().min(1), value: z.string().min(1) })).default([]),
+  extras: z.array(z.object({ label: z.string().min(1), value: z.string().min(1), internal: z.boolean().optional() })).default([]),
   amenities: z.array(z.string()).default([]),
   description: z.string().max(4000).nullish(),
   highlights: z.array(z.string().max(160)).max(8).default([]),

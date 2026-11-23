@@ -86,6 +86,7 @@ export function Layout() {
             </form>
             <button
               onClick={() => assistant.setOpen(!assistant.open)}
+              aria-label="Assistant"
               className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-ai-600 to-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm"
             >
               <Sparkles className="h-4 w-4" />

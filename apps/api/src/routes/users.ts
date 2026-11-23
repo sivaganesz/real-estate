@@ -34,10 +34,10 @@ const EditUser = NewUser.omit({ password: true }).partial().extend({ active: z.b
 
 usersRouter.patch('/:id', requirePermission('users.manage'), async (req, res) => {
   const input = parse(EditUser, req.body);
-  if (req.params.id === req.actor.id && (input.active === false || (input.role && input.role !== 'admin'))) {
+  if (String(req.params.id) === req.actor.id && (input.active === false || (input.role && input.role !== 'admin'))) {
     throw badRequest('You cannot deactivate or demote yourself');
   }
-  const user = await User.findById(req.params.id);
+  const user = await User.findById(String(req.params.id));
   if (!user) throw notFound('User');
   const { password, ...rest } = input;
   Object.assign(user, rest);
