@@ -12,6 +12,7 @@ import { LeadRow } from './Leads';
 import { AgendaCard, type AgendaItem } from '../features/activities';
 import { useAssistant, useAssistantPage } from '../ai/assistant';
 import { todaySlots } from '../slots-today';
+import { TodayExec } from './TodayExec';
 
 type Day = { overdue: AgendaItem[]; today: AgendaItem[]; doneToday: number; newLeads: Lead[]; noNextStep: Lead[] };
 type Team = { overdue: { ownerId: string; name: string; count: number; oldestDays: number }[]; team: { id: string; name: string; open: number; stuck: number; overdue: number; noNextStep: number; booked: number }[] };
@@ -21,6 +22,12 @@ type Team = { overdue: { ownerId: string; name: string; count: number; oldestDay
  * overdue, today's plan, new leads to call, customers with no next step.
  */
 export function Today() {
+  const { can } = useAuth();
+  // Executives get a focused day view; managers and admins the team view below.
+  return can('team.view') ? <TeamToday /> : <TodayExec />;
+}
+
+function TeamToday() {
   const { user, can } = useAuth();
   const assistant = useAssistant();
   const manager = can('team.view');

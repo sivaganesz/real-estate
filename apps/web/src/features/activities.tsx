@@ -181,7 +181,7 @@ function useRefresh(leadId: string, extra?: () => void) {
   };
 }
 
-function CompleteDialog({ id, type, title, leadId, leadName, properties, onClose, onChanged }: { id: string; type: ActivityType; title: string; leadId: string; leadName?: string; properties: { id: string; title: string }[]; onClose: () => void; onChanged?: () => void }) {
+export function CompleteDialog({ id, type, title, leadId, leadName, properties, onClose, onChanged }: { id: string; type: ActivityType; title: string; leadId: string; leadName?: string; properties: { id: string; title: string }[]; onClose: () => void; onChanged?: () => void }) {
   const toast = useToast();
   const refresh = useRefresh(leadId, onChanged);
   const [outcome, setOutcome] = useState(type === 'call' ? 'Interested' : '');

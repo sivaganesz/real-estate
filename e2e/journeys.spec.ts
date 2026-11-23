@@ -5,17 +5,19 @@ import { expect, test, type Page } from '@playwright/test';
 async function signIn(page: Page, who: 'Admin' | 'Sales manager' | 'Sales executive') {
   await page.goto('/login');
   await page.getByRole('button', { name: who, exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)|day./);
 }
 
 test.describe('sales executive', () => {
   test('starts the day on Today and works a new lead @phone', async ({ page }) => {
     await signIn(page, 'Sales executive');
-    await expect(page.getByText('New leads to call')).toBeVisible();
-    await expect(page.getByText('Overdue', { exact: true })).toBeVisible();
+    await expect(page.getByText('Your day')).toBeVisible();
+    await expect(page.getByText('Follow-ups')).toBeVisible();
     // Executives don't load properties or manage settings.
     await expect(page.getByRole('link', { name: 'Settings' })).toHaveCount(0);
 
+    // The phone run follows the desktop run on the same data, so open him via Leads.
+    await page.goto('/leads?q=Vignesh');
     await page.getByRole('link', { name: /Vignesh Babu/ }).first().click();
     await expect(page.getByRole('heading', { name: 'Vignesh Babu' })).toBeVisible();
     await page.getByRole('button', { name: 'Log a call' }).click();
