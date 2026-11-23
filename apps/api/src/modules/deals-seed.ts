@@ -23,7 +23,7 @@ registerSeeder('deals', async ({ users }) => {
   await holdUnit(String(r._id), 3, priya);
 
   // Balaji: plot price below Arun's limit, waiting for the manager.
-  const b = await startDeal(await lead('Balaji Rajendran'), await unit({ title: /Sunrise Enclave/ }), arun, { offer: 34 * L, note: 'Cash buyer, wants plot near the park' });
+  const b = await startDeal(await lead('Balaji Rajendran'), await unit({ title: /Sunrise Enclave/, 'details.width': 30, 'details.length': 40, 'details.cornerPlot': false }), arun, { offer: 34 * L, note: 'Cash buyer, wants plot near the park' });
   await holdUnit(String(b._id), 5, arun);
   await proposePrice(String(b._id), { price: 34.5 * L, note: 'Cash, can register within 30 days' }, arun);
 
@@ -38,7 +38,7 @@ registerSeeder('deals', async ({ users }) => {
   await confirmBooking(String(k._id), { amount: 9.4 * L, mode: 'Cheque', reference: 'SBI 004512', date: new Date(Date.now() - 5 * 86_400_000) }, manager);
   await recordPayment(String(k._id), 1, { reference: 'Loan disbursal 1' }, manager);
 
-  const ab = await startDeal(await lead('Abdul Rahman'), await unit({ title: /Sunrise Enclave/ }), manager);
+  const ab = await startDeal(await lead('Abdul Rahman'), await unit({ title: /Sunrise Enclave/, 'details.width': 30, 'details.length': 40, 'details.cornerPlot': false }), manager);
   await proposePrice(String(ab._id), { price: 35.5 * L }, manager);
   await confirmBooking(String(ab._id), { amount: 2 * L, mode: 'UPI', reference: 'UPI 3381', date: new Date(Date.now() - 15 * 86_400_000) }, manager);
   // Move his agreement payment into the past so something is overdue.

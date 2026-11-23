@@ -52,7 +52,7 @@ describe('property matching', () => {
   });
 
   it('finds buyers for a property, only among the customers you can see', async () => {
-    const plot = (await manager.get('/api/properties?q=Sunrise Enclave&smart=false&availability=available')).body.items[0];
+    const plot = (await manager.get('/api/properties?q=Sunrise Enclave&smart=false&availability=available&limit=200')).body.items.find((p: { details: { width: number; length: number; cornerPlot: boolean } }) => p.details.width === 30 && p.details.length === 40 && !p.details.cornerPlot);
     const all = (await manager.get(`/api/matching/property/${plot.id}`)).body.items;
     expect(all.map((i: { lead: { name: string } }) => i.lead.name)).toEqual(expect.arrayContaining(['Suresh Kumar', 'Sangeetha Raman']));
     const arunsView = (await arun.get(`/api/matching/property/${plot.id}`)).body.items;

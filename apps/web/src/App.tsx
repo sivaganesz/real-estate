@@ -16,6 +16,7 @@ import { Leads } from './pages/Leads';
 import { LeadDetail } from './pages/LeadDetail';
 import { Calendar } from './pages/Calendar';
 import { Deals } from './pages/Deals';
+import { ProjectWizard } from './pages/ProjectWizard';
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -54,6 +55,22 @@ export function App() {
           element={
             <Allowed permission="property.import">
               <Import />
+            </Allowed>
+          }
+        />
+        <Route
+          path="projects/new"
+          element={
+            <Allowed permission="project.manage">
+              <ProjectWizard />
+            </Allowed>
+          }
+        />
+        <Route
+          path="projects/:id/edit"
+          element={
+            <Allowed permission="project.manage">
+              <ProjectWizard />
             </Allowed>
           }
         />

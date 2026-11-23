@@ -119,3 +119,38 @@ test('buyer share page shows no internal notes', async ({ page, request }) => {
   await expect(page.getByText('₹2.1 Cr')).toBeVisible();
   await expect(page.getByText(/call after 6 pm/)).toHaveCount(0);
 });
+
+test.describe('projects', () => {
+  test('creates a plotted layout in the wizard and publishes it', async ({ page }) => {
+    await signIn(page, 'Sales manager');
+    await page.goto('/projects/new');
+    await page.getByRole('button', { name: /Plotted layout/ }).click();
+    await page.getByLabel('Project name *').fill('Lake View Plots');
+    await page.getByLabel('City *').fill('Chennai');
+    await page.getByLabel('Locality *').fill('Vandalur');
+    await page.getByRole('button', { name: 'Ready for registration' }).click();
+    await page.getByRole('button', { name: /Next: blocks & plots/ }).click();
+    await page.getByRole('button', { name: 'Add block' }).click();
+    await page.getByLabel('Base rate (₹ per sq.ft)').fill('2800');
+    await expect(page.getByText('10 plots')).toBeVisible();
+    await expect(page.getByText(/Every plot: ₹33.6 L – ₹35.28 L/)).toBeVisible();
+    await page.getByRole('button', { name: 'Publish project' }).click();
+    await expect(page.getByRole('heading', { name: 'Lake View Plots' })).toBeVisible();
+    await expect(page.getByText('All plots')).toBeVisible();
+    await page.getByRole('button', { name: 'Master plan' }).click();
+    await expect(page.getByText('40 FT MAIN ROAD')).toBeVisible();
+  });
+
+  test('starts a deal by clicking a unit on the layout', async ({ page }) => {
+    await signIn(page, 'Sales manager');
+    await page.goto('/properties?tab=projects');
+    await page.getByRole('link', { name: 'Green Meadows' }).click();
+    await page.getByRole('button', { name: /^A503/ }).click();
+    await page.getByRole('button', { name: 'Start a deal for a customer' }).click();
+    await page.getByPlaceholder('Customer name or phone').fill('Irfan');
+    await page.getByRole('button', { name: /Mohammed Irfan/ }).click();
+    await page.getByRole('button', { name: 'Start negotiation' }).click();
+    await expect(page.getByText('Negotiating').first()).toBeVisible();
+    await expect(page.getByText(/Customer: Mohammed Irfan/)).toBeVisible();
+  });
+});

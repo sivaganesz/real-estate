@@ -64,6 +64,15 @@ export type Project = {
   description?: string;
   amenities: string[];
   blocks: { name: string; floors: number }[];
+  developer?: string;
+  landAcres?: number;
+  published: boolean;
+  flatTypes: { type: string; area: number }[];
+  towers: { name: string; code: string; floors: number; plan: string[] }[];
+  plotBlocks: { name: string; code: string; plots: { w: number; l: number }[]; bedrooms?: number | null; builtUp?: number | null }[];
+  pricing?: { rate?: number | null; floorRise?: number; cornerPct?: number };
+  approvalBadges: { name: string; documentUrl?: string | null }[];
+  completion: { pct: number; missing: string[]; next: { label: string; gain: number }[] };
   inventory?: { total: number; draft: number; available: number; held: number; booked: number; sold: number; priceFrom: number | null; priceTo: number | null };
 };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Building2, LayoutGrid, List, Plus, Search, Sparkles, Upload, X } from 'lucide-react';
@@ -11,15 +11,15 @@ import { PageHeader } from '../components/Layout';
 import { Badge, Button, Card, EmptyState, PageLoader, Segmented } from '../components/ui';
 import { PropertyCard, PropertyCover } from '../components/PropertyCard';
 import { AddProperty } from '../components/AddProperty';
-import { NewProject } from '../components/NewProject';
+import { Projects } from './ProjectsTab';
 import { useAssistantPage } from '../ai/assistant';
 
 export function Properties() {
   const { can } = useAuth();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const tab = (params.get('tab') as 'units' | 'projects') ?? 'units';
   const [adding, setAdding] = useState(params.get('add') === '1');
-  const [newProject, setNewProject] = useState(false);
 
   useAssistantPage({
     page: 'Properties',
@@ -40,7 +40,7 @@ export function Properties() {
                 <Button icon={<Upload className="h-4 w-4" />}>Import</Button>
               </Link>
               {tab === 'projects' ? (
-                <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setNewProject(true)}>
+                <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/projects/new')}>
                   New project
                 </Button>
               ) : (
@@ -63,7 +63,6 @@ export function Properties() {
       />
       {tab === 'units' ? <Units /> : <Projects />}
       <AddProperty open={adding} onClose={() => setAdding(false)} />
-      <NewProject open={newProject} onClose={() => setNewProject(false)} />
     </>
   );
 }
@@ -244,54 +243,3 @@ function PropertyTable({ items }: { items: Property[] }) {
   );
 }
 
-function Projects() {
-  const projects = useProjects();
-  const movement = useQuery({ queryKey: ['movement'], queryFn: () => api.get<{ projects: { id: string; slow: boolean; movedInWindow: number; monthsOfStock: number | null; perMonth: number }[] }>('/insights/movement') });
-  if (projects.isLoading) return <PageLoader />;
-  if (!projects.data?.length) return <EmptyState icon={<Building2 className="h-5 w-5" />} title="No projects yet" body="A project groups the units of one development — towers, a plotted layout or a villa community." />;
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {projects.data.map((p) => {
-        const inv = p.inventory!;
-        const sold = inv.booked + inv.sold;
-        const pct = inv.total ? Math.round((sold / inv.total) * 100) : 0;
-        return (
-          <Link key={p.id} to={`/projects/${p.id}`} className="card flex gap-4 p-4 transition hover:shadow-pop">
-            <PropertyCover property={{ type: p.type, media: [], title: p.name }} className="h-24 w-24 shrink-0 rounded-xl" />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-col-reverse items-start justify-between gap-1 sm:flex-row sm:gap-2">
-                <div className="min-w-0 max-w-full">
-                  <p className="truncate font-semibold text-slate-900">{p.name}</p>
-                  <p className="truncate text-xs text-slate-500">
-                    {PROPERTY_TYPE_LABEL[p.type]} · {p.locality}, {p.city}
-                  </p>
-                </div>
-                <Badge tone={p.status === 'ready' ? 'green' : 'blue'}>{p.status === 'ready' ? 'Ready' : p.status === 'upcoming' ? 'Upcoming' : 'Under construction'}</Badge>
-              </div>
-              <p className="mt-2 text-sm font-medium text-slate-800">
-                {inv.priceFrom ? (inv.priceFrom === inv.priceTo ? formatINR(inv.priceFrom) : `${formatINR(inv.priceFrom)} – ${formatINR(inv.priceTo)}`) : 'No units on sale'}
-              </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-brand-600" style={{ width: `${pct}%` }} />
-              </div>
-              <p className="mt-1.5 text-xs text-slate-500">
-                <b className="text-emerald-700">{inv.available}</b> available · {inv.held} on hold · {sold} sold or booked of {inv.total} · {pct}% gone
-                {inv.draft > 0 && <span className="text-amber-700"> · {inv.draft} drafts</span>}
-              </p>
-              {(() => {
-                const m = movement.data?.projects.find((x) => x.id === p.id);
-                if (!m) return null;
-                return (
-                  <p className={clsx('mt-1 text-xs', m.slow ? 'font-medium text-amber-700' : 'text-slate-500')}>
-                    {m.slow ? '⚠ Slow: ' : ''}
-                    {m.movedInWindow} sold or booked in 90 days{m.monthsOfStock ? ` · ~${m.monthsOfStock} months of stock at this pace` : ''}
-                  </p>
-                );
-              })()}
-            </div>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}

@@ -3,3 +3,4 @@ export * from './format';
 export * from './property';
 export * from './sales';
 export * from './leads';
+export * from './projects';

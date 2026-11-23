@@ -1,7 +1,8 @@
 import { registerSeeder } from '../../db/seed';
 import { Property } from '../../models/property';
 import { Audit } from '../../models/audit';
-import { createProject, generateUnits, publishReadyUnits } from '../../services/projects';
+import { createProject } from '../../services/projects';
+import { applyLayout, setProjectPublished } from '../../services/projectLayout';
 import { createProperty, setListing } from '../../services/properties';
 import type { Actor } from '../../lib/auth';
 
@@ -21,15 +22,29 @@ registerSeeder('properties', async ({ users }) => {
       locality: 'Porur',
       address: 'Mount–Poonamallee Road, Porur, Chennai 600116',
       reraNumber: 'TN/29/Building/0418/2025',
+      developer: 'Meadows Builders',
+      landAcres: 3.2,
+      approvals: ['RERA', 'Bank approved'],
       possessionDate: '2027-12-31',
       description: 'Two towers of 2 and 3 BHK homes, 5 minutes from Porur junction and the upcoming metro.',
       amenities: ['Lift', 'Car parking', 'Power backup', 'Security', 'CCTV', 'Gym', 'Swimming pool', 'Clubhouse', "Children's play area", 'Rainwater harvesting'],
     },
     actor,
   );
-  await generateUnits(String(meadows._id), { block: 'A', floorFrom: 1, floorTo: 8, unitsPerFloor: 4, bedrooms: 2, area: 1080, price: 68 * L, floorRise: 50_000, facing: 'East' }, actor);
-  await generateUnits(String(meadows._id), { block: 'B', floorFrom: 1, floorTo: 8, unitsPerFloor: 2, bedrooms: 3, area: 1450, price: 92 * L, floorRise: 75_000, facing: 'North' }, actor);
-  await publishReadyUnits(String(meadows._id), actor);
+  // Tower A mixes 2 and 3 BHKs on every floor; Tower B is all 3 BHK corner flats.
+  await applyLayout(
+    String(meadows._id),
+    {
+      flatTypes: [{ type: '2 BHK', area: 1080 }, { type: '3 BHK', area: 1450 }],
+      towers: [
+        { name: 'Tower A', code: 'A', floors: 8, plan: ['3 BHK', '2 BHK', '2 BHK', '3 BHK'] },
+        { name: 'Tower B', code: 'B', floors: 10, plan: ['3 BHK', '2 BHK', '2 BHK', '2 BHK', '3 BHK'] },
+      ],
+      pricing: { rate: 6300, floorRise: 50 },
+    },
+    actor,
+  );
+  await setProjectPublished(String(meadows._id), true, actor);
 
   // 2. A plotted layout
   const sunrise = await createProject(
@@ -41,13 +56,29 @@ registerSeeder('properties', async ({ users }) => {
       locality: 'Guduvanchery',
       address: 'Off GST Road, Guduvanchery 603202',
       reraNumber: 'TN/01/Layout/0277/2024',
+      developer: 'Sunrise Promoters',
+      landAcres: 4.5,
+      approvals: ['DTCP / CMDA', 'RERA'],
       description: 'DTCP-approved gated layout with 30 ft and 40 ft blacktop roads, 1.5 km from Guduvanchery station.',
       amenities: ['Gated community', 'Security', 'Garden', 'Corporation water'],
     },
     actor,
   );
-  await generateUnits(String(sunrise._id), { block: '', floorFrom: 1, floorTo: 1, unitsPerFloor: 36, area: 1200, price: 36 * L, plotLength: 40, plotWidth: 30, facing: 'East' }, actor);
-  await publishReadyUnits(String(sunrise._id), actor);
+  const plots = (n: number, w: number, l: number) => Array.from({ length: n }, () => ({ w, l }));
+  await applyLayout(
+    String(sunrise._id),
+    {
+      plotBlocks: [
+        { name: 'Block A', code: 'A', plots: [{ w: 30, l: 50 }, ...plots(10, 30, 40), { w: 30, l: 50 }] },
+        { name: 'Block B', code: 'B', plots: plots(12, 30, 40) },
+        { name: 'Block C', code: 'C', plots: plots(12, 30, 40) },
+        { name: 'Block D', code: 'D', plots: plots(8, 40, 60) },
+      ],
+      pricing: { rate: 3000, cornerPct: 5 },
+    },
+    actor,
+  );
+  await setProjectPublished(String(sunrise._id), true, actor);
 
   // 3. Villas
   const palm = await createProject(
@@ -59,13 +90,19 @@ registerSeeder('properties', async ({ users }) => {
       locality: 'Medavakkam',
       address: 'Medavakkam–Mambakkam Road, Chennai 600100',
       reraNumber: 'TN/29/Building/0533/2025',
+      developer: 'Palm Grove Homes',
+      approvals: ['RERA'],
       possessionDate: '2027-06-30',
       amenities: ['Gated community', 'Car parking', 'Power backup', 'Security', 'Clubhouse', 'Garden', 'Solar'],
     },
     actor,
   );
-  await generateUnits(String(palm._id), { block: 'V', floorFrom: 1, floorTo: 1, unitsPerFloor: 12, bedrooms: 3, area: 1850, landArea: 1600, price: 1.35 * CR, facing: 'North' }, actor);
-  await publishReadyUnits(String(palm._id), actor);
+  await applyLayout(
+    String(palm._id),
+    { plotBlocks: [{ name: 'Row 1', code: 'V', plots: plots(6, 40, 40), bedrooms: 3, builtUp: 1850 }, { name: 'Row 2', code: 'W', plots: plots(6, 40, 40), bedrooms: 3, builtUp: 1850 }], pricing: { rate: 7300, cornerPct: 3 } },
+    actor,
+  );
+  await setProjectPublished(String(palm._id), true, actor);
 
   // Realistic movement: some units already sold, booked or held.
   // Sales history, spread back over `overDays`, so sales pace per project is real.

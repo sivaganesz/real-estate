@@ -21,6 +21,8 @@ import {
   updateProperty,
 } from '../../services/properties';
 import { createProject, generateUnits, getProjectWithUnits, listProjects, publishReadyUnits, revisePrices, updateProject } from '../../services/projects';
+import { applyLayout, layoutFromMap, setProjectPublished, syncApprovals } from '../../services/projectLayout';
+import { Project } from '../../models/property';
 import { extractProperties } from '../../ai/extract';
 import { knownPlaces, parseSearchText } from '../../ai/rules';
 import { audit } from '../../lib/auth';
@@ -193,8 +195,10 @@ propertiesRouter.delete('/:id/media', requirePermission('property.edit'), async 
 
 // Projects -------------------------------------------------------------------
 
-projectsRouter.get('/', async (_req, res) => {
-  res.json({ items: await listProjects() });
+projectsRouter.get('/', async (req, res) => {
+  const items = await listProjects();
+  // Executives sell what's published; drafts are the managers' workspace.
+  res.json({ items: req.actor.role === 'executive' ? items.filter((p) => p.published) : items });
 });
 projectsRouter.post('/', async (req, res) => {
   res.status(201).json({ project: await createProject(req.body, req.actor) });
@@ -213,4 +217,26 @@ projectsRouter.post('/:id/publish-ready', async (req, res) => {
 });
 projectsRouter.post('/:id/revise-prices', async (req, res) => {
   res.json(await revisePrices(String(req.params.id), req.body, req.actor));
+});
+
+projectsRouter.put('/:id/layout', async (req, res) => {
+  res.json(await applyLayout(String(req.params.id), req.body, req.actor));
+});
+projectsRouter.post('/:id/publish', async (req, res) => {
+  const { published } = parse(z.object({ published: z.boolean() }), req.body);
+  res.json(await setProjectPublished(String(req.params.id), published, req.actor));
+});
+projectsRouter.post('/layout-from-map', requirePermission('project.manage'), memoryUpload(/^(application\/pdf|image\/(jpeg|png|webp))$/).single('file'), async (req, res) => {
+  if (!req.file) throw badRequest('Upload the layout drawing');
+  res.json(await layoutFromMap(req.file));
+});
+projectsRouter.post('/:id/approvals/:name/document', requirePermission('project.manage'), documentUpload.single('file'), async (req, res) => {
+  const p = await Project.findById(String(req.params.id));
+  const badge = p?.approvalBadges.find((b) => b.name === String(req.params.name));
+  if (!p || !badge || !req.file) throw notFound('Approval');
+  badge.documentUrl = publicUrl('documents', req.file.filename);
+  await p.save();
+  await syncApprovals(p._id);
+  await audit(req.actor, 'project', p._id, 'document', `Uploaded the ${badge.name} document`);
+  res.json({ ok: true });
 });

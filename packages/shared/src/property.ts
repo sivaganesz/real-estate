@@ -216,5 +216,9 @@ export const ProjectInput = z.object({
   blocks: z
     .array(z.object({ name: z.string().min(1), floors: z.number().int().min(0).max(80) }))
     .default([]),
+  developer: z.string().trim().max(120).nullish(),
+  landAcres: z.number().positive().nullish(),
+  /** Approvals claimed for the whole project; each unit inherits them. */
+  approvals: z.array(z.string().min(1)).optional(),
 });
 export type ProjectInput = z.infer<typeof ProjectInput>;

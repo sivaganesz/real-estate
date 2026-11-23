@@ -5,6 +5,8 @@ import { Project, Property, nextCode } from '../models/property';
 import { audit, assertCan, type Actor } from '../lib/auth';
 import { badRequest, notFound } from '../lib/http';
 import { releaseExpiredHolds, serialiseProperty } from './properties';
+import { syncApprovals, unitDeals } from './projectLayout';
+import { projectCompletion } from '@estate/shared';
 import type { RecordRef } from '../ai/tools';
 
 const PREFIX: Record<PropertyType, string> = { apartment: 'APT', villa: 'VIL', plot: 'PLT', commercial: 'COM', agricultural: 'AGR', industrial: 'IND' };
@@ -28,6 +30,7 @@ export async function listProjects() {
       id: String(p._id),
       ...p,
       _id: undefined,
+      completion: projectCompletion(Object.assign({}, p, { unitCount: by(() => true) }) as never),
       inventory: {
         total: by(() => true),
         draft: by((c) => c._id.l === 'draft'),
@@ -50,13 +53,19 @@ export async function getProjectWithUnits(id: string, actor: Actor) {
   const unitQuery: Record<string, unknown> = { projectId: project._id, listing: { $ne: 'archived' } };
   if (actor.role === 'executive') unitQuery.listing = 'live';
   const units = await Property.find(unitQuery).sort({ block: 1, 'details.floor': -1, unitNumber: 1 }).lean();
-  return { project: { id: String(project._id), ...project, _id: undefined }, units: units.map(serialiseProperty) };
+  const all = actor.role === 'executive' ? await Property.countDocuments({ projectId: project._id, listing: { $ne: 'archived' } }) : units.length;
+  return {
+    project: { id: String(project._id), ...project, _id: undefined, completion: projectCompletion(Object.assign({}, project, { unitCount: all }) as never) },
+    units: units.map(serialiseProperty),
+    deals: await unitDeals(project._id, actor),
+  };
 }
 
 export async function createProject(raw: unknown, actor: Actor) {
   assertCan(actor, 'project.manage');
   const input = ProjectInput.parse(raw);
-  const p = await Project.create({ ...input, code: await nextCode('PRJ'), createdBy: actor.id, possessionDate: input.possessionDate ? new Date(input.possessionDate) : undefined });
+  const { approvals, ...rest } = input;
+  const p = await Project.create({ ...rest, approvalBadges: (approvals ?? []).map((name) => ({ name })), code: await nextCode('PRJ'), createdBy: actor.id, possessionDate: input.possessionDate ? new Date(input.possessionDate) : undefined });
   await audit(actor, 'project', p._id, 'create', `Created project ${p.name}`);
   return p.toObject();
 }
@@ -64,10 +73,20 @@ export async function createProject(raw: unknown, actor: Actor) {
 export async function updateProject(id: string, raw: unknown, actor: Actor) {
   assertCan(actor, 'project.manage');
   const input = ProjectInput.partial().parse(raw);
-  const p = await Project.findByIdAndUpdate(id, { ...input, possessionDate: input.possessionDate ? new Date(input.possessionDate) : undefined }, { new: true });
-  if (!p) throw notFound('Project');
-  await audit(actor, 'project', p._id, 'update', `Updated project ${p.name}`);
-  return p.toObject();
+  const { approvals, ...rest } = input;
+  const cur = await Project.findById(id);
+  if (!cur) throw notFound('Project');
+  if (rest.type && rest.type !== cur.type && (await Property.exists({ projectId: cur._id, listing: { $ne: 'archived' } }))) throw badRequest('The project type cannot change once it has units');
+  cur.set({ ...rest, possessionDate: input.possessionDate ? new Date(input.possessionDate) : input.possessionDate === null ? undefined : cur.possessionDate });
+  if (approvals) {
+    // Keep documents already uploaded for approvals that stay.
+    cur.set('approvalBadges', approvals.map((name) => ({ name, documentUrl: cur.approvalBadges.find((b) => b.name === name)?.documentUrl })));
+  }
+  await cur.save();
+  if (approvals) await syncApprovals(cur._id);
+  if (rest.amenities) await Property.updateMany({ projectId: cur._id }, { $set: { amenities: rest.amenities } });
+  await audit(actor, 'project', cur._id, 'update', `Updated project ${cur.name}`);
+  return cur.toObject();
 }
 
 /**
