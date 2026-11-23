@@ -96,7 +96,8 @@ function viewPipeline() {
           const recs = (c.recommended || []).filter(id => getProp(id));
           const sv = (c.siteVisits || []).filter(v => v.status === 'Scheduled' && v.date >= DEMO_TODAY).sort((a, b) => (a.date > b.date ? 1 : -1))[0];
           return (recs.length ? `<div class="ln k-recs" title="Recommended properties">🏠 <b>${recs.length} recommended:</b> ${recs.slice(0, 3).map(id => `<a href="#/properties/${id}">${id}</a>`).join(', ')}${recs.length > 3 ? ` +${recs.length - 3}` : ''}</div>` : '')
-            + (sv ? `<div class="ln k-visit">📅 visit ${fmtDate(sv.date)} · <a href="#/properties/${sv.prop}">${sv.prop}</a></div>` : '');
+            + (sv ? `<div class="ln k-visit">📅 visit ${fmtDate(sv.date)} · <a href="#/properties/${sv.prop}">${sv.prop}</a></div>` : '')
+            + DB.properties.filter(p => p.status === 'Reserved' && p.hold && p.hold.cust === c.id).map(p => `<div class="ln k-hold">🔒 holding <a href="#/properties/${p.id}">${esc(p.unit ? p.unit.no : p.id)}</a>${p.projectId && typeof projectOf === 'function' && projectOf(p) ? ' · ' + esc(projectOf(p).name) : ''}${p.hold.until < DEMO_TODAY ? ' <b class="t-amber">(expired)</b>' : ''}</div>`).join('');
         })()}
         <div class="ln row">${stage === LOST_STAGE ? chip(c.lostReason, 'red') : followUpCell(c)}<span class="sp"></span><span title="Days in this stage">${stuck ? '⚠ ' : ''}${days}d</span></div>
       </div>`;

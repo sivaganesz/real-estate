@@ -42,7 +42,7 @@ function viewProperties() {
   const rows = list.map(p => `
     <tr class="click" data-href="#/properties/${p.id}">
       <td class="mono" style="white-space:nowrap">${p.id}</td>
-      <td><b>${esc(p.title)}</b><br><small>${typeLabel(p.type)} · ${p.purpose}</small>${attnLine(p)}</td>
+      <td><b>${esc(p.title)}</b><br><small>${typeLabel(p.type)} · ${p.purpose}</small>${p.projectId && typeof projectOf === 'function' && projectOf(p) ? ` <a class="prj-tag" href="#/projects/${p.projectId}" title="Part of a project">🏢 ${esc(projectOf(p).name)}</a>` : ''}${attnLine(p)}</td>
       <td>${esc(p.locality)}<br><small>${esc(p.city)}</small></td>
       <td class="num">${num(p.area)} <small>sq.ft.</small></td>
       <td class="num"><b>${inrShort(p.price)}</b><br><small>${inr(pricePerSqft(p))}/sq.ft.</small></td>
@@ -88,6 +88,7 @@ function viewProperty(id, tab) {
         <div class="row">${chip(p.id, 'outline mono')} ${chip(typeLabel(p.type), 'blue')} ${chip(p.purpose)} ${chip(p.status, STATUS_TONE[p.status])} ${p.approvals.map(a => a.status === 'pending'
             ? `<a class="chip amber hd-warn" href="#/properties/${p.id}/legal" title="Upload the document — until then matching shows this property only as a Conditional match">⚠ ${esc(approvalOf(a.k).long)} · document pending</a>`
             : chip((a.status === 'verified' ? '✓ ' : '') + esc(approvalOf(a.k).long), 'blue', a.status === 'verified' ? 'Document verified' : 'Document uploaded')).join(' ')}</div>
+        ${p.projectId && typeof projectOf === 'function' && projectOf(p) ? `<div class="row" style="margin-top:6px"><a class="prj-tag" href="#/projects/${p.projectId}">🏢 Unit ${esc(p.unit.no)} of ${esc(projectOf(p).name)} →</a>${p.status === 'Reserved' && p.hold ? `<small class="muted">🔒 held for ${esc((getCust(p.hold.cust) || {}).name || p.hold.cust)} until ${fmtDate(p.hold.until)}</small>` : ''}</div>` : ''}
         <div class="row muted" style="margin-top:6px">📍 ${esc(p.locality)}, ${esc(p.city)} · ${num(p.area)} sq.ft.${p.facing ? ` · ${esc(p.facing)} facing` : ''} · listed ${fmtDate(p.listingDate)}</div>
       </div>
       <div class="price"><div class="p">${inr(p.price)}</div><div class="muted">${inr(pricePerSqft(p))} / sq.ft. (${PROPERTY_TYPES[p.type].areaBasis})</div>

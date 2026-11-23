@@ -103,6 +103,10 @@ function route(r) {
       if (c === 'form') return AddProperty.edit(b); // old link to the classic form → Edit with AI
       if (c === 'share') return viewPropShare(b); // the brochure the customer receives (views-share.js)
       return viewProperty(b, c || 'overview');
+    case 'projects':
+      if (!b) return viewProjects();
+      if (b === 'new') return viewProjectNew();
+      return viewProject(b);
     case 'customers':
       if (!b) return viewCustomers();
       if (b === 'new') return viewCustomerForm(null);
@@ -127,6 +131,7 @@ const NAV = [
   { r: 'dashboard', i: '📊', l: 'Sales dashboard' },
   { sec: 'Specification data' },
   { r: 'properties', i: '🏠', l: 'Properties', cnt: () => DB.properties.filter(p => p.status === 'Available' && !p.archived).length },
+  { r: 'projects', i: '🏢', l: 'Projects', cnt: () => (DB.projects || []).length },
   { r: 'customers', i: '👤', l: 'Leads', cnt: () => DB.customers.filter(isActive).length },
   { r: 'import', i: '📥', l: 'Bulk import' },
   { sec: 'Sales & qualification' },
