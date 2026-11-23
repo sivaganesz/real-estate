@@ -14,7 +14,8 @@ One step at a time, module by module, starting with Properties. Each step is app
 | Personas and day journeys | [docs/02-personas-and-journeys.md](docs/02-personas-and-journeys.md) | Draft, on hold |
 | **Properties — plan** | [docs/03-properties-module.md](docs/03-properties-module.md) | Approved 23 Nov |
 | **Properties — P1 list and P2 property page** | `src/pages/properties/`, `src/pages/property/` | Built 23 Nov, for review |
-| Properties — P3 Add, P4 Check import, P5 Customer page | — | Next |
+| **Properties — P3 Add, and Edit with AI** | `src/pages/add/`, `src/lib/assistant.ts` | Built 23 Nov, for review |
+| Properties — P4 Check import, P5 Customer page | — | Next |
 | Design system | `references/` holds the Dribbble screenshots | Waiting for screenshots |
 | Information architecture and navigation per role | — | Later |
 
@@ -24,7 +25,16 @@ One step at a time, module by module, starting with Properties. Each step is app
 - **Logic:** two-way matching, listing completeness and to-do, price check, the customer view of nearby places, and plain-words search (`src/lib/`).
 - **Screens:** Properties (P1) and the property page (P2), with the Share panel. They work on phone, tablet and desktop, in English and Tamil.
 - **Demo menu** (top right): switch between Sales manager, Sales executive and Admin, and reset the demo data.
-- **Not real yet:** photos are placeholders, the map is a placeholder, voice search fills an example, and WhatsApp, link and PDF sharing only log the share.
+- **Add (P3) and Edit with AI:**
+  - Describe a property in your own words, or drop a brochure, photos or a sheet. The listing card fills in beside the chat.
+  - The assistant asks only for the missing required facts, with one-tap answers.
+  - Every fact can be corrected in place.
+  - Edit with AI shows each change and waits for **Apply** before saving it to History.
+- **Not real yet:**
+  - photos and the map are placeholders;
+  - the voice button fills in an example;
+  - WhatsApp, link and PDF sharing only log the share;
+  - the assistant "AI" is rules: the same input and output shape as the real AI call, so it can be swapped in later.
 
 ## Stack
 

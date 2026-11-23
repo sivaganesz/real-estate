@@ -1,15 +1,26 @@
 {
-  "app": { "name": "RealSpec" },
-  "language": { "label": "Language", "en": "English", "ta": "தமிழ்" },
-  "nav": { "properties": "Properties" },
-  "role": { "admin": "Admin", "manager": "Sales manager", "executive": "Sales executive" },
+  "app": {
+    "name": "RealSpec"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ta": "தமிழ்"
+  },
+  "nav": {
+    "properties": "Properties"
+  },
+  "role": {
+    "admin": "Admin",
+    "manager": "Sales manager",
+    "executive": "Sales executive"
+  },
   "demo": {
     "menu": "Demo: role and data",
     "viewingAs": "Demo — signed in as {{name}}",
     "reset": "Reset demo data",
     "resetDone": "Demo data reset"
   },
-
   "action": {
     "add": "Add",
     "share": "Share",
@@ -23,7 +34,6 @@
     "edit": "Edit",
     "done": "Done"
   },
-
   "type": {
     "plot": "Plot",
     "flat": "Flat",
@@ -41,8 +51,21 @@
     "onHold": "On hold",
     "sold": "Sold"
   },
-  "purpose": { "sale": "For sale", "rent": "For rent", "lease": "For lease" },
-  "facing": { "E": "East", "N": "North", "W": "West", "S": "South", "NE": "North-east", "NW": "North-west", "SE": "South-east", "SW": "South-west" },
+  "purpose": {
+    "sale": "For sale",
+    "rent": "For rent",
+    "lease": "For lease"
+  },
+  "facing": {
+    "E": "East",
+    "N": "North",
+    "W": "West",
+    "S": "South",
+    "NE": "North-east",
+    "NW": "North-west",
+    "SE": "South-east",
+    "SW": "South-west"
+  },
   "stage": {
     "new": "New enquiry",
     "contacted": "Contacted",
@@ -53,7 +76,10 @@
     "closed": "Booking / closed",
     "lost": "Lost"
   },
-  "approval": { "rera": "RERA", "building": "Building approval" },
+  "approval": {
+    "rera": "RERA",
+    "building": "Building approval"
+  },
   "approvalState": {
     "pending": "document pending",
     "pendingHint": "An approval is claimed but its document hasn't been uploaded yet"
@@ -91,7 +117,6 @@
     "fail_city": "Not in a city they want",
     "fail_budget": "Over their budget"
   },
-
   "search": {
     "label": "Search properties",
     "placeholder": "Try “{{example}}”",
@@ -112,17 +137,37 @@
     "anyCity": "Any city",
     "budget": "Budget",
     "anyBudget": "Any budget",
-    "budgets": { "u30": "Under ₹30 L", "30to60": "₹30 L – 60 L", "60to1cr": "₹60 L – 1 Cr", "1to3cr": "₹1 Cr – 3 Cr", "3crPlus": "Above ₹3 Cr" }
+    "budgets": {
+      "u30": "Under ₹30 L",
+      "30to60": "₹30 L – 60 L",
+      "60to1cr": "₹60 L – 1 Cr",
+      "1to3cr": "₹1 Cr – 3 Cr",
+      "3crPlus": "Above ₹3 Cr"
+    }
   },
-  "sort": { "label": "Sort", "newest": "Newest first", "priceAsc": "Price: low to high", "priceDesc": "Price: high to low", "mostLeads": "Most leads fit" },
-  "layout": { "grid": "Cards", "list": "List" },
-
+  "sort": {
+    "label": "Sort",
+    "newest": "Newest first",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "mostLeads": "Most leads fit"
+  },
+  "layout": {
+    "grid": "Cards",
+    "list": "List"
+  },
   "properties": {
     "title": "Properties",
     "subtitleManager": "Find, add and keep listings up to date",
     "subtitleExecutive": "Find the right property and share it with your leads",
     "views": "Views",
-    "view": { "available": "Available", "drafts": "Drafts", "attention": "Needs attention", "listed": "All listed", "all": "All" },
+    "view": {
+      "available": "Available",
+      "drafts": "Drafts",
+      "attention": "Needs attention",
+      "listed": "All listed",
+      "all": "All"
+    },
     "showing_one": "{{count}} property",
     "showing_other": "{{count}} properties",
     "emptyTitle": "No properties match",
@@ -139,8 +184,14 @@
     "todo_other": "{{count}} to do",
     "complete": "{{pct}}% complete"
   },
-  "table": { "property": "Property", "location": "Location", "price": "Price", "status": "Status", "leadsFit": "Leads fit", "complete": "Complete" },
-
+  "table": {
+    "property": "Property",
+    "location": "Location",
+    "price": "Price",
+    "status": "Status",
+    "leadsFit": "Leads fit",
+    "complete": "Complete"
+  },
   "property": {
     "back": "All properties",
     "notFound": "This property isn't available.",
@@ -154,8 +205,7 @@
     "publishedFit_other": "{{count}} leads fit this property.",
     "publishedNoFit": "No active leads fit it yet.",
     "comingNext": "{{what}} comes in a later step.",
-    "bookVisitModule": "Booking a visit (with the Leads module)",
-    "editWithAiStep": "Edit with AI (with the Add property screen)"
+    "bookVisitModule": "Booking a visit (with the Leads module)"
   },
   "matches": {
     "title_one": "{{count}} lead fits this property",
@@ -182,7 +232,15 @@
     "documents": "Legal and documents",
     "price": "Price check",
     "history": "History",
-    "short": { "overview": "Overview", "details": "Details", "location": "Location", "photos": "Photos", "documents": "Documents", "price": "Price", "history": "History" }
+    "short": {
+      "overview": "Overview",
+      "details": "Details",
+      "location": "Location",
+      "photos": "Photos",
+      "documents": "Documents",
+      "price": "Price",
+      "history": "History"
+    }
   },
   "overview": {
     "noDescription": "No description yet.",
@@ -241,10 +299,23 @@
     "needsExact": "Set the exact location first",
     "routeCheckedToast": "Route to {{place}} marked as checked"
   },
-  "infra": { "existing": "Existing", "underConstruction": "Under construction", "planned": "Planned", "proposed": "Proposed" },
+  "infra": {
+    "existing": "Existing",
+    "underConstruction": "Under construction",
+    "planned": "Planned",
+    "proposed": "Proposed"
+  },
   "place": {
-    "busStop": "Bus stop", "railway": "Railway station", "metro": "Metro station", "airport": "Airport", "highway": "Highway",
-    "school": "School", "college": "College", "hospital": "Hospital", "market": "Market", "other": "Other"
+    "busStop": "Bus stop",
+    "railway": "Railway station",
+    "metro": "Metro station",
+    "airport": "Airport",
+    "highway": "Highway",
+    "school": "School",
+    "college": "College",
+    "hospital": "Hospital",
+    "market": "Market",
+    "other": "Other"
   },
   "photos": {
     "upload": "Upload photos",
@@ -267,8 +338,16 @@
     "privacy": "Documents are shared with a customer only on request."
   },
   "doc": {
-    "parent": "Parent documents", "saledeed": "Sale deed", "ec": "Encumbrance certificate (EC)", "patta": "Patta", "fmb": "FMB / survey sketch",
-    "landuse": "Land-use certificate", "completion": "Completion certificate", "fire": "Fire NOC", "tax": "Tax receipts", "valuer": "Valuation report"
+    "parent": "Parent documents",
+    "saledeed": "Sale deed",
+    "ec": "Encumbrance certificate (EC)",
+    "patta": "Patta",
+    "fmb": "FMB / survey sketch",
+    "landuse": "Land-use certificate",
+    "completion": "Completion certificate",
+    "fire": "Fire NOC",
+    "tax": "Tax receipts",
+    "valuer": "Valuation report"
   },
   "price": {
     "asking": "Asking price",
@@ -284,7 +363,10 @@
       "above_one": "Above the range of {{count}} similar property — explain the difference or review the price.",
       "above_other": "Above the range of {{count}} similar properties — explain the difference or review the price."
     },
-    "kind": { "transaction": "Sold", "asking": "Asking" },
+    "kind": {
+      "transaction": "Sold",
+      "asking": "Asking"
+    },
     "noComparables": "No similar properties to compare with yet."
   },
   "todo": {
@@ -312,9 +394,15 @@
     "photos_other": "{{count}} photos uploaded",
     "approvalUploaded": "{{approval}} document uploaded",
     "routeChecked": "Route to {{place}} checked",
-    "exactLocation": { "gps": "Exact location set from the phone's location", "link": "Exact location set from a map link", "search": "Exact location set on the map" }
+    "exactLocation": {
+      "gps": "Exact location set from the phone's location",
+      "link": "Exact location set from a map link",
+      "search": "Exact location set on the map"
+    },
+    "draftAi": "Draft created with the AI assistant",
+    "publishedAi": "Published with the AI assistant",
+    "editedAi": "Edited with AI — {{changes}}"
   },
-
   "share": {
     "title": "Share with a lead",
     "subtitle": "Sharing logs it on the lead's timeline and counts as a recommendation.",
@@ -333,9 +421,117 @@
       "pdf": "PDF for {{name}} downloaded"
     }
   },
-
+  "assistant": {
+    "addTitle": "Add a property",
+    "editTitle": "Edit with AI — {{title}}",
+    "backToProperty": "Back to the property",
+    "chatLabel": "Assistant",
+    "notAllowed": "Only managers and admins add or edit properties.",
+    "hello": "Describe the property in your own words — type it, speak it, or drop a brochure, photos or an owner's sheet. I'll fill in the listing and ask only for what's missing.",
+    "editHello": "What changed on “{{title}}”? Tell me in your own words. I'll show you the change before anything is saved.",
+    "tryExample": "Try an example:",
+    "orSample": "Or try a sample file:",
+    "sample": {
+      "brochure": "Builder's brochure (PDF)",
+      "sheet": "Owner's sheet (Excel)"
+    },
+    "gotIt": "Got it:",
+    "readFrom": "Here's what I read from {{source}}:",
+    "ask": {
+      "generic": "What's the {{fact}}?",
+      "purpose": "Is it for sale, rent or lease?",
+      "type": "What kind of property is it?",
+      "city": "Which city is it in?",
+      "locality": "Which locality or area?",
+      "price": "What's the asking price?",
+      "area": "How big is it?",
+      "title": "What should the listing be called?",
+      "spec_bhk": "How many BHK?",
+      "spec_floor": "Which floor is it on?",
+      "spec_length": "What's the plot's length?",
+      "spec_width": "And its width?",
+      "spec_subType": "Which kind is it?",
+      "spec_bedrooms": "How many bedrooms?",
+      "spec_commCategory": "What kind of commercial space?",
+      "spec_occupancy": "Is it vacant or tenanted?",
+      "spec_acres": "How many acres?",
+      "spec_waterSource": "What's the water source?",
+      "spec_powerKva": "What's the power load?"
+    },
+    "hint": {
+      "price": "For example 62 L or 1.2 Cr",
+      "area": "In sq.ft. — or say cents, grounds or acres",
+      "locality": "Pick one, or type it",
+      "floor": "Or type the number",
+      "length": "In feet",
+      "width": "In feet",
+      "acres": "For example 2.5",
+      "powerKva": "In kVA"
+    },
+    "quickAnswers": "Quick answers",
+    "groundFloor": "Ground",
+    "ready": "That's everything needed to publish. Add photos now, or publish and finish the rest later on the property page.",
+    "publishNow": "Publish now",
+    "saveDraft": "Save as draft",
+    "notUnderstood": "I couldn't read a property fact in that. Type it the way you'd say it — for example “62 lakhs” or “3rd floor”.",
+    "manyFound_one": "{{file}} has {{count}} property. Sheets go to Check import, where you review every row before anything is saved.",
+    "manyFound_other": "{{file}} has {{count}} properties. Sheets go to Check import, where you review every row before anything is saved.",
+    "openImport": "Open Check import",
+    "photosMsg_one": "{{count}} photo",
+    "photosMsg_other": "{{count}} photos",
+    "photosAdded_one": "{{count}} photo added to the listing.",
+    "photosAdded_other": "{{count}} photos added to the listing.",
+    "brochureMsg": "Brochure",
+    "sheetMsg": "Owner's sheet",
+    "brochureSource": "{{file}}, page {{page}}",
+    "brochurePhotos_one": "I also took {{count}} photo from the brochure — check it shows this property.",
+    "brochurePhotos_other": "I also took {{count}} photos from the brochure — check they show this property.",
+    "editFilesHint": "To change facts from a document, tell me what changed. Photos can be added here.",
+    "confirmTitle": "Apply this change?",
+    "apply": "Apply",
+    "applied": "Applied and logged in History.",
+    "cancelled": "Not applied.",
+    "noChange": "I didn't find a change in that. Try “price is now 65 L” or “add: borewell water”.",
+    "appliedMore": "Done. Anything else?",
+    "savedToProperty": "Saved to the property",
+    "draftSaved": "Draft saved — finish it any time from Properties → Drafts",
+    "requiredCount": "{{done}} of {{total}} required",
+    "required": "Required to publish",
+    "keyDetail": "Key detail",
+    "optionalLater": "Optional, any time later: photos, exact location, documents, amenities.",
+    "preview": "Preview",
+    "previewTitle": "How customers will see it",
+    "dropPhotos": "Add photos (optional)",
+    "noPrice": "Price?",
+    "titleSoon": "The title appears once the type and locality are known",
+    "placeholder": "Describe the property, paste a map link, or drop files…",
+    "editPlaceholder": "What changed? e.g. price is now 65 L",
+    "messageLabel": "Message",
+    "attach": "Attach files",
+    "composerHint": "Enter to send · drop files here",
+    "send": "Send",
+    "dropHere": "Drop the brochure, photos or sheet",
+    "exactSet": "set from the link",
+    "field": {
+      "exactLocation": "Exact location",
+      "approvals": "Approvals",
+      "description": "Description"
+    },
+    "note": {
+      "fromDims": "worked out from {{a}} × {{b}} ft",
+      "fromCents": "from {{n}} cents",
+      "fromGrounds": "from {{n}} grounds",
+      "fromAcres": "from {{n}} acres",
+      "fromSqYd": "from {{n}} sq.yd.",
+      "fromSqM": "from {{n}} sq.m.",
+      "gPlus": "from “G + {{n}}”",
+      "fromLink": "from the map link",
+      "onwards": "The price says “onwards” — please confirm the exact price"
+    }
+  },
   "next": {
-    "title": "Coming next: Add",
-    "body": "One place to add properties — describe it, speak it or drop files. Designed in the Properties plan; built after this review."
+    "title": "Coming next: Check import",
+    "body": "Every row of a sheet or catalogue is reviewed here before anything is saved — Ready, Draft, Update or Needs fixing. It's the next screen to be built.",
+    "back": "Back to Add"
   }
 }

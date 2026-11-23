@@ -39,6 +39,8 @@ type Store = {
   setRole: (r: Role) => void
   /** PATCH /api/properties/:id — also appends to the property's history. */
   updateProperty: (id: string, change: (p: Property) => void, historyText: string) => void
+  /** POST /api/properties — returns the new id (PROP-<next number>). */
+  addProperty: (build: (id: string) => Property, historyText: string) => string
   /** POST /api/leads/:id/shares — logs on the lead's timeline and counts as a recommendation. */
   shareProperty: (propertyId: string, leadId: string, channel: ShareChannel) => void
   resetDemo: () => void
@@ -74,6 +76,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [user.id])
 
+  const addProperty = useCallback<Store['addProperty']>((build, historyText) => {
+    const max = Math.max(1000, ...db.properties.map((p) => Number(p.id.replace(/\D/g, '')) || 0))
+    const id = `PROP-${max + 1}`
+    const p = build(id)
+    p.history = [{ id: `${id}-h1`, at: DEMO_TODAY, by: user.id, text: historyText }]
+    setDb((prev) => ({ ...prev, properties: [p, ...prev.properties] }))
+    return id
+  }, [db.properties, user.id])
+
   const shareProperty = useCallback<Store['shareProperty']>((propertyId, leadId, channel) => {
     setDb((prev) => {
       const next = structuredClone(prev)
@@ -93,8 +104,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, shareProperty, resetDemo }),
-    [db, user, role, setRole, updateProperty, shareProperty, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, resetDemo }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, resetDemo],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

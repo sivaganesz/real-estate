@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, CalendarPlus, ChevronDown, CircleCheck, MapPin, Rocket, Share2, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -53,6 +53,7 @@ function PropertyView({ p }: { p: Property }) {
   const can = useCan()
   const leads = useVisibleLeads()
   const manager = can('property.manage')
+  const navigate = useNavigate()
   const [share, setShare] = useState<{ open: boolean; leadId?: string }>({ open: false })
   const matches = useMemo(() => leadsForProperty(p, leads, db.settings), [p, leads, db.settings])
   const done = completion(p)
@@ -93,7 +94,7 @@ function PropertyView({ p }: { p: Property }) {
         </>
       )}
       {manager && (
-        <Button size="lg" variant="outline" onClick={() => notYet(t('property.editWithAiStep'))}><Sparkles /> {t('action.editWithAi')}</Button>
+        <Button size="lg" variant="outline" onClick={() => navigate(`/properties/${p.id}/edit`)}><Sparkles /> {t('action.editWithAi')}</Button>
       )}
     </div>
   )
@@ -235,7 +236,7 @@ function PropertyView({ p }: { p: Property }) {
             <Button size="lg" variant="outline" className="flex-1" onClick={() => notYet(t('property.bookVisitModule'))}><CalendarPlus /> {t('action.bookVisit')}</Button>
           </>
         )}
-        {manager && <Button size="icon-lg" variant="outline" aria-label={t('action.editWithAi')} onClick={() => notYet(t('property.editWithAiStep'))}><Sparkles /></Button>}
+        {manager && <Button size="icon-lg" variant="outline" aria-label={t('action.editWithAi')} onClick={() => navigate(`/properties/${p.id}/edit`)}><Sparkles /></Button>}
       </div>
 
       {share.open && <ShareSheet property={p} open={share.open} leadId={share.leadId} onOpenChange={(o) => setShare({ open: o })} />}
