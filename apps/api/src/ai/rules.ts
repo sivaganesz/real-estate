@@ -51,7 +51,8 @@ export function parseSearchText(text: string, places: Places) {
   } = { understood: [] };
   const type = detectType(t);
   if (type) f.types = [type];
-  const bhk = t.match(/(\d)\s*-?\s*(?:bhk|bed(?:room)?s?)/);
+  // "2 bhk", "2-3 bhk", "2 or 3 bedrooms": the smaller number is the minimum they need.
+  const bhk = t.match(/(\d)(?:\s*(?:-|–|to|or|\/)\s*\d)?\s*-?\s*(?:bhk|bed(?:room)?s?)/);
   if (bhk) {
     f.bedrooms = Number(bhk[1]);
     if (!f.types) f.types = ['apartment', 'villa'];
@@ -59,7 +60,12 @@ export function parseSearchText(text: string, places: Places) {
   const under = t.match(/(?:under|below|less than|upto|up to|within|max(?:imum)?|budget(?: of)?|<)\s*(?:rs\.?|₹)?\s*([\d.,]+\s*(?:crores?|cr|lakhs?|lacs?|l|k)?)/);
   const above = t.match(/(?:above|over|more than|min(?:imum)?|from|>)\s*(?:rs\.?|₹)?\s*([\d.,]+\s*(?:crores?|cr|lakhs?|lacs?|l|k))/);
   const between = t.match(/between\s*(?:rs\.?|₹)?\s*([\d.,]+\s*(?:crores?|cr|lakhs?|lacs?|l)?)\s*(?:and|-|to)\s*(?:rs\.?|₹)?\s*([\d.,]+\s*(?:crores?|cr|lakhs?|lacs?|l))/);
-  if (between) {
+  // "70-80 lakhs", "1 to 1.5 cr": one unit for both ends.
+  const range = t.match(/(\d+(?:\.\d+)?)\s*(?:-|–|to)\s*(\d+(?:\.\d+)?)\s*(crores?|cr|lakhs?|lacs?|l)\b/);
+  if (range && !between) {
+    f.budgetMin = parseMoney(`${range[1]} ${range[3]}`) ?? undefined;
+    f.budgetMax = parseMoney(`${range[2]} ${range[3]}`) ?? undefined;
+  } else if (between) {
     const unit = between[2].replace(/[\d.,\s]/g, '');
     f.budgetMin = parseMoney(/[a-z]/.test(between[1]) ? between[1] : `${between[1]} ${unit}`) ?? undefined;
     f.budgetMax = parseMoney(between[2]) ?? undefined;
