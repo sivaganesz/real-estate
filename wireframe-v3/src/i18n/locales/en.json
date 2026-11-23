@@ -1,0 +1,341 @@
+{
+  "app": { "name": "RealSpec" },
+  "language": { "label": "Language", "en": "English", "ta": "தமிழ்" },
+  "nav": { "properties": "Properties" },
+  "role": { "admin": "Admin", "manager": "Sales manager", "executive": "Sales executive" },
+  "demo": {
+    "menu": "Demo: role and data",
+    "viewingAs": "Demo — signed in as {{name}}",
+    "reset": "Reset demo data",
+    "resetDone": "Demo data reset"
+  },
+
+  "action": {
+    "add": "Add",
+    "share": "Share",
+    "shareProperty": "Share {{title}}",
+    "shareWith": "Share with {{name}}",
+    "bookVisit": "Book visit",
+    "editWithAi": "Edit with AI",
+    "publish": "Publish",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "done": "Done"
+  },
+
+  "type": {
+    "plot": "Plot",
+    "flat": "Flat",
+    "house": "House / villa",
+    "commercial": "Commercial",
+    "agri": "Agricultural land",
+    "industrial": "Industrial"
+  },
+  "status": {
+    "draft": "Draft",
+    "available": "Available",
+    "negotiation": "Under negotiation",
+    "reserved": "Reserved",
+    "booked": "Booked",
+    "onHold": "On hold",
+    "sold": "Sold"
+  },
+  "purpose": { "sale": "For sale", "rent": "For rent", "lease": "For lease" },
+  "facing": { "E": "East", "N": "North", "W": "West", "S": "South", "NE": "North-east", "NW": "North-west", "SE": "South-east", "SW": "South-west" },
+  "stage": {
+    "new": "New enquiry",
+    "contacted": "Contacted",
+    "qualified": "Qualified",
+    "recommended": "Property recommended",
+    "visitScheduled": "Site visit scheduled",
+    "negotiation": "Negotiation",
+    "closed": "Booking / closed",
+    "lost": "Lost"
+  },
+  "approval": { "rera": "RERA", "building": "Building approval" },
+  "approvalState": {
+    "pending": "document pending",
+    "pendingHint": "An approval is claimed but its document hasn't been uploaded yet"
+  },
+  "match": {
+    "strong": "Strong",
+    "good": "Good",
+    "weak": "Weak",
+    "conditional": "Conditional",
+    "budgetMismatch": "Over budget",
+    "excluded": "Not a fit"
+  },
+  "reason": {
+    "withinPreferred": "Price is within the preferred budget",
+    "withinMax": "Price is within the maximum budget",
+    "usesFlex": "Price uses the budget's flexibility",
+    "sizeExact": "Size matches exactly",
+    "sizeOff": "Size differs by {{pct}}%",
+    "preferredLocality": "In a preferred locality",
+    "otherLocality": "Right city, not a preferred locality",
+    "facing": "Facing they want ({{want}})",
+    "road": "Road at least {{want}} ft",
+    "corner": "Corner plot",
+    "nonCorner": "Not a corner plot",
+    "bhk": "{{want}}",
+    "parking": "Has parking",
+    "ready": "Ready to move",
+    "underConstruction": "Under construction",
+    "category": "{{want}}",
+    "vacant": "Vacant",
+    "tenanted": "Tenanted",
+    "docPending": "An approval document is pending — upload it before recommending",
+    "fail_available": "Not available",
+    "fail_type": "Different property type",
+    "fail_city": "Not in a city they want",
+    "fail_budget": "Over their budget"
+  },
+
+  "search": {
+    "label": "Search properties",
+    "placeholder": "Try “{{example}}”",
+    "go": "Search",
+    "voice": "Search by voice",
+    "listening": "Listening…",
+    "voiceSimulated": "Voice search is simulated in the wireframe",
+    "understood": "Understood:",
+    "remove": "Remove {{what}}",
+    "clear": "Clear search",
+    "under": "Under {{amount}}",
+    "above": "Above {{amount}}",
+    "facing": "{{dir}}-facing"
+  },
+  "filters": {
+    "type": "Property type",
+    "city": "City",
+    "anyCity": "Any city",
+    "budget": "Budget",
+    "anyBudget": "Any budget",
+    "budgets": { "u30": "Under ₹30 L", "30to60": "₹30 L – 60 L", "60to1cr": "₹60 L – 1 Cr", "1to3cr": "₹1 Cr – 3 Cr", "3crPlus": "Above ₹3 Cr" }
+  },
+  "sort": { "label": "Sort", "newest": "Newest first", "priceAsc": "Price: low to high", "priceDesc": "Price: high to low", "mostLeads": "Most leads fit" },
+  "layout": { "grid": "Cards", "list": "List" },
+
+  "properties": {
+    "title": "Properties",
+    "subtitleManager": "Find, add and keep listings up to date",
+    "subtitleExecutive": "Find the right property and share it with your leads",
+    "views": "Views",
+    "view": { "available": "Available", "drafts": "Drafts", "attention": "Needs attention", "listed": "All listed", "all": "All" },
+    "showing_one": "{{count}} property",
+    "showing_other": "{{count}} properties",
+    "emptyTitle": "No properties match",
+    "emptyBody": "Try fewer words, a wider budget, or another view."
+  },
+  "card": {
+    "perSqft": "₹{{rate}}/sq.ft.",
+    "floor": "Floor {{n}}",
+    "bedrooms": "{{n}} bed",
+    "leadsFit_one": "{{count}} lead fits",
+    "leadsFit_other": "{{count}} leads fit",
+    "noLeadsFit": "No leads fit yet",
+    "todo_one": "{{count}} to do",
+    "todo_other": "{{count}} to do",
+    "complete": "{{pct}}% complete"
+  },
+  "table": { "property": "Property", "location": "Location", "price": "Price", "status": "Status", "leadsFit": "Leads fit", "complete": "Complete" },
+
+  "property": {
+    "back": "All properties",
+    "notFound": "This property isn't available.",
+    "sections": "Sections",
+    "changeStatus": "Change status",
+    "statusChanged": "Status changed to {{status}}",
+    "draftNote": "Draft — only managers can see it. Publish when the required facts are in.",
+    "missingToPublish": "Still needed to publish: {{list}}",
+    "published": "Published",
+    "publishedFit_one": "{{count}} lead fits this property.",
+    "publishedFit_other": "{{count}} leads fit this property.",
+    "publishedNoFit": "No active leads fit it yet.",
+    "comingNext": "{{what}} comes in a later step.",
+    "bookVisitModule": "Booking a visit (with the Leads module)",
+    "editWithAiStep": "Edit with AI (with the Add property screen)"
+  },
+  "matches": {
+    "title_one": "{{count}} lead fits this property",
+    "title_other": "{{count}} leads fit this property",
+    "titleMine_one": "{{count}} of your leads fits",
+    "titleMine_other": "{{count}} of your leads fit",
+    "none": "No leads fit yet",
+    "noneHint": "None of your active leads fit this property.",
+    "noneHintManager": "When a new lead fits, it shows up here.",
+    "onlyAvailable": "Matching leads are shown while a property is available.",
+    "notify": "Notify executives",
+    "notified_one": "{{count}} executive notified",
+    "notified_other": "{{count}} executives notified",
+    "notifiedHint": "They'll see it on their My day list.",
+    "seeAll": "See all {{count}}",
+    "showFewer": "Show fewer"
+  },
+  "section": {
+    "overview": "Overview",
+    "details": "Details",
+    "location": "Location and nearby places",
+    "photos_one": "Photos ({{count}})",
+    "photos_other": "Photos ({{count}})",
+    "documents": "Legal and documents",
+    "price": "Price check",
+    "history": "History",
+    "short": { "overview": "Overview", "details": "Details", "location": "Location", "photos": "Photos", "documents": "Documents", "price": "Price", "history": "History" }
+  },
+  "overview": {
+    "noDescription": "No description yet.",
+    "writeWithAi": "Write with AI",
+    "amenities": "Amenities",
+    "noAmenities": "None added"
+  },
+  "ai": {
+    "descFor": "{{purpose}} in",
+    "descAmenities": "Amenities: {{list}}.",
+    "descDone": "Description written",
+    "descCheck": "Check it and change anything that isn't right."
+  },
+  "details": {
+    "internal": "Internal — never shown to customers",
+    "addMore": "Add more details",
+    "required": "required"
+  },
+  "fact": {
+    "addTitle": "Add: {{fact}}",
+    "choose": "Choose…",
+    "saved": "{{fact}} saved",
+    "title": "Title",
+    "purpose": "Purpose",
+    "type": "Type",
+    "city": "City",
+    "locality": "Locality",
+    "price": "Price",
+    "area": "Area",
+    "facing": "Facing",
+    "area_plotArea": "Plot area",
+    "area_builtUpArea": "Built-up area",
+    "area_usableArea": "Usable area",
+    "area_landArea": "Land area"
+  },
+  "location": {
+    "exact": "Exact location",
+    "approximate": "Approximate area",
+    "approxHint": "Only the locality is known, so the map shows an area and distances are approximate (~).",
+    "setExact": "Set the exact location",
+    "setExactHint": "Pick one. The address and pincode are filled in from the pin.",
+    "useGps": "Use my current location (at the property)",
+    "pasteLink": "Paste a Google Maps link or WhatsApp location",
+    "searchMap": "Search, then click on the map",
+    "exactSet": "Exact location set",
+    "exactSetHint": "Nearby places are looked up once (simulated).",
+    "road": "Road",
+    "nearby": "Nearby places",
+    "teamView": "Team view",
+    "customerView": "Customer view",
+    "customerViewHint": "Exactly what the listing, the brochure and a WhatsApp message may say.",
+    "noPlaces": "No nearby places yet.",
+    "min": "min",
+    "routeChecked": "Route checked by the team",
+    "checkRoute": "Check route",
+    "needsExact": "Set the exact location first",
+    "routeCheckedToast": "Route to {{place}} marked as checked"
+  },
+  "infra": { "existing": "Existing", "underConstruction": "Under construction", "planned": "Planned", "proposed": "Proposed" },
+  "place": {
+    "busStop": "Bus stop", "railway": "Railway station", "metro": "Metro station", "airport": "Airport", "highway": "Highway",
+    "school": "School", "college": "College", "hospital": "Hospital", "market": "Market", "other": "Other"
+  },
+  "photos": {
+    "upload": "Upload photos",
+    "uploaded_one": "{{count}} photo added",
+    "uploaded_other": "{{count}} photos added",
+    "none": "No photos yet.",
+    "cover": "Cover",
+    "count_one": "{{count}} photo",
+    "count_other": "{{count}} photos",
+    "openAll": "See all photos",
+    "alt": "Photo {{n}} of {{title}}"
+  },
+  "documents": {
+    "pendingHint": "Claimed, but the document isn't uploaded yet — the badge isn't shown to customers until it is.",
+    "uploaded": "Document uploaded",
+    "verified": "Verified",
+    "upload": "Upload",
+    "uploadedToast": "{{approval}} document uploaded",
+    "none": "No other documents yet.",
+    "privacy": "Documents are shared with a customer only on request."
+  },
+  "doc": {
+    "parent": "Parent documents", "saledeed": "Sale deed", "ec": "Encumbrance certificate (EC)", "patta": "Patta", "fmb": "FMB / survey sketch",
+    "landuse": "Land-use certificate", "completion": "Completion certificate", "fire": "Fire NOC", "tax": "Tax receipts", "valuer": "Valuation report"
+  },
+  "price": {
+    "asking": "Asking price",
+    "perSqft": "Per sq.ft.",
+    "perSqftShort": "/sq.ft.",
+    "allIn": "Buyer's approx. total (+{{pct}}%)",
+    "this": "This property",
+    "position": {
+      "within_one": "Within the range of {{count}} similar property nearby.",
+      "within_other": "Within the range of {{count}} similar properties nearby.",
+      "below_one": "Below the range of {{count}} similar property — check for differences (access, approval, condition).",
+      "below_other": "Below the range of {{count}} similar properties — check for differences (access, approval, condition).",
+      "above_one": "Above the range of {{count}} similar property — explain the difference or review the price.",
+      "above_other": "Above the range of {{count}} similar properties — explain the difference or review the price."
+    },
+    "kind": { "transaction": "Sold", "asking": "Asking" },
+    "noComparables": "No similar properties to compare with yet."
+  },
+  "todo": {
+    "title": "To finish this listing",
+    "complete": "{{pct}}% complete",
+    "open": "Open",
+    "allDone": "This listing is complete.",
+    "required": "Required facts",
+    "photos_one": "Add {{count}} more photo",
+    "photos_other": "Add {{count}} more photos",
+    "exactLocation": "Set the exact location",
+    "approvalDocs": "Upload the approval document",
+    "description": "Add a description",
+    "nearby": "Add nearby places",
+    "amenities": "Add amenities"
+  },
+  "history": {
+    "you": "You",
+    "status": "Status changed to {{status}}",
+    "published": "Published",
+    "factAdded": "{{fact}} added: {{value}}",
+    "descriptionAi": "Description written with AI",
+    "amenities": "Amenities updated",
+    "photos_one": "{{count}} photo uploaded",
+    "photos_other": "{{count}} photos uploaded",
+    "approvalUploaded": "{{approval}} document uploaded",
+    "routeChecked": "Route to {{place}} checked",
+    "exactLocation": { "gps": "Exact location set from the phone's location", "link": "Exact location set from a map link", "search": "Exact location set on the map" }
+  },
+
+  "share": {
+    "title": "Share with a lead",
+    "subtitle": "Sharing logs it on the lead's timeline and counts as a recommendation.",
+    "who": "Who is it for?",
+    "searchLeads": "Search your leads",
+    "budgetUpTo": "Budget up to {{amount}}",
+    "notAFit": "Not a fit",
+    "noLeads": "No leads found.",
+    "whatsapp": "Send on WhatsApp",
+    "copyLink": "Copy link",
+    "pdf": "Download PDF",
+    "logged": "Logged on their timeline.",
+    "done": {
+      "whatsapp": "Sent to {{name}} on WhatsApp",
+      "link": "Link for {{name}} copied",
+      "pdf": "PDF for {{name}} downloaded"
+    }
+  },
+
+  "next": {
+    "title": "Coming next: Add",
+    "body": "One place to add properties — describe it, speak it or drop files. Designed in the Properties plan; built after this review."
+  }
+}
