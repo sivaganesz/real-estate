@@ -185,7 +185,7 @@ export function AddProperty({ open, onClose }: { open: boolean; onClose: () => v
             Fill the form
           </Button>
         </div>
-        {ai?.mode === 'offline' && <p className="mt-2 text-[11px] text-slate-500">Offline mode reads typed text and PDFs with rules; photos need the AI key.</p>}
+        {ai?.mode === 'offline' && <p className="mt-2 text-[11px] text-slate-500">Offline mode reads typed text and PDFs with rules; photos need the Gemini key.</p>}
         <ErrorNote error={read.error} />
       </div>
 

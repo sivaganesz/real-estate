@@ -11,8 +11,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest",
     "@estate/shared": "workspace:*",
+    "@google/genai": "^3.6.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "exceljs": "^4.4.0",

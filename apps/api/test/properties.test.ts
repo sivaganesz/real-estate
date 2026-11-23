@@ -145,7 +145,7 @@ describe('assistant and properties', () => {
     const actor = { id: String(m!._id), name: m!.name, role: 'manager' as const };
     const draft = await manager.post('/api/properties').send({ type: 'plot', city: 'Chennai', locality: 'Pallavaram', price: 4000000, area: 1200, details: { length: 40, width: 30 } });
     const id = draft.body.property.id;
-    const out: AssistantReply = { mode: 'claude', reply: '', records: [], proposals: [], done: [] };
+    const out: AssistantReply = { mode: 'gemini', reply: '', records: [], proposals: [], done: [] };
     const r = await callTool('publish_property', { propertyId: id }, { actor: { ...actor, viaAI: true } }, out);
     expect(JSON.parse(r.content).status).toBe('waiting_for_user_confirmation');
     expect((await manager.get(`/api/properties/${id}`)).body.property.listing).toBe('draft');

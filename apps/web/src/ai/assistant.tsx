@@ -10,7 +10,7 @@ export type Message = {
   records?: RecordRef[];
   proposals?: Proposal[];
   done?: string[];
-  mode?: 'claude' | 'offline';
+  mode?: 'gemini' | 'offline';
   error?: boolean;
 };
 
@@ -37,7 +37,7 @@ type AssistantValue = {
 
 const Ctx = createContext<AssistantValue | null>(null);
 
-type ChatReply = { mode: 'claude' | 'offline'; reply: string; records: RecordRef[]; proposals: Proposal[]; done: string[] };
+type ChatReply = { mode: 'gemini' | 'offline'; reply: string; records: RecordRef[]; proposals: Proposal[]; done: string[] };
 
 export function AssistantProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();

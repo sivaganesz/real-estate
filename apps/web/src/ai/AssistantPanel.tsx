@@ -59,7 +59,7 @@ export function AssistantPanel() {
             </p>
             {ai?.mode === 'offline' && (
               <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Offline mode: no AI key is set, so I understand common requests only. An admin can set <code>ANTHROPIC_API_KEY</code> to switch on Claude.
+                Offline mode: no AI key is set, so I understand common requests only. An admin can set <code>GEMINI_API_KEY</code> to switch on Google Gemini.
               </p>
             )}
             {suggestions.length > 0 && (

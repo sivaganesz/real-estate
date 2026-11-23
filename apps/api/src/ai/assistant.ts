@@ -1,8 +1,8 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { ApiError, FinishReason, FunctionCallingConfigMode, type Content, type Part } from '@google/genai';
 import { ROLE_LABEL } from '@estate/shared';
-import { claude, FALLBACK } from './client';
+import { gemini } from './client';
 import { config } from '../config';
-import { getTool, toApiTool, toolsFor, type AssistantContext, type RecordRef, type ToolCtx } from './tools';
+import { getTool, toFunctionDeclaration, toolsFor, type AssistantContext, type RecordRef, type ToolCtx } from './tools';
 import { Proposal } from '../models/proposal';
 import { offlineAssistant } from './offline';
 import type { Actor } from '../lib/auth';
@@ -11,7 +11,7 @@ import { HttpError } from '../lib/http';
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 export type AssistantReply = {
-  mode: 'claude' | 'offline';
+  mode: 'gemini' | 'offline';
   reply: string;
   records: RecordRef[];
   proposals: { id: string; summary: string }[];
@@ -26,81 +26,95 @@ How you work:
 - Tools marked as needing confirmation only create a proposal. Say clearly that it is waiting for their confirmation; never say it is done.
 - Tools that change data straight away are done once they return; say what you did in one line.
 - You can only use the tools you are given; they already reflect the user's role. If the user asks for something outside their role, say who can do it.
-- Money is in Indian rupees. Write amounts as ₹45 L, ₹1.2 Cr or ₹25,000. Dates in a friendly form ("Tue 4 Mar, 11 am").
+- Money is in Indian rupees. Write amounts as ₹45 L, ₹1.2 Cr or ₹25,000. Dates in a friendly form ("Tue 4 Mar, 11 am"). Times you send to tools are ISO 8601 with +05:30.
 - Be brief and practical: short paragraphs or a few bullets. Name the records you relied on; the app shows them as links under your reply, so do not paste IDs.
-- When drafting a message to a customer, write it ready to send (WhatsApp tone, warm, short, no emojis overload), and only mention facts from the records.
+- When drafting a message to a customer, write it ready to send (WhatsApp tone, warm, short), and only mention facts from the records.
 - If something in a record looks inconsistent (price per sq.ft far off, missing key detail), point it out.`;
 
 function contextLine(ctx?: AssistantContext) {
   if (!ctx?.page) return '';
-  const on = ctx.entity && ctx.entityId ? ` The user is looking at ${ctx.entity} "${ctx.label ?? ''}" (id ${ctx.entityId}); "this", "him/her" or "it" refers to it.` : '';
+  const on = ctx.entity && ctx.entityId ? ` The user is looking at ${ctx.entity} "${ctx.label ?? ''}" (id ${ctx.entityId}); "this", "him/her", "them" or "it" refers to it.` : '';
   return `[Screen: ${ctx.page}.${on}]\n`;
 }
 
+/**
+ * The assistant loop on Google Gemini: the model may call our tools (only
+ * those the user's role allows), we run them on the user's behalf, and feed
+ * the results back until it answers.
+ */
 export async function runAssistant(turns: ChatTurn[], context: AssistantContext | undefined, actor: Actor): Promise<AssistantReply> {
   const last = turns.at(-1);
   if (!last || last.role !== 'user' || !last.content.trim()) throw new HttpError(400, 'Ask me something');
-  const client = claude();
-  if (!client) return offlineAssistant(last.content, context, actor);
+  const ai = gemini();
+  if (!ai) return offlineAssistant(last.content, context, actor);
 
   const ctx: ToolCtx = { actor: { ...actor, viaAI: true }, context };
   const tools = toolsFor(actor);
-  const out: AssistantReply = { mode: 'claude', reply: '', records: [], proposals: [], done: [] };
+  const out: AssistantReply = { mode: 'gemini', reply: '', records: [], proposals: [], done: [] };
 
   const now = new Date();
-  const userBlock = `Signed-in user: ${actor.name}, ${ROLE_LABEL[actor.role]} (id ${actor.id}). Today is ${now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })}, ${now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' })} IST.`;
+  const system = `${SYSTEM}\n\nSigned-in user: ${actor.name}, ${ROLE_LABEL[actor.role]} (id ${actor.id}). Today is ${now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} IST.`;
 
-  const messages: Anthropic.Beta.BetaMessageParam[] = turns.slice(-12).map((t, i, arr) => ({
-    role: t.role,
-    content: i === arr.length - 1 ? contextLine(context) + t.content : t.content,
+  const contents: Content[] = turns.slice(-12).map((t, i, arr) => ({
+    role: t.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: i === arr.length - 1 ? contextLine(context) + t.content : t.content }],
   }));
-  // The API needs the first message to be from the user.
-  while (messages.length && messages[0].role !== 'user') messages.shift();
+  // The conversation must start with the user.
+  while (contents.length && contents[0].role !== 'user') contents.shift();
 
   for (let step = 0; step < 8; step++) {
-    let res: Anthropic.Beta.BetaMessage;
+    let res;
     try {
-      res = await client.beta.messages.create({
+      res = await ai.models.generateContent({
         model: config.aiModel,
-        max_tokens: 16000,
-        system: [
-          { type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } },
-          { type: 'text', text: userBlock },
-        ],
-        tools: tools.map(toApiTool),
-        messages,
-        output_config: { effort: 'medium' },
-        ...FALLBACK,
+        contents,
+        config: {
+          systemInstruction: system,
+          tools: [{ functionDeclarations: tools.map(toFunctionDeclaration) }],
+          toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+          temperature: 0.2,
+        },
       });
     } catch (err) {
-      if (err instanceof Anthropic.RateLimitError) throw new HttpError(429, 'The assistant is busy right now. Try again in a moment.');
-      if (err instanceof Anthropic.AuthenticationError) throw new HttpError(503, 'The AI key is not valid. Ask an admin to check ANTHROPIC_API_KEY.');
-      if (err instanceof Anthropic.APIError) throw new HttpError(502, 'The assistant could not answer just now. Please try again.');
+      if (err instanceof ApiError) {
+        if (err.status === 429) throw new HttpError(429, 'The assistant is busy right now. Try again in a moment.');
+        if (err.status === 401 || err.status === 403 || (err.status === 400 && /api key/i.test(err.message))) throw new HttpError(503, 'The Gemini key is not valid. Ask an admin to check GEMINI_API_KEY.');
+        throw new HttpError(502, 'The assistant could not answer just now. Please try again.');
+      }
       throw err;
     }
 
-    const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();
-    if (res.stop_reason === 'refusal') {
+    const candidate = res.candidates?.[0];
+    if (candidate?.finishReason === FinishReason.SAFETY || res.promptFeedback?.blockReason) {
       out.reply = "I can't help with that request.";
       break;
     }
-    const uses = res.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
-    if (res.stop_reason !== 'tool_use' || uses.length === 0) {
-      out.reply = text || out.reply;
+    const calls = res.functionCalls ?? [];
+    if (!calls.length) {
+      out.reply = res.text?.trim() || out.reply || 'I could not find an answer to that.';
       break;
     }
-    messages.push({ role: 'assistant', content: res.content as Anthropic.Beta.BetaContentBlockParam[] });
-
-    const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
-    for (const use of uses) {
-      results.push({ type: 'tool_result', tool_use_id: use.id, ...(await callTool(use.name, use.input, ctx, out)) });
+    // Echo the model's turn back exactly (it can carry thought signatures).
+    contents.push(candidate?.content ?? { role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
+    const responses: Part[] = [];
+    for (const call of calls) {
+      const r = await callTool(call.name ?? '', call.args ?? {}, ctx, out);
+      responses.push({ functionResponse: { id: call.id, name: call.name, response: r.is_error ? { error: r.content } : { result: safeJson(r.content) } } });
     }
-    messages.push({ role: 'user', content: results });
-    if (step === 7) out.reply = text || 'I ran out of steps for this request. Could you narrow it down?';
+    contents.push({ role: 'user', parts: responses });
+    if (step === 7) out.reply = 'I ran out of steps for this request. Could you narrow it down?';
   }
 
   out.records = dedupe(out.records);
   return out;
+}
+
+function safeJson(s: string) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return s;
+  }
 }
 
 /** Runs one tool on the user's behalf, enforcing role permissions again server-side. */
@@ -154,10 +168,12 @@ export async function dismissProposal(id: string, actor: Actor) {
 
 function dedupe(records: RecordRef[]) {
   const seen = new Set<string>();
-  return records.filter((r) => {
-    const k = `${r.kind}:${r.id}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).slice(0, 12);
+  return records
+    .filter((r) => {
+      const k = `${r.kind}:${r.id}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .slice(0, 12);
 }

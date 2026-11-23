@@ -56,7 +56,7 @@ export async function startImport(file: File, opts: { sender?: string; defaultTy
     // Brochures and catalogues: the AI finds each property (one per unit type).
     const out = await extractProperties({ file });
     batch.kind = 'brochure';
-    batch.aiUsed = out.mode === 'claude';
+    batch.aiUsed = out.mode === 'gemini';
     batch.rows = out.properties.map((p, i) => ({
       index: i,
       raw: [],

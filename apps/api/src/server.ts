@@ -9,5 +9,5 @@ await seedIfEmpty();
 createApp().listen(config.port, () => {
   const ai = aiStatus();
   console.log(`EstateOS API on http://localhost:${config.port}  (db: ${uri.replace(/\/\/.*@/, '//***@')})`);
-  console.log(ai.mode === 'claude' ? `AI assistant: Claude (${ai.model})` : 'AI assistant: offline mode — set ANTHROPIC_API_KEY to use Claude');
+  console.log(ai.mode === 'gemini' ? `AI assistant: Google Gemini (${ai.model})` : 'AI assistant: offline mode — set GEMINI_API_KEY to use Gemini');
 });

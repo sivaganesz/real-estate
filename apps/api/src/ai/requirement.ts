@@ -1,9 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { AMENITIES, PROPERTY_TYPES, type Requirement } from '@estate/shared';
-import { claude, FALLBACK } from './client';
-import { config } from '../config';
+import { AiUnavailable, aiJson, gemini } from './client';
 import { knownPlaces, parseSearchText } from './rules';
 
 const Out = z.object({
@@ -25,32 +22,22 @@ const Out = z.object({
  * "Looking for 2-3 BHK near Porur or Valasaravakkam, 70-80 L, loan, wants to
  * move by March" → a structured requirement. Only stated facts are kept.
  */
-export async function parseRequirement(text: string): Promise<{ requirement: Partial<Requirement>; mode: 'claude' | 'offline' }> {
+export async function parseRequirement(text: string): Promise<{ requirement: Partial<Requirement>; mode: 'gemini' | 'offline' }> {
   const places = await knownPlaces();
-  const client = claude();
-  if (client) {
+  if (gemini()) {
     try {
-      const res = await client.beta.messages.parse({
-        model: config.aiModel,
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: `Extract the property buyer's or tenant's requirement from this note made by a salesperson. Only include what is stated; use null or [] otherwise. Money in rupees ("70 L" = 7000000). For a range of bedrooms use the smallest.\nLocalities we know (prefer these spellings): ${places.localities.slice(0, 80).join(', ')}\n\nNote: ${text}`,
-          },
-        ],
-        output_config: { format: betaZodOutputFormat(Out), effort: 'low' },
-        ...FALLBACK,
-      });
-      if (res.parsed_output) {
-        const o = res.parsed_output;
-        return {
-          mode: 'claude',
-          requirement: Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && !(Array.isArray(v) && !v.length))) as Partial<Requirement>,
-        };
-      }
+      const o = await aiJson(Out, [
+        {
+          text: `Extract the property buyer's or tenant's requirement from this note made by a salesperson. Only include what is stated; use null or [] otherwise. Money in rupees ("70 L" = 7000000). For a range of bedrooms use the smallest.\nLocalities we know (prefer these spellings): ${places.localities.slice(0, 80).join(', ')}\n\nNote: ${text}`,
+        },
+      ]);
+      return {
+        mode: 'gemini',
+        requirement: Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && !(Array.isArray(v) && !v.length))) as Partial<Requirement>,
+      };
     } catch (err) {
-      if (!(err instanceof Anthropic.APIError)) throw err;
+      if (!(err instanceof AiUnavailable)) throw err;
+      // Fall back to rules below.
     }
   }
   return { mode: 'offline', requirement: requirementFromRules(text, places) };

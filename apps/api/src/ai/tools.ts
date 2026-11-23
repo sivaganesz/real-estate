@@ -1,5 +1,6 @@
 import type { ZodTypeAny, z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { FunctionDeclaration } from '@google/genai';
+import { jsonSchema } from './client';
 import { can, type Permission } from '@estate/shared';
 import type { Actor } from '../lib/auth';
 
@@ -58,9 +59,7 @@ export function toolsFor(actor: Actor): AiTool[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function toApiTool(t: AiTool) {
-  const schema = zodToJsonSchema(t.schema, { target: 'jsonSchema7', $refStrategy: 'none' }) as Record<string, unknown>;
-  delete schema.$schema;
+export function toFunctionDeclaration(t: AiTool): FunctionDeclaration {
   const suffix = t.kind === 'confirm' ? ' This does NOT happen immediately: it creates a proposal the user must confirm.' : '';
-  return { name: t.name, description: t.description + suffix, input_schema: schema as { type: 'object'; [k: string]: unknown } };
+  return { name: t.name, description: t.description + suffix, parametersJsonSchema: jsonSchema(t.schema) };
 }

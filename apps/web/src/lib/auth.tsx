@@ -4,7 +4,7 @@ import { can as canDo, type Permission, type Role } from '@estate/shared';
 import { api } from './api';
 
 export type User = { id: string; name: string; email: string; phone: string; role: Role; active: boolean; managerId: string | null };
-export type AiMode = { mode: 'claude' | 'offline'; model: string | null };
+export type AiMode = { mode: 'gemini' | 'offline'; model: string | null };
 
 type AuthValue = {
   user: User | null;

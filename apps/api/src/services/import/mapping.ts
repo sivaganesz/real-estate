@@ -1,8 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
-import { z } from 'zod/v4';
-import { claude, FALLBACK } from '../../ai/client';
-import { config } from '../../config';
+import { z } from 'zod';
+import { AiUnavailable, aiJson, gemini } from '../../ai/client';
 import { ImportFormat } from '../../models/importBatch';
 import type { Cell } from './sheet';
 
@@ -115,31 +112,23 @@ export async function mapColumns(headers: string[], rows: Cell[][], sender?: str
   // 4. AI for the rest
   let aiUsed = false;
   const unknown = mapping.filter((m) => m.how === 'none');
-  const client = claude();
-  if (unknown.length && client) {
+  if (unknown.length && gemini()) {
     try {
       const fields = IMPORT_FIELDS.filter((f) => !used.has(f.key)).map((f) => `${f.key}: ${f.label}`);
       const Out = z.object({ columns: z.array(z.object({ column: z.number(), field: z.string(), confidence: z.enum(['high', 'check']) })) });
-      const res = await client.beta.messages.parse({
-        model: config.aiModel,
-        max_tokens: 4000,
-        messages: [
-          {
-            role: 'user',
-            content: `A real-estate property spreadsheet has these columns we could not match. For each, pick the best field key, or "extra" if it is a useful fact that fits no field, or "ignore" if it is a serial number or empty.\n\nFields:\n${fields.join('\n')}\n\nColumns (index, heading, sample values):\n${unknown.map((m) => `${m.column}: "${m.header}" → ${m.samples.join(' | ') || '(empty)'}`).join('\n')}`,
-          },
-        ],
-        output_config: { format: betaZodOutputFormat(Out), effort: 'low' },
-        ...FALLBACK,
-      });
-      for (const c of res.parsed_output?.columns ?? []) {
+      const res = await aiJson(Out, [
+        {
+          text: `A real-estate property spreadsheet has these columns we could not match. For each, pick the best field key, or "extra" if it is a useful fact that fits no field, or "ignore" if it is a serial number or empty.\n\nFields:\n${fields.join('\n')}\n\nColumns (index, heading, sample values):\n${unknown.map((m) => `${m.column}: "${m.header}" → ${m.samples.join(' | ') || '(empty)'}`).join('\n')}`,
+        },
+      ]);
+      for (const c of res.columns) {
         const m = mapping.find((x) => x.column === c.column);
         const f = IMPORT_FIELDS.find((x) => x.key === c.field);
         if (m && f && m.how === 'none') claim(m, f.key, 'ai', c.confidence);
       }
       aiUsed = true;
     } catch (err) {
-      if (!(err instanceof Anthropic.APIError)) throw err;
+      if (!(err instanceof AiUnavailable)) throw err;
       // The AI step is optional: unmatched columns stay as extra details.
     }
   }

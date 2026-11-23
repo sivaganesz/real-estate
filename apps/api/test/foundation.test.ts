@@ -20,7 +20,7 @@ describe('foundation', () => {
     const agent = await login(app, EMAIL.priya);
     const res = await agent.get('/api/auth/me');
     expect(res.body.user.role).toBe('executive');
-    expect(['claude', 'offline']).toContain(res.body.ai.mode);
+    expect(['gemini', 'offline']).toContain(res.body.ai.mode);
   });
 
   it('blocks executives from managing users', async () => {
