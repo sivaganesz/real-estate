@@ -45,43 +45,45 @@ function TopNavbar({ items }: { items: NavItem[] }) {
   const assistant = useAssistant();
   return (
     <header className="sticky top-0 z-30 bg-slate-50/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
-        <Brand />
-        <nav className="ml-4 hidden items-center gap-0.5 lg:flex" aria-label="Main">
+      {/* Desktop: logo left, menu centred, actions right. */}
+      <div className="mx-auto hidden h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 lg:grid">
+        <div className="justify-self-start">
+          <Brand />
+        </div>
+        <nav className="flex items-center gap-0.5 rounded-full bg-slate-100/80 p-1" aria-label="Main">
           {items.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.to === '/'}
               className={({ isActive }) =>
-                clsx('rounded-full px-3.5 py-1.5 text-sm transition', isActive ? 'bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70' : 'text-slate-500 hover:text-slate-900')
+                clsx('rounded-full px-4 py-1.5 text-sm transition', isActive ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900')
               }
             >
               {n.label}
             </NavLink>
           ))}
         </nav>
-        <div className="flex min-w-0 flex-1 justify-end lg:hidden">
+        <div className="flex items-center justify-self-end gap-1.5">
+          <button
+            onClick={() => assistant.setOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-slate-800"
+          >
+            <Sparkles className="h-4 w-4 text-ai-600" />
+            <span className="hidden xl:inline">Ask anything</span>
+          </button>
+          <Reminders plain />
+          <UserMenu />
+        </div>
+      </div>
+      {/* Phones and tablets: logo, ask box, bell, assistant. */}
+      <div className="mx-auto flex h-16 items-center gap-2 px-4 sm:px-6 lg:hidden">
+        <Brand />
+        <div className="flex min-w-0 flex-1 justify-end">
           <AskBox />
         </div>
-        <button
-          onClick={() => assistant.setOpen(true)}
-          className="ml-auto hidden items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-slate-800 lg:flex"
-        >
-          <Sparkles className="h-4 w-4 text-ai-600" />
-          Ask anything
-          <kbd className="hidden text-[10px] text-slate-400 xl:inline">Ctrl K</kbd>
-        </button>
-        <div className="hidden lg:block">
-          <Reminders plain />
-        </div>
-        <div className="lg:hidden">
-          <Reminders />
-        </div>
-        <div className="lg:hidden">
-          <AssistantButton labelFrom="xl" />
-        </div>
-        <UserMenu />
+        <Reminders />
+        <AssistantButton labelFrom="xl" />
       </div>
     </header>
   );
