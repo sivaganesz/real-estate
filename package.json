@@ -1,0 +1,15 @@
+{
+  "name": "estate-os",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./apps/* dev",
+    "seed": "pnpm --filter @estate/api seed",
+    "test": "pnpm --filter @estate/api test",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm --filter @estate/web build"
+  },
+  "engines": { "node": ">=22" }
+}
