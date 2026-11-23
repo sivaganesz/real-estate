@@ -217,8 +217,17 @@ export function extractFromText(raw: string, places: Places): Extracted {
     if (usage) details.usage = usage[1][0].toUpperCase() + usage[1].slice(1).toLowerCase();
   }
 
-  const locality = find(places.localities, text);
+  let locality = find(places.localities, text);
   const city = find(places.cities, text);
+  // A place we haven't seen before: "in Kodambakkam, Chennai" or "near Thoraipakkam".
+  if (!locality) {
+    const m = text.match(/\b(?:in|at|near)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)(?=\s*,|\s+(?:Chennai|Coimbatore|Bengaluru|Madurai|Trichy|Hyderabad)\b|[.;]|\s*$)/);
+    const candidate = m?.[1];
+    if (candidate && !places.cities.some((c) => c.toLowerCase() === candidate.toLowerCase())) {
+      locality = candidate;
+      unsure.push({ field: 'locality', why: `"${candidate}" is a new locality — check the spelling` });
+    }
+  }
   if (locality) sources.locality = locality;
   if (city) sources.city = city;
   const pin = text.match(/\b(6\d{5})\b/);

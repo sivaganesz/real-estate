@@ -9,3 +9,5 @@ apps/api/uploads/*
 *.log
 coverage
 .vite
+test-results
+playwright-report

@@ -4,7 +4,8 @@ import { config } from './config';
 import { seedIfEmpty } from './db/seed';
 import { aiStatus } from './ai/client';
 
-const uri = await connectDb();
+// EPHEMERAL_DB=1 gives a fresh in-memory database (used by the end-to-end tests).
+const uri = await connectDb({ ephemeral: process.env.EPHEMERAL_DB === '1' });
 await seedIfEmpty();
 createApp().listen(config.port, () => {
   const ai = aiStatus();

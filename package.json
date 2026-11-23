@@ -9,7 +9,8 @@
     "seed": "pnpm --filter @estate/api seed",
     "test": "pnpm --filter @estate/api test",
     "typecheck": "pnpm -r typecheck",
-    "build": "pnpm --filter @estate/web build"
+    "build": "pnpm --filter @estate/web build",
+    "e2e": "playwright test"
   },
   "engines": {
     "node": ">=22"
