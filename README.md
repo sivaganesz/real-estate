@@ -30,9 +30,14 @@ Set `GEMINI_API_KEY` in `apps/api/.env` to use Google Gemini (`gemini-2.5-flash`
 
 ```bash
 pnpm test        # API tests against an in-memory MongoDB
+pnpm e2e         # Playwright journeys on desktop and phone; runs its own API (:4190) and web (:5190)
 pnpm typecheck
 pnpm build
 ```
+
+## Status
+
+Where the build stands, and what's waiting on the owner: [STATUS.md](STATUS.md).
 
 ## Docs
 

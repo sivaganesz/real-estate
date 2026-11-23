@@ -1,6 +1,6 @@
 # 07 · Negotiations and bookings
 
-**Status:** built · **Commit:** `51cd35b` · **Users:** executives negotiate and send bookings; managers approve discounts, confirm bookings and record payments; admins approve big discounts and set the limits.
+**Status:** built · **Commit:** `51cd35b` (counter rule `1e882d0`) · **Users:** executives negotiate and send bookings; managers approve discounts, confirm bookings and record payments; admins approve big discounts and set the limits.
 
 ## 1. What happens in practice
 
@@ -23,7 +23,7 @@ In Indian residential sales the price is haggled **per unit**, not per project. 
 | Offers | Every offer is kept: who made it (customer or us), the amount, a note ("free car park instead of discount"), who recorded it and when. Amounts far from the list price (below 50% or above 150%) are refused as likely typos. |
 | Who may agree how much discount? | **Executive up to 1%, manager up to 5%, above that an admin.** Within your own limit the price is agreed at once. Above it, it goes to a manager, or straight to an admin if it's beyond the manager limit. |
 | Can the limits change? | Yes. An admin sets them in **Settings** (executive 0–10%, manager 0–25%; the executive limit can't exceed the manager's). |
-| Approving | Approve, reject, or **counter** with a price you can approve (recorded as our offer, and the deal goes back to negotiating). **Nobody approves their own request.** Admins never need to: their prices are agreed at once. While a price waits for approval, no other price can be proposed. |
+| Approving | Approve, reject, or **counter** with a price you can approve (recorded as our offer, and the deal goes back to negotiating). **A counter counts as approval down to that price**: if the executive then agrees at the countered price, it's agreed at once, with no second approval. **Nobody approves their own request.** Admins never need to: their prices are agreed at once. While a price waits for approval, no other price can be proposed. |
 | Holds | **Hold the unit** for the customer, default **3 days** (admin can change it). A held unit can't be negotiated by another customer. Holds **release themselves** when they expire. |
 | Booking | The executive records the booking amount received (amount, cheque/NEFT/RTGS/UPI/DD/cash, reference, date) and **sends it for confirmation**. A **manager confirms**. Only a deal with an agreed price can be booked. |
 | What confirming does | All at once: the unit is **booked**; the customer moves to **Booked**; a **payment plan** is created; **other open negotiations on that unit are closed** ("Unit booked by another customer"). If someone else booked it first, confirmation is refused. |
@@ -84,7 +84,7 @@ Offline, these work by rules:
 - "What approvals are waiting for me?";
 - "Which payments are due?" (next 30 days, overdue flagged).
 
-## 6. Deliberately left out, and open questions
+## 6. Deliberately left out
 
 - **Online payment collection** (payment links, gateway). Out of scope in the PRD; payments are recorded, not collected.
 - **GST and stamp duty** are not computed. Both vary by state and by property (under construction or ready), and get wrong quickly.
@@ -92,4 +92,3 @@ Offline, these work by rules:
 - **Refund amounts** on cancellation (cancellation charge kept, amount refunded, refund date) are not tracked; only the reason is.
 - **Joint bookings.** One customer per deal. Spouse or parent co-applicants (common for home loans) are not recorded.
 - **Payment plan per project.** Every booking gets the same four-step plan. Builders with their own milestone schedules will want to set it per project.
-- **Counters above the executive's limit.** When a manager counters at, say, 4% off, the executive agreeing at that price sends it back for approval again. It may be better to treat a counter as pre-approved.
