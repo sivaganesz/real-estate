@@ -11,6 +11,7 @@ import { Properties } from './pages/Properties';
 import { PropertyDetail } from './pages/PropertyDetail';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { SharePage } from './pages/SharePage';
+import { Import } from './pages/Import';
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -40,6 +41,14 @@ export function App() {
         <Route index element={<Today />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
+        <Route
+          path="properties/import"
+          element={
+            <Allowed permission="property.import">
+              <Import />
+            </Allowed>
+          }
+        />
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route
           path="settings"
