@@ -32,14 +32,12 @@
     "hni": "HNI register",
     "enquiry": "Public enquiry form",
     "settings": "Settings",
-    "systemMap": "System map",
     "uiKit": "UI kit",
     "restricted": "Restricted",
     "salesDashboard": "Sales dashboard",
     "leadPipeline": "Lead pipeline",
     "matchingEngine": "Matching engine",
     "hniQual": "HNI qualification",
-    "testScenario": "Test scenario 001",
     "settingsRules": "Settings & rules"
   },
   "role": {
@@ -121,8 +119,8 @@
     "lost": "Lost"
   },
   "approval": {
-    "rera": "RERA approval",
-    "building": "Building approval"
+    "dtcp": "DTCP approval",
+    "rera": "RERA approval"
   },
   "approvalState": {
     "pending": "document pending",
@@ -449,7 +447,7 @@
     "noBadges": "No approval badges.",
     "addBadge": "Add a badge:",
     "approvalName": "Approval name",
-    "approvalNameHint": "Approval name — e.g. Fire NOC, DTCP approval",
+    "approvalNameHint": "Approval name — e.g. CMDA approval, Fire NOC",
     "approvalDoc": "Its document",
     "approvalDocHint": "Its document (optional) — e.g. Fire NOC certificate",
     "newApprovalRule": "A new approval is available on every property from then on (Settings → Approval badges).",
@@ -470,16 +468,7 @@
     "docUploaded": "{{name}} uploaded (simulated)"
   },
   "doc": {
-    "parent": "Parent documents",
-    "saledeed": "Sale deed",
-    "ec": "Encumbrance Certificate (EC)",
-    "patta": "Patta / revenue records",
-    "fmb": "FMB / survey records",
-    "landuse": "Land-use classification",
-    "completion": "Completion / occupancy certificate",
-    "fire": "Fire NOC",
-    "tax": "Tax receipts",
-    "valuer": "Valuation report"
+    "ec": "Encumbrance Certificate (EC)"
   },
   "price": {
     "asking": "Asking price",

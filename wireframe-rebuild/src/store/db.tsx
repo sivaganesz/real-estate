@@ -8,7 +8,7 @@ import type { Database, Lead, Property, Role, User } from '@/data/types'
 
 const DB_KEY = 'realspec-rebuild-db'
 const ROLE_KEY = 'realspec-rebuild-role'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 /** Who the demo signs in as for each role. */
 const DEMO_USER_FOR: Record<Role, string> = { admin: 'u-admin', manager: 'u-mgr', executive: 'u-ex01' }

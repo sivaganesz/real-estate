@@ -37,8 +37,8 @@ export const DEFAULT_SETTINGS: Settings = {
     { id: 'other', name: 'Other', icon: 'map-pin', group: 'other', routeCheck: true, shownByDefault: false },
   ],
   approvalTypes: [
-    { id: 'rera', label: 'RERA', documentName: 'RERA registration certificate' },
-    { id: 'building', label: 'Building approval', documentName: 'Building / layout approval (DTCP, CMDA or local body)' },
+    { id: 'dtcp', label: 'DTCP approval', documentName: 'DTCP approval order' },
+    { id: 'rera', label: 'RERA approval', documentName: 'RERA registration certificate' },
   ],
 }
 
@@ -55,10 +55,7 @@ function place(categoryId: string, name: string, km: number, status: NearbyPlace
   return { id: nextId('nb'), categoryId, name, distanceKm: km, durationMin: Math.round(km * 2.6 + 3), status, routeChecked, source: 'user' }
 }
 
-const DOC_NAMES: Record<string, string> = {
-  parent: 'Parent documents', saledeed: 'Sale deed', ec: 'Encumbrance certificate (EC)', patta: 'Patta', fmb: 'FMB / survey sketch',
-  landuse: 'Land-use certificate', completion: 'Completion certificate', fire: 'Fire NOC', tax: 'Tax receipts', valuer: 'Valuation report',
-}
+const DOC_NAMES: Record<string, string> = { ec: 'Encumbrance certificate (EC)' }
 function docs(propId: string, at: string, verified: string[], uploaded: string[] = []): PropertyDocument[] {
   const one = (kind: string, isVerified: boolean): PropertyDocument => ({
     id: `${propId}-doc-${kind}`, name: DOC_NAMES[kind], kind, file: `${kind}.pdf`, uploaded: { by: 'u-mgr', at },
@@ -110,8 +107,8 @@ export function seedProperties(): Property[] {
         place('school', 'Green Valley Matriculation School (sample)', 1.4), place('hospital', 'City Care Multispeciality Hospital (sample)', 2.8),
         place('busStop', 'Vilangudi bus stop', 0.6), place('railway', 'Madurai Junction', 9.5), place('airport', 'Madurai Airport', 21),
         place('highway', 'NH-44 (Madurai–Dindigul)', 3.2), place('other', 'Outer ring road extension', 1.8, 'planned', false)] },
-      approvals: [approval('building', 'verified', '2026-11-05'), approval('rera', 'uploaded', '2026-11-10')],
-      documents: docs('PROP-1001', '2026-11-05', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'tax'], ['valuer']),
+      approvals: [approval('dtcp', 'verified', '2026-11-05'), approval('rera', 'uploaded', '2026-11-10')],
+      documents: docs('PROP-1001', '2026-11-05', ['ec']),
       comparables: [
         comp('Vilangudi, Madurai', 'Residential plot', 1200, 2400, 'transaction', '2026-09-20', 'Registered sale (sample)', 'Older layout, 23 ft road'),
         comp('Vilangudi, Madurai', 'Residential plot', 1500, 2550, 'asking', '2026-11-01', 'Property portal listing', 'Corner plot, asking price only'),
@@ -125,8 +122,8 @@ export function seedProperties(): Property[] {
         place('school', 'Sunrise Public School (sample)', 2.2), place('hospital', 'Primary Health Centre (sample)', 3.5),
         place('busStop', 'Thiruparankundram bus stand', 1.9), place('highway', 'Madurai Ring Road', 1.1),
         place('other', 'Proposed metro corridor', 4, 'proposed', false)] },
-      approvals: [approval('building', 'pending', '2026-11-08')],
-      documents: docs('PROP-1002', '2026-11-08', ['parent', 'saledeed', 'ec', 'patta'], ['fmb', 'landuse']),
+      approvals: [approval('dtcp', 'pending', '2026-11-08')],
+      documents: docs('PROP-1002', '2026-11-08', ['ec']),
       comparables: [
         comp('Thiruparankundram, Madurai', 'Residential plot', 1500, 1950, 'asking', '2026-10-30', 'Property portal listing', 'Mud road access'),
         comp('Thiruparankundram, Madurai', 'Residential plot', 1200, 2100, 'transaction', '2026-09-02', 'Registered sale (sample)', 'Approved layout'),
@@ -140,8 +137,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Madurai', locality: 'K.K. Nagar', exact: true, lat: 9.93, lng: 78.145, roadType: 'Concrete road', roadWidthFt: 33, nearby: [
         place('school', 'Lakeview Senior Secondary School (sample)', 0.9), place('hospital', 'Meenakshi Care Hospital (sample)', 1.6),
         place('busStop', 'K.K. Nagar arch', 0.4), place('market', 'Mattuthavani market', 3.0), place('highway', 'NH-38 (Madurai–Trichy)', 4.5)] },
-      approvals: [approval('building', 'verified', '2026-10-28'), approval('rera', 'verified', '2026-10-28')],
-      documents: docs('PROP-1003', '2026-10-28', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-10-28'), approval('rera', 'verified', '2026-10-28')],
+      documents: docs('PROP-1003', '2026-10-28', ['ec']),
       comparables: [
         comp('K.K. Nagar, Madurai', 'Residential plot', 1200, 2850, 'transaction', '2026-10-05', 'Registered sale (sample)', 'Non-gated'),
         comp('K.K. Nagar, Madurai', 'Residential plot', 1000, 3050, 'asking', '2026-10-28', 'Property portal listing', 'Gated, smaller plot'),
@@ -153,8 +150,8 @@ export function seedProperties(): Property[] {
       specs: {length: 40,width: 30,roadWidth: 30,roadAccess: "Public road",corner: "Non-corner",topography: "Level",surveyNo: "201/4",subdivision: "",layoutApproval: "DTCP approval (sample no. 77/2022)",landUse: "Residential",water: "Borewell",electricity: "Available at site",drainage: "Open drain",roadInfra: "Tar road"},
       location: { city: 'Madurai', locality: 'Othakadai', exact: true, lat: 9.955, lng: 78.19, roadType: 'Tar road', roadWidthFt: 30, nearby: [
         place('school', 'Government Higher Secondary School (sample)', 1.2), place('highway', 'Madurai–Melur road', 0.8)] },
-      approvals: [approval('building', 'verified', '2026-09-10')],
-      documents: docs('PROP-1004', '2026-09-10', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-09-10')],
+      documents: docs('PROP-1004', '2026-09-10', ['ec']),
       comparables: [comp('Othakadai, Madurai', 'Residential plot', 1200, 2150, 'transaction', '2026-08-01', 'Registered sale (sample)', 'Similar')],
     }),
     prop({
@@ -165,8 +162,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Madurai', locality: 'Anna Nagar', exact: true, lat: 9.925, lng: 78.138, roadType: 'Tar road', roadWidthFt: 40, nearby: [
         place('school', 'St. Mary’s Matriculation School (sample)', 0.7), place('hospital', 'Anna Nagar Clinic & Nursing Home (sample)', 0.5),
         place('busStop', 'Anna Nagar bus stop', 0.3), place('railway', 'Madurai Junction', 5.6), place('highway', 'NH-38', 3.8)] },
-      approvals: [approval('building', 'verified', '2026-10-18'), approval('rera', 'verified', '2026-10-18')],
-      documents: docs('PROP-1005', '2026-10-18', ['parent', 'saledeed', 'ec', 'patta', 'completion', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-10-18'), approval('rera', 'verified', '2026-10-18')],
+      documents: docs('PROP-1005', '2026-10-18', ['ec']),
       comparables: [
         comp('Anna Nagar, Madurai', '2 BHK flat', 1000, 4800, 'transaction', '2026-09-11', 'Registered sale (sample)', 'Older building'),
         comp('Anna Nagar, Madurai', '2 BHK flat', 1100, 5100, 'asking', '2026-10-15', 'Property portal listing', 'New building'),
@@ -180,8 +177,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Chennai', locality: 'Sholinganallur (OMR)', exact: true, lat: 12.901, lng: 80.227, roadType: 'Highway service road', roadWidthFt: 60, nearby: [
         place('school', 'Bayview International School (sample)', 1.8), place('hospital', 'OMR Multispeciality Hospital (sample)', 2.1),
         place('metro', 'Metro Phase 2 — Sholinganallur station', 0.9, 'underConstruction', true), place('highway', 'OMR (Rajiv Gandhi Salai)', 0.4)] },
-      approvals: [approval('building', 'verified', '2026-10-01'), approval('rera', 'verified', '2026-10-01')],
-      documents: docs('PROP-1006', '2026-10-01', ['parent', 'saledeed', 'ec', 'patta'], ['tax']),
+      approvals: [approval('dtcp', 'verified', '2026-10-01'), approval('rera', 'verified', '2026-10-01')],
+      documents: docs('PROP-1006', '2026-10-01', ['ec']),
       comparables: [
         comp('Sholinganallur, Chennai', '3 BHK flat', 1500, 6500, 'asking', '2026-09-28', 'Builder price list', 'Lower floor'),
         comp('Sholinganallur, Chennai', '3 BHK flat', 1400, 6900, 'transaction', '2026-08-12', 'Registered sale (sample)', 'Ready to move'),
@@ -195,8 +192,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Coimbatore', locality: 'Peelamedu', exact: true, lat: 11.03, lng: 77.02, roadType: 'Tar road', roadWidthFt: 30, nearby: [
         place('school', 'Peelamedu Public School (sample)', 0.8), place('hospital', 'Kovai Medical Centre (sample)', 2.4),
         place('airport', 'Coimbatore Airport', 4.2), place('highway', 'Avinashi Road', 1.2)] },
-      approvals: [approval('building', 'verified', '2026-09-20')],
-      documents: docs('PROP-1007', '2026-09-20', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'completion', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-09-20')],
+      documents: docs('PROP-1007', '2026-09-20', ['ec']),
       comparables: [
         comp('Peelamedu, Coimbatore', 'Independent house', 1750, 7300, 'transaction', '2026-08-18', 'Registered sale (sample)', 'Older construction'),
         comp('Peelamedu, Coimbatore', 'Independent house', 2000, 7800, 'asking', '2026-09-10', 'Property portal listing', 'Corner, larger land'),
@@ -210,8 +207,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Coimbatore', locality: 'Vadavalli', exact: true, lat: 11.025, lng: 76.905, roadType: 'Concrete road', roadWidthFt: 40, nearby: [
         place('school', 'Hillside International School (sample)', 2.5), place('hospital', 'West Kovai Hospital (sample)', 3.1),
         place('highway', 'Marudhamalai Road', 0.9), place('other', 'Western bypass', 2.0, 'planned', false)] },
-      approvals: [approval('building', 'verified', '2026-10-09')],
-      documents: docs('PROP-1008', '2026-10-09', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'tax'], ['completion', 'valuer']),
+      approvals: [approval('dtcp', 'verified', '2026-10-09')],
+      documents: docs('PROP-1008', '2026-10-09', ['ec']),
       comparables: [
         comp('Vadavalli, Coimbatore', 'Villa', 3500, 8600, 'transaction', '2026-07-30', 'Registered sale (sample)', 'Smaller land'),
         comp('Vadavalli, Coimbatore', 'Villa', 4000, 9200, 'asking', '2026-10-01', 'Builder price list', 'Same community, larger'),
@@ -224,8 +221,8 @@ export function seedProperties(): Property[] {
       specs: {commCategory: "Shop / Showroom",floor: "Ground",frontage: 18,roadWidth: 60,parking: "Street parking",permittedUsage: "Retail / showroom",occupancy: "Tenanted",rentalIncome: 45000,leaseDuration: "3 years (ends Mar 2028)",leaseTerms: "5% annual escalation",maintenance: 1500,opex: 24000},
       location: { city: 'Tiruchirappalli', locality: 'Thillai Nagar', exact: true, lat: 10.825, lng: 78.685, roadType: 'Main road', roadWidthFt: 60, nearby: [
         place('busStop', 'Thillai Nagar bus stop', 0.2), place('railway', 'Tiruchirappalli Junction', 3.9), place('highway', 'Trichy–Chennai NH', 4.0)] },
-      approvals: [approval('building', 'verified', '2026-09-25')],
-      documents: docs('PROP-1009', '2026-09-25', ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'completion', 'tax'], ['fire']),
+      approvals: [approval('dtcp', 'verified', '2026-09-25')],
+      documents: docs('PROP-1009', '2026-09-25', ['ec']),
       comparables: [
         comp('Thillai Nagar, Trichy', 'Shop', 600, 12500, 'transaction', '2026-08-08', 'Registered sale (sample)', 'First floor'),
         comp('Thillai Nagar, Trichy', 'Shop', 700, 13800, 'asking', '2026-09-20', 'Property portal listing', 'Wider frontage'),
@@ -238,8 +235,8 @@ export function seedProperties(): Property[] {
       specs: {commCategory: "Office space",floor: "4th of 7",frontage: 0,roadWidth: 80,parking: "Dedicated 5+",permittedUsage: "Office / IT",occupancy: "Vacant",rentalIncome: 0,leaseDuration: "",leaseTerms: "",maintenance: 21000,opex: 180000},
       location: { city: 'Chennai', locality: 'Velachery', exact: true, lat: 12.98, lng: 80.22, roadType: 'Main road', roadWidthFt: 80, nearby: [
         place('railway', 'Velachery MRTS', 1.1), place('highway', 'Velachery Main Road', 0.1)] },
-      approvals: [approval('building', 'verified', '2026-08-18')],
-      documents: docs('PROP-1010', '2026-08-18', ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'completion', 'fire', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-08-18')],
+      documents: docs('PROP-1010', '2026-08-18', ['ec']),
       comparables: [comp('Velachery, Chennai', 'Office floor', 4000, 9800, 'transaction', '2026-06-30', 'Registered sale (sample)', 'Older building')],
     }),
     prop({
@@ -248,8 +245,8 @@ export function seedProperties(): Property[] {
       specs: {commCategory: "Warehouse / Godown",floor: "Ground",frontage: 80,roadWidth: 40,parking: "Dedicated 5+",permittedUsage: "Warehousing / light industry",occupancy: "Vacant",rentalIncome: 0,leaseDuration: "",leaseTerms: "",maintenance: 0,opex: 120000},
       location: { city: 'Madurai', locality: 'Kappalur', exact: true, lat: 9.87, lng: 78.03, roadType: 'Industrial road', roadWidthFt: 40, nearby: [
         place('highway', 'NH-44 (Madurai–Tirunelveli)', 1.5), place('other', 'SIDCO industrial estate', 0.8), place('other', 'Freight terminal', 6, 'proposed', false)] },
-      approvals: [approval('building', 'verified', '2026-10-25')],
-      documents: docs('PROP-1011', '2026-10-25', ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'completion', 'tax'], ['fire']),
+      approvals: [approval('dtcp', 'verified', '2026-10-25')],
+      documents: docs('PROP-1011', '2026-10-25', ['ec']),
       comparables: [
         comp('Kappalur, Madurai', 'Warehouse', 12000, 2500, 'transaction', '2026-09-15', 'Registered sale (sample)', 'Larger, older shed'),
         comp('Kappalur, Madurai', 'Warehouse', 8000, 2750, 'asking', '2026-10-20', 'Property portal listing', 'Newer construction')],
@@ -261,8 +258,8 @@ export function seedProperties(): Property[] {
       location: { city: 'Madurai', locality: 'Ponmeni', exact: true, lat: 9.93, lng: 78.095, roadType: 'Tar road', roadWidthFt: 23, nearby: [
         place('school', 'Ponmeni Matriculation School (sample)', 0.6), place('hospital', 'Ponmeni Nursing Home (sample)', 1.0),
         place('busStop', 'Ponmeni bus stop', 0.3)] },
-      approvals: [approval('building', 'verified', '2026-11-10')],
-      documents: docs('PROP-1012', '2026-11-10', ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'tax']),
+      approvals: [approval('dtcp', 'verified', '2026-11-10')],
+      documents: docs('PROP-1012', '2026-11-10', ['ec']),
       comparables: [
         comp('Ponmeni, Madurai', 'Residential plot', 1200, 2250, 'transaction', '2026-09-25', 'Registered sale (sample)', 'Interior road'),
         comp('Ponmeni, Madurai', 'Residential plot', 1400, 2350, 'asking', '2026-11-02', 'Property portal listing', 'Similar'),
@@ -417,5 +414,5 @@ export function seedLeads(): Lead[] {
 
 export function seedDatabase(): Database {
   seq = 0
-  return { version: 3, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
+  return { version: 4, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
 }

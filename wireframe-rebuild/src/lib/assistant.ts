@@ -192,7 +192,7 @@ export function readMessage(text: string, draft: Draft, asking?: string): Fact[]
   // approvals and amenities
   const approvals: string[] = []
   if (/\brera\b/.test(q)) approvals.push('rera')
-  if (/\b(dtcp|cmda|approved layout|building approval|plan approval|approved plan)\b/.test(q)) approvals.push('building')
+  if (/\b(dtcp|cmda|approved layout|building approval|plan approval|approved plan)\b/.test(q)) approvals.push('dtcp')
   if (approvals.length) add({ key: 'approvals', value: approvals })
   const amen = AMENITY_WORDS.filter(([re]) => re.test(q)).map(([, a]) => a)
   if (amen.length) add({ key: 'amenities', value: amen })

@@ -55,7 +55,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function Sidebar() {
   return (
     <aside className="hidden w-[236px] shrink-0 border-r bg-card lg:block">
-      <div className="sticky top-0 h-[calc(100svh-30px)] overflow-y-auto px-2.5 py-3.5">
+      <div className="side-scroll sticky top-0 h-[calc(100svh-30px)] overflow-y-auto px-2.5 py-3.5">
         <div className="px-2 pt-1 pb-3.5"><Brand /></div>
         <SidebarNav />
       </div>

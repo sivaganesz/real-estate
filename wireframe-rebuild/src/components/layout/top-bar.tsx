@@ -53,7 +53,7 @@ export function TopBar() {
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="left" className="w-72 bg-card p-0">
           <SheetHeader className="border-b px-4 py-3"><SheetTitle asChild><div><Brand /></div></SheetTitle></SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-4"><SidebarNav onNavigate={() => setMenuOpen(false)} /></div>
+          <div className="side-scroll min-h-0 flex-1 overflow-y-auto px-2.5 pb-4"><SidebarNav onNavigate={() => setMenuOpen(false)} /></div>
         </SheetContent>
       </Sheet>
     </header>

@@ -165,13 +165,8 @@ export const AMENITIES = [
   'Rainwater harvesting', 'CCTV', 'Visitor parking', 'Loading bay',
 ]
 
-/** Documents the team usually keeps for each type, offered as one-click suggestions on the Legal tab (all optional). */
-export const DOC_KINDS = ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'completion', 'fire', 'tax', 'valuer'] as const
+/** The one document suggested on the Legal tab: the EC. Any other document can be uploaded by name when the team wants. */
+export const DOC_KINDS = ['ec'] as const
 export const USUAL_DOCS: Record<PropertyTypeKey, string[]> = {
-  plot: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'landuse', 'tax', 'valuer'],
-  flat: ['parent', 'saledeed', 'ec', 'patta', 'completion', 'tax', 'valuer'],
-  house: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'completion', 'tax', 'valuer'],
-  commercial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'completion', 'fire', 'tax', 'valuer'],
-  agri: ['parent', 'saledeed', 'ec', 'patta', 'fmb', 'tax', 'valuer'],
-  industrial: ['parent', 'saledeed', 'ec', 'patta', 'landuse', 'fire', 'tax', 'valuer'],
+  plot: ['ec'], flat: ['ec'], house: ['ec'], commercial: ['ec'], agri: ['ec'], industrial: ['ec'],
 }

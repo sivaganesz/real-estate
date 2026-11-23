@@ -129,6 +129,9 @@
   --chart-3: #995400;
   --chart-4: #6a3fc4;
   --chart-5: #b42318;
+  --scrollbar: #c3c9d4;
+  --scrollbar-soft: #d3d8e0;
+  --scrollbar-hover: #a5adbb;
 }
 
 /* The original v1 dark theme (kept by decision, 16 Nov): warm near-black surfaces, orange accent. Not switched on yet. */
@@ -181,6 +184,9 @@
   --chart-3: #f0a94b;
   --chart-4: #b39af0;
   --chart-5: #f2706a;
+  --scrollbar: #3a3540;
+  --scrollbar-soft: #332e39;
+  --scrollbar-hover: #4d4755;
 }
 
 @layer base {
@@ -197,4 +203,21 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+}
+
+/* Thin, light scrollbars, as in spec-system-wireframe: the page 8px; the sidebar 6px and soft grey.
+   Chrome/Edge ignore ::-webkit-scrollbar once scrollbar-width is set, so the standard properties are for Firefox only. */
+html::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 99px; border: 2px solid var(--background); }
+html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+.side-scroll::-webkit-scrollbar { width: 6px; }
+.side-scroll::-webkit-scrollbar-track { background: transparent; }
+.side-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-soft); border-radius: 99px; }
+.side-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin; scrollbar-color: var(--scrollbar) transparent; }
+  .side-scroll { scrollbar-width: thin; scrollbar-color: var(--scrollbar-soft) transparent; }
 }
