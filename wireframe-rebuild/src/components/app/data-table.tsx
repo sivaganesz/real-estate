@@ -30,10 +30,10 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
   return (
     <div className={cn('overflow-hidden rounded-xl border bg-card shadow-card', className)}>
       <Table aria-label={label}>
-        <TableHeader className="bg-muted/50">
+        <TableHeader className="bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]">
           <TableRow className="hover:bg-transparent">
             {columns.map((c) => (
-              <TableHead key={c.key} className={cn('h-10 px-3 text-xs font-medium text-muted-foreground', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
+              <TableHead key={c.key} className={cn('h-auto px-3 py-[9px] text-[11.5px] font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
                 {c.header}
               </TableHead>
             ))}
@@ -47,7 +47,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
               onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(r) } : undefined}
               className={cn(onRowClick && 'cursor-pointer focus-visible:bg-accent/50 focus-visible:outline-none')}>
               {columns.map((c) => (
-                <TableCell key={c.key} className={cn('px-3 py-2.5', c.align === 'right' && 'text-right tabular-nums', c.hideOnPhone && 'max-md:hidden', c.className)}>
+                <TableCell key={c.key} className={cn('px-3 py-[9px] align-top', c.align === 'right' && 'text-right tabular-nums', c.hideOnPhone && 'max-md:hidden', c.className)}>
                   {c.cell(r)}
                 </TableCell>
               ))}

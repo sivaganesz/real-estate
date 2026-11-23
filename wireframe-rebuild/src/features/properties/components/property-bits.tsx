@@ -1,0 +1,102 @@
+/**
+ * Small property building blocks used across the list, the property page and the share panel:
+ * the status chip, the approval chips, the photo (or its placeholder), and the completion ring.
+ */
+import { Building2, Factory, House, LandPlot, Store, Tractor, TriangleAlert, BadgeCheck, Archive, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { StatusChip } from '@/components/app/status-chip'
+import { type Tone, toneSoft, toneText } from '@/components/app/tone'
+import { cn } from '@/lib/utils'
+import { useStore } from '@/store/db'
+import type { Media, Property, PropertyStatus, PropertyTypeKey } from '@/data/types'
+import type { MatchLabel } from '@/lib/matching'
+
+export const STATUS_TONE: Record<PropertyStatus, Tone> = {
+  draft: 'neutral', available: 'success', negotiation: 'violet', reserved: 'info', booked: 'info', onHold: 'warning', sold: 'neutral',
+}
+export const MATCH_TONE: Record<MatchLabel, Tone> = {
+  strong: 'success', good: 'info', weak: 'neutral', conditional: 'warning', budgetMismatch: 'danger', excluded: 'danger',
+}
+
+export function PropertyStatusChip({ property: p, className }: { property: Pick<Property, 'status' | 'archived'>; className?: string }) {
+  const { t } = useTranslation()
+  if (p.archived) return <StatusChip tone="neutral" variant="outline" icon={<Archive />} className={className}>{t('props.archived')}</StatusChip>
+  return (
+    <StatusChip tone={STATUS_TONE[p.status]} variant={p.status === 'draft' ? 'outline' : 'soft'} className={className}>
+      {t(`status.${p.status}`)}
+    </StatusChip>
+  )
+}
+
+/** Approval badges: ✓ once the document is uploaded (verified or not), ⚠ "document pending" until then. */
+export function ApprovalChips({ property, className }: { property: Property; className?: string }) {
+  const { t } = useTranslation()
+  const { db } = useStore()
+  if (!property.approvals.length) return null
+  return (
+    <span className={cn('inline-flex flex-wrap gap-1.5', className)}>
+      {property.approvals.map((a) => {
+        const label = t(`approval.${a.approvalId}`, { defaultValue: db.settings.approvalTypes.find((x) => x.id === a.approvalId)?.label ?? a.approvalId })
+        return a.status === 'pending'
+          ? <StatusChip key={a.approvalId} tone="warning" icon={<TriangleAlert />} title={t('approvalState.pendingHint')}>{label} · {t('approvalState.pending')}</StatusChip>
+          : <StatusChip key={a.approvalId} tone="info" icon={a.status === 'verified' ? <BadgeCheck /> : undefined}>{label}</StatusChip>
+      })}
+    </span>
+  )
+}
+
+/* ---------- photos ---------- */
+
+const TYPE_LOOK: Record<PropertyTypeKey, { icon: LucideIcon; tone: Tone }> = {
+  plot: { icon: LandPlot, tone: 'success' },
+  flat: { icon: Building2, tone: 'info' },
+  house: { icon: House, tone: 'warning' },
+  commercial: { icon: Store, tone: 'violet' },
+  agri: { icon: Tractor, tone: 'success' },
+  industrial: { icon: Factory, tone: 'neutral' },
+}
+export const typeIcon = (t: PropertyTypeKey) => TYPE_LOOK[t].icon
+
+/** A property photo. The seed has no real photos yet: an empty url draws a soft placeholder with the type's icon. */
+export function PropertyPhoto({ type, media, alt, className, iconClassName }: {
+  type: PropertyTypeKey; media?: Media; alt: string; className?: string; iconClassName?: string
+}) {
+  if (media?.url) return <img src={media.url} alt={alt} loading="lazy" className={cn('object-cover', className)} />
+  const { icon: Icon, tone } = TYPE_LOOK[type]
+  return (
+    <div role="img" aria-label={alt} className={cn('flex items-center justify-center', toneSoft[tone], className)}>
+      <Icon className={cn('size-10 opacity-50', toneText[tone], iconClassName)} strokeWidth={1.25} />
+    </div>
+  )
+}
+
+/* ---------- completion ---------- */
+
+/** The listing's completion score as a ring, coloured by how far along it is. */
+export function CompletionRing({ score, size = 40, className }: { score: number; size?: number; className?: string }) {
+  const { t } = useTranslation()
+  const stroke = size > 50 ? 7 : 4
+  const r = (size - 8) / 2
+  const c = 2 * Math.PI * r
+  const tone: Tone = score >= 80 ? 'success' : score >= 50 ? 'warning' : 'danger'
+  return (
+    <span className={cn('relative inline-flex shrink-0 items-center justify-center', className)} style={{ width: size, height: size }}
+      role="img" aria-label={t('props.complete', { pct: score })}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} className={cn('transition-[stroke-dashoffset]', toneStroke[tone])} />
+      </svg>
+      <span className={cn('absolute tabular-nums', size > 50 ? 'text-[15px] font-medium' : 'text-[10.5px] tracking-tight')}>{score}%</span>
+    </span>
+  )
+}
+const toneStroke: Record<Tone, string> = {
+  neutral: 'stroke-neutral', primary: 'stroke-primary', success: 'stroke-success', warning: 'stroke-warning', danger: 'stroke-danger', info: 'stroke-info', violet: 'stroke-violet',
+}
+
+/** The property type's icon as a component (so screens don't pick a component during render). */
+export function TypeIcon({ type, className }: { type: PropertyTypeKey; className?: string }) {
+  const Icon = TYPE_LOOK[type].icon
+  return <Icon className={className} aria-hidden />
+}

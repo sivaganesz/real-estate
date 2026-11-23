@@ -11,7 +11,7 @@ export function KeyValueGrid({ items, columns = 3, className }: { items: KeyValu
       {shown.map((i, n) => (
         <div key={i.key ?? n} className="min-w-0">
           <dt className="flex items-center gap-1 text-xs text-muted-foreground">{i.label}{i.hint}</dt>
-          <dd className="truncate font-medium">{i.value}</dd>
+          <dd className="font-medium break-words">{i.value}</dd>
         </div>
       ))}
     </dl>

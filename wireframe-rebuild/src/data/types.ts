@@ -48,6 +48,10 @@ export type NearbyPlace = {
   /** A person checked the route (only needed for categories with routeCheck on). */
   routeChecked: boolean
   routeCheckedBy?: string
+  routeCheckedAt?: string
+  /** How the route was checked: driven, walked, by bus. */
+  routeCheckHow?: string
+  added?: Audit
   source: 'google' | 'user'
 }
 
@@ -119,6 +123,10 @@ export type Property = {
   created: Audit
   updated: Audit
   history: HistoryEntry[]
+  /** Archived: hidden from the list, matching and new bookings; links and history are kept. Restorable. */
+  archived?: Audit & { reason?: string }
+  /** Our own properties marked "not similar" for this one's price check. */
+  dismissedComparables?: string[]
 }
 
 /* ---------- leads (needed for matching and sharing) ---------- */
@@ -158,7 +166,7 @@ export type LeadActivity = {
   id: string
   at: string
   by: string
-  type: 'call' | 'whatsapp' | 'email' | 'meeting' | 'visit' | 'note' | 'shared'
+  type: 'call' | 'whatsapp' | 'email' | 'meeting' | 'visit' | 'note' | 'shared' | 'recommended'
   text: string
   propertyId?: string
 }
@@ -180,6 +188,17 @@ export type Lead = {
   source: string
   enquiryDate: string
   ownerId: string | null
+  /** Why they're buying — it changes what to tell them about a property. */
+  purpose?: BuyerPurpose
+  /** How ready they are to buy — the inputs to the "ready to buy" score (never shown as BANT labels). */
+  qualification: {
+    need: 'clear' | 'partly' | 'exploring'
+    timeline: 'm1' | 'm1to3' | 'm3to6' | 'm6to12' | 'undecided'
+    authority: 'sole' | 'joint' | 'needsApproval' | 'unknown'
+    funding: 'own' | 'loan' | 'combination'
+    fundingReady: 'ready' | 'arranging' | 'undecided'
+  }
+  engagement: { responded: boolean; docsRequested: boolean; siteVisited: boolean }
   purposeNote?: string
   budget: Budget
   requirement: Requirement
@@ -189,7 +208,11 @@ export type Lead = {
   recommendedPropertyIds: string[]
   visits: SiteVisit[]
   activity: LeadActivity[]
+  /** The deal under way: their offer against the asking price, and the seller's counter. */
+  negotiation?: { propertyId: string; offered?: number; counter?: number; notes?: string }
 }
+
+export type BuyerPurpose = 'ownUse' | 'investment' | 'rentalIncome' | 'businessUse' | 'secondHome' | 'other'
 
 /* ---------- settings (master data) ---------- */
 

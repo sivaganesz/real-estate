@@ -45,6 +45,7 @@ The **UI kit** page (`/ui-kit`, at the bottom of the menu) shows the theme and e
 
 | Section | Status |
 |---|---|
-| Setup, theme, shared components, app shell | Built, for review |
-| Properties | Next |
+| Setup, theme, shared components, app shell | Done (24dfd08) |
+| Properties: list, property page (Overview, Legal & documents, Price, Matching buyers, History), Share panel, archive | Built, for review — `src/features/properties/` |
+| Properties: Add and Edit with AI, Bulk import, Share page (customer brochure) | Next |
 | Leads, Pipeline, Appointments, Matching, Projects, Bulk import, Reports, HNI, Settings, Enquiry form, System map, Dashboard | Later, one at a time |

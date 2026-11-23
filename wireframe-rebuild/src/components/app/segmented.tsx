@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-export type Segment<V extends string> = { value: V; label: ReactNode; count?: number; icon?: ReactNode; ariaLabel?: string }
+export type Segment<V extends string> = { value: V; label: ReactNode; count?: number; icon?: ReactNode; ariaLabel?: string; /** shown instead of the count, e.g. an amber "1 pending" */ badge?: ReactNode }
 
 /**
  * Switch between views of one list: tabs with counts (Available · Drafts · All), or cards / table.
@@ -30,7 +30,8 @@ export function Segmented<V extends string>({ value, onChange, segments, label, 
           className={cn('flex items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-sm whitespace-nowrap transition-colors',
             value === s.value ? 'border-primary font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>
           {s.icon}{s.label}
-          {s.count != null && (
+          {s.badge}
+          {s.badge == null && s.count != null && (
             <span className={cn('rounded-full px-1.5 text-xs tabular-nums', value === s.value ? 'bg-accent text-accent-foreground' : 'bg-muted')}>{s.count}</span>
           )}
         </button>

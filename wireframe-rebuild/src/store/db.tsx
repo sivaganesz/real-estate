@@ -8,7 +8,7 @@ import type { Database, Lead, Property, Role, User } from '@/data/types'
 
 const DB_KEY = 'realspec-rebuild-db'
 const ROLE_KEY = 'realspec-rebuild-role'
-const DB_VERSION = 1
+const DB_VERSION = 3
 
 /** Who the demo signs in as for each role. */
 const DEMO_USER_FOR: Record<Role, string> = { admin: 'u-admin', manager: 'u-mgr', executive: 'u-ex01' }
@@ -43,7 +43,22 @@ type Store = {
   addProperty: (build: (id: string) => Property, historyText: string) => string
   /** POST /api/leads/:id/shares — logs on the lead's timeline and counts as a recommendation. */
   shareProperty: (propertyId: string, leadId: string, channel: ShareChannel) => void
+  /** POST / DELETE /api/leads/:id/recommendations/:propertyId — the buyer was told about it (call, WhatsApp, in person). */
+  recommendProperty: (propertyId: string, leadId: string, on: boolean) => void
+  /** DELETE /api/properties/:id — only offered for an archived property. */
+  deleteProperty: (id: string) => void
+  /** PATCH /api/settings — master data such as approval badges. Admin / Sales manager only. */
+  updateSettings: (change: (s: Database['settings']) => void) => void
   resetDemo: () => void
+}
+
+/** Recommending or sharing moves an early lead on to "Property recommended". */
+function markRecommended(lead: Lead, propertyId: string) {
+  if (!lead.recommendedPropertyIds.includes(propertyId)) lead.recommendedPropertyIds.push(propertyId)
+  if (['new', 'contacted', 'qualified'].includes(lead.stage)) {
+    lead.stage = 'recommended'
+    lead.stageSince = DEMO_TODAY
+  }
 }
 
 const StoreContext = createContext<Store | null>(null)
@@ -91,21 +106,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const lead: Lead | undefined = next.leads.find((l) => l.id === leadId)
       if (!lead) return prev
       lead.activity.unshift({ id: `${leadId}-a${lead.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'shared', propertyId, text: channel })
-      if (!lead.recommendedPropertyIds.includes(propertyId)) lead.recommendedPropertyIds.push(propertyId)
-      // sharing counts as a recommendation: early leads move to "Property recommended"
-      if (['new', 'contacted', 'qualified'].includes(lead.stage)) {
-        lead.stage = 'recommended'
-        lead.stageSince = DEMO_TODAY
-      }
+      markRecommended(lead, propertyId) // sharing counts as a recommendation
       return next
     })
   }, [user.id])
 
+  const recommendProperty = useCallback<Store['recommendProperty']>((propertyId, leadId, on) => {
+    setDb((prev) => {
+      const next = structuredClone(prev)
+      const lead = next.leads.find((l) => l.id === leadId)
+      if (!lead) return prev
+      if (on) markRecommended(lead, propertyId)
+      else lead.recommendedPropertyIds = lead.recommendedPropertyIds.filter((x) => x !== propertyId)
+      lead.activity.unshift({ id: `${leadId}-a${lead.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'recommended', propertyId, text: on ? 'on' : 'off' })
+      return next
+    })
+  }, [user.id])
+
+  const deleteProperty = useCallback<Store['deleteProperty']>((id) => {
+    setDb((prev) => ({ ...prev, properties: prev.properties.filter((p) => p.id !== id) }))
+  }, [])
+
+  const updateSettings = useCallback<Store['updateSettings']>((change) => {
+    setDb((prev) => {
+      const next = structuredClone(prev)
+      change(next.settings)
+      return next
+    })
+  }, [])
+
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, resetDemo }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, deleteProperty, updateSettings, resetDemo }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, deleteProperty, updateSettings, resetDemo],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

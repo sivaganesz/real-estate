@@ -5,7 +5,7 @@
  * An approval claimed without its document makes it a "conditional" match, never a top recommendation.
  */
 import type { Lead, Property, Settings } from '@/data/types'
-import { pendingApprovals } from './property'
+import { isOnOffer, pendingApprovals } from './property'
 
 export type MatchLabel = 'strong' | 'good' | 'weak' | 'conditional' | 'budgetMismatch' | 'excluded'
 
@@ -18,6 +18,8 @@ export type Match = {
   label: MatchLabel
   excluded: boolean
   reasons: Reason[]
+  /** The most the lead will pay: maximum budget plus their flexibility. */
+  ceiling: number
 }
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v))
@@ -93,18 +95,23 @@ export function matchScore(lead: Lead, p: Property, settings: Settings): Match {
     if (r.sizeSqft) reasons.push({ ok: S >= 60, key: sizeDev === 0 ? 'sizeExact' : 'sizeOff', values: { pct: Math.round(sizeDev * 100) } })
     if (r.localities.length) reasons.push({ ok: r.localities.includes(p.location.locality), key: r.localities.includes(p.location.locality) ? 'preferredLocality' : 'otherLocality' })
     reasons.push(...prefs)
-    if (!legalOk) reasons.push({ ok: false, key: 'docPending' })
+    // warnings (ok: null) — shown as amber chips on the buyer, not as reasons against
+    if (!legalOk) reasons.push({ ok: null, key: 'docPending', values: { list: pendingApprovals(p).join(',') } })
+    if (r.approvalRequired) {
+      const n = p.approvals.length
+      reasons.push(n && legalOk ? { ok: true, key: 'approvalsUploaded' } : n ? { ok: null, key: 'approvalsPending' } : { ok: false, key: 'noApprovalBadges' })
+    }
   } else {
     failed.forEach((f) => reasons.push({ ok: false, key: 'fail_' + f.key }))
   }
-  return { property: p, lead, score, label, excluded: failed.length > 0, reasons }
+  return { property: p, lead, score, label, excluded: failed.length > 0, reasons, ceiling }
 }
 
 const isActiveLead = (l: Lead) => l.stage !== 'lost' && l.stage !== 'closed'
 
 /** Leads that fit a property, best first. Excluded and inactive leads are left out. */
 export function leadsForProperty(p: Property, leads: Lead[], settings: Settings): Match[] {
-  if (p.status !== 'available') return []
+  if (!isOnOffer(p)) return []
   return leads
     .filter(isActiveLead)
     .map((l) => matchScore(l, p, settings))
@@ -118,4 +125,14 @@ export function propertiesForLead(lead: Lead, properties: Property[], settings: 
     .map((p) => matchScore(lead, p, settings))
     .filter((m) => !m.excluded)
     .sort((a, b) => Number(a.label === 'conditional') - Number(b.label === 'conditional') || b.score - a.score)
+}
+
+/** Leads for whom everything fits except the price, and the price is within 15% of what they'll pay — worth a call about the gap. */
+export function closeOnBudget(p: Property, leads: Lead[], settings: Settings): Match[] {
+  if (!isOnOffer(p)) return []
+  return leads
+    .filter(isActiveLead)
+    .map((l) => matchScore(l, p, settings))
+    .filter((m) => m.label === 'budgetMismatch' && p.price <= m.ceiling * 1.15)
+    .sort((a, b) => b.ceiling - a.ceiling)
 }

@@ -6,7 +6,7 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PROPERTY_TYPES, type FactDef } from '@/data/catalogue'
 import type { Property, SpecValue } from '@/data/types'
-import { num, sqft } from './format'
+import { inr, num, sqft } from './format'
 
 const ALL_FACTS = Object.values(PROPERTY_TYPES).flatMap((d) => d.facts)
 const catalogueLabel = (key: string) => ALL_FACTS.find((f) => f.key === key)?.label ?? key
@@ -17,12 +17,8 @@ export function useLabels() {
   const factValue = useCallback(
     (def: FactDef, v: SpecValue | undefined): string => {
       if (v === '' || v == null) return ''
-      if (def.kind === 'number') {
-        const n = num(Number(v))
-        if (!def.unit) return n
-        if (def.unit.startsWith('₹')) return `₹${n}${def.unit.slice(1)}`
-        return `${n} ${def.unit}`
-      }
+      // the unit is part of the label, as in the current wireframe ("Length (ft)" → "50"); rupee fields show as ₹ amounts
+      if (def.kind === 'number') return def.money ? inr(Number(v)) : num(Number(v))
       return String(v)
     },
     [],

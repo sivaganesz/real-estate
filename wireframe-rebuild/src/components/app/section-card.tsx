@@ -15,11 +15,11 @@ export function SectionCard({ title, description, action, children, className, b
       className={cn('scroll-mt-24 rounded-xl border bg-card text-card-foreground shadow-card', className)} {...props}>
       {(title || action) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-4 md:px-5">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-40 flex-1">
             {title && <h2 id={headingId} className="text-base font-semibold">{title}</h2>}
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
-          {action && <div className="flex items-center gap-2">{action}</div>}
+          {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
         </div>
       )}
       <div className={cn('p-4 md:px-5', title || action ? 'pt-3' : '', bodyClassName)}>{children}</div>

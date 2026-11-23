@@ -4,6 +4,22 @@ import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /** The top of every page: optional back link, title, one line of description, and the page's actions on the right. */
+/** Breadcrumbs: "Properties / PROP-1002". The last one is the current page. */
+export function Crumbs({ items }: { items: { to?: string; label: ReactNode }[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="mb-3 text-sm text-muted-foreground">
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {items.map((c, i) => (
+          <li key={i} className="flex items-center gap-1.5">
+            {i > 0 && <span aria-hidden>/</span>}
+            {c.to ? <Link to={c.to} className="text-primary hover:underline">{c.label}</Link> : <span aria-current="page" className="font-medium text-foreground">{c.label}</span>}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
 export function PageHeader({ title, description, actions, back, eyebrow, className }: {
   title: ReactNode
   description?: ReactNode
@@ -24,7 +40,7 @@ export function PageHeader({ title, description, actions, back, eyebrow, classNa
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-4">
         <div className="min-w-0 flex-1">
           {eyebrow && <div className="mb-1.5 flex flex-wrap items-center gap-2">{eyebrow}</div>}
-          <h1 className="text-xl font-semibold tracking-tight text-balance md:text-2xl">{title}</h1>
+          <h1 className="text-xl font-bold tracking-[-.01em] text-balance">{title}</h1>
           {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -35,5 +51,5 @@ export function PageHeader({ title, description, actions, back, eyebrow, classNa
 
 /** Page width and padding, the same on every page. */
 export function Page({ children, className, wide }: { children: ReactNode; className?: string; wide?: boolean }) {
-  return <div className={cn('mx-auto w-full px-4 py-5 md:px-6 md:py-6', wide ? 'max-w-[1600px]' : 'max-w-[1380px]', className)}>{children}</div>
+  return <div className={cn('w-full px-4 pt-5 pb-[60px] md:px-6', wide ? 'max-w-[1600px]' : 'max-w-[1380px]', className)}>{children}</div>
 }

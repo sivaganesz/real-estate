@@ -28,6 +28,7 @@ import type { Tone } from '@/components/app/tone'
 import { UserAvatar } from '@/components/app/user-avatar'
 import { inrShort } from '@/lib/format'
 import { useStore } from '@/store/db'
+import { useCrumbs } from '@/components/layout/crumbs'
 import type { Property } from '@/data/types'
 
 const SWATCHES: { name: string; cls: string; token: string }[] = [
@@ -43,6 +44,7 @@ const SWATCHES: { name: string; cls: string; token: string }[] = [
 const TONES: Tone[] = ['neutral', 'primary', 'success', 'warning', 'danger', 'info', 'violet']
 
 export function UiKitPage() {
+  useCrumbs([{ label: 'UI kit' }])
   const { db } = useStore()
   const [q, setQ] = useState('')
   const [tab, setTab] = useState<'available' | 'drafts' | 'all'>('available')
