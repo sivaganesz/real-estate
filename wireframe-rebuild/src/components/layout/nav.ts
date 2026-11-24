@@ -45,7 +45,7 @@ export const NAV: NavGroup[] = [
     labelKey: 'nav.group.tools',
     items: [
       { to: '/enquiry', labelKey: 'nav.enquiry', icon: '📝' },
-      { to: '/settings', labelKey: 'nav.settingsRules', icon: '⚙️' },
+      { to: '/settings', labelKey: 'nav.settingsRules', icon: '⚙️', ready: true },
     ],
   },
 ]

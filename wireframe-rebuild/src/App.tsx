@@ -7,6 +7,7 @@ import { PropertiesPage } from '@/features/properties/pages/properties-page'
 import { PropertyEditPlaceholder, PropertyPage } from '@/features/properties/pages/property-page'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
+import { SettingsPage } from '@/features/settings/settings-page'
 import { StoreProvider } from '@/store/db'
 
 /** Routes. Sections not rebuilt yet get a placeholder page from the nav list, so every menu item works. */
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="properties/drafts" element={<PropertyEditPlaceholder />} />
               <Route path="properties/:id/edit" element={<PropertyEditPlaceholder />} />
               <Route path="properties/:id/:tab?" element={<PropertyPage />} />
+              <Route path="settings" element={<SettingsPage />} />
               <Route path="ui-kit" element={<UiKitPage />} />
               {ALL_NAV_ITEMS.filter((i) => !i.ready).map((i) => (
                 <Route key={i.to} path={i.to.slice(1) + '/*'} element={<ModulePlaceholderPage item={i} />} />

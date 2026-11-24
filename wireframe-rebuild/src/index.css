@@ -1,7 +1,7 @@
 /*
  * RealSpec theme — the one place colours, fonts, rounding and shadows are defined.
  * Light: the current wireframe's light-blue look (spec-system-wireframe/styles.css).
- * Dark: the original v1 dark (warm near-black, orange) — defined, not switched on yet.
+ * Dark: the original v1 dark (warm near-black, orange) — switched in Settings → Your preferences (src/lib/theme.ts).
  * Screens never hard-code a colour: they use these tokens (bg-primary, text-success, bg-warning-soft …).
  */
 @import "tailwindcss";
@@ -103,7 +103,8 @@
   --text-prompt: 14.5px; /* the AI sentence box */
 }
 
-:root {
+:root,
+.light {
   --radius: 10px;
   --card-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.03);
 
@@ -170,7 +171,7 @@
   --scrollbar-hover: #a5adbb;
 }
 
-/* The original v1 dark theme (kept by decision, 16 Nov): warm near-black surfaces, orange accent. Not switched on yet. */
+/* The original v1 dark theme (kept by decision, 16 Nov): warm near-black surfaces, orange accent. On with Settings → Theme. */
 .dark {
   --card-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
 

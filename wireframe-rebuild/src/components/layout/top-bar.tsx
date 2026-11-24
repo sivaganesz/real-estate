@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { LanguageSwitch } from '@/components/language-switch'
 import { useStore } from '@/store/db'
 import type { Role } from '@/data/types'
 import { useCrumbsValue } from './crumbs'
@@ -15,7 +14,7 @@ const ROLES: Role[] = ['admin', 'manager', 'executive']
 
 /**
  * The top bar, as in spec-system-wireframe: breadcrumbs on the left; 📝 Public enquiry, ＋ Lead, ＋ Property and
- * "Viewing as" on the right. (Added for the rebuild: the English | தமிழ் switch, and the menu button on phone and tablet.)
+ * "Viewing as" on the right. (Added for the rebuild: the menu button on phone and tablet. Theme and language are in Settings.)
  */
 export function TopBar() {
   const { t } = useTranslation()
@@ -47,7 +46,6 @@ export function TopBar() {
             <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{t(`role.${r}`)}</SelectItem>)}</SelectContent>
           </Select>
         </label>
-        <LanguageSwitch />
       </div>
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>

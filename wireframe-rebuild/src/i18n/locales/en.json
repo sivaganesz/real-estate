@@ -1157,5 +1157,50 @@
     "always": "Always shown",
     "reset": "Reset to default",
     "needsWider": "Needs a wider screen"
+  },
+  "settings": {
+    "title": "Settings & business rules",
+    "subtitle": "Your own preferences, and the rules the whole team works with.",
+    "prefs": {
+      "title": "Your preferences",
+      "body": "Only for you — saved in this browser."
+    },
+    "theme": {
+      "label": "Theme",
+      "hint": "How the app looks.",
+      "light": "Light",
+      "lightHint": "Light blue on white.",
+      "dark": "Dark",
+      "darkHint": "Warm dark with orange — easier on the eyes at night.",
+      "system": "Match my device",
+      "systemHint": "Light or dark, as your phone or computer is set."
+    },
+    "language": {
+      "label": "Language",
+      "hint": "Screen text only — names, titles and notes stay as they were typed."
+    },
+    "rules": {
+      "title": "Business rules",
+      "body": "Shared by the whole team; only an Admin or Sales manager can change them. They come with the Settings module.",
+      "soon": "Coming next",
+      "matchWeights": "Matching weights",
+      "matchWeightsHint": "Budget, location, size, amenities, preferences",
+      "readiness": "Purchase readiness points",
+      "readinessHint": "Budget, requirement, timeline, funding, authority…",
+      "bands": "Lead classification bands",
+      "bandsHint": "High-priority, qualified, developing",
+      "followUp": "Classification & follow-up",
+      "followUpHint": "High-value prospect suggestion, stuck leads",
+      "costs": "Transaction cost assumptions",
+      "costsHint": "Stamp duty, registration, other costs",
+      "executives": "Sales executives",
+      "executivesHint": "The people leads are assigned to",
+      "places": "Nearby place categories",
+      "placesHint": "What “Explore the neighbourhood” shows",
+      "approvals": "Approval badges",
+      "approvalsHint": "DTCP, RERA and the other badges",
+      "demoData": "Demo data",
+      "demoDataHint": "Export, import or reset the demo data"
+    }
   }
 }

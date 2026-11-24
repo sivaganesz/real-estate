@@ -10,7 +10,7 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
 - React 19, Vite, TypeScript
 - Tailwind CSS v4 and shadcn/ui (Radix, Lucide icons)
 - React Router
-- i18next: English and Tamil, with a switch in the top bar
+- i18next: English and Tamil, chosen in Settings → Your preferences
 - Mock data saved in the browser, shaped like the real database; no backend
 
 **Run it:** `pnpm install`, then `pnpm dev`. `pnpm build` makes static files that can be demoed anywhere.
@@ -23,7 +23,7 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
   - white cards;
   - 10 px rounding;
   - Inter font.
-- **Dark:** the original warm dark theme with an orange accent is defined but not switched on yet.
+- **Dark:** the original warm dark theme with an orange accent. Each person picks Light, Dark or "Match my device" in Settings → Your preferences ([src/lib/theme.ts](src/lib/theme.ts)); index.html applies the choice before the page draws.
 - **One file:** everything lives in [src/index.css](src/index.css). Screens use token names (`bg-primary`, `text-success`, `bg-warning-soft`), never raw colours, so changing the theme means editing that one file.
 - **Status tones:** `neutral`, `primary`, `success`, `warning`, `danger`, `info` and `violet`, each with a `-soft` background and a `-foreground` for text on the solid colour.
 - **Ribbon:** the dark WIREFRAME bar has its own colours (`bg-ribbon`, `text-ribbon-foreground`, …).
