@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# raw photos dropped in for the demo; the compressed copies live in public/demo-photos
+demo-photos-inbox/

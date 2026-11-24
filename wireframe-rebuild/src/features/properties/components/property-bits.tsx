@@ -3,6 +3,7 @@
  * the status chip, the approval chips, the photo (or its placeholder), and the completion ring.
  */
 import { Building2, Factory, House, LandPlot, Store, Tractor, TriangleAlert, BadgeCheck, Archive, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusChip } from '@/components/app/status-chip'
 import { type Tone, toneSoft, toneText } from '@/components/app/tone'
@@ -57,11 +58,14 @@ const TYPE_LOOK: Record<PropertyTypeKey, { icon: LucideIcon; tone: Tone }> = {
 }
 export const typeIcon = (t: PropertyTypeKey) => TYPE_LOOK[t].icon
 
-/** A property photo. The seed has no real photos yet: an empty url draws a soft placeholder with the type's icon. */
+/** A property photo. With no photo, or one that fails to load, it draws a soft placeholder with the type's icon. */
 export function PropertyPhoto({ type, media, alt, className, iconClassName }: {
   type: PropertyTypeKey; media?: Media; alt: string; className?: string; iconClassName?: string
 }) {
-  if (media?.url) return <img src={media.url} alt={alt} loading="lazy" className={cn('object-cover', className)} />
+  const [failed, setFailed] = useState<string | null>(null)
+  if (media?.url && failed !== media.url) {
+    return <img src={media.url} alt={alt} loading="lazy" onError={() => setFailed(media.url)} className={cn('object-cover', className)} />
+  }
   const { icon: Icon, tone } = TYPE_LOOK[type]
   return (
     <div role="img" aria-label={alt} className={cn('flex items-center justify-center', toneSoft[tone], className)}>

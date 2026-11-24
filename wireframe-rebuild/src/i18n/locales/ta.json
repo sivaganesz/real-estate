@@ -1150,6 +1150,11 @@
     "archivedCount_other": "{{count}} காப்பகத்தில்",
     "prev": "முந்தைய",
     "next": "அடுத்த",
-    "pageOf": "பக்கம் {{page}} / {{pages}}"
+    "pageOf": "பக்கம் {{page}} / {{pages}}",
+    "viewLabel": "சொத்துகளைக் காட்டும் விதம்",
+    "viewGrid": "கட்டம்",
+    "viewTable": "அட்டவணை",
+    "cardsPerPage": "ஒரு பக்கத்தில் அட்டைகள்:",
+    "cards": "{{n}} அட்டைகள்"
   }
 }

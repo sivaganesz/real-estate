@@ -27,9 +27,10 @@ export function PropertyCard({ property: p, matches, attention }: { property: Pr
   const offered = p.status === 'available' && !p.archived
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-card transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
-      <div className="relative">
-        <PropertyPhoto type={p.type} media={p.media[0]} alt={p.title} className="aspect-[4/3] w-full" />
+    <article className="group relative flex w-full flex-col overflow-hidden rounded-xl border bg-card shadow-card transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
+      <div className="relative overflow-hidden">
+        <PropertyPhoto type={p.type} media={p.media.find((m) => m.isCover) ?? p.media[0]} alt={p.title}
+          className="aspect-[4/3] w-full transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
         <PropertyStatusChip property={p} className="absolute top-2.5 left-2.5 shadow-sm" />
         {photos > 0 && (
           <span className="absolute right-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-md bg-foreground/60 px-1.5 py-0.5 text-xs text-background">
@@ -60,7 +61,8 @@ export function PropertyCard({ property: p, matches, attention }: { property: Pr
           {p.status === 'draft' ? (
             <span className="flex-1 text-muted-foreground">{t('props.draftHint')}</span>
           ) : (
-            <span className={cn('flex flex-1 items-center gap-1.5', offered && matches.length ? 'font-medium text-primary' : 'text-muted-foreground')}>
+            <span title={offered && matches.length ? matches.map((m) => m.lead.name).join(', ') : undefined}
+              className={cn('flex flex-1 items-center gap-1.5', offered && matches.length ? 'font-medium text-primary' : 'text-muted-foreground')}>
               <Users className="size-4" />
               {!offered ? t('props.notOffered') : matches.length ? t('card.leadsFit', { count: matches.length }) : t('card.noLeadsFit')}
             </span>

@@ -21,7 +21,7 @@ import { leadsForProperty } from '@/lib/matching'
 import { isListed, pendingApprovals, photoCount } from '@/lib/property'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import type { Property, PropertyStatus } from '@/data/types'
-import { ApprovalChips, PropertyStatusChip, TypeIcon } from '../components/property-bits'
+import { ApprovalChips, PropertyPhoto, PropertyStatusChip, TypeIcon } from '../components/property-bits'
 import { SharePanel } from '../components/share-panel'
 import { HistoryTab } from '../tabs/history-tab'
 import { LegalTab } from '../tabs/legal-tab'
@@ -67,6 +67,7 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
   const ppsf = p.areaSqft ? Math.round(p.price / p.areaSqft) : 0
   const pending = pendingApprovals(p).length
   const photos = photoCount(p)
+  const cover = p.media.find((m) => m.kind === 'photo' && m.isCover) ?? p.media.find((m) => m.kind === 'photo')
   const openShare = (leadId?: string) => setShare({ open: true, leadId })
   useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties'), to: '/properties' }, { label: p.id }])
   const live = p.status === 'available' && !p.archived
@@ -131,11 +132,18 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
         title={
           <span className="flex items-start gap-4">
             {/* the cover as a thumbnail, with the photo count (opens the Overview photos) */}
-            <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })}
-              className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent text-accent-foreground">
-              <TypeIcon type={p.type} className="size-6" />
-              {photos > 0 && <span className="flex items-center gap-0.5 text-caption font-medium"><Camera className="size-3" />{photos}</span>}
-            </Link>
+            {cover?.url ? (
+              <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })} className="relative size-16 shrink-0 overflow-hidden rounded-xl">
+                <PropertyPhoto type={p.type} media={cover} alt="" className="size-full" iconClassName="size-6" />
+                <span className="absolute right-1 bottom-1 flex items-center gap-0.5 rounded bg-foreground/60 px-1 text-micro font-medium text-background"><Camera className="size-2.5" />{photos}</span>
+              </Link>
+            ) : (
+              <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })}
+                className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent text-accent-foreground">
+                <TypeIcon type={p.type} className="size-6" />
+                {photos > 0 && <span className="flex items-center gap-0.5 text-caption font-medium"><Camera className="size-3" />{photos}</span>}
+              </Link>
+            )}
             <span className="min-w-0">
               <span className="inline-flex flex-wrap items-center gap-2">
                 {p.title}

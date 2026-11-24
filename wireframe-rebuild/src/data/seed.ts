@@ -47,8 +47,9 @@ export const DEFAULT_SETTINGS: Settings = {
 let seq = 0
 const nextId = (p: string) => `${p}-${String(++seq).padStart(3, '0')}`
 
-function photos(propId: string, count: number): Media[] {
-  return Array.from({ length: count }, (_, i) => ({ id: `${propId}-ph${i + 1}`, kind: 'photo' as const, url: '', isCover: i === 0 }))
+/** The demo photos live in public/demo-photos/ (see README). One cover photo per property. */
+function coverPhoto(propId: string, file?: string): Media[] {
+  return file ? [{ id: `${propId}-ph1`, kind: 'photo', url: `${import.meta.env.BASE_URL}demo-photos/${file}.jpg`, isCover: true }] : []
 }
 
 function place(categoryId: string, name: string, km: number, status: NearbyPlace['status'] = 'existing', routeChecked = true): NearbyPlace {
@@ -77,17 +78,18 @@ function comp(locality: string, type: string, areaSqft: number, pricePerSqft: nu
 }
 
 type PropInput = Omit<Property, 'created' | 'updated' | 'history' | 'media' | 'location'> & {
-  photoCount: number
+  /** file name in public/demo-photos/, without .jpg */
+  photo?: string
   location: Omit<Property['location'], 'state'>
   historyText?: string
 }
 function prop(p: PropInput): Property {
   const at = p.listedAt ?? '2026-11-15'
-  const { photoCount, historyText, ...rest } = p
+  const { photo, historyText, ...rest } = p
   return {
     ...rest,
     location: { state: 'Tamil Nadu', ...p.location },
-    media: photos(p.id, photoCount),
+    media: coverPhoto(p.id, photo),
     created: { by: 'u-mgr', at },
     updated: { by: 'u-mgr', at },
     history: [{ id: `${p.id}-h1`, at, by: 'u-mgr', text: historyText ?? (p.status === 'draft' ? 'Draft created' : 'Property listed') }],
@@ -101,7 +103,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1001', title: 'Premium residential plot', type: 'plot', purpose: 'sale', status: 'available', facing: 'E',
       description: 'A level, east-facing plot in a DTCP-approved layout, on a 30 ft tar road with underground drainage, municipal water and a borewell. Ready for construction.',
-      areaSqft: 1200, price: 2800000, listedAt: '2026-11-16', photoCount: 4, amenities: ['Park / open space', 'Rainwater harvesting'],
+      areaSqft: 1200, price: 2800000, listedAt: '2026-11-16', photo: 'plot-vilangudi', amenities: ['Park / open space', 'Rainwater harvesting'],
       specs: {length: 40,width: 30,roadWidth: 30,roadAccess: "Layout road",corner: "Non-corner",topography: "Level",surveyNo: "112/3B",subdivision: "Plot 14",layoutApproval: "DTCP approval (sample no. 245/2024)",landUse: "Residential",water: "Municipal + borewell",electricity: "Available at site",drainage: "Underground drainage",roadInfra: "Tar road"},
       location: { city: 'Madurai', locality: 'Vilangudi', exact: true, lat: 9.962, lng: 78.091, roadType: 'Tar road', roadWidthFt: 30, nearby: [
         place('school', 'Green Valley Matriculation School (sample)', 1.4), place('hospital', 'City Care Multispeciality Hospital (sample)', 2.8),
@@ -116,7 +118,7 @@ export function seedProperties(): Property[] {
     }),
     prop({
       id: 'PROP-1002', title: 'Large plot near ring road', type: 'plot', purpose: 'sale', status: 'available', facing: 'E',
-      areaSqft: 1500, price: 3000000, listedAt: '2026-11-08', photoCount: 3, amenities: [],
+      areaSqft: 1500, price: 3000000, listedAt: '2026-11-08', photo: 'plot-ring-road', amenities: [],
       specs: {length: 50,width: 30,roadWidth: 30,roadAccess: "Layout road",corner: "Corner",topography: "Level",surveyNo: "87/1A",subdivision: "Plot 3",layoutApproval: "Approval number awaited from seller",landUse: "Residential",water: "Borewell",electricity: "Line nearby — connection to apply",drainage: "Open drain",roadInfra: "Gravel road"},
       location: { city: 'Madurai', locality: 'Thiruparankundram', exact: true, lat: 9.881, lng: 78.07, roadType: 'Gravel road', roadWidthFt: 30, nearby: [
         place('school', 'Sunrise Public School (sample)', 2.2), place('hospital', 'Primary Health Centre (sample)', 3.5),
@@ -132,7 +134,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1003', title: 'East-facing plot in gated layout', type: 'plot', purpose: 'sale', status: 'available', facing: 'E',
       description: 'Gated layout with security, CCTV and a park. 33 ft concrete roads, underground drainage and municipal water. Schools and the K.K. Nagar bus stop are within a kilometre.',
-      areaSqft: 1200, price: 3500000, listedAt: '2026-11-02', photoCount: 6, amenities: ['Gated community', 'Security', 'Park / open space', 'CCTV'],
+      areaSqft: 1200, price: 3500000, listedAt: '2026-11-02', photo: 'plot-gated-layout', amenities: ['Gated community', 'Security', 'Park / open space', 'CCTV'],
       specs: {length: 40,width: 30,roadWidth: 33,roadAccess: "Layout road",corner: "Non-corner",topography: "Level",surveyNo: "45/2",subdivision: "Plot 22",layoutApproval: "DTCP approval (sample no. 118/2023)",landUse: "Residential",water: "Municipal supply",electricity: "Available at site",drainage: "Underground drainage",roadInfra: "Concrete road"},
       location: { city: 'Madurai', locality: 'K.K. Nagar', exact: true, lat: 9.93, lng: 78.145, roadType: 'Concrete road', roadWidthFt: 33, nearby: [
         place('school', 'Lakeview Senior Secondary School (sample)', 0.9), place('hospital', 'Meenakshi Care Hospital (sample)', 1.6),
@@ -146,7 +148,7 @@ export function seedProperties(): Property[] {
     }),
     prop({
       id: 'PROP-1004', title: 'Budget plot near bypass', type: 'plot', purpose: 'sale', status: 'sold', facing: 'E',
-      areaSqft: 1200, price: 2600000, listedAt: '2026-09-10', photoCount: 2, amenities: [], historyText: 'Status changed to Sold',
+      areaSqft: 1200, price: 2600000, listedAt: '2026-09-10', photo: 'plot-bypass', amenities: [], historyText: 'Status changed to Sold',
       specs: {length: 40,width: 30,roadWidth: 30,roadAccess: "Public road",corner: "Non-corner",topography: "Level",surveyNo: "201/4",subdivision: "",layoutApproval: "DTCP approval (sample no. 77/2022)",landUse: "Residential",water: "Borewell",electricity: "Available at site",drainage: "Open drain",roadInfra: "Tar road"},
       location: { city: 'Madurai', locality: 'Othakadai', exact: true, lat: 9.955, lng: 78.19, roadType: 'Tar road', roadWidthFt: 30, nearby: [
         place('school', 'Government Higher Secondary School (sample)', 1.2), place('highway', 'Madurai–Melur road', 0.8)] },
@@ -157,7 +159,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1005', title: '2 BHK apartment, Anna Nagar', type: 'flat', purpose: 'sale', status: 'available', facing: 'N',
       description: 'Ready-to-move 2 BHK on the 3rd floor with a lift, a covered car park, power backup and security. Schools, a clinic and the bus stop are within walking distance.',
-      areaSqft: 1050, price: 5200000, listedAt: '2026-10-20', photoCount: 8, amenities: ['Lift', 'Power backup', 'Security', 'CCTV', 'Visitor parking'],
+      areaSqft: 1050, price: 5200000, listedAt: '2026-10-20', photo: 'flat-anna-nagar', amenities: ['Lift', 'Power backup', 'Security', 'CCTV', 'Visitor parking'],
       specs: {bhk: "2 BHK",carpet: 820,superBuiltup: 1250,floor: 3,totalFloors: 5,lifts: 1,parking: "1 covered",uds: 420,maintenance: 2500,possession: "Ready to move",possessionDate: ""},
       location: { city: 'Madurai', locality: 'Anna Nagar', exact: true, lat: 9.925, lng: 78.138, roadType: 'Tar road', roadWidthFt: 40, nearby: [
         place('school', 'St. Mary’s Matriculation School (sample)', 0.7), place('hospital', 'Anna Nagar Clinic & Nursing Home (sample)', 0.5),
@@ -172,7 +174,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1006', title: '3 BHK apartment on OMR', type: 'flat', purpose: 'sale', status: 'available', facing: 'E',
       description: 'A 3 BHK on the 9th floor of a 14-storey tower with a pool, gym and clubhouse. Direct access to OMR; the Sholinganallur metro station (Phase 2) is under construction 900 m away.',
-      areaSqft: 1450, price: 9800000, listedAt: '2026-10-05', photoCount: 10, amenities: ['Lift', 'Power backup', 'Gym', 'Swimming pool', 'Clubhouse', 'Security', 'CCTV'],
+      areaSqft: 1450, price: 9800000, listedAt: '2026-10-05', photo: 'flat-omr', amenities: ['Lift', 'Power backup', 'Gym', 'Swimming pool', 'Clubhouse', 'Security', 'CCTV'],
       specs: {bhk: "3 BHK",carpet: 1120,superBuiltup: 1720,floor: 9,totalFloors: 14,lifts: 3,parking: "1 covered",uds: 510,maintenance: 5200,possession: "Under construction",possessionDate: "2027-09"},
       location: { city: 'Chennai', locality: 'Sholinganallur (OMR)', exact: true, lat: 12.901, lng: 80.227, roadType: 'Highway service road', roadWidthFt: 60, nearby: [
         place('school', 'Bayview International School (sample)', 1.8), place('hospital', 'OMR Multispeciality Hospital (sample)', 2.1),
@@ -187,7 +189,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1007', title: 'Independent house, Peelamedu', type: 'house', purpose: 'sale', status: 'available', facing: 'N',
       description: 'A 3-bedroom, 2-floor house on 2,400 sq.ft. of land, built in 2018, with parking for 2 cars and a small front garden. 1.2 km from Avinashi Road and 4 km from the airport.',
-      areaSqft: 1800, price: 13500000, listedAt: '2026-09-25', photoCount: 7, amenities: ['Rainwater harvesting', 'Power backup'],
+      areaSqft: 1800, price: 13500000, listedAt: '2026-09-25', photo: 'house-peelamedu', amenities: ['Rainwater harvesting', 'Power backup'],
       specs: {subType: "Independent house",landArea: 2400,floors: 2,bedrooms: 3,bathrooms: 3,parking: "2 cars",constructionYear: 2018,quality: "Standard",condition: "Good",garden: "Small front garden",water: "Municipal + borewell",power: "EB + inverter",approvalDocs: "Approval + completion available"},
       location: { city: 'Coimbatore', locality: 'Peelamedu', exact: true, lat: 11.03, lng: 77.02, roadType: 'Tar road', roadWidthFt: 30, nearby: [
         place('school', 'Peelamedu Public School (sample)', 0.8), place('hospital', 'Kovai Medical Centre (sample)', 2.4),
@@ -202,7 +204,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1008', title: 'Luxury villa, Vadavalli', type: 'house', purpose: 'sale', status: 'available', facing: 'E',
       description: 'A new 4-bedroom villa in a gated community, with a private lawn, a terrace garden, a pool and a clubhouse. Solar power and parking for 3+ cars.',
-      areaSqft: 3800, price: 34000000, listedAt: '2026-10-12', photoCount: 12, amenities: ['Gated community', 'Security', 'Swimming pool', 'Clubhouse', 'Power backup', 'CCTV'],
+      areaSqft: 3800, price: 34000000, listedAt: '2026-10-12', photo: 'house-vadavalli', amenities: ['Gated community', 'Security', 'Swimming pool', 'Clubhouse', 'Power backup', 'CCTV'],
       specs: {subType: "Villa (gated community)",landArea: 5400,floors: 2,bedrooms: 4,bathrooms: 5,parking: "3+ cars",constructionYear: 2025,quality: "Premium",condition: "New",garden: "Private lawn + terrace garden",water: "Municipal + borewell",power: "EB + solar",approvalDocs: "Approval + completion available"},
       location: { city: 'Coimbatore', locality: 'Vadavalli', exact: true, lat: 11.025, lng: 76.905, roadType: 'Concrete road', roadWidthFt: 40, nearby: [
         place('school', 'Hillside International School (sample)', 2.5), place('hospital', 'West Kovai Hospital (sample)', 3.1),
@@ -217,7 +219,7 @@ export function seedProperties(): Property[] {
     prop({
       id: 'PROP-1009', title: 'Retail shop, Thillai Nagar main road', type: 'commercial', purpose: 'sale', status: 'available', facing: 'S',
       description: 'A ground-floor shop with an 18 ft frontage on a 60 ft main road, let to a retail tenant at ₹45,000 a month until March 2028 (5% yearly increase).',
-      areaSqft: 650, price: 8500000, listedAt: '2026-10-01', photoCount: 5, amenities: ['CCTV'],
+      areaSqft: 650, price: 8500000, listedAt: '2026-10-01', photo: 'shop-thillai-nagar', amenities: ['CCTV'],
       specs: {commCategory: "Shop / Showroom",floor: "Ground",frontage: 18,roadWidth: 60,parking: "Street parking",permittedUsage: "Retail / showroom",occupancy: "Tenanted",rentalIncome: 45000,leaseDuration: "3 years (ends Mar 2028)",leaseTerms: "5% annual escalation",maintenance: 1500,opex: 24000},
       location: { city: 'Tiruchirappalli', locality: 'Thillai Nagar', exact: true, lat: 10.825, lng: 78.685, roadType: 'Main road', roadWidthFt: 60, nearby: [
         place('busStop', 'Thillai Nagar bus stop', 0.2), place('railway', 'Tiruchirappalli Junction', 3.9), place('highway', 'Trichy–Chennai NH', 4.0)] },
@@ -230,7 +232,7 @@ export function seedProperties(): Property[] {
     }),
     prop({
       id: 'PROP-1010', title: 'Office floor, Velachery', type: 'commercial', purpose: 'sale', status: 'reserved', facing: 'W',
-      areaSqft: 4200, price: 42000000, listedAt: '2026-08-18', photoCount: 9, amenities: ['Lift', 'Power backup', 'Security', 'CCTV', 'Visitor parking'],
+      areaSqft: 4200, price: 42000000, listedAt: '2026-08-18', photo: 'office-velachery', amenities: ['Lift', 'Power backup', 'Security', 'CCTV', 'Visitor parking'],
       historyText: 'Status changed to Reserved (booking by Ramesh Traders)',
       specs: {commCategory: "Office space",floor: "4th of 7",frontage: 0,roadWidth: 80,parking: "Dedicated 5+",permittedUsage: "Office / IT",occupancy: "Vacant",rentalIncome: 0,leaseDuration: "",leaseTerms: "",maintenance: 21000,opex: 180000},
       location: { city: 'Chennai', locality: 'Velachery', exact: true, lat: 12.98, lng: 80.22, roadType: 'Main road', roadWidthFt: 80, nearby: [
@@ -241,7 +243,7 @@ export function seedProperties(): Property[] {
     }),
     prop({
       id: 'PROP-1011', title: 'Warehouse, Kappalur industrial area', type: 'commercial', purpose: 'sale', status: 'available', facing: 'N',
-      areaSqft: 10000, price: 26000000, listedAt: '2026-10-28', photoCount: 6, amenities: ['Loading bay', 'Security', 'CCTV'],
+      areaSqft: 10000, price: 26000000, listedAt: '2026-10-28', photo: 'warehouse-kappalur', amenities: ['Loading bay', 'Security', 'CCTV'],
       specs: {commCategory: "Warehouse / Godown",floor: "Ground",frontage: 80,roadWidth: 40,parking: "Dedicated 5+",permittedUsage: "Warehousing / light industry",occupancy: "Vacant",rentalIncome: 0,leaseDuration: "",leaseTerms: "",maintenance: 0,opex: 120000},
       location: { city: 'Madurai', locality: 'Kappalur', exact: true, lat: 9.87, lng: 78.03, roadType: 'Industrial road', roadWidthFt: 40, nearby: [
         place('highway', 'NH-44 (Madurai–Tirunelveli)', 1.5), place('other', 'SIDCO industrial estate', 0.8), place('other', 'Freight terminal', 6, 'proposed', false)] },
@@ -253,7 +255,7 @@ export function seedProperties(): Property[] {
     }),
     prop({
       id: 'PROP-1012', title: 'West-facing plot, Ponmeni', type: 'plot', purpose: 'sale', status: 'available', facing: 'W',
-      areaSqft: 1350, price: 3100000, listedAt: '2026-11-11', photoCount: 3, amenities: [],
+      areaSqft: 1350, price: 3100000, listedAt: '2026-11-11', photo: 'plot-ponmeni', amenities: [],
       specs: {length: 45,width: 30,roadWidth: 23,roadAccess: "Public road",corner: "Non-corner",topography: "Level",surveyNo: "66/7",subdivision: "Plot 5",layoutApproval: "Local body approval (sample no. 39/2021)",landUse: "Residential",water: "Municipal supply",electricity: "Available at site",drainage: "Underground drainage",roadInfra: "Tar road"},
       location: { city: 'Madurai', locality: 'Ponmeni', exact: true, lat: 9.93, lng: 78.095, roadType: 'Tar road', roadWidthFt: 23, nearby: [
         place('school', 'Ponmeni Matriculation School (sample)', 0.6), place('hospital', 'Ponmeni Nursing Home (sample)', 1.0),
@@ -268,14 +270,14 @@ export function seedProperties(): Property[] {
     /* v3 drafts — one from the AI assistant, one from an import */
     prop({
       id: 'PROP-1013', title: '2 BHK flat in Porur', type: 'flat', purpose: 'sale', status: 'draft', facing: 'E',
-      areaSqft: 980, price: 6200000, listedAt: '2026-11-15', photoCount: 0, amenities: ['Lift'], historyText: 'Draft created with the AI assistant',
+      areaSqft: 980, price: 6200000, listedAt: '2026-11-15', photo: 'flat-porur', amenities: ['Lift'], historyText: 'Draft created with the AI assistant',
       specs: { bhk: '2 BHK' },
       location: { city: 'Chennai', locality: 'Porur', exact: false, nearby: [] },
       approvals: [approval('rera', 'pending', '2026-11-15')], documents: [], comparables: [],
     }),
     prop({
       id: 'PROP-1014', title: 'Plot in Tambaram', type: 'plot', purpose: 'sale', status: 'draft',
-      areaSqft: 1200, price: 2400000, listedAt: '2026-11-14', photoCount: 1, amenities: [], historyText: 'Draft created from an import (ABC Realty — plots.xlsx, row 9): the price says "onwards"',
+      areaSqft: 1200, price: 2400000, listedAt: '2026-11-14', photo: 'plot-tambaram', amenities: [], historyText: 'Draft created from an import (ABC Realty — plots.xlsx, row 9): the price says "onwards"',
       specs: { length: 40 },
       location: { city: 'Chennai', locality: 'Tambaram', exact: false, nearby: [] },
       approvals: [], documents: [], comparables: [],
@@ -414,5 +416,5 @@ export function seedLeads(): Lead[] {
 
 export function seedDatabase(): Database {
   seq = 0
-  return { version: 4, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
+  return { version: 5, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
 }

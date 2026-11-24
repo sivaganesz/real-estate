@@ -1,11 +1,15 @@
 /**
  * Property specification database — the property list, exactly as spec-system-wireframe (views-properties.js + property-search.js):
  * heading with Drafts / Add property / Bulk import, the "need attention" strip, the search bar and status tabs (sticky),
- * the table with completion rings, and the pager. Filters and paging are kept while you open a property and come back.
+ * the table with completion rings — or a photo grid of property cards — and the pager.
+ * Filters and paging are kept while you open a property and come back.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { LayoutGrid, List } from 'lucide-react'
 import { Chip } from '@/components/app/chip'
 import { EmptyState } from '@/components/app/empty-state'
+import { Segmented } from '@/components/app/segmented'
+import { leadsForProperty } from '@/lib/matching'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -21,15 +25,39 @@ import { fmtDate, inr, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { ATTENTION_KEYS, type Attention, attentionFor, listingScore } from '@/lib/property'
 import { cn } from '@/lib/utils'
-import { useCan, useStore } from '@/store/db'
+import { useCan, useStore, useVisibleLeads } from '@/store/db'
 import type { Property } from '@/data/types'
-import { CompletionRing, PropertyStatusChip } from '../components/property-bits'
+import { PropertyCard } from '../components/property-card'
+import { CompletionRing, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
 import { dropKeys, EXAMPLES, matches, PAGE_SIZES, parseSentence, type PSFilters, type PSItem, relaxFor, setValue, sortList } from '../search/prop-search'
 import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
 
 /** List state kept between visits (as the current wireframe keeps UI.filters in memory). */
-type ListState = { f: PSFilters; aiOpen: boolean; attnHidden: boolean; page: number; size: number }
-let saved: ListState = { f: {}, aiOpen: false, attnHidden: false, page: 1, size: 10 }
+type ListState = { f: PSFilters; aiOpen: boolean; attnHidden: boolean; page: number; size: number; gridSize: number }
+let saved: ListState = { f: {}, aiOpen: false, attnHidden: false, page: 1, size: 10, gridSize: 12 }
+
+/** Cards come in rows of 2, 3 or 4, so the grid pages in multiples of 12. */
+const GRID_SIZES = [12, 24, 48, 96]
+
+/**
+ * Table or photo grid, remembered per user in this browser. With no choice yet: the grid for sales executives
+ * (they browse and pitch) and on phones; the table for managers (they keep the listings up to date).
+ */
+type ListView = 'table' | 'grid'
+const VIEW_KEY = 'realspec-rebuild-property-view'
+function readViews(): Record<string, ListView> {
+  try { return JSON.parse(localStorage.getItem(VIEW_KEY) ?? '{}') as Record<string, ListView> } catch { return {} }
+}
+function useListView(userId: string, manager: boolean): [ListView, (v: ListView) => void] {
+  const fallback: ListView = !manager || (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) ? 'grid' : 'table'
+  const [views, setViews] = useState(readViews)
+  const set = (v: ListView) => {
+    const next = { ...views, [userId]: v }
+    setViews(next)
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify(next)) } catch { /* storage blocked: the choice lasts until reload */ }
+  }
+  return [views[userId] ?? fallback, set]
+}
 
 const PILL_KEYS: Record<Exclude<Pill, 'sort'>, string[]> = { type: ['type'], city: ['city', 'locality'], budget: ['price'], size: ['bhk', 'area'], more: ['purpose', 'facing', 'corner', 'amen'] }
 const VOICE_SAMPLE = '2 BHK flat in Madurai under 60 lakh with lift'
@@ -39,12 +67,15 @@ export function PropertiesPage() {
   const L = useLabels()
   const W = useFilterWords()
   const navigate = useNavigate()
-  const { db } = useStore()
+  const { db, user } = useStore()
   const can = useCan()
   const manager = can('property.manage')
+  const leads = useVisibleLeads()
   useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties') }])
 
   const [st, setSt] = useState<ListState>(saved)
+  const [view, setView] = useListView(user.id, manager)
+  const grid = view === 'grid'
   const [open, setOpen] = useState<Pill | null>(null)
   const [listening, setListening] = useState(false)
   const voiceTimer = useRef<number | null>(null)
@@ -66,11 +97,19 @@ export function PropertiesPage() {
   const list = useMemo(() => sortList(items.filter((x) => matches(x, f, [], typeLabel)), f.sort), [items, f, typeLabel])
   const relax = !list.length ? relaxFor(items, f) : null
 
-  /* paging */
-  const pages = Math.max(1, Math.ceil(list.length / st.size))
+  /* paging — the table and the grid each keep their own page size */
+  const size = grid ? st.gridSize : st.size
+  const pages = Math.max(1, Math.ceil(list.length / size))
   const page = Math.min(Math.max(1, st.page), pages)
-  const from = (page - 1) * st.size
-  const shown = list.slice(from, from + st.size)
+  const from = (page - 1) * size
+  const shown = list.slice(from, from + size)
+  const switchView = (v: ListView) => {
+    if (v === view) return
+    // keep the first property on screen in view: land on the page that holds it
+    const nextSize = v === 'grid' ? st.gridSize : st.size
+    setSt((s) => ({ ...s, page: Math.floor(from / nextSize) + 1 }))
+    setView(v)
+  }
   const archivedN = items.filter((x) => x.archived).length
 
   /* AI sentence search */
@@ -157,39 +196,67 @@ export function PropertiesPage() {
           onClearAll={() => { setOpen(null); setF({}) }}
           aiOpen={st.aiOpen} onToggleAi={() => { setSt((s) => ({ ...s, aiOpen: !s.aiOpen })); setOpen(null); if (listening) voice() }}
           onAsk={ask} listening={listening} onVoice={voice} open={open} setOpen={setOpen} understood={understood} />
-        <div className="flex items-center gap-0.5 overflow-x-auto border-b [scrollbar-width:none]">
-          {tabDefs.map((o) => {
-            const on = (f.status ?? '') === o.v
-            return (
-              <button key={o.v || 'all'} type="button" onClick={() => setF({ ...f, status: o.v || undefined })} aria-current={on ? 'page' : undefined}
-                className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
-                {o.l} <span className={cn('ml-1 rounded-full px-[7px] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
-              </button>
-            )
-          })}
-          {st.attnHidden && (
-            <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="ml-auto text-meta font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
-          )}
+        {/* the status tabs scroll sideways on a phone; the view switch stays pinned on the right */}
+        <div className="flex items-stretch">
+          <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto border-b [scrollbar-width:none]">
+            {tabDefs.map((o) => {
+              const on = (f.status ?? '') === o.v
+              return (
+                <button key={o.v || 'all'} type="button" onClick={() => setF({ ...f, status: o.v || undefined })} aria-current={on ? 'page' : undefined}
+                  className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+                  {o.l} <span className={cn('ml-1 rounded-full px-[7px] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex shrink-0 items-center gap-3 border-b pb-1 pl-3">
+            {st.attnHidden && (
+              <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="text-meta font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
+            )}
+            <Segmented<ListView> variant="pill" label={t('ps.viewLabel')} value={view} onChange={switchView}
+              segments={[
+                { value: 'grid', label: <span className="max-sm:sr-only">{t('ps.viewGrid')}</span>, icon: <LayoutGrid aria-hidden /> },
+                { value: 'table', label: <span className="max-sm:sr-only">{t('ps.viewTable')}</span>, icon: <List aria-hidden /> },
+              ]} />
+          </div>
         </div>
       </div>
 
       <div className="mt-2.5">
         {list.length === 0 ? (
           <EmptyState variant="card" action={relaxButton || undefined}>{t('ps.noneMatch')}</EmptyState>
+        ) : grid ? (
+          <ul aria-label={t('ps.title')} className="grid gap-4 pb-2 sm:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
+            {shown.map((x) => {
+              const p = x.raw
+              const fits = p.status === 'available' && !p.archived ? leadsForProperty(p, leads, db.settings) : []
+              // as in the table, a property's attention line shows while its "needs attention" filter is on
+              const attention = f.attn ? x.attn.filter((a) => a.key === f.attn).map(attnText) : undefined
+              return <li key={p.id} className="flex"><PropertyCard property={p} matches={fits} attention={attention} /></li>
+            })}
+          </ul>
         ) : (
           <DataTable<Property> label={t('ps.title')} rows={shown.map((x) => x.raw)} rowKey={(p) => p.id} onRowClick={(p) => navigate(`/properties/${p.id}`)}
             columns={[
-              { key: 'id', header: t('table.id'), cell: (p) => <span className="font-mono text-meta whitespace-nowrap">{p.id}</span> },
               {
                 key: 'title', header: t('table.property'), cell: (p) => {
                   const item = items.find((x) => x.id === p.id)!
                   return (
-                    <div className="min-w-48">
-                      <b className="block">{p.title}</b>
-                      <small className="text-muted-foreground">{L.type(p.type)} · {L.purpose(p.purpose)}</small>
-                      {f.attn && item.attn.filter((a) => a.key === f.attn).map((a) => (
-                        <span key={a.key} className="mt-1 block text-xs text-warning">⚠ {attnText(a)} · <Link to={attnFix(p, a)} onClick={(e) => e.stopPropagation()} className="font-medium hover:underline">{t(`attn.act.${a.key}`)} →</Link></span>
-                      ))}
+                    <div className="flex min-w-56 items-start gap-3">
+                      {/* the cover photo as a thumbnail (the type icon when there's none); the title beside it names it */}
+                      {/* the wrapper carries the width too: the table sizes the column from it, not from the img */}
+                      <span aria-hidden className="w-12 shrink-0 md:w-16">
+                        <PropertyPhoto type={p.type} media={p.media.find((m) => m.isCover) ?? p.media[0]} alt=""
+                          className="h-9 w-12 rounded-lg md:h-12 md:w-16" iconClassName="size-5" />
+                      </span>
+                      <div>
+                        <b className="block">{p.title}</b>
+                        {/* the property ID sits with the title, not in a column of its own */}
+                        <small className="text-muted-foreground"><span className="font-mono whitespace-nowrap">{p.id}</span> · {L.type(p.type)} · {L.purpose(p.purpose)}</small>
+                        {f.attn && item.attn.filter((a) => a.key === f.attn).map((a) => (
+                          <span key={a.key} className="mt-1 block text-xs text-warning">⚠ {attnText(a)} · <Link to={attnFix(p, a)} onClick={(e) => e.stopPropagation()} className="font-medium hover:underline">{t(`attn.act.${a.key}`)} →</Link></span>
+                        ))}
+                      </div>
                     </div>
                   )
                 },
@@ -209,18 +276,18 @@ export function PropertiesPage() {
         )}
       </div>
 
-      {/* pager: rows per page, showing x–y of n, Prev / Next — stays at the bottom */}
-      <div className="sticky bottom-0 z-10 -mx-4 mt-0 flex flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:-mx-6 md:px-6">
+      {/* pager: rows per page, showing x–y of n, Prev / Next — pinned to the bottom from tablet up; at the end of the list on a phone */}
+      <div className="z-10 -mx-4 mt-0 flex md:sticky md:bottom-0 flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:-mx-6 md:px-6">
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
-              {t('ps.rowsPerPage')} <b className="text-foreground">{st.size}</b> <span className="text-micro">▾</span>
+              {grid ? t('ps.cardsPerPage') : t('ps.rowsPerPage')} <b className="text-foreground">{size}</b> <span className="text-micro">▾</span>
             </button>
           </PopoverTrigger>
           <PopoverContent side="top" align="start" className="w-auto min-w-[150px] rounded-xl p-2">
-            {PAGE_SIZES.map((n) => (
-              <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, size: n, page: 1 }))}
-                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === st.size && 'bg-accent text-primary')}>{t('ps.rows', { n })}</button>
+            {(grid ? GRID_SIZES : PAGE_SIZES).map((n) => (
+              <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, ...(grid ? { gridSize: n } : { size: n }), page: 1 }))}
+                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{grid ? t('ps.cards', { n }) : t('ps.rows', { n })}</button>
             ))}
           </PopoverContent>
         </Popover>

@@ -1082,6 +1082,11 @@
     "archivedCount_other": "{{count}} archived",
     "prev": "Prev",
     "next": "Next",
-    "pageOf": "Page {{page}} of {{pages}}"
+    "pageOf": "Page {{page}} of {{pages}}",
+    "viewLabel": "Show properties as",
+    "viewGrid": "Grid",
+    "viewTable": "Table",
+    "cardsPerPage": "Cards per page:",
+    "cards": "{{n}} cards"
   }
 }
