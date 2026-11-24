@@ -1,8 +1,8 @@
 # EstateOS — Status
 
-Last updated: 2026-11-24
+Last updated: 2026-11-25
 
-**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Waiting on one thing from you: the git remote to push to.
+**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed).
 
 ## Phases
 
@@ -23,6 +23,14 @@ Last updated: 2026-11-24
 | 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
 
 ## Done since last update
+
+**Role dashboards** (`87be5d3`)
+
+- **Admin Today** shows the whole business: booked this month with negotiating / due in 30 days / stock for sale, decisions waiting (discounts above the manager's limit first), people active this week, inventory by state with drafts and project selling pace, funnel with best lead sources, sales team, recent imports, and the latest changes (including ones the assistant made).
+- **Manager Today** shows the team: team follow-ups done today with who needs a hand and unassigned leads, decisions, booked this month, what's slipping (overdue and no next step, with owner), funnel, team health bars, and projects selling pace.
+- New admin-only API `GET /api/insights/overview`. Shared tiles live in `apps/web/src/components/Bento.tsx`.
+- The old Today panels and `slots-today.ts` were removed.
+- Tests: 73 API, 13 e2e journeys pass.
 
 **Gemini assistant connected** (`9331bd4`)
 
@@ -47,8 +55,7 @@ Last updated: 2026-11-24
 Suggestions:
 
 1. Try real Gemini on a real DTCP layout drawing (chat and describe-a-property are verified).
-2. Push to your git remote.
-3. Pick up any of the deferred items below.
+2. Pick up any of the deferred items below.
 
 **Projects, not built yet** (doc 08 §7): plot sizes edited one by one (only via the layout map today), a site plan drawn from the actual drawing, more than one flat plan per tower (e.g. penthouse floors), project photos and brochure.
 
@@ -65,7 +72,7 @@ Suggestions:
 | # | Decision | Why it matters |
 |---|---|---|
 | 1 | ~~**Gemini API key**~~ ✅ Received | Connected and verified (`9331bd4`). |
-| 2 | **Git remote URL** | There is no remote yet; the code can't be pushed until you share the repo link. |
+| 2 | ~~**Git remote URL**~~ ✅ Received | Set to https://github.com/sivaganesz/real-estate. Work goes on branch `feat/estate-platform`; main is not pushed. |
 | 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
 | 4 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
 
@@ -95,7 +102,7 @@ Demo sign-ins (password `demo1234`):
 
 | Check | Command | Last result |
 |---|---|---|
-| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 71 passing |
+| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 73 passing |
 | End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 13 journeys passing (11 on desktop, 2 also on phone) |
 | Typecheck | `pnpm typecheck` | Clean |
 | Web build | `pnpm build` | Clean |
