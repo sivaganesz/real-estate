@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardCheck, Handshake } from 'lucide-react';
+import { Handshake } from 'lucide-react';
 import { DEAL_STATUS_LABEL, formatINR } from '@estate/shared';
 import { api } from '../lib/api';
-import { useAuth } from '../lib/auth';
 import { DEAL_TONE, fromLakhs, type Deal } from '../lib/deals';
 import type { Lead } from '../lib/leads';
 import { priceLabel, type Property } from '../lib/property';
@@ -12,7 +10,6 @@ import { Badge, Button, Card, ErrorNote, Input, Modal, SectionTitle } from '../c
 import { DealDrawer } from '../components/DealDrawer';
 import { useToast } from '../components/toast';
 import { leadSlots } from '../slots-leads';
-import { todaySlots } from '../slots-today';
 
 /** On a customer's page: their negotiations and bookings, or a way to start one. */
 function LeadDeals({ lead }: { lead: Lead }) {
@@ -105,26 +102,4 @@ function StartDeal({ lead, onClose, onStarted }: { lead: Lead; onClose: () => vo
   );
 }
 
-/** On a manager's Today: what's waiting on them. */
-function WaitingForYou() {
-  const { can } = useAuth();
-  const q = useQuery({ queryKey: ['deals-waiting'], queryFn: () => api.get<{ approvals: Deal[]; bookings: Deal[] }>('/deals/waiting'), enabled: can('deal.approve') });
-  const n = (q.data?.approvals.length ?? 0) + (q.data?.bookings.length ?? 0);
-  if (!n) return null;
-  return (
-    <Link to="/deals" className="card flex items-center gap-3 p-4 transition hover:shadow-pop">
-      <span className="rounded-xl bg-ai-50 p-2 text-ai-700">
-        <ClipboardCheck className="h-5 w-5" />
-      </span>
-      <span className="flex-1">
-        <span className="block text-sm font-semibold text-slate-900">{n} waiting for you</span>
-        <span className="text-xs text-slate-500">
-          {q.data!.approvals.length} price approval{q.data!.approvals.length === 1 ? '' : 's'} · {q.data!.bookings.length} booking{q.data!.bookings.length === 1 ? '' : 's'} to confirm
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 leadSlots.side.unshift(LeadDeals);
-todaySlots.managerSide.push(WaitingForYou);

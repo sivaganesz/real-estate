@@ -10,6 +10,7 @@ import { waLink, type Lead } from '../lib/leads';
 import type { Deal } from '../lib/deals';
 import type { Property } from '../lib/property';
 import { Button } from '../components/ui';
+import { Tile, TileHead } from '../components/Bento';
 import { PropertyCover } from '../components/PropertyCard';
 import { NewLead } from '../components/NewLead';
 import { DealDrawer } from '../components/DealDrawer';
@@ -20,20 +21,6 @@ import { useAssistant, useAssistantPage } from '../ai/assistant';
 type Day = { overdue: AgendaItem[]; today: AgendaItem[]; doneToday: number; newLeads: Lead[]; noNextStep: Lead[] };
 type Column = { stage: Stage; leads: Lead[] };
 type Match = { lead: { id: string; name: string }; property: Property; fit: 'strong' | 'good' | 'partial'; reasons: { ok: 'yes' | 'near' | 'no' | 'info'; text: string }[] };
-
-/** A bento tile: one job each, generous padding, soft edges. */
-function Tile({ children, className, dark }: { children: React.ReactNode; className?: string; dark?: boolean }) {
-  return <section className={clsx('rounded-3xl p-5', dark ? 'bg-slate-900 text-white' : 'border border-slate-200/70 bg-white shadow-card', className)}>{children}</section>;
-}
-
-function TileHead({ label, right, dark }: { label: string; right?: React.ReactNode; dark?: boolean }) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-2">
-      <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.08em]', dark ? 'text-white/50' : 'text-slate-400')}>{label}</p>
-      {right}
-    </div>
-  );
-}
 
 /**
  * The executive's first screen: how the day is going, what's next, where the

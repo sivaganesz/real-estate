@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { formatINR } from '@estate/shared';
-import { interestByProperty, interestRef, projectMovement } from '../services/insights';
+import { adminOverview, interestByProperty, interestRef, projectMovement } from '../services/insights';
+import { requirePermission } from '../lib/auth';
 import { registerTools } from '../ai/tools';
 import { registerIntents } from '../ai/offline';
 import { callTool } from '../ai/assistant';
@@ -10,6 +11,10 @@ export const insightsRouter = Router();
 
 insightsRouter.get('/interest', async (_req, res) => {
   res.json(await interestByProperty());
+});
+/** Admin only: the whole business at a glance. */
+insightsRouter.get('/overview', requirePermission('settings.manage'), async (_req, res) => {
+  res.json(await adminOverview());
 });
 insightsRouter.get('/movement', async (req, res) => {
   res.json(await projectMovement(req.query.days ? Number(req.query.days) : 90));

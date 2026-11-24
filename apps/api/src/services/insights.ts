@@ -3,6 +3,8 @@ import { Lead } from '../models/lead';
 import { Deal } from '../models/deal';
 import { Audit } from '../models/audit';
 import { Project, Property } from '../models/property';
+import { User } from '../models/user';
+import { ImportBatch } from '../models/importBatch';
 import { propertyRef } from './properties';
 
 /**
@@ -83,3 +85,106 @@ export async function projectMovement(days = 90) {
 }
 
 export const interestRef = (r: Awaited<ReturnType<typeof interestByProperty>>['top'][number]) => propertyRef(r.property as never);
+
+/**
+ * The admin's view of the whole business: stock by state and its value, the
+ * people using the app, recent imports and the latest changes anyone made.
+ */
+export async function adminOverview() {
+  const [stock, users, imports, recent] = await Promise.all([
+    Property.aggregate<{
+      _id: { listing: string; availability: string };
+      n: number;
+      value: number;
+    }>([
+      { $match: { listing: { $ne: 'archived' } } },
+      {
+        $group: {
+          _id: { listing: '$listing', availability: '$availability' },
+          n: { $sum: 1 },
+          value: { $sum: { $ifNull: ['$price', 0] } },
+        },
+      },
+    ]),
+    User.find().select('name role active lastLoginAt').sort({ lastLoginAt: -1 }).lean(),
+    ImportBatch.aggregate<{
+      _id: mongoose.Types.ObjectId;
+      fileName?: string;
+      sender?: string;
+      kind: string;
+      status: string;
+      counts?: Record<string, number>;
+      createdByName?: string;
+      createdAt: Date;
+      rows: number;
+      problems: number;
+    }>([
+      { $sort: { createdAt: -1 } },
+      { $limit: 5 },
+      {
+        $project: {
+          fileName: 1,
+          sender: 1,
+          kind: 1,
+          status: 1,
+          counts: 1,
+          createdByName: 1,
+          createdAt: 1,
+          rows: { $size: '$rows' },
+          problems: {
+            $size: {
+              $filter: {
+                input: '$rows',
+                cond: { $in: ['$$this.status', ['error', 'duplicate']] },
+              },
+            },
+          },
+        },
+      },
+    ]),
+    Audit.find().sort({ createdAt: -1 }).limit(8).select('actorName viaAI entity entityId action summary createdAt').lean(),
+  ]);
+
+  const live = stock.filter((s) => s._id.listing === 'live');
+  const count = (a: string) => live.filter((s) => s._id.availability === a).reduce((t, s) => t + s.n, 0);
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  return {
+    stock: {
+      available: count('available'),
+      held: count('held'),
+      booked: count('booked'),
+      sold: count('sold'),
+      drafts: stock.filter((s) => s._id.listing === 'draft').reduce((t, s) => t + s.n, 0),
+      availableValue: live.filter((s) => s._id.availability === 'available').reduce((t, s) => t + s.value, 0),
+    },
+    people: users.map((u) => ({
+      id: String(u._id),
+      name: u.name,
+      role: u.role,
+      active: u.active !== false,
+      lastLoginAt: u.lastLoginAt ?? null,
+    })),
+    activeThisWeek: users.filter((u) => u.active !== false && u.lastLoginAt && new Date(u.lastLoginAt).getTime() >= weekAgo).length,
+    imports: imports.map((b) => ({
+      id: String(b._id),
+      name: b.fileName || b.sender || 'Import',
+      kind: b.kind,
+      status: b.status,
+      rows: b.rows,
+      problems: b.problems,
+      counts: b.counts ?? null,
+      by: b.createdByName ?? null,
+      at: b.createdAt,
+    })),
+    recent: recent.map((a) => ({
+      id: String(a._id),
+      who: a.actorName ?? 'Someone',
+      viaAI: !!a.viaAI,
+      entity: a.entity,
+      entityId: String(a.entityId),
+      action: a.action,
+      summary: a.summary ?? a.action,
+      at: a.createdAt,
+    })),
+  };
+}

@@ -34,3 +34,19 @@ describe('business insights', () => {
     expect(b.body.reply).toMatch(/Palm Grove Villas\*\* ⚠ slow/);
   });
 });
+
+describe('admin overview', () => {
+  it('gives the admin stock, people, imports and recent changes', async () => {
+    const admin = await login(app, EMAIL.admin);
+    const r = (await admin.get('/api/insights/overview')).body;
+    expect(r.stock.available).toBeGreaterThan(0);
+    expect(r.stock.availableValue).toBeGreaterThan(0);
+    expect(r.people.some((p: { role: string }) => p.role === 'executive')).toBe(true);
+    expect(Array.isArray(r.imports)).toBe(true);
+    expect(r.recent.length).toBeGreaterThan(0);
+  });
+
+  it('is admin only', async () => {
+    expect((await manager.get('/api/insights/overview')).status).toBe(403);
+  });
+});

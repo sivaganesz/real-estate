@@ -12,7 +12,6 @@ import { PropertyCover } from '../components/PropertyCard';
 import { useToast } from '../components/toast';
 import { leadSlots } from '../slots-leads';
 import { slots } from '../slots';
-import { todaySlots } from '../slots-today';
 import { useAuth } from '../lib/auth';
 
 type Reason = { ok: 'yes' | 'near' | 'no' | 'info'; text: string };
@@ -231,53 +230,5 @@ function BuyersWhoFit({ property }: { property: Property }) {
   );
 }
 
-/** On Today: one fresh match per customer, ready to send. */
-function BestMatches() {
-  const q = useQuery({ queryKey: ['best-matches'], queryFn: () => api.get<{ items: { lead: { id: string; name: string }; property: Property; fit: Fit; reasons: Reason[] }[] }>('/matching/today') });
-  const [sharing, setSharing] = useState<{ lead: { id: string; name: string; phone: string }; propertyId: string } | null>(null);
-  const leads = useQuery({ queryKey: ['leads', 'phones'], queryFn: () => api.get<{ items: Lead[] }>('/leads?open=true&limit=300'), enabled: !!q.data?.items.length });
-  if (!q.data?.items.length) return null;
-  return (
-    <section>
-      <SectionTitle>
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="h-4 w-4 text-ai-600" /> New matches to send
-        </span>
-      </SectionTitle>
-      <div className="space-y-2">
-        {q.data.items.map((m) => (
-          <Card key={m.lead.id + m.property.id} className="flex items-center gap-3 p-3">
-            <PropertyCover property={m.property} className="h-14 w-16 shrink-0 rounded-lg" iconSize="h-5 w-5" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-slate-800">
-                <Link to={`/properties/${m.property.id}`} className="font-medium hover:text-brand-800">
-                  {m.property.title}
-                </Link>{' '}
-                for{' '}
-                <Link to={`/leads/${m.lead.id}`} className="font-medium text-brand-700 hover:underline">
-                  {m.lead.name}
-                </Link>
-              </p>
-              <Reasons reasons={m.reasons} max={2} />
-            </div>
-            <Button
-              size="sm"
-              icon={<Send className="h-3.5 w-3.5" />}
-              onClick={() => {
-                const l = leads.data?.items.find((x) => x.id === m.lead.id);
-                if (l) setSharing({ lead: { id: l.id, name: l.name, phone: l.phone }, propertyId: m.property.id });
-              }}
-            >
-              Send
-            </Button>
-          </Card>
-        ))}
-      </div>
-      {sharing && <ShareDialog lead={sharing.lead} propertyIds={[sharing.propertyId]} onClose={() => setSharing(null)} />}
-    </section>
-  );
-}
-
 leadSlots.top.push(LeadMatches);
 slots.propertySide.unshift(BuyersWhoFit);
-todaySlots.main.push(BestMatches);
