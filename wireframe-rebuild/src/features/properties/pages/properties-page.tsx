@@ -5,7 +5,7 @@
  * Filters and paging are kept while you open a property and come back.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { LayoutGrid, List } from 'lucide-react'
+import { LayoutGrid, List, Users } from 'lucide-react'
 import { Chip } from '@/components/app/chip'
 import { EmptyState } from '@/components/app/empty-state'
 import { Segmented } from '@/components/app/segmented'
@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { DataTable } from '@/components/app/data-table'
+import { DataTable, type TableSort } from '@/components/app/data-table'
 import { Page, PageHeader } from '@/components/app/page-header'
 import { StatusChip } from '@/components/app/status-chip'
 import { useCrumbs } from '@/components/layout/crumbs'
@@ -28,8 +28,8 @@ import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads } from '@/store/db'
 import type { Property } from '@/data/types'
 import { PropertyCard } from '../components/property-card'
-import { CompletionRing, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
-import { dropKeys, EXAMPLES, matches, PAGE_SIZES, parseSentence, type PSFilters, type PSItem, relaxFor, setValue, sortList } from '../search/prop-search'
+import { CompletionBar, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
+import { dropKeys, EXAMPLES, matches, PAGE_SIZES, parseSentence, type PSFilters, type PSItem, relaxFor, setValue, type Sort, sortList } from '../search/prop-search'
 import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
 
 /** List state kept between visits (as the current wireframe keeps UI.filters in memory). */
@@ -58,6 +58,9 @@ function useListView(userId: string, manager: boolean): [ListView, (v: ListView)
   }
   return [views[userId] ?? fallback, set]
 }
+
+/** The table's sortable columns and their sorts: [low → high, high → low]. "Listed" high → low is the default, newest first. */
+const COLUMN_SORTS: Record<string, [Sort, Sort]> = { area: ['areaAsc', 'areaDesc'], price: ['priceAsc', 'priceDesc'], listed: ['oldest', ''], score: ['scoreAsc', 'scoreDesc'] }
 
 const PILL_KEYS: Record<Exclude<Pill, 'sort'>, string[]> = { type: ['type'], city: ['city', 'locality'], budget: ['price'], size: ['bhk', 'area'], more: ['purpose', 'facing', 'corner', 'amen'] }
 const VOICE_SAMPLE = '2 BHK flat in Madurai under 60 lakh with lift'
@@ -111,6 +114,14 @@ export function PropertiesPage() {
     setView(v)
   }
   const archivedN = items.filter((x) => x.archived).length
+
+  /* sorting from the table headers — the same sort as the Sort pill, so it carries over to the grid */
+  const cur = f.sort ?? ''
+  const tableSort: TableSort | null = Object.entries(COLUMN_SORTS)
+    .map(([key, [asc, desc]]) => (cur === asc ? { key, dir: 'asc' as const } : cur === desc ? { key, dir: 'desc' as const } : null))
+    .find(Boolean) ?? null
+  // first click sorts low → high; clicking the sorted column again reverses it
+  const sortBy = (key: string) => { const [asc, desc] = COLUMN_SORTS[key]; setF({ ...f, sort: (cur === asc ? desc : asc) || undefined }) }
 
   /* AI sentence search */
   const ask = (text: string) => {
@@ -237,6 +248,7 @@ export function PropertiesPage() {
           </ul>
         ) : (
           <DataTable<Property> label={t('ps.title')} rows={shown.map((x) => x.raw)} rowKey={(p) => p.id} onRowClick={(p) => navigate(`/properties/${p.id}`)}
+            sort={tableSort} onSort={sortBy}
             columns={[
               {
                 key: 'title', header: t('table.property'), cell: (p) => {
@@ -249,7 +261,8 @@ export function PropertiesPage() {
                         <PropertyPhoto type={p.type} media={p.media.find((m) => m.isCover) ?? p.media[0]} alt=""
                           className="h-9 w-12 rounded-lg md:h-12 md:w-16" iconClassName="size-5" />
                       </span>
-                      <div>
+                      {/* table cells never wrap; the title may, so the table fits narrower screens */}
+                      <div className="whitespace-normal">
                         <b className="block">{p.title}</b>
                         {/* the property ID sits with the title, not in a column of its own */}
                         <small className="text-muted-foreground"><span className="font-mono whitespace-nowrap">{p.id}</span> · {L.type(p.type)} · {L.purpose(p.purpose)}</small>
@@ -262,14 +275,28 @@ export function PropertiesPage() {
                 },
               },
               { key: 'loc', header: t('table.location'), hideOnPhone: true, cell: (p) => <>{p.location.locality}<br /><small className="text-muted-foreground">{p.location.city}</small></> },
-              { key: 'area', header: t('table.area'), align: 'right', hideOnPhone: true, cell: (p) => <span className="whitespace-nowrap">{num(p.areaSqft)} <small className="text-muted-foreground">sq.ft.</small></span> },
-              { key: 'price', header: t('table.askingPrice'), align: 'right', cell: (p) => <><b className="whitespace-nowrap">{inrShort(p.price)}</b><br /><small className="whitespace-nowrap text-muted-foreground">{inr(p.areaSqft ? Math.round(p.price / p.areaSqft) : 0)}/sq.ft.</small></> },
+              { key: 'area', header: t('table.area'), align: 'right', hideOnPhone: true, sortable: true, cell: (p) => <span className="whitespace-nowrap">{num(p.areaSqft)} <small className="text-muted-foreground">sq.ft.</small></span> },
+              { key: 'price', header: t('table.askingPrice'), align: 'right', sortable: true, cell: (p) => <><b className="whitespace-nowrap">{inrShort(p.price)}</b><br /><small className="whitespace-nowrap text-muted-foreground">{inr(p.areaSqft ? Math.round(p.price / p.areaSqft) : 0)}/sq.ft.</small></> },
               { key: 'status', header: t('table.status'), cell: (p) => <span className="inline-flex flex-wrap gap-1"><PropertyStatusChip property={{ status: p.status }} />{p.archived && <StatusChip tone="neutral" variant="outline">{t('ps.archived')}</StatusChip>}</span> },
-              { key: 'listed', header: t('table.listed'), hideOnPhone: true, cell: (p) => <small className="whitespace-nowrap text-muted-foreground">{fmtDate(p.listedAt, i18n.language)}</small> },
               {
-                key: 'score', header: <span title={t('ps.scoreHint')}>{t('table.completionScore')}</span>, className: 'w-[140px] text-center align-middle', hideOnPhone: true, cell: (p) => {
+                // the leads that fit, as on the cards; the number opens the Matching buyers tab
+                key: 'leads', header: t('table.leadsFit'), hideOnPhone: true, cell: (p) => {
+                  if (p.status !== 'available' || p.archived) return <span title={t('props.notOffered')} className="text-muted-foreground">—</span>
+                  const fits = leadsForProperty(p, leads, db.settings)
+                  if (!fits.length) return <span title={t('card.noLeadsFit')} className="text-muted-foreground">0</span>
+                  return (
+                    <Link to={`/properties/${p.id}/matching`} onClick={(e) => e.stopPropagation()} title={fits.map((m) => m.lead.name).join(', ')}
+                      aria-label={t('card.leadsFit', { count: fits.length })} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+                      <Users aria-hidden className="size-3.5" />{fits.length}
+                    </Link>
+                  )
+                },
+              },
+              { key: 'listed', header: t('table.listed'), hideOnPhone: true, sortable: true, cell: (p) => <small className="whitespace-nowrap text-muted-foreground">{fmtDate(p.listedAt, i18n.language)}</small> },
+              {
+                key: 'score', header: <span title={t('ps.scoreHint')}>{t('table.completionScore')}</span>, className: 'w-[140px] align-middle', hideOnPhone: true, sortable: true, cell: (p) => {
                   const sc = listingScore(p)
-                  return <span title={sc.missing.length ? t('ps.toReach', { list: sc.missing.map((m) => `${t(`score.${m.key}`)} (+${m.max - m.points}%)`).join(', ') }) : t('ps.complete')} className="inline-flex"><CompletionRing score={sc.score} size={46} /></span>
+                  return <span title={sc.missing.length ? t('ps.toReach', { list: sc.missing.map((m) => `${t(`score.${m.key}`)} (+${m.max - m.points}%)`).join(', ') }) : t('ps.complete')} className="inline-flex"><CompletionBar score={sc.score} /></span>
                 },
               },
             ]} />

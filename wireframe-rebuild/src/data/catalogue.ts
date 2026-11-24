@@ -14,6 +14,8 @@ export type FactDef = {
   hint?: string
   /** A rupee amount: shown as ₹1,23,000. */
   money?: boolean
+  /** A number shown as typed, without the thousands comma: a year (2025, not 2,025). */
+  plain?: boolean
   /** Never shown to customers (Share page, website). */
   internal?: boolean
 }
@@ -82,7 +84,7 @@ export const PROPERTY_TYPES: Record<PropertyTypeKey, PropertyTypeDef> = {
       { key: "bedrooms", label: "Bedrooms", kind: "number" },
       { key: "bathrooms", label: "Bathrooms", kind: "number" },
       { key: "parking", label: "Parking", kind: "select", options: ["None","1 car","2 cars","3+ cars"] },
-      { key: "constructionYear", label: "Construction year", kind: "number" },
+      { key: "constructionYear", label: "Construction year", kind: "number", plain: true },
       { key: "quality", label: "Construction quality", kind: "select", options: ["Premium","Standard","Basic"] },
       { key: "condition", label: "Condition", kind: "select", options: ["New","Good","Needs minor repair","Needs major repair"] },
       { key: "garden", label: "Private garden / amenities", kind: "text" },

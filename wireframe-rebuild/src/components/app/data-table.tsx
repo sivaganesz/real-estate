@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
@@ -10,13 +11,18 @@ export type Column<T> = {
   /** Hide on narrow screens (below md). */
   hideOnPhone?: boolean
   className?: string
+  /** The header becomes a button that sorts by this column (needs `sort` and `onSort` on the table). */
+  sortable?: boolean
 }
+
+export type TableSort = { key: string; dir: 'asc' | 'desc' }
 
 /**
  * A typed table for lists (properties, leads, appointments). Rows open on click or Enter when `onRowClick` is set.
  * Scrolls sideways inside its own box on small screens; the page never does.
+ * Sortable columns: click a header to sort, again to reverse. The table only shows the arrow; the page sorts the rows.
  */
-export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, className, label }: {
+export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, className, label, sort, onSort }: {
   rows: T[]
   columns: Column<T>[]
   rowKey: (row: T) => string
@@ -25,6 +31,9 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
   className?: string
   /** Accessible name of the table. */
   label: string
+  /** The column the rows are sorted by, if it's one of the sortable ones. */
+  sort?: TableSort | null
+  onSort?: (key: string) => void
 }) {
   if (!rows.length && empty) return <>{empty}</>
   return (
@@ -32,11 +41,22 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
       <Table aria-label={label}>
         <TableHeader className="bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]">
           <TableRow className="hover:bg-transparent">
-            {columns.map((c) => (
-              <TableHead key={c.key} className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
-                {c.header}
-              </TableHead>
-            ))}
+            {columns.map((c) => {
+              const dir = sort?.key === c.key ? sort.dir : null
+              const Arrow = dir === 'asc' ? ArrowUp : dir === 'desc' ? ArrowDown : ArrowUpDown
+              return (
+                <TableHead key={c.key} aria-sort={c.sortable && onSort ? (dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : 'none') : undefined}
+                  className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
+                  {c.sortable && onSort ? (
+                    <button type="button" onClick={() => onSort(c.key)}
+                      className={cn('group/sort inline-flex items-center gap-1 uppercase hover:text-foreground', dir && 'text-foreground')}>
+                      {c.header}
+                      <Arrow aria-hidden className={cn('size-3 shrink-0', !dir && 'opacity-40 group-hover/sort:opacity-80')} />
+                    </button>
+                  ) : c.header}
+                </TableHead>
+              )
+            })}
           </TableRow>
         </TableHeader>
         <TableBody>

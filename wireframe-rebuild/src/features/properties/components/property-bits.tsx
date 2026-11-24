@@ -5,6 +5,7 @@
 import { Building2, Factory, House, LandPlot, Store, Tractor, TriangleAlert, BadgeCheck, Archive, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Meter } from '@/components/app/meter'
 import { StatusChip } from '@/components/app/status-chip'
 import { type Tone, toneSoft, toneText } from '@/components/app/tone'
 import { cn } from '@/lib/utils'
@@ -77,12 +78,37 @@ export function PropertyPhoto({ type, media, alt, className, iconClassName }: {
 /* ---------- completion ---------- */
 
 /** The listing's completion score as a ring, coloured by how far along it is. */
+/** A listing's completion colour: green from 80%, amber from 50%, red below. */
+const scoreTone = (score: number): Tone => (score >= 80 ? 'success' : score >= 50 ? 'warning' : 'danger')
+
+/** A thin bar with the % beside it: the table's compact form of the completion ring. */
+export function CompletionBar({ score, className }: { score: number; className?: string }) {
+  const { t } = useTranslation()
+  return (
+    <span className={cn('inline-flex items-center gap-2', className)}>
+      <Meter value={score} tone={scoreTone(score)} label={t('props.complete', { pct: score })} className="w-14" />
+      <span aria-hidden className="w-8 text-right text-meta tabular-nums">{score}%</span>
+    </span>
+  )
+}
+
+/** The card's smallest form: a coloured dot and the %, in the same colours as the ring and the bar. */
+export function CompletionPill({ score, className }: { score: number; className?: string }) {
+  const { t } = useTranslation()
+  const tone = scoreTone(score)
+  return (
+    <span title={t('props.complete', { pct: score })} className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold tabular-nums', toneSoft[tone], toneText[tone], className)}>
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />{score}%<span className="sr-only"> {t('props.complete', { pct: score })}</span>
+    </span>
+  )
+}
+
 export function CompletionRing({ score, size = 40, className }: { score: number; size?: number; className?: string }) {
   const { t } = useTranslation()
   const stroke = size > 50 ? 7 : 4
   const r = (size - 8) / 2
   const c = 2 * Math.PI * r
-  const tone: Tone = score >= 80 ? 'success' : score >= 50 ? 'warning' : 'danger'
+  const tone = scoreTone(score)
   return (
     <span className={cn('relative inline-flex shrink-0 items-center justify-center', className)} style={{ width: size, height: size }}
       role="img" aria-label={t('props.complete', { pct: score })}>

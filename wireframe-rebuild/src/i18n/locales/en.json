@@ -1033,9 +1033,13 @@
     "sortLabel": "Sort: {{s}}",
     "sort": {
       "newest": "Newest",
+      "oldest": "Oldest",
       "priceAsc": "Price: low to high",
       "priceDesc": "Price: high to low",
-      "scoreAsc": "Least complete first"
+      "areaAsc": "Area: small to large",
+      "areaDesc": "Area: large to small",
+      "scoreAsc": "Least complete first",
+      "scoreDesc": "Most complete first"
     },
     "clearAll": "Clear all",
     "allTypes": "All types",

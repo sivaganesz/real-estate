@@ -19,7 +19,8 @@ export type AiFilters = {
   corner?: boolean
   amen?: string[]
 }
-export type Sort = '' | 'priceAsc' | 'priceDesc' | 'scoreAsc'
+/** '' = newest first. Each sortable table column has a pair (low → high, high → low); the Sort pill lists them all. */
+export type Sort = '' | 'oldest' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'scoreAsc' | 'scoreDesc'
 export type PSFilters = {
   q?: string
   /** a type key, or "cat:residential" / "cat:commercial" */
@@ -58,7 +59,7 @@ export type PSItem = {
 }
 
 export const PAGE_SIZES = [10, 15, 25, 50, 100]
-export const SORTS: Sort[] = ['', 'priceAsc', 'priceDesc', 'scoreAsc']
+export const SORTS: Sort[] = ['', 'oldest', 'priceAsc', 'priceDesc', 'areaAsc', 'areaDesc', 'scoreAsc', 'scoreDesc']
 export const EXAMPLES = ['2 BHK flat in Madurai under 60 lakh', 'East-facing plot in Madurai, 25 to 32 lakh', 'Villa in Coimbatore with swimming pool', 'Shop or office in Chennai', 'Corner plot above 1400 sq.ft.']
 export const BUDGETS: [number | '', number | '', string][] = [['', 30e5, 'u30'], [30e5, 60e5, '30to60'], [60e5, 1e7, '60to1cr'], [1e7, 3e7, '1to3cr'], [3e7, '', '3crPlus']]
 export const PRICES = [10e5, 20e5, 25e5, 30e5, 40e5, 50e5, 60e5, 75e5, 1e7, 1.5e7, 2e7, 3e7, 5e7]
@@ -91,12 +92,19 @@ export function matches(x: PSItem, f: PSFilters, skip: string[] = [], typeLabel:
   return true
 }
 
+/** The number each sort orders by, and its direction (1 = low to high). */
+const SORT_BY: Record<Exclude<Sort, '' | 'oldest'>, [(x: PSItem) => number, 1 | -1]> = {
+  priceAsc: [(x) => x.price, 1], priceDesc: [(x) => x.price, -1],
+  areaAsc: [(x) => x.area, 1], areaDesc: [(x) => x.area, -1],
+  scoreAsc: [(x) => x.score, 1], scoreDesc: [(x) => x.score, -1],
+}
+
 export function sortList(list: PSItem[], by: Sort = ''): PSItem[] {
-  const fn = by === 'priceAsc' ? (x: PSItem, y: PSItem) => x.price - y.price
-    : by === 'priceDesc' ? (x: PSItem, y: PSItem) => y.price - x.price
-      : by === 'scoreAsc' ? (x: PSItem, y: PSItem) => x.score - y.score
-        : (x: PSItem, y: PSItem) => (y.date || '').localeCompare(x.date || '') || y.id.localeCompare(x.id)
-  return [...list].sort(fn)
+  const newest = (x: PSItem, y: PSItem) => (y.date || '').localeCompare(x.date || '') || y.id.localeCompare(x.id)
+  if (by === '') return [...list].sort(newest)
+  if (by === 'oldest') return [...list].sort((x, y) => newest(y, x))
+  const [value, dir] = SORT_BY[by]
+  return [...list].sort((x, y) => dir * (value(x) - value(y)) || newest(x, y)) // equal values: newest first
 }
 
 /** Every active criterion, as { k, kind, value } — the bar turns it into words. */
