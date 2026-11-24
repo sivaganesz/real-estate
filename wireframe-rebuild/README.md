@@ -47,6 +47,8 @@ The **UI kit** page (`/ui-kit`, at the bottom of the menu) shows the theme and e
 
 ## Progress
 
+The full feature-by-feature list, against the old wireframe, is in [CHECKLIST.md](CHECKLIST.md).
+
 | Section | Status |
 |---|---|
 | Setup, theme, shared components, app shell | Done (24dfd08) |
