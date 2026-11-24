@@ -6,9 +6,8 @@
 import { useState } from 'react'
 import { Chip } from '@/components/app/chip'
 import { Link } from 'react-router'
-import { Camera, Check, MapPin, Plus, Sparkles, TriangleAlert } from 'lucide-react'
+import { Check, MapPin, Plus, Sparkles, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { KeyValueGrid } from '@/components/app/key-value-grid'
 import { SectionCard } from '@/components/app/section-card'
@@ -23,16 +22,17 @@ import { attentionFor, listingScore, priceCheck, type ScoreItem } from '@/lib/pr
 import { cn } from '@/lib/utils'
 import { useCan, useStore, userName } from '@/store/db'
 import type { Property } from '@/data/types'
-import { CompletionRing, MATCH_TONE, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
+import { CompletionRing, MATCH_TONE, PropertyStatusChip } from '../components/property-bits'
 import { FactDialog } from '../components/fact-dialog'
 import { NeighbourhoodCard } from './neighbourhood-card'
+import { PhotoGallery, usePhotoUpload } from '../components/photo-gallery'
 
 export function OverviewTab({ p, matches }: { p: Property; matches: Match[] }) {
   const live = p.status === 'available' && !p.archived
   return (
     // phone: photos, then the side cards (matching on top), then the details; desktop: two columns
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr]">
-      <div className="order-1 min-w-0 lg:col-start-1 lg:row-start-1"><PhotosStrip p={p} /></div>
+      <div className="order-1 min-w-0 lg:col-start-1 lg:row-start-1"><PhotoGallery p={p} /></div>
       <div className="order-3 flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-2">
         <DetailsCard p={p} />
         <NeighbourhoodCard p={p} />
@@ -42,50 +42,6 @@ export function OverviewTab({ p, matches }: { p: Property; matches: Match[] }) {
         <TodoCard p={p} />
         {live && <BuyersCard p={p} matches={matches} />}
       </aside>
-    </div>
-  )
-}
-
-/* ---------- photos: one strip — Cover · Photo 2 · Photo 3 · +N · Upload photo ---------- */
-
-function PhotosStrip({ p }: { p: Property }) {
-  const { t } = useTranslation()
-  const { updateProperty } = useStore()
-  const can = useCan()
-  const photos = p.media.filter((m) => m.kind === 'photo')
-  const add = () => {
-    updateProperty(p.id, (x) => { const n = x.media.length; x.media.push({ id: `${x.id}-ph${n + 1}`, kind: 'photo', url: '', isCover: n === 0 }) }, t('history.photoAdded', { count: photos.length + 1 }))
-    toast.success(t('photos.uploadedOne'))
-  }
-  const removeLast = () => updateProperty(p.id, (x) => { const i = x.media.map((m) => m.kind).lastIndexOf('photo'); if (i >= 0) x.media.splice(i, 1) }, t('history.photoRemoved'))
-
-  if (!photos.length) {
-    return (
-      <button type="button" onClick={add} className="flex w-full items-center gap-4 rounded-xl border border-dashed bg-card p-4 text-left hover:bg-accent/40">
-        <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground"><Camera className="size-5" /></span>
-        <span className="flex-1"><span className="block font-medium">{t('photos.none')}</span><span className="text-sm text-muted-foreground">{t('photos.noneHint')}</span></span>
-        <span className="rounded-md border bg-card px-2.5 py-1 text-sm font-medium">＋ {t('photos.uploadOne')}</span>
-      </button>
-    )
-  }
-  return (
-    <div>
-      <div className="flex h-36 gap-2 sm:h-40">
-        {photos.slice(0, 4).map((m, i) => (
-          <div key={m.id} className={cn('relative min-w-0 overflow-hidden rounded-xl', i === 0 ? 'flex-[1.9]' : 'flex-1', i >= 2 && 'max-sm:hidden')}>
-            <PropertyPhoto type={p.type} media={m} alt={t('photos.alt', { n: i + 1, title: p.title })} className="size-full" iconClassName={i === 0 ? 'size-10' : 'size-7'} />
-            <span className="absolute bottom-2 left-2 rounded bg-card/80 px-1.5 text-caption text-muted-foreground">{i === 0 ? t('photos.cover') : t('photos.photoN', { n: i + 1 })}</span>
-            {i === 3 && photos.length > 4 && <span className="absolute inset-0 flex items-center justify-center bg-foreground/50 text-xl font-semibold text-background">+{photos.length - 4}</span>}
-          </div>
-        ))}
-        <button type="button" onClick={add} className="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-dashed bg-card text-sm text-muted-foreground hover:bg-accent/40 hover:text-foreground">
-          <Plus className="size-5" /> {t('photos.uploadOne')}
-        </button>
-      </div>
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{t('photos.count', { count: photos.length })}</span>
-        {can('property.manage') && <button type="button" onClick={removeLast} className="text-danger hover:underline">{t('photos.removeLast')}</button>}
-      </div>
     </div>
   )
 }
@@ -228,8 +184,9 @@ const FIX: Record<ScoreItem['key'], 'edit' | 'photo' | 'legal'> = {
 /** One "To do" list: what needs attention, then what's missing with the points each adds. */
 function TodoCard({ p }: { p: Property }) {
   const { t } = useTranslation()
-  const { db, updateProperty } = useStore()
+  const { db } = useStore()
   const can = useCan()
+  const upload = usePhotoUpload(p)
   const live = p.status === 'available' && !p.archived
   const sc = listingScore(p)
   const attention = attentionFor(p, db, DEMO_TODAY).filter((a) => a.key !== 'details' && (live || a.key === 'docs'))
@@ -237,18 +194,15 @@ function TodoCard({ p }: { p: Property }) {
   const exact = live && !p.location.exact
   const n = attention.length + missing.length + (exact ? 1 : 0)
   if (!n) return null
-  const addPhoto = () => {
-    updateProperty(p.id, (x) => { const k = x.media.length; x.media.push({ id: `${x.id}-ph${k + 1}`, kind: 'photo', url: '', isCover: k === 0 }) }, t('history.photoAdded', { count: 1 }))
-    toast.success(t('photos.uploadedOne'))
-  }
   const fix = (m: ScoreItem) => {
     const k = FIX[m.key]
     if (!can('property.manage') && k !== 'photo') return null
-    return k === 'photo' ? <Button size="xs" variant="outline" onClick={addPhoto}>{t('todo.add')}</Button>
+    return k === 'photo' ? <Button size="xs" variant="outline" onClick={upload.pick}>{t('todo.add')}</Button>
       : <Button size="xs" variant="outline" asChild><Link to={k === 'legal' ? `/properties/${p.id}/legal` : `/properties/${p.id}/edit`}>{k === 'legal' ? t('todo.open') : t('todo.add')}</Link></Button>
   }
   return (
     <SectionCard>
+      {upload.input}
       <div className="mb-3 flex items-center gap-3">
         {live && <CompletionRing score={sc.score} size={56} />}
         <div>

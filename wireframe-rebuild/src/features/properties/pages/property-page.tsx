@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Archive, Camera, Lock, MapPin, MoreHorizontal, Pencil, RotateCcw, Share2, Sparkles, Trash2 } from 'lucide-react'
+import { Archive, Lock, MapPin, MoreHorizontal, Pencil, RotateCcw, Share2, Sparkles, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -18,10 +18,10 @@ import { LISTED_STATUSES } from '@/data/catalogue'
 import { fmtDate, inr, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { leadsForProperty } from '@/lib/matching'
-import { isListed, pendingApprovals, photoCount } from '@/lib/property'
+import { isListed, pendingApprovals } from '@/lib/property'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import type { Property, PropertyStatus } from '@/data/types'
-import { ApprovalChips, PropertyPhoto, PropertyStatusChip, TypeIcon } from '../components/property-bits'
+import { ApprovalChips, PropertyStatusChip } from '../components/property-bits'
 import { SharePanel } from '../components/share-panel'
 import { HistoryTab } from '../tabs/history-tab'
 import { LegalTab } from '../tabs/legal-tab'
@@ -66,11 +66,10 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
   const matches = useMemo(() => leadsForProperty(p, leads, db.settings), [p, leads, db.settings])
   const ppsf = p.areaSqft ? Math.round(p.price / p.areaSqft) : 0
   const pending = pendingApprovals(p).length
-  const photos = photoCount(p)
-  const cover = p.media.find((m) => m.kind === 'photo' && m.isCover) ?? p.media.find((m) => m.kind === 'photo')
   const openShare = (leadId?: string) => setShare({ open: true, leadId })
   useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties'), to: '/properties' }, { label: p.id }])
   const live = p.status === 'available' && !p.archived
+  const statusMenu = manager && !p.archived && p.status !== 'draft'
 
   const changeStatus = (s: PropertyStatus) => {
     if (s === p.status) return
@@ -130,21 +129,7 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
       <PageHeader
         className="mb-4"
         title={
-          <span className="flex items-start gap-4">
-            {/* the cover as a thumbnail, with the photo count (opens the Overview photos) */}
-            {cover?.url ? (
-              <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })} className="relative size-16 shrink-0 overflow-hidden rounded-xl">
-                <PropertyPhoto type={p.type} media={cover} alt="" className="size-full" iconClassName="size-6" />
-                <span className="absolute right-1 bottom-1 flex items-center gap-0.5 rounded bg-foreground/60 px-1 text-micro font-medium text-background"><Camera className="size-2.5" />{photos}</span>
-              </Link>
-            ) : (
-              <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })}
-                className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent text-accent-foreground">
-                <TypeIcon type={p.type} className="size-6" />
-                {photos > 0 && <span className="flex items-center gap-0.5 text-caption font-medium"><Camera className="size-3" />{photos}</span>}
-              </Link>
-            )}
-            <span className="min-w-0">
+          <span className="block min-w-0">
               <span className="inline-flex flex-wrap items-center gap-2">
                 {p.title}
                 {manager && !p.archived && (
@@ -152,20 +137,21 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
                     className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><Pencil className="size-4" /></Link>
                 )}
               </span>
-              <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-normal tracking-normal">
-                <StatusChip tone="neutral" variant="outline" className="font-mono">{p.id}</StatusChip>
-                <StatusChip tone="info">{L.type(p.type)}</StatusChip>
-                <StatusChip tone="neutral">{L.purpose(p.purpose)}</StatusChip>
-                <PropertyStatusChip property={p} />
-                <ApprovalChips property={p} />
-              </span>
-              <span className="mt-1.5 block text-sm font-normal tracking-normal text-muted-foreground">
-                <MapPin className="mr-1 inline size-3.5 align-[-2px]" />{p.location.locality}, {p.location.city} · {num(p.areaSqft)} sq.ft.
+              {/* one line of facts: ID · type · purpose · place · area · facing · listed */}
+              <span className="mt-1 block text-sm font-normal tracking-normal text-muted-foreground">
+                <span className="font-mono text-foreground/80">{p.id}</span> · {L.type(p.type)} · {L.purpose(p.purpose)} ·{' '}
+                <span className="whitespace-nowrap"><MapPin className="mr-0.5 inline size-3.5 align-[-2px]" />{p.location.locality}, {p.location.city}</span> · {num(p.areaSqft)} sq.ft.
                 {p.facing ? ` · ${t('search.facing', { dir: L.facing(p.facing) })}` : ''}
                 {p.listedAt ? ` · ${t('props.listedOn', { date: fmtDate(p.listedAt, i18n.language) })}` : ''}
               </span>
+              {/* the status shows here only where there's no status menu beside the price */}
+              {(!statusMenu || p.approvals.length > 0) && (
+                <span className="mt-2 flex flex-wrap items-center gap-1.5 text-sm font-normal tracking-normal">
+                  {!statusMenu && <PropertyStatusChip property={p} />}
+                  <ApprovalChips property={p} />
+                </span>
+              )}
             </span>
-          </span>
         }
         actions={
           <div className="flex flex-col items-stretch gap-3 sm:items-end">

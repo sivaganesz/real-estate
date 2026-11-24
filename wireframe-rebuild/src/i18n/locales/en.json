@@ -425,7 +425,24 @@
     "removeLast": "Remove last photo",
     "uploadedOne": "Photo added (simulated upload)",
     "photoN": "Photo {{n}}",
-    "uploadOne": "Upload photo"
+    "uploadOne": "Upload photo",
+    "add": "Add photos",
+    "viewAll": "View all {{count}}",
+    "gallery": "Photos of {{title}}",
+    "openN": "Open photo {{n}} of {{count}}",
+    "ofN": "{{n}} / {{count}}",
+    "setCover": "Set as cover",
+    "remove": "Remove",
+    "close": "Close",
+    "prev": "Previous photo",
+    "next": "Next photo",
+    "addedToast_one": "{{count}} photo added",
+    "addedToast_other": "{{count}} photos added",
+    "removedToast": "Photo removed",
+    "coverToast": "Cover photo changed",
+    "cantRead": "That file couldn’t be read as a photo.",
+    "storageFull": "The demo’s browser storage is full — remove a photo first.",
+    "view": "View"
   },
   "documents": {
     "pendingHint": "Claimed, but the document isn't uploaded yet — the badge isn't shown to customers until it is.",
@@ -604,7 +621,8 @@
     "routeCheckedHow": "Route to {{place}} checked — {{how}}, {{km}} km",
     "placeEdited": "Nearby place edited: {{place}}",
     "placeRemoved": "Nearby place removed: {{place}}",
-    "routeUnchecked": "Route check undone: {{place}}"
+    "routeUnchecked": "Route check undone: {{place}}",
+    "coverChanged": "Cover photo changed"
   },
   "share": {
     "title": "Share with a lead",
