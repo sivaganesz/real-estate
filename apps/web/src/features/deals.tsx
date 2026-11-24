@@ -21,7 +21,7 @@ function LeadDeals({ lead }: { lead: Lead }) {
   const canStart = !['new', 'lost'].includes(lead.stage);
   if (!deals.length && !canStart) return null;
   return (
-    <Card className="p-5">
+    <Card className="rounded-3xl p-5">
       <SectionTitle
         action={
           canStart && (

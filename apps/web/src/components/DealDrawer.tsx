@@ -6,7 +6,8 @@ import { CheckCircle2, Lock, ShieldCheck, Undo2 } from 'lucide-react';
 import { DEAL_STATUS_LABEL, formatINR, relativeDay } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { DEAL_TONE, PAYMENT_MODES, fromLakhs, type Deal } from '../lib/deals';
+import { DEAL_STEPS, DEAL_TONE, PAYMENT_MODES, dealStep, fromLakhs, type Deal } from '../lib/deals';
+import { NextStepNote, StepTrack } from './DealSteps';
 import { Badge, Button, Drawer, ErrorNote, Field, Input, PageLoader, SectionTitle, Select, Textarea } from './ui';
 import { PropertyCover } from './PropertyCard';
 import { useToast } from './toast';
@@ -63,6 +64,19 @@ function DealBody({ d }: { d: Deal }) {
         </p>
       )}
 
+      <div className="rounded-2xl bg-slate-50 p-4">
+        <StepTrack d={d} labels />
+        {dealStep(d) >= 0 && (
+          <p className="mt-3 text-xs text-slate-500">
+            <b className="font-semibold text-slate-700">
+              Step {dealStep(d) + 1} of 5 · {DEAL_STEPS[dealStep(d)].label}.
+            </b>{' '}
+            {DEAL_STEPS[dealStep(d)].explain}
+          </p>
+        )}
+        <NextStepNote d={d} className="mt-3 rounded-xl bg-white px-3 py-2 text-sm" />
+      </div>
+
       <PriceLadder d={d} />
 
       {d.status === 'negotiating' && <Negotiate d={d} act={act} />}
@@ -92,7 +106,7 @@ function DealBody({ d }: { d: Deal }) {
 function PriceLadder({ d }: { d: Deal }) {
   return (
     <div>
-      <SectionTitle>Price</SectionTitle>
+      <SectionTitle>Price so far</SectionTitle>
       <ol className="space-y-2">
         <li className="flex items-center justify-between text-sm">
           <span className="text-slate-500">List price</span>
@@ -135,8 +149,9 @@ function Negotiate({ d, act }: { d: Deal; act: Act }) {
   const off = lakhs ? Math.round(((d.listPrice - fromLakhs(amount)) / d.listPrice) * 1000) / 10 : 0;
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
+      <p className="text-sm font-medium text-slate-900">Record an offer, or agree a price</p>
       <div className="grid grid-cols-[1fr_auto] gap-2">
-        <Field label="Amount (lakhs)" hint={lakhs ? `${formatINR(fromLakhs(amount))} · ${off}% off list` : undefined}>
+        <Field label="Amount in lakhs" hint={lakhs ? `${formatINR(fromLakhs(amount))} · ${off}% off list` : undefined}>
           <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={String(d.listPrice / 100_000)} />
         </Field>
         <div className="flex items-end gap-1.5 pb-5">

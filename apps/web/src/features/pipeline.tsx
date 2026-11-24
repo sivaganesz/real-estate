@@ -251,7 +251,7 @@ function StageBar({ lead }: { lead: Lead }) {
   const at = steps.indexOf(lead.stage);
   const next = at >= 0 && at < 4 ? steps[at + 1] : null;
   return (
-    <Card className="p-4">
+    <div>
       <div className="flex flex-wrap items-center gap-3">
         <ol className="flex flex-1 items-center gap-1 overflow-x-auto">
           {steps.map((s, i) => (
@@ -303,9 +303,9 @@ function StageBar({ lead }: { lead: Lead }) {
         </p>
       )}
       {gate && <MoveDialog lead={lead} {...gate} onClose={() => setGate(null)} onRetry={(extra) => move.mutateAsync({ lead, to: gate.to, extra }).then(() => setGate(null))} />}
-    </Card>
+    </div>
   );
 }
 
 views.board = PipelineBoard;
-leadSlots.top.unshift(StageBar);
+leadSlots.hero.push(StageBar);

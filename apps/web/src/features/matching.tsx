@@ -18,11 +18,11 @@ type Reason = { ok: 'yes' | 'near' | 'no' | 'info'; text: string };
 type Fit = 'strong' | 'good' | 'partial';
 const FIT: Record<Fit, { label: string; tone: Tone }> = { strong: { label: 'Strong fit', tone: 'green' }, good: { label: 'Good fit', tone: 'brand' }, partial: { label: 'Partial fit', tone: 'amber' } };
 
-export function Reasons({ reasons, max = 4 }: { reasons: Reason[]; max?: number }) {
+export function Reasons({ reasons, max = 4, inline }: { reasons: Reason[]; max?: number; inline?: boolean }) {
   return (
-    <ul className="mt-1 space-y-0.5">
+    <ul className={inline ? 'mt-1 flex flex-wrap gap-x-3 gap-y-0.5' : 'mt-1 space-y-0.5'}>
       {reasons.slice(0, max).map((r) => (
-        <li key={r.text} className={clsx('flex gap-1.5 text-xs', r.ok === 'yes' ? 'text-emerald-700' : r.ok === 'near' ? 'text-amber-700' : r.ok === 'no' ? 'text-rose-600' : 'text-slate-500')}>
+        <li key={r.text} className={clsx('flex gap-1 text-xs', r.ok === 'yes' ? 'text-emerald-700' : r.ok === 'near' ? 'text-amber-700' : r.ok === 'no' ? 'text-rose-600' : 'text-slate-500')}>
           <span className="w-3 shrink-0 text-center">{r.ok === 'yes' ? '✓' : r.ok === 'near' ? '≈' : r.ok === 'no' ? '✗' : '•'}</span>
           <span>{r.text}</span>
         </li>
@@ -86,6 +86,7 @@ function LeadMatches({ lead }: { lead: Lead }) {
   const [tab, setTab] = useState<'matches' | 'shortlist'>('matches');
   const [picked, setPicked] = useState<string[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [all, setAll] = useState(false);
   const m = useQuery({ queryKey: ['matches', lead.id], queryFn: () => api.get<{ qualified: boolean; total: number; items: MatchItem[] }>(`/matching/lead/${lead.id}?limit=6`), enabled: lead.stage !== 'lost' });
   const sl = useQuery({ queryKey: ['shortlist', lead.id], queryFn: () => api.get<{ items: { status: string; at: string; property: Property }[] }>(`/matching/shortlist/${lead.id}`), enabled: tab === 'shortlist' });
   const rate = useMutation({
@@ -98,7 +99,7 @@ function LeadMatches({ lead }: { lead: Lead }) {
   if (lead.stage === 'lost' || lead.stage === 'booked') return null;
   const first = lead.name.split(' ')[0];
   return (
-    <Card className="p-5">
+    <Card className="rounded-3xl p-5">
       <SectionTitle
         action={
           <Segmented
@@ -124,38 +125,45 @@ function LeadMatches({ lead }: { lead: Lead }) {
           <p className="text-sm text-slate-500">Nothing live fits right now. Try widening their budget or areas.</p>
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {m.data.items.map((it) => {
+            <ul className="-mx-2 divide-y divide-slate-100">
+              {(all ? m.data.items : m.data.items.slice(0, 3)).map((it) => {
                 const on = picked.includes(it.property.id);
                 return (
-                  <div key={it.property.id} className={clsx('relative rounded-2xl border p-3 transition', on ? 'border-brand-400 bg-brand-50/50' : 'border-slate-200')}>
-                    <button onClick={() => setPicked(on ? picked.filter((x) => x !== it.property.id) : [...picked, it.property.id])} className={clsx('absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-md border', on ? 'border-brand-600 bg-brand-700 text-white' : 'border-slate-300 bg-white')} aria-label="Select">
+                  <li key={it.property.id} className={clsx('flex items-start gap-3 rounded-2xl px-2 py-3 transition', on && 'bg-brand-50/60')}>
+                    <button onClick={() => setPicked(on ? picked.filter((x) => x !== it.property.id) : [...picked, it.property.id])} className={clsx('mt-4 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border', on ? 'border-brand-600 bg-brand-700 text-white' : 'border-slate-300 bg-white')} aria-label="Select">
                       {on && <Check className="h-3.5 w-3.5" />}
                     </button>
-                    <Link to={`/properties/${it.property.id}`} className="flex gap-3 pr-6">
-                      <PropertyCover property={it.property} className="h-14 w-16 shrink-0 rounded-lg" iconSize="h-5 w-5" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">{priceLabel(it.property)}</p>
-                        <p className="truncate text-xs text-slate-700">{it.property.title}</p>
-                        <Badge tone={FIT[it.fit].tone} className="mt-1">
-                          {FIT[it.fit].label}
-                        </Badge>
-                      </div>
+                    <Link to={`/properties/${it.property.id}`} className="shrink-0">
+                      <PropertyCover property={it.property} className="h-14 w-16 rounded-xl" iconSize="h-5 w-5" />
                     </Link>
-                    <Reasons reasons={it.reasons} />
-                    <div className="mt-2 flex gap-1">
-                      <button onClick={() => rate.mutate({ propertyId: it.property.id, status: 'liked' })} className="rounded-md p-1 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600" title="They like it">
-                        <ThumbsUp className="h-3.5 w-3.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link to={`/properties/${it.property.id}`} className="text-sm font-semibold text-slate-900 hover:text-brand-800">
+                          {priceLabel(it.property)}
+                        </Link>
+                        <span className="min-w-0 truncate text-sm text-slate-600">{it.property.title}</span>
+                        <Badge tone={FIT[it.fit].tone}>{FIT[it.fit].label}</Badge>
+                      </div>
+                      <Reasons reasons={it.reasons} inline />
+                    </div>
+                    <div className="flex shrink-0 gap-0.5">
+                      <button onClick={() => rate.mutate({ propertyId: it.property.id, status: 'liked' })} className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600" title="They like it">
+                        <ThumbsUp className="h-4 w-4" />
                       </button>
-                      <button onClick={() => rate.mutate({ propertyId: it.property.id, status: 'rejected' })} className="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600" title="Not for them — hide">
-                        <ThumbsDown className="h-3.5 w-3.5" />
+                      <button onClick={() => rate.mutate({ propertyId: it.property.id, status: 'rejected' })} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" title="Not for them — hide">
+                        <ThumbsDown className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-2">
+            </ul>
+            {m.data.items.length > 3 && (
+              <button onClick={() => setAll(!all)} className="mt-1 text-xs font-medium text-brand-700 hover:underline">
+                {all ? 'Show fewer' : `Show ${m.data.items.length - 3} more`}
+              </button>
+            )}
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
               <p className="text-xs text-slate-500">{picked.length ? `${picked.length} selected` : 'Select properties to send them together.'}</p>
               <Button size="sm" variant="primary" icon={<Send className="h-3.5 w-3.5" />} disabled={!picked.length} onClick={() => setSharing(true)}>
                 Send to {first}

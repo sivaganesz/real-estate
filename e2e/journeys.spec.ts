@@ -42,6 +42,20 @@ test.describe('sales executive', () => {
     await expect(page.getByRole('button', { name: 'Open WhatsApp' })).toBeVisible();
   });
 
+  test('books a meeting from the calendar', async ({ page }) => {
+    await signIn(page, 'Sales executive');
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: 'New appointment' }).click();
+    await page.getByPlaceholder('Customer name or phone').fill('Usha');
+    await page.getByRole('button', { name: /Usha Rani/ }).click();
+    await page.getByRole('button', { name: 'Meeting', exact: true }).click();
+    await page.getByPlaceholder(/What it’s about/).fill('Discuss Saravanampatti payment plan');
+    await page.getByRole('button', { name: 'Tomorrow 5 pm' }).click();
+    await page.getByRole('button', { name: 'Book it', exact: true }).click();
+    await expect(page.getByText(/Meeting with Usha booked for Tomorrow/)).toBeVisible();
+    await expect(page.getByText('Usha Rani').first()).toBeVisible();
+  });
+
   test('can’t open someone else’s customer', async ({ page }) => {
     await signIn(page, 'Sales executive');
     await page.goto('/leads?q=Suresh');
@@ -84,6 +98,15 @@ test.describe('sales manager', () => {
     await page.getByRole('button', { name: /Price approval/ }).click();
     await page.getByRole('button', { name: /^Approve ₹/ }).click();
     await expect(page.getByText('Agreed').first()).toBeVisible();
+  });
+
+  test('sees each deal’s step and what happens next', async ({ page }) => {
+    await signIn(page, 'Sales manager');
+    await page.goto('/deals');
+    await expect(page.getByText('A deal is one customer buying one property')).toBeVisible();
+    await page.getByRole('button', { name: /Agree the price/ }).click();
+    await expect(page.getByText(/Step 1: Agree the price/)).toBeVisible();
+    await expect(page.getByText(/Your move:/).first()).toBeVisible();
   });
 
   test('drags nothing: moving a lead without evidence asks for it', async ({ page }) => {

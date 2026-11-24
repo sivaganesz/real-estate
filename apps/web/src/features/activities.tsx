@@ -146,6 +146,110 @@ function ScheduleTab({ lead, onDone }: { lead: Lead; onDone: () => void }) {
   );
 }
 
+/** Book a meeting, call or visit from anywhere (the Calendar): pick the customer, what, when. */
+export function NewAppointment({ day, onClose }: { day?: Date; onClose: () => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [q, setQ] = useState('');
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [type, setType] = useState<ActivityType>('meeting');
+  const [title, setTitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [props, setProps] = useState<string[]>([]);
+  const [clash, setClash] = useState<string | null>(null);
+  const [when, setWhen] = useState<Date | null>(() => {
+    if (!day) return null;
+    const d = new Date(day);
+    d.setHours(11, 0, 0, 0);
+    // A day already under way starts from the next full hour.
+    return d.getTime() > Date.now() ? d : new Date(Math.ceil((Date.now() + 3_600_000) / 3_600_000) * 3_600_000);
+  });
+  const found = useQuery({
+    queryKey: ['leads', 'pick', q],
+    queryFn: () => api.get<{ items: Lead[] }>(`/leads${qs({ q: q || undefined, open: true, limit: 6 })}`),
+    enabled: !lead,
+  });
+  const save = useMutation({
+    mutationFn: (force: boolean) => api.post('/activities', { leadId: lead!.id, type, scheduledAt: when!.toISOString(), title: title.trim() || undefined, notes: notes.trim() || undefined, propertyIds: type === 'site_visit' ? props : undefined, force }),
+    onSuccess: () => {
+      for (const k of ['agenda', 'today', 'upcoming', 'lead', 'leads', 'timeline', 'team']) void qc.invalidateQueries({ queryKey: [k] });
+      toast(`${ACTIVITY_LABEL[type]} with ${lead!.name.split(' ')[0]} booked for ${relativeDay(when!)}, ${formatTime(when!)}`);
+      onClose();
+    },
+    onError: (e) => {
+      if (e instanceof ApiError && e.status === 409) setClash(e.message);
+    },
+  });
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="New appointment"
+      footer={
+        <Button variant="primary" disabled={!lead || !when} loading={save.isPending} onClick={() => save.mutate(false)}>
+          Book it
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-slate-600">Customer</p>
+          {lead ? (
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-300 bg-brand-50/60 px-3 py-2">
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-slate-900">{lead.name}</span>
+                <span className="block truncate text-xs text-slate-500">{lead.summary}</span>
+              </span>
+              <button type="button" onClick={() => setLead(null)} className="shrink-0 text-xs font-medium text-brand-700 hover:underline">
+                Change
+              </button>
+            </div>
+          ) : (
+            <>
+              <Input autoFocus placeholder="Customer name or phone" value={q} onChange={(e) => setQ(e.target.value)} />
+              <div className="mt-1.5 space-y-1">
+                {found.data?.items.map((l) => (
+                  <button key={l.id} type="button" onClick={() => setLead(l)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-left text-xs hover:border-brand-300">
+                    <span className="truncate font-medium text-slate-800">{l.name}</span>
+                    <span className="truncate text-slate-500">{l.summary}</span>
+                  </button>
+                ))}
+                {found.data && !found.data.items.length && <p className="text-xs text-slate-500">No open customer matches “{q}”.</p>}
+              </div>
+            </>
+          )}
+        </div>
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-slate-600">What</p>
+          <div className="flex flex-wrap gap-1.5">
+            {PLAN_TYPES.map((t) => (
+              <button key={t} type="button" onClick={() => setType(t)} className={clsx('rounded-full border px-2.5 py-1 text-xs', type === t ? 'border-brand-500 bg-brand-700 text-white' : 'border-slate-200 text-slate-600')}>
+                {ACTIVITY_LABEL[t]}
+              </button>
+            ))}
+          </div>
+          <Input className="mt-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={type === 'meeting' ? 'What it’s about, e.g. Discuss payment plan' : 'What it’s about (optional)'} />
+        </div>
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-slate-600">When</p>
+          <WhenPicker value={when} onChange={setWhen} />
+        </div>
+        {type === 'site_visit' && lead && <PropertyPicker lead={lead} value={props} onChange={setProps} />}
+        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" />
+        {clash && (
+          <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+            {clash}.{' '}
+            <button type="button" className="font-medium underline" onClick={() => save.mutate(true)}>
+              Book it anyway
+            </button>
+          </p>
+        )}
+        {save.error && !clash && <ErrorNote error={save.error} />}
+      </div>
+    </Modal>
+  );
+}
+
 /** Done / move / cancel on a planned item, wherever it appears. */
 export function PlannedButtons({ id, type, title, leadId, leadName, properties, onChanged }: { id: string; type: ActivityType; title: string; leadId: string; leadName?: string; properties?: { id: string; title: string }[]; onChanged?: () => void }) {
   const [mode, setMode] = useState<'done' | 'move' | 'cancel' | null>(null);
