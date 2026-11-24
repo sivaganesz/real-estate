@@ -4,6 +4,8 @@
  * the table with completion rings, and the pager. Filters and paging are kept while you open a property and come back.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Chip } from '@/components/app/chip'
+import { EmptyState } from '@/components/app/empty-state'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -100,7 +102,7 @@ export function PropertiesPage() {
   const noun = (n: number) => t('ps.properties', { count: n })
   const stale = !!f.aiRan && f.aiText !== f.aiRan
   const exampleChips = EXAMPLES.map((x) => (
-    <button key={x} type="button" onClick={() => ask(x)} className="rounded-full border border-dashed border-violet/40 bg-card px-2.5 py-0.5 text-[12.5px] text-violet hover:bg-violet-soft">{x}</button>
+    <Chip key={x} tone="violet" size="sm" dashed onClick={() => ask(x)}>{x}</Chip>
   ))
   const relaxButton = relax && (
     <Button size="sm" variant="outline" onClick={() => setF(dropKeys(f, relax.drop.map((c) => c.k)))}>
@@ -135,13 +137,12 @@ export function PropertiesPage() {
         )} />
 
       {!st.attnHidden && flagged > 0 && (
-        <div className="mb-1 flex flex-wrap items-center gap-1.5 rounded-xl border border-violet/20 bg-gradient-to-r from-violet-soft to-accent py-2 pr-2.5 pl-3.5 text-[13px]">
+        <div className="mb-1 flex flex-wrap items-center gap-1.5 rounded-xl border border-violet/20 bg-gradient-to-r from-violet-soft to-accent py-2 pr-2.5 pl-3.5 text-ui">
           <span className="mr-1.5 text-violet">✨ <b>{t('ps.attnLead', { count: flagged })}</b> {t('ps.needAttention')}</span>
           {groups.map((g) => (
-            <button key={g.k} type="button" onClick={() => setF({ ...f, attn: f.attn === g.k ? undefined : g.k })}
-              className={cn('rounded-full border px-2.5 py-0.5 text-[12.5px]', f.attn === g.k ? 'border-violet bg-violet text-white' : 'border-violet/30 bg-card text-violet hover:bg-violet-soft')}>
+            <Chip key={g.k} tone="violet" size="sm" pressed={f.attn === g.k} onClick={() => setF({ ...f, attn: f.attn === g.k ? undefined : g.k })}>
               {t(`attn.group.${g.k}`)} <b className="ml-0.5">{g.n}</b>
-            </button>
+            </Chip>
           ))}
           <span className="flex-1" />
           <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: true, f: { ...s.f, attn: undefined } }))} title={t('ps.hideForNow')} aria-label={t('ps.hideForNow')}
@@ -161,27 +162,24 @@ export function PropertiesPage() {
             const on = (f.status ?? '') === o.v
             return (
               <button key={o.v || 'all'} type="button" onClick={() => setF({ ...f, status: o.v || undefined })} aria-current={on ? 'page' : undefined}
-                className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-[13px] font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
-                {o.l} <span className={cn('ml-1 rounded-full px-[7px] text-[11.5px]', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
+                className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+                {o.l} <span className={cn('ml-1 rounded-full px-[7px] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
               </button>
             )
           })}
           {st.attnHidden && (
-            <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="ml-auto text-[12.5px] font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
+            <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="ml-auto text-meta font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
           )}
         </div>
       </div>
 
       <div className="mt-2.5">
         {list.length === 0 ? (
-          <div className="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-            {t('ps.noneMatch')}
-            {relaxButton && <div className="mt-4">{relaxButton}</div>}
-          </div>
+          <EmptyState variant="card" action={relaxButton || undefined}>{t('ps.noneMatch')}</EmptyState>
         ) : (
           <DataTable<Property> label={t('ps.title')} rows={shown.map((x) => x.raw)} rowKey={(p) => p.id} onRowClick={(p) => navigate(`/properties/${p.id}`)}
             columns={[
-              { key: 'id', header: t('table.id'), cell: (p) => <span className="font-mono text-[12.5px] whitespace-nowrap">{p.id}</span> },
+              { key: 'id', header: t('table.id'), cell: (p) => <span className="font-mono text-meta whitespace-nowrap">{p.id}</span> },
               {
                 key: 'title', header: t('table.property'), cell: (p) => {
                   const item = items.find((x) => x.id === p.id)!
@@ -212,17 +210,17 @@ export function PropertiesPage() {
       </div>
 
       {/* pager: rows per page, showing x–y of n, Prev / Next — stays at the bottom */}
-      <div className="sticky bottom-0 z-10 -mx-4 mt-0 flex flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-[13px] text-muted-foreground md:-mx-6 md:px-6">
+      <div className="sticky bottom-0 z-10 -mx-4 mt-0 flex flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:-mx-6 md:px-6">
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
-              {t('ps.rowsPerPage')} <b className="text-foreground">{st.size}</b> <span className="text-[10px]">▾</span>
+              {t('ps.rowsPerPage')} <b className="text-foreground">{st.size}</b> <span className="text-micro">▾</span>
             </button>
           </PopoverTrigger>
           <PopoverContent side="top" align="start" className="w-auto min-w-[150px] rounded-xl p-2">
             {PAGE_SIZES.map((n) => (
               <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, size: n, page: 1 }))}
-                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-[13px] text-foreground hover:bg-muted', n === st.size && 'bg-accent text-primary')}>{t('ps.rows', { n })}</button>
+                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === st.size && 'bg-accent text-primary')}>{t('ps.rows', { n })}</button>
             ))}
           </PopoverContent>
         </Popover>

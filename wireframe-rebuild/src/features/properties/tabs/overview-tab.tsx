@@ -4,6 +4,7 @@
  * side: price check, one "To do" list and the best-matching buyers — or, once it's sold / reserved / on hold, the deal.
  */
 import { useState } from 'react'
+import { Chip } from '@/components/app/chip'
 import { Link } from 'react-router'
 import { Camera, Check, MapPin, Plus, Sparkles, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -73,7 +74,7 @@ function PhotosStrip({ p }: { p: Property }) {
         {photos.slice(0, 4).map((m, i) => (
           <div key={m.id} className={cn('relative min-w-0 overflow-hidden rounded-xl', i === 0 ? 'flex-[1.9]' : 'flex-1', i >= 2 && 'max-sm:hidden')}>
             <PropertyPhoto type={p.type} media={m} alt={t('photos.alt', { n: i + 1, title: p.title })} className="size-full" iconClassName={i === 0 ? 'size-10' : 'size-7'} />
-            <span className="absolute bottom-2 left-2 rounded bg-card/80 px-1.5 text-[11px] text-muted-foreground">{i === 0 ? t('photos.cover') : t('photos.photoN', { n: i + 1 })}</span>
+            <span className="absolute bottom-2 left-2 rounded bg-card/80 px-1.5 text-caption text-muted-foreground">{i === 0 ? t('photos.cover') : t('photos.photoN', { n: i + 1 })}</span>
             {i === 3 && photos.length > 4 && <span className="absolute inset-0 flex items-center justify-center bg-foreground/50 text-xl font-semibold text-background">+{photos.length - 4}</span>}
           </div>
         ))}
@@ -137,17 +138,16 @@ function DetailsCard({ p }: { p: Property }) {
         {(editAmen ? AMENITIES : p.amenities).map((a) => {
           const on = p.amenities.includes(a)
           return editAmen ? (
-            <button key={a} type="button" aria-pressed={on} onClick={() => toggleAmenity(a)}
-              className={cn('inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-sm', on ? 'border-primary/40 bg-accent text-accent-foreground' : 'bg-card text-muted-foreground hover:bg-muted')}>
-              {on ? <Check className="size-3.5" /> : <Plus className="size-3.5" />} {t(`amenity.${a}`, { defaultValue: a })}
-            </button>
+            <Chip key={a} pressed={on} onClick={() => toggleAmenity(a)}>
+              {on ? <Check /> : <Plus />} {t(`amenity.${a}`, { defaultValue: a })}
+            </Chip>
           ) : <StatusChip key={a} tone="neutral" className="h-7 border bg-card px-2.5 text-sm font-normal">{t(`amenity.${a}`, { defaultValue: a })}</StatusChip>
         })}
         {!editAmen && !p.amenities.length && <span className="text-sm text-muted-foreground">{t('props.noAmenitiesPts')}</span>}
         {editable && (
-          <button type="button" onClick={() => setEditAmen(!editAmen)} className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed px-2.5 text-sm text-primary hover:bg-accent">
-            {editAmen ? <><Check className="size-3.5" /> {t('action.done')}</> : <><Plus className="size-3.5" /> {p.amenities.length ? t('props.editAmenities') : t('props.addAmenities')}</>}
-          </button>
+          <Chip dashed onClick={() => setEditAmen(!editAmen)}>
+            {editAmen ? <><Check /> {t('action.done')}</> : <><Plus /> {p.amenities.length ? t('props.editAmenities') : t('props.addAmenities')}</>}
+          </Chip>
         )}
       </div>
 
@@ -155,9 +155,9 @@ function DetailsCard({ p }: { p: Property }) {
         <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t pt-4">
           <span className="mr-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t('props.addRow')}</span>
           {empty.slice(0, 6).map((f) => (
-            <button key={f.key} type="button" onClick={() => setAdding(f)} className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed px-2.5 text-sm text-primary hover:bg-accent">
-              <Plus className="size-3.5" /> {L.fact(f.key, f.label).replace(/ \(.*\)$/, '')}
-            </button>
+            <Chip key={f.key} dashed onClick={() => setAdding(f)}>
+              <Plus /> {L.fact(f.key, f.label).replace(/ \(.*\)$/, '')}
+            </Chip>
           ))}
           {empty.length > 6 && <Link to={`/properties/${p.id}/edit`} className="text-sm text-primary hover:underline">{t('props.moreDetails', { count: empty.length - 6 })}</Link>}
         </div>

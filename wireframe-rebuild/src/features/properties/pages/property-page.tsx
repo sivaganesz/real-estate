@@ -134,7 +134,7 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
             <Link to={`/properties/${p.id}`} aria-label={t('photos.count', { count: photos })}
               className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-accent text-accent-foreground">
               <TypeIcon type={p.type} className="size-6" />
-              {photos > 0 && <span className="flex items-center gap-0.5 text-[11px] font-medium"><Camera className="size-3" />{photos}</span>}
+              {photos > 0 && <span className="flex items-center gap-0.5 text-caption font-medium"><Camera className="size-3" />{photos}</span>}
             </Link>
             <span className="min-w-0">
               <span className="inline-flex flex-wrap items-center gap-2">

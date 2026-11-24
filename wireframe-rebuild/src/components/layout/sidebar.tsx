@@ -9,7 +9,7 @@ import { NAV, type NavItem } from './nav'
 
 /** The "RE" logo square. */
 function Logo() {
-  return <span className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-primary text-[13px] font-bold text-primary-foreground">RE</span>
+  return <span className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-primary text-ui font-bold text-primary-foreground">RE</span>
 }
 
 /** The brand block: "RE" logo and RealSpec CRM. */
@@ -39,8 +39,8 @@ function Item({ item, collapsed, onNavigate }: { item: NavItem; collapsed?: bool
       <span className="w-[18px] text-center opacity-80" aria-hidden>{item.icon}</span>
       {!collapsed && <>
         <span className="truncate">{label}</span>
-        {locked ? <span className="ml-auto text-[11px]" aria-label={t('nav.restricted')}>🔒</span>
-          : count !== undefined && <span className="ml-auto rounded-[10px] bg-muted px-[7px] text-[11px] text-muted-foreground tabular-nums">{count}</span>}
+        {locked ? <span className="ml-auto text-caption" aria-label={t('nav.restricted')}>🔒</span>
+          : count !== undefined && <span className="ml-auto rounded-[10px] bg-muted px-[7px] text-caption text-muted-foreground tabular-nums">{count}</span>}
       </>}
     </NavLink>
   )
@@ -66,7 +66,7 @@ export function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onN
         <div key={g.labelKey} className={cn(collapsed && 'flex flex-col gap-0.5')}>
           {collapsed
             ? i > 0 && <hr className="mx-2 my-2 border-border" aria-hidden />
-            : <p className="px-2.5 pt-3 pb-1 text-[11px] tracking-[.06em] text-muted-foreground uppercase">{t(g.labelKey)}</p>}
+            : <p className="px-2.5 pt-3 pb-1 text-caption tracking-[.06em] text-muted-foreground uppercase">{t(g.labelKey)}</p>}
           {g.items.map((it) => <Item key={it.to} item={it} collapsed={collapsed} onNavigate={onNavigate} />)}
         </div>
       ))}

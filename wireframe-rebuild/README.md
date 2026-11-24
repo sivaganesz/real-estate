@@ -25,14 +25,17 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
   - Inter font.
 - **Dark:** the original warm dark theme with an orange accent is defined but not switched on yet.
 - **One file:** everything lives in [src/index.css](src/index.css). Screens use token names (`bg-primary`, `text-success`, `bg-warning-soft`), never raw colours, so changing the theme means editing that one file.
-- **Status tones:** `neutral`, `primary`, `success`, `warning`, `danger`, `info` and `violet`, each with a `-soft` background.
+- **Status tones:** `neutral`, `primary`, `success`, `warning`, `danger`, `info` and `violet`, each with a `-soft` background and a `-foreground` for text on the solid colour.
+- **Ribbon:** the dark WIREFRAME bar has its own colours (`bg-ribbon`, `text-ribbon-foreground`, …).
+- **Text sizes:** Tailwind's `text-xs` (12), `text-sm` (14), `text-base` (16) and `text-xl` (20), plus named small sizes: `text-micro` (10), `text-caption` (11), `text-label` (11.5), `text-meta` (12.5), `text-ui` (13) and `text-prompt` (14.5). Use these instead of `text-[13px]`.
+- **`cn` must know the named sizes:** import it from `@/lib/utils`, never from the `cn` package. Otherwise it reads `text-meta` as a colour and drops a class. After `shadcn add`, change the new file's `import { cn } from "cn"` to `@/lib/utils`.
 
 ## Building blocks
 
 | Where | What |
 |---|---|
 | `src/components/ui/` | shadcn components: button, input, select, dialog, sheet, table, … |
-| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip`, `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable`, `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar` |
+| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip` (labels), `Chip` (clickable options, suggestions and dashed "add" actions), `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable`, `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar` |
 | `src/components/layout/` | The app shell: sidebar, top bar, phone drawer; the navigation list in `nav.ts` |
 | `src/data/` | Types, the property catalogue and the seed data (from the current wireframe) |
 | `src/lib/` | Rules: formatting, matching, listing completeness, plain-words search, the property assistant |

@@ -3,7 +3,7 @@
  * A temporary developer page: its demo labels are plain English, not translated.
  */
 import { useState } from 'react'
-import { Building2, CalendarCheck, FileX, LayoutGrid, List, Share2, Sparkles, TriangleAlert, Users } from 'lucide-react'
+import { Building2, CalendarCheck, Check, FileX, LayoutGrid, List, Plus, Share2, Sparkles, TriangleAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Callout } from '@/components/app/callout'
+import { Chip } from '@/components/app/chip'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { DataTable } from '@/components/app/data-table'
 import { EmptyState } from '@/components/app/empty-state'
@@ -32,16 +33,31 @@ import { useCrumbs } from '@/components/layout/crumbs'
 import type { Property } from '@/data/types'
 
 const SWATCHES: { name: string; cls: string; token: string }[] = [
-  { name: 'Primary', cls: 'bg-primary', token: '--primary #2f5bea' },
-  { name: 'Accent (primary soft)', cls: 'bg-accent', token: '--accent #e9efff' },
-  { name: 'Background', cls: 'bg-background', token: '--background #f3f4f7' },
-  { name: 'Card', cls: 'bg-card', token: '--card #ffffff' },
-  { name: 'Muted', cls: 'bg-muted', token: '--muted #eff1f4' },
-  { name: 'Border', cls: 'bg-border', token: '--border #e1e4ea' },
-  { name: 'Foreground', cls: 'bg-foreground', token: '--foreground #1b2130' },
-  { name: 'Muted text', cls: 'bg-muted-foreground', token: '--muted-foreground #6b7385' },
+  { name: 'Primary', cls: 'bg-primary', token: '--primary' },
+  { name: 'Accent (primary soft)', cls: 'bg-accent', token: '--accent' },
+  { name: 'Background', cls: 'bg-background', token: '--background' },
+  { name: 'Card', cls: 'bg-card', token: '--card' },
+  { name: 'Muted', cls: 'bg-muted', token: '--muted' },
+  { name: 'Border', cls: 'bg-border', token: '--border' },
+  { name: 'Foreground', cls: 'bg-foreground', token: '--foreground' },
+  { name: 'Muted text', cls: 'bg-muted-foreground', token: '--muted-foreground' },
+  { name: 'Ribbon', cls: 'bg-ribbon', token: '--ribbon' },
 ]
 const TONES: Tone[] = ['neutral', 'primary', 'success', 'warning', 'danger', 'info', 'violet']
+/** The named small sizes from src/index.css, plus Tailwind's own. */
+const TYPE_SCALE: { cls: string; px: string; use: string }[] = [
+  { cls: 'text-xl font-bold', px: '20', use: 'Page title' },
+  { cls: 'text-base font-semibold', px: '16', use: 'Section title' },
+  { cls: 'text-sm', px: '14', use: 'Body text' },
+  { cls: 'text-ui', px: '13', use: 'text-ui — tabs, filter pills, breadcrumbs' },
+  { cls: 'text-meta', px: '12.5', use: 'text-meta — chips, IDs, secondary actions' },
+  { cls: 'text-xs', px: '12', use: 'text-xs — hints, chip labels' },
+  { cls: 'text-label', px: '11.5', use: 'text-label — table headings, tab counts' },
+  { cls: 'text-caption', px: '11', use: 'text-caption — sidebar groups, counts' },
+  { cls: 'text-micro', px: '10', use: 'text-micro — tiny markers' },
+]
+/** The live value of a theme colour, so the kit never shows a stale hex. */
+const tokenValue = (name: string) => (typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue(name).trim())
 
 export function UiKitPage() {
   useCrumbs([{ label: 'UI kit' }])
@@ -64,7 +80,7 @@ export function UiKitPage() {
             {SWATCHES.map((s) => (
               <div key={s.name} className="overflow-hidden rounded-lg border">
                 <div className={`h-14 ${s.cls}`} />
-                <div className="p-2 text-xs"><p className="font-medium">{s.name}</p><p className="font-mono text-muted-foreground">{s.token}</p></div>
+                <div className="p-2 text-xs"><p className="font-medium">{s.name}</p><p className="font-mono text-muted-foreground">{s.token} {tokenValue(s.token)}</p></div>
               </div>
             ))}
           </div>
@@ -75,9 +91,12 @@ export function UiKitPage() {
         <div className="grid gap-5 lg:grid-cols-2">
           <SectionCard title="Type" description="Inter for English; Noto Sans Tamil for Tamil.">
             <div className="flex flex-col gap-2">
-              <p className="text-2xl font-semibold tracking-tight">Page title — 24 / semibold</p>
-              <p className="text-base font-semibold">Section title — 16 / semibold</p>
-              <p className="text-sm">Body text — 14 / regular. The quick brown fox jumps over the lazy dog.</p>
+              {TYPE_SCALE.map((s) => (
+                <p key={s.cls} className="flex items-baseline gap-3">
+                  <span className="w-9 shrink-0 font-mono text-caption text-muted-foreground">{s.px}</span>
+                  <span className={s.cls}>{s.use}</span>
+                </p>
+              ))}
               <p className="text-sm text-muted-foreground">Muted text for descriptions and hints.</p>
               <p className="text-sm">சொத்துகள் · விற்பனை மேலாளர் · வெளியிடு — தமிழ் எழுத்துரு மாதிரி</p>
               <p className="font-mono text-xs text-muted-foreground">PROP-1001 · monospace for codes</p>
@@ -99,6 +118,15 @@ export function UiKitPage() {
               <Button size="sm"><Share2 /> Small</Button>
               <Button size="icon" variant="outline" aria-label="Share"><Share2 /></Button>
               <Button disabled>Disabled</Button>
+            </div>
+            <p className="mt-4 mb-2 text-sm font-medium">Chips — options, suggestions, "add" actions</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Chip pressed><Check /> Lift</Chip>
+              <Chip><Plus /> Gym</Chip>
+              <Chip dashed><Plus /> Add amenities</Chip>
+              <Chip tone="violet" size="sm" pressed>Price out of range <b>1</b></Chip>
+              <Chip tone="violet" size="sm">Approval documents pending <b>2</b></Chip>
+              <Chip tone="violet" size="sm" dashed>2 BHK flat in Chennai</Chip>
             </div>
           </SectionCard>
         </div>

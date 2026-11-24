@@ -121,7 +121,7 @@ export function NeighbourhoodCard({ p }: { p: Property }) {
           {[1, 3, 10].map((k) => (
             <span key={k} aria-hidden className="absolute top-1/2 aspect-square -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-dashed border-primary/30"
               style={{ left: 'var(--cx)', width: `${radius(k) * 2}cqw` }}>
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full rounded bg-card/80 px-1 text-[10px] text-muted-foreground">{k} km</span>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full rounded bg-card/80 px-1 text-micro text-muted-foreground">{k} km</span>
             </span>
           ))}
           {exact
@@ -141,7 +141,7 @@ export function NeighbourhoodCard({ p }: { p: Property }) {
             )
           })}
           {selected && <span className="absolute top-3 right-3 z-[4] max-w-[60%] truncate rounded-md bg-card px-2 py-1 text-xs shadow">{selected.name} · {km(selected)}</span>}
-          <span className="absolute bottom-3 left-[var(--cx)] z-[4] -translate-x-1/2 rounded bg-card/85 px-2 py-0.5 text-[11px] whitespace-nowrap text-muted-foreground max-md:hidden">
+          <span className="absolute bottom-3 left-[var(--cx)] z-[4] -translate-x-1/2 rounded bg-card/85 px-2 py-0.5 text-caption whitespace-nowrap text-muted-foreground max-md:hidden">
             {exact ? t('nb.mapNote') : t('nb.mapNoteApprox')}
           </span>
           <Button size="sm" asChild className="absolute right-3 bottom-3 z-[4]">

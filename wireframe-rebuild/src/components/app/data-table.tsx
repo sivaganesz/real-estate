@@ -33,7 +33,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
         <TableHeader className="bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]">
           <TableRow className="hover:bg-transparent">
             {columns.map((c) => (
-              <TableHead key={c.key} className={cn('h-auto px-3 py-[9px] text-[11.5px] font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
+              <TableHead key={c.key} className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
                 {c.header}
               </TableHead>
             ))}

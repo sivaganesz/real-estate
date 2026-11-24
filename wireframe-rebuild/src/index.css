@@ -77,6 +77,30 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   --shadow-card: var(--card-shadow);
+
+  /* text on a solid tone background (a selected violet chip, the red "listening" mic) */
+  --color-success-foreground: var(--success-foreground);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info-foreground: var(--info-foreground);
+  --color-violet-foreground: var(--violet-foreground);
+  --color-neutral-foreground: var(--neutral-foreground);
+
+  /* the dark WIREFRAME ribbon across the top */
+  --color-ribbon: var(--ribbon);
+  --color-ribbon-foreground: var(--ribbon-foreground);
+  --color-ribbon-strong: var(--ribbon-strong);
+  --color-ribbon-border: var(--ribbon-border);
+  --color-ribbon-border-hover: var(--ribbon-border-hover);
+
+  /* type scale: the small sizes the wireframe uses, named by job. Tailwind's own text-xs (12), text-sm (14),
+     text-base (16) and text-xl (20) cover the rest. Registered with cn in src/lib/utils.ts. */
+  --text-micro: 10px;   /* tiny markers: the ▾ arrows, map labels, the % in a completion ring */
+  --text-caption: 11px; /* sidebar group names, counts, small labels */
+  --text-label: 11.5px; /* table headings, tab counts */
+  --text-meta: 12.5px;  /* chips, IDs, secondary actions */
+  --text-ui: 13px;      /* tabs, filter pills, breadcrumbs, compact controls */
+  --text-prompt: 14.5px; /* the AI sentence box */
 }
 
 :root {
@@ -114,6 +138,18 @@
   --violet-soft: #f0eaff;
   --neutral: #4b5363;
   --neutral-soft: #eff1f4;
+  --success-foreground: #ffffff;
+  --warning-foreground: #ffffff;
+  --danger-foreground: #ffffff;
+  --info-foreground: #ffffff;
+  --violet-foreground: #ffffff;
+  --neutral-foreground: #ffffff;
+
+  --ribbon: #1b2130;
+  --ribbon-foreground: #cfd5e2;
+  --ribbon-strong: #ffffff;
+  --ribbon-border: #3c4559;
+  --ribbon-border-hover: #6b7385;
 
   --sidebar: #ffffff;
   --sidebar-foreground: #3a4254;
@@ -169,6 +205,18 @@
   --violet-soft: #221a33;
   --neutral: #b3acbb;
   --neutral-soft: #221f27;
+  --success-foreground: #0f0d12;
+  --warning-foreground: #0f0d12;
+  --danger-foreground: #0f0d12;
+  --info-foreground: #0f0d12;
+  --violet-foreground: #0f0d12;
+  --neutral-foreground: #0f0d12;
+
+  --ribbon: #08070a;
+  --ribbon-foreground: #b3acbb;
+  --ribbon-strong: #ffffff;
+  --ribbon-border: #2a2630;
+  --ribbon-border-hover: #4d4755;
 
   --sidebar: #17151b;
   --sidebar-foreground: #d9d4df;

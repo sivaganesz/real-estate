@@ -26,7 +26,7 @@ export function TopBar() {
   return (
     <header className="sticky top-[30px] z-30 flex flex-wrap items-center gap-3 border-b bg-card px-4 py-2.5 md:px-6">
       <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t('shell.openMenu')} onClick={() => setMenuOpen(true)}><Menu /></Button>
-      <nav aria-label="Breadcrumb" className="min-w-0 text-[13px] text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="min-w-0 text-ui text-muted-foreground">
         {crumbs.map((c, i) => (
           <Fragment key={i}>
             {i > 0 && ' / '}

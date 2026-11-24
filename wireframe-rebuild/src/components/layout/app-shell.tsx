@@ -13,13 +13,13 @@ function Ribbon() {
   const { t, i18n } = useTranslation()
   const { resetDemo } = useStore()
   return (
-    <div className="sticky top-0 z-40 flex min-h-[30px] flex-wrap items-center gap-3.5 bg-[#1b2130] px-4 py-[5px] text-xs text-[#cfd5e2]">
-      <b className="text-white">{t('shell.wireframe')}</b>
+    <div className="sticky top-0 z-40 flex min-h-[30px] flex-wrap items-center gap-3.5 bg-ribbon px-4 py-[5px] text-xs text-ribbon-foreground">
+      <b className="text-ribbon-strong">{t('shell.wireframe')}</b>
       <span className="max-md:hidden">{t('shell.ribbon')}</span>
       <span className="flex-1" />
       <span>{t('shell.demoDate', { date: fmtDate(DEMO_TODAY, i18n.language) })}</span>
       <button type="button" onClick={() => { resetDemo(); toast.success(t('demo.resetDone')) }}
-        className="rounded-md border border-[#3c4559] px-2 py-px text-xs hover:border-[#6b7385] hover:text-white">{t('demo.reset')}</button>
+        className="rounded-md border border-ribbon-border px-2 py-px text-xs hover:border-ribbon-border-hover hover:text-ribbon-strong">{t('demo.reset')}</button>
     </div>
   )
 }

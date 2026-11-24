@@ -62,12 +62,12 @@ type Props = {
 }
 
 const optCls = (on: boolean, list?: boolean) => cn(
-  'inline-flex items-center gap-2 text-[13px] text-foreground hover:bg-muted',
+  'inline-flex items-center gap-2 text-ui text-foreground hover:bg-muted',
   list ? 'w-full justify-between rounded-[7px] px-2.5 py-[7px] text-left' : 'rounded-full border bg-card px-[11px] py-1',
   on && (list ? 'bg-accent font-medium text-primary hover:bg-accent' : 'border-primary/30 bg-accent font-medium text-primary hover:bg-accent'),
 )
 const Sub = ({ children, first }: { children: ReactNode; first?: boolean }) =>
-  <p className={cn('mx-0.5 mb-1.5 text-[11px] tracking-[.05em] text-muted-foreground uppercase', first ? 'mt-0.5' : 'mt-3')}>{children}</p>
+  <p className={cn('mx-0.5 mb-1.5 text-caption tracking-[.05em] text-muted-foreground uppercase', first ? 'mt-0.5' : 'mt-3')}>{children}</p>
 
 export function SearchBar(p: Props) {
   const { t } = useTranslation()
@@ -85,7 +85,7 @@ export function SearchBar(p: Props) {
   const moreN = [f.purpose, a.facing, a.corner].filter(Boolean).length + (a.amen?.length ?? 0)
   const sel = (k: string, val: number | undefined, presets: number[], fmt: (n: number) => string, blank: string) => (
     <select value={val ?? ''} onChange={(e) => p.onSet(k, e.target.value)} aria-label={blank}
-      className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-[13px]">
+      className="h-8 min-w-0 flex-1 rounded-md border bg-card px-2 text-ui">
       <option value="">{blank}</option>
       {[...new Set([...presets, ...(val ? [val] : [])])].sort((x, y) => x - y).map((v) => <option key={v} value={v}>{fmt(v)}</option>)}
     </select>
@@ -97,7 +97,7 @@ export function SearchBar(p: Props) {
         <button type="button" className={optCls(!f.type, true)} onClick={() => p.onSet('type', '')}>{t('ps.allTypes')}</button>
         {(['residential', 'commercial'] as const).map((cat) => (
           <div key={cat}>
-            <p className="px-2.5 pt-2 pb-0.5 text-[11px] tracking-[.05em] text-muted-foreground uppercase">{t(`props.category.${cat}`)}</p>
+            <p className="px-2.5 pt-2 pb-0.5 text-caption tracking-[.05em] text-muted-foreground uppercase">{t(`props.category.${cat}`)}</p>
             <button type="button" className={optCls(f.type === 'cat:' + cat, true)} onClick={() => p.onSet('type', 'cat:' + cat)}>{W.typeText('cat:' + cat)}</button>
             {TYPE_ORDER.filter((k) => PROPERTY_TYPES[k].category === cat).map((k) => (
               <button key={k} type="button" className={optCls(f.type === k, true)} onClick={() => p.onSet('type', k)}>
@@ -200,7 +200,7 @@ export function SearchBar(p: Props) {
       <div className="flex items-center gap-1 lg:ml-auto">
         <PillButton plain label={t('ps.sortLabel', { s: t(`ps.sort.${f.sort || 'newest'}`) })} set={false} open={p.open === 'sort'} align="end"
           onOpenChange={(o) => p.setOpen(o ? 'sort' : null)} onClear={() => undefined} clearLabel="">{panels.sort}</PillButton>
-        {anything && <button type="button" onClick={p.onClearAll} className="h-8 px-1 text-[13px] font-medium whitespace-nowrap text-primary">{t('ps.clearAll')}</button>}
+        {anything && <button type="button" onClick={p.onClearAll} className="h-8 px-1 text-ui font-medium whitespace-nowrap text-primary">{t('ps.clearAll')}</button>}
       </div>
     </>
   )
@@ -215,14 +215,14 @@ export function SearchBar(p: Props) {
             placeholder={p.listening ? t('ps.listening') : t('ps.aiPlaceholder')}
             onChange={(e) => { p.onChange({ ...f, aiText: e.target.value }); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px' }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); p.onAsk(e.currentTarget.value) } else if (e.key === 'Escape') p.onToggleAi() }}
-            className="max-h-40 min-h-8 flex-1 resize-none bg-transparent py-1.5 text-[14.5px] outline-none" />
+            className="max-h-40 min-h-8 flex-1 resize-none bg-transparent py-1.5 text-prompt outline-none" />
           <button type="button" onClick={p.onVoice} title={p.listening ? t('ps.stopListening') : t('ps.speak')} aria-label={t('search.voice')}
-            className={cn('grid size-8 shrink-0 place-items-center rounded-full border bg-card hover:bg-muted', p.listening && 'animate-pulse border-danger bg-danger text-white hover:bg-danger')}><Mic className="size-4" /></button>
+            className={cn('grid size-8 shrink-0 place-items-center rounded-full border bg-card hover:bg-muted', p.listening && 'animate-pulse border-danger bg-danger text-danger-foreground hover:bg-danger')}><Mic className="size-4" /></button>
           <Button size="sm" onClick={() => p.onAsk(f.aiText ?? '')}>{t('search.go')}</Button>
           <button type="button" onClick={p.onToggleAi} title={t('ps.backToNormal')} aria-label={t('ps.backToNormal')}
             className="grid size-8 shrink-0 place-items-center rounded-full border bg-card hover:bg-muted"><ChevronUp className="size-4" /></button>
         </div>
-        <div className="mx-0.5 mt-2 mb-2.5 flex min-h-[26px] flex-wrap items-center gap-1.5 text-[13px]" aria-live="polite">{p.understood}</div>
+        <div className="mx-0.5 mt-2 mb-2.5 flex min-h-[26px] flex-wrap items-center gap-1.5 text-ui" aria-live="polite">{p.understood}</div>
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start">{pillRow}</div>
       </div>
     )
@@ -249,18 +249,18 @@ function PillButton({ label, set, open, onOpenChange, onClear, clearLabel, child
 }) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <div className={cn('inline-flex h-8 items-center rounded-full border text-[13px] font-medium whitespace-nowrap',
+      <div className={cn('inline-flex h-8 items-center rounded-full border text-ui font-medium whitespace-nowrap',
         plain ? 'border-transparent text-muted-foreground hover:text-foreground' : set ? 'border-primary/30 bg-accent text-primary' : 'bg-card text-secondary-foreground hover:border-input',
         open && !plain && 'border-primary ring-[3px] ring-accent')}>
         <PopoverTrigger asChild>
           <button type="button" className={cn('flex h-full items-center gap-1.5 pl-3', set ? 'pr-1' : 'pr-3')} title={label}>
             <span className="max-w-[170px] truncate">{label}</span>
-            {!set && <span className="text-[10px] text-muted-foreground">▾</span>}
+            {!set && <span className="text-micro text-muted-foreground">▾</span>}
           </button>
         </PopoverTrigger>
         {set && (
           <button type="button" onClick={onClear} aria-label={clearLabel} title={clearLabel}
-            className="mr-1.5 grid size-4 place-items-center rounded-full text-[10px] hover:bg-primary/15">✕</button>
+            className="mr-1.5 grid size-4 place-items-center rounded-full text-micro hover:bg-primary/15">✕</button>
         )}
       </div>
       <PopoverContent align={align} sideOffset={6} className="w-auto max-w-[calc(100vw-32px)] min-w-[220px] rounded-xl p-2">{children}</PopoverContent>
