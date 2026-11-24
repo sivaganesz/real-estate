@@ -35,7 +35,7 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
 | Where | What |
 |---|---|
 | `src/components/ui/` | shadcn components: button, input, select, dialog, sheet, table, … |
-| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip` (labels), `Chip` (clickable options, suggestions and dashed "add" actions), `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable` (optional sortable headers), `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar` |
+| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip` (labels), `Chip` (clickable options, suggestions and dashed "add" actions), `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable` (optional sortable headers and row selection), `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar` |
 | `src/components/layout/` | The app shell: sidebar, top bar, phone drawer; the navigation list in `nav.ts` |
 | `src/data/` | Types, the property catalogue and the seed data (from the current wireframe) |
 | `public/demo-photos/` | One cover photo per demo property, resized to 1000 px and compressed. Raw photos dropped in `demo-photos-inbox/` stay out of git. For demos only: check each photo's licence before any public use |

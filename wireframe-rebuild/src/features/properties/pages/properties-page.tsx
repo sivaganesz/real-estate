@@ -28,6 +28,8 @@ import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads } from '@/store/db'
 import type { Property } from '@/data/types'
 import { PropertyCard } from '../components/property-card'
+import { ArchiveDialog, BulkBar, PropertyRowMenu, usePropertyActions } from '../components/list-actions'
+import { SharePanel } from '../components/share-panel'
 import { CompletionBar, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
 import { dropKeys, EXAMPLES, matches, PAGE_SIZES, parseSentence, type PSFilters, type PSItem, relaxFor, setValue, type Sort, sortList } from '../search/prop-search'
 import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
@@ -85,8 +87,13 @@ export function PropertiesPage() {
   useEffect(() => { saved = st }, [st])
   useEffect(() => () => { if (voiceTimer.current) window.clearInterval(voiceTimer.current) }, [])
   const f = st.f
+  /* ticked rows (managers, table view): kept across pages, cleared when the filters or the view change */
+  const [sel, setSel] = useState<Set<string>>(() => new Set())
+  const [archiving, setArchiving] = useState<Property[]>([])
+  const [sharing, setSharing] = useState<Property | null>(null)
+  const act = usePropertyActions()
   // any filter change goes back to page 1
-  const setF = (nf: PSFilters, keepPage = false) => setSt((s) => ({ ...s, f: nf, page: keepPage ? s.page : 1 }))
+  const setF = (nf: PSFilters, keepPage = false) => { setSt((s) => ({ ...s, f: nf, page: keepPage ? s.page : 1 })); setSel(new Set()) }
 
   // drafts live on their own page (Drafts), as in the current wireframe
   const items: PSItem[] = useMemo(() => db.properties.filter((p) => p.status !== 'draft').map((p) => ({
@@ -112,8 +119,11 @@ export function PropertiesPage() {
     const nextSize = v === 'grid' ? st.gridSize : st.size
     setSt((s) => ({ ...s, page: Math.floor(from / nextSize) + 1 }))
     setView(v)
+    setSel(new Set())
   }
   const archivedN = items.filter((x) => x.archived).length
+  const selected = list.filter((x) => sel.has(x.id)).map((x) => x.raw)
+  const archivedView = f.status === '__arch'
 
   /* sorting from the table headers — the same sort as the Sort pill, so it carries over to the grid */
   const cur = f.sort ?? ''
@@ -249,6 +259,7 @@ export function PropertiesPage() {
         ) : (
           <DataTable<Property> label={t('ps.title')} rows={shown.map((x) => x.raw)} rowKey={(p) => p.id} onRowClick={(p) => navigate(`/properties/${p.id}`)}
             sort={tableSort} onSort={sortBy}
+            {...(manager && { selected: sel, onSelectedChange: setSel, rowLabel: (p: Property) => p.title })}
             columns={[
               {
                 key: 'title', header: t('table.property'), cell: (p) => {
@@ -294,17 +305,29 @@ export function PropertiesPage() {
               },
               { key: 'listed', header: t('table.listed'), hideOnPhone: true, sortable: true, cell: (p) => <small className="whitespace-nowrap text-muted-foreground">{fmtDate(p.listedAt, i18n.language)}</small> },
               {
-                key: 'score', header: <span title={t('ps.scoreHint')}>{t('table.completionScore')}</span>, className: 'w-[140px] align-middle', hideOnPhone: true, sortable: true, cell: (p) => {
+                key: 'score', header: <span title={`${t('table.completionScore')} — ${t('ps.scoreHint')}`}>{t('table.complete')}</span>, hideOnPhone: true, sortable: true, cell: (p) => {
                   const sc = listingScore(p)
                   return <span title={sc.missing.length ? t('ps.toReach', { list: sc.missing.map((m) => `${t(`score.${m.key}`)} (+${m.max - m.points}%)`).join(', ') }) : t('ps.complete')} className="inline-flex"><CompletionBar score={sc.score} /></span>
                 },
+              },
+              {
+                key: 'actions', header: <span className="sr-only">{t('table.actions')}</span>, className: 'w-9 py-1.5 pr-2 pl-0',
+                cell: (p) => <PropertyRowMenu property={p} onShare={() => setSharing(p)} onArchive={() => setArchiving([p])} />,
               },
             ]} />
         )}
       </div>
 
       {/* pager: rows per page, showing x–y of n, Prev / Next — pinned to the bottom from tablet up; at the end of the list on a phone */}
-      <div className="z-10 -mx-4 mt-0 flex md:sticky md:bottom-0 flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:-mx-6 md:px-6">
+      <div className="z-10 -mx-4 bg-background px-4 md:sticky md:bottom-0 md:-mx-6 md:px-6">
+      {!grid && selected.length > 0 && (
+        <div className="pt-2.5">
+          <BulkBar list={selected} total={list.length} archivedView={archivedView}
+            allOnPageOnly={selected.length < list.length && shown.every((x) => sel.has(x.id))}
+            onSelectAll={() => setSel(new Set(list.map((x) => x.id)))} onClear={() => setSel(new Set())} onArchive={() => setArchiving(selected)} />
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-3 py-2.5 text-ui text-muted-foreground">
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
@@ -328,6 +351,11 @@ export function PropertiesPage() {
           <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setSt((s) => ({ ...s, page: page + 1 }))}>{t('ps.next')} ›</Button>
         </div>
       </div>
+      </div>
+
+      <ArchiveDialog list={archiving} onOpenChange={(o) => { if (!o) setArchiving([]) }}
+        onConfirm={(reason) => { act.archive(archiving, reason); setSel(new Set()) }} />
+      {sharing && <SharePanel property={sharing} open onOpenChange={(o) => { if (!o) setSharing(null) }} />}
     </Page>
   )
 }

@@ -252,7 +252,10 @@
     "area": "Area",
     "listed": "Listed",
     "askingPrice": "Asking price",
-    "completionScore": "Completion score"
+    "completionScore": "Completion score",
+    "selectAll": "Select all on this page",
+    "selectRow": "Select {{name}}",
+    "actions": "Actions"
   },
   "property": {
     "back": "All properties",
@@ -1092,5 +1095,37 @@
     "viewTable": "Table",
     "cardsPerPage": "Cards per page:",
     "cards": "{{n}} cards"
+  },
+  "bulk": {
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "selectAll": "Select all {{count}}",
+    "clear": "Clear selection",
+    "export": "Export CSV",
+    "exportedToast_one": "Exported {{count}} property",
+    "exportedToast_other": "Exported {{count}} properties",
+    "statusToast_one": "{{count}} property set to {{status}}",
+    "statusToast_other": "{{count}} properties set to {{status}}",
+    "archiveTitle_one": "Archive {{count}} property?",
+    "archiveTitle_other": "Archive {{count}} properties?",
+    "archivedToast_one": "{{count}} property archived",
+    "archivedToast_other": "{{count}} properties archived",
+    "restoredToast_one": "{{count}} property restored",
+    "restoredToast_other": "{{count}} properties restored",
+    "rowMenu": "Actions for {{title}}",
+    "open": "Open",
+    "csv": {
+      "id": "ID",
+      "title": "Title",
+      "type": "Type",
+      "purpose": "Purpose",
+      "locality": "Locality",
+      "city": "City",
+      "area": "Area (sq.ft.)",
+      "price": "Asking price (₹)",
+      "status": "Status",
+      "listed": "Listed on",
+      "completion": "Completion (%)"
+    }
   }
 }
