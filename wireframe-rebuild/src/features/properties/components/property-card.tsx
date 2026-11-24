@@ -6,6 +6,7 @@ import { UserAvatar } from '@/components/app/user-avatar'
 import { inrShort, num } from '@/lib/format'
 import { type KeyFact, useLabels } from '@/lib/labels'
 import { listingScore, pendingApprovals, photoCount } from '@/lib/property'
+import { cn } from '@/lib/utils'
 import { useCan } from '@/store/db'
 import type { Match } from '@/lib/matching'
 import type { Property } from '@/data/types'
@@ -18,8 +19,9 @@ const FACT_ICON: Record<Exclude<KeyFact['kind'], 'kind'>, typeof Ruler> = { size
  * Photo-first card. Top to bottom: the photo (status, share, photo count), the price, the type, title and place,
  * the key facts as small chips, and a footer that says who it's for: the leads that fit (opens Matching buyers)
  * and, for managers, how complete the listing is. The rest of the card opens the property.
+ * `compact`: a wider, shorter photo and tighter spacing, so four cards fit in a row on a laptop.
  */
-export function PropertyCard({ property: p, matches, attention }: { property: Property; matches: Match[]; attention?: string[] }) {
+export function PropertyCard({ property: p, matches, attention, compact }: { property: Property; matches: Match[]; attention?: string[]; compact?: boolean }) {
   const { t } = useTranslation()
   const L = useLabels()
   const can = useCan()
@@ -33,7 +35,7 @@ export function PropertyCard({ property: p, matches, attention }: { property: Pr
     <article className="group relative isolate flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition-[box-shadow,translate,border-color] duration-200 focus-within:ring-2 focus-within:ring-ring hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <div className="relative overflow-hidden">
         <PropertyPhoto type={p.type} media={p.media.find((m) => m.isCover) ?? p.media[0]} alt={p.title}
-          className="aspect-[16/10] w-full rounded-none transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
+          className={cn('w-full rounded-none transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100', compact ? 'aspect-[2/1]' : 'aspect-[16/10]')} />
         {/* a soft shade at the bottom keeps the photo count readable on light photos */}
         <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/35 to-transparent" />
         <PropertyStatusChip property={p} className="absolute top-3 left-3 shadow-sm" />
@@ -51,20 +53,20 @@ export function PropertyCard({ property: p, matches, attention }: { property: Pr
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-4 pb-3.5">
+      <div className={cn('flex flex-1 flex-col', compact ? 'p-3 pb-2.5' : 'p-4 pb-3.5')}>
         <div className="flex items-baseline justify-between gap-2">
-          <p className="text-xl font-semibold tracking-tight tabular-nums">{inrShort(p.price)}</p>
+          <p className={cn('font-semibold tracking-tight tabular-nums', compact ? 'text-lg' : 'text-xl')}>{inrShort(p.price)}</p>
           {ppsf > 0 && <p className="text-xs text-muted-foreground tabular-nums">{t('card.perSqft', { rate: num(ppsf) })}</p>}
         </div>
-        <p className="mt-1.5 text-caption font-semibold tracking-wide text-primary uppercase">{L.type(p.type)} · {L.purpose(p.purpose)}</p>
-        <h3 className="mt-0.5 line-clamp-1 font-semibold">
+        <p className={cn('text-caption font-semibold tracking-wide text-primary uppercase', compact ? 'mt-1' : 'mt-1.5')}>{L.type(p.type)} · {L.purpose(p.purpose)}</p>
+        <h3 className={cn('mt-0.5 line-clamp-1 font-semibold', compact && 'text-sm')}>
           <Link to={`/properties/${p.id}`} className="outline-none after:absolute after:inset-0">{p.title}</Link>
         </h3>
-        <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+        <p className={cn('mt-0.5 flex items-center gap-1 text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
           <MapPin className="size-3.5 shrink-0" /> <span className="truncate">{p.location.locality}, {p.location.city}</span>
         </p>
 
-        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t('score.keyDetails')}>
+        <ul className={cn('flex flex-wrap gap-1.5', compact ? 'mt-2' : 'mt-3')} aria-label={t('score.keyDetails')}>
           {L.keyFactItems(p).map((f) => {
             const Icon = f.kind === 'kind' ? null : FACT_ICON[f.kind]
             return (
@@ -82,7 +84,7 @@ export function PropertyCard({ property: p, matches, attention }: { property: Pr
         )}
       </div>
 
-      <div className="mt-auto flex min-h-12 items-center gap-2 border-t px-4 py-2 text-sm">
+      <div className={cn('mt-auto flex items-center gap-2 border-t', compact ? 'min-h-10 px-3 py-1.5 text-ui' : 'min-h-12 px-4 py-2 text-sm')}>
         {p.status === 'draft' ? (
           <span className="flex-1 text-muted-foreground">{t('props.draftHint')}</span>
         ) : offered && matches.length ? (

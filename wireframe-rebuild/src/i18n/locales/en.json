@@ -255,7 +255,8 @@
     "completionScore": "Completion score",
     "selectAll": "Select all on this page",
     "selectRow": "Select {{name}}",
-    "actions": "Actions"
+    "actions": "Actions",
+    "leads": "Leads"
   },
   "property": {
     "back": "All properties",
@@ -1127,5 +1128,16 @@
       "listed": "Listed on",
       "completion": "Completion (%)"
     }
+  },
+  "listView": {
+    "title": "View options",
+    "button": "View",
+    "density": "Density",
+    "comfortable": "Comfortable",
+    "compact": "Compact",
+    "columns": "Columns",
+    "always": "Always shown",
+    "reset": "Reset to default",
+    "needsWider": "Needs a wider screen"
   }
 }

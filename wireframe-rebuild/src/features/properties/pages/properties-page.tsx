@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { DataTable, type TableSort } from '@/components/app/data-table'
+import { BREAKPOINT_PX, type Column, DataTable, type TableSort } from '@/components/app/data-table'
 import { Page, PageHeader } from '@/components/app/page-header'
 import { StatusChip } from '@/components/app/status-chip'
 import { useCrumbs } from '@/components/layout/crumbs'
@@ -30,6 +30,7 @@ import type { Property } from '@/data/types'
 import { PropertyCard } from '../components/property-card'
 import { ArchiveDialog, BulkBar, PropertyRowMenu, usePropertyActions } from '../components/list-actions'
 import { SharePanel } from '../components/share-panel'
+import { ListOptions, useListPrefs } from '../components/list-options'
 import { CompletionBar, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
 import { dropKeys, EXAMPLES, matches, PAGE_SIZES, parseSentence, type PSFilters, type PSItem, relaxFor, setValue, type Sort, sortList } from '../search/prop-search'
 import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
@@ -81,6 +82,8 @@ export function PropertiesPage() {
   const [st, setSt] = useState<ListState>(saved)
   const [view, setView] = useListView(user.id, manager)
   const grid = view === 'grid'
+  const [prefs, setPrefs] = useListPrefs(user.id)
+  const compact = prefs.density === 'compact'
   const [open, setOpen] = useState<Pill | null>(null)
   const [listening, setListening] = useState(false)
   const voiceTimer = useRef<number | null>(null)
@@ -234,6 +237,13 @@ export function PropertiesPage() {
             {st.attnHidden && (
               <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="text-meta font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
             )}
+            <ListOptions prefs={prefs} onChange={setPrefs} fixedLabel={grid ? undefined : t('table.property')}
+              columns={grid ? undefined : [
+                { key: 'loc', label: t('table.location'), minWidth: BREAKPOINT_PX.xl }, { key: 'area', label: t('table.area'), minWidth: BREAKPOINT_PX.xl },
+                { key: 'price', label: t('table.askingPrice'), minWidth: BREAKPOINT_PX.md }, { key: 'status', label: t('table.status'), minWidth: BREAKPOINT_PX.md },
+                { key: 'leads', label: t('table.leadsFit'), minWidth: BREAKPOINT_PX.md }, { key: 'listed', label: t('table.listed'), minWidth: BREAKPOINT_PX.wide },
+                { key: 'score', label: t('table.completionScore'), minWidth: BREAKPOINT_PX.xl },
+              ]} />
             <Segmented<ListView> variant="pill" label={t('ps.viewLabel')} value={view} onChange={switchView}
               segments={[
                 { value: 'grid', label: <span className="max-sm:sr-only">{t('ps.viewGrid')}</span>, icon: <LayoutGrid aria-hidden /> },
@@ -247,20 +257,20 @@ export function PropertiesPage() {
         {list.length === 0 ? (
           <EmptyState variant="card" action={relaxButton || undefined}>{t('ps.noneMatch')}</EmptyState>
         ) : grid ? (
-          <ul aria-label={t('ps.title')} className="grid gap-4 pb-2 sm:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
+          <ul aria-label={t('ps.title')} className={cn('grid pb-2 sm:grid-cols-2', compact ? 'gap-3 lg:grid-cols-3 xl:grid-cols-4' : 'gap-4 xl:grid-cols-3 2xl:grid-cols-4')}>
             {shown.map((x) => {
               const p = x.raw
               const fits = p.status === 'available' && !p.archived ? leadsForProperty(p, leads, db.settings) : []
               // as in the table, a property's attention line shows while its "needs attention" filter is on
               const attention = f.attn ? x.attn.filter((a) => a.key === f.attn).map(attnText) : undefined
-              return <li key={p.id} className="flex"><PropertyCard property={p} matches={fits} attention={attention} /></li>
+              return <li key={p.id} className="flex"><PropertyCard property={p} matches={fits} attention={attention} compact={compact} /></li>
             })}
           </ul>
         ) : (
           <DataTable<Property> label={t('ps.title')} rows={shown.map((x) => x.raw)} rowKey={(p) => p.id} onRowClick={(p) => navigate(`/properties/${p.id}`)}
-            sort={tableSort} onSort={sortBy}
+            sort={tableSort} onSort={sortBy} dense={compact}
             {...(manager && { selected: sel, onSelectedChange: setSel, rowLabel: (p: Property) => p.title })}
-            columns={[
+            columns={([
               {
                 key: 'title', header: t('table.property'), cell: (p) => {
                   const item = items.find((x) => x.id === p.id)!
@@ -268,15 +278,21 @@ export function PropertiesPage() {
                     <div className="flex min-w-56 items-start gap-3">
                       {/* the cover photo as a thumbnail (the type icon when there's none); the title beside it names it */}
                       {/* the wrapper carries the width too: the table sizes the column from it, not from the img */}
-                      <span aria-hidden className="w-12 shrink-0 md:w-16">
+                      <span aria-hidden className={cn('w-12 shrink-0', compact ? 'md:w-12' : 'md:w-16')}>
                         <PropertyPhoto type={p.type} media={p.media.find((m) => m.isCover) ?? p.media[0]} alt=""
-                          className="h-9 w-12 rounded-lg md:h-12 md:w-16" iconClassName="size-5" />
+                          className={cn('h-9 w-12 rounded-lg', !compact && 'md:h-12 md:w-16')} iconClassName="size-5" />
                       </span>
                       {/* table cells never wrap; the title may, so the table fits narrower screens */}
                       <div className="whitespace-normal">
-                        <b className="block">{p.title}</b>
+                        {/* compact: one line each, cut with "…" (the full text on hover) — clamping keeps the column as narrow as wrapping does */}
+                        <b className={compact ? 'line-clamp-1' : 'block max-md:line-clamp-2'} title={p.title}>{p.title}</b>
                         {/* the property ID sits with the title, not in a column of its own */}
-                        <small className="text-muted-foreground"><span className="font-mono whitespace-nowrap">{p.id}</span> · {L.type(p.type)} · {L.purpose(p.purpose)}</small>
+                        <small className={cn('text-muted-foreground max-md:line-clamp-1', compact && 'line-clamp-1')} title={`${p.id} · ${L.type(p.type)} · ${L.purpose(p.purpose)}`}><span className="font-mono whitespace-nowrap">{p.id}</span> · {L.type(p.type)} · {L.purpose(p.purpose)}</small>
+                        {/* phones: the price and status columns are hidden, so they sit under the title */}
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 md:hidden">
+                          <b className="text-sm whitespace-nowrap">{inrShort(p.price)}</b>
+                          <PropertyStatusChip property={{ status: p.status }} />{p.archived && <StatusChip tone="neutral" variant="outline">{t('ps.archived')}</StatusChip>}
+                        </span>
                         {f.attn && item.attn.filter((a) => a.key === f.attn).map((a) => (
                           <span key={a.key} className="mt-1 block text-xs text-warning">⚠ {attnText(a)} · <Link to={attnFix(p, a)} onClick={(e) => e.stopPropagation()} className="font-medium hover:underline">{t(`attn.act.${a.key}`)} →</Link></span>
                         ))}
@@ -285,13 +301,13 @@ export function PropertiesPage() {
                   )
                 },
               },
-              { key: 'loc', header: t('table.location'), hideOnPhone: true, cell: (p) => <>{p.location.locality}<br /><small className="text-muted-foreground">{p.location.city}</small></> },
-              { key: 'area', header: t('table.area'), align: 'right', hideOnPhone: true, sortable: true, cell: (p) => <span className="whitespace-nowrap">{num(p.areaSqft)} <small className="text-muted-foreground">sq.ft.</small></span> },
-              { key: 'price', header: t('table.askingPrice'), align: 'right', sortable: true, cell: (p) => <><b className="whitespace-nowrap">{inrShort(p.price)}</b><br /><small className="whitespace-nowrap text-muted-foreground">{inr(p.areaSqft ? Math.round(p.price / p.areaSqft) : 0)}/sq.ft.</small></> },
-              { key: 'status', header: t('table.status'), cell: (p) => <span className="inline-flex flex-wrap gap-1"><PropertyStatusChip property={{ status: p.status }} />{p.archived && <StatusChip tone="neutral" variant="outline">{t('ps.archived')}</StatusChip>}</span> },
+              { key: 'loc', header: t('table.location'), hideBelow: 'xl', cell: (p) => <>{p.location.locality}<br /><small className="text-muted-foreground">{p.location.city}</small></> },
+              { key: 'area', header: t('table.area'), align: 'right', hideBelow: 'xl', sortable: true, cell: (p) => <span className="whitespace-nowrap">{num(p.areaSqft)} <small className="text-muted-foreground">sq.ft.</small></span> },
+              { key: 'price', header: t('table.askingPrice'), align: 'right', hideBelow: 'md', sortable: true, cell: (p) => <><b className="whitespace-nowrap">{inrShort(p.price)}</b><br /><small className="whitespace-nowrap text-muted-foreground">{inr(p.areaSqft ? Math.round(p.price / p.areaSqft) : 0)}/sq.ft.</small></> },
+              { key: 'status', header: t('table.status'), hideBelow: 'md', cell: (p) => <span className="inline-flex flex-wrap gap-1"><PropertyStatusChip property={{ status: p.status }} />{p.archived && <StatusChip tone="neutral" variant="outline">{t('ps.archived')}</StatusChip>}</span> },
               {
                 // the leads that fit, as on the cards; the number opens the Matching buyers tab
-                key: 'leads', header: t('table.leadsFit'), hideOnPhone: true, cell: (p) => {
+                key: 'leads', header: <span title={t('table.leadsFit')}>{t('table.leads')}</span>, hideBelow: 'md', cell: (p) => {
                   if (p.status !== 'available' || p.archived) return <span title={t('props.notOffered')} className="text-muted-foreground">—</span>
                   const fits = leadsForProperty(p, leads, db.settings)
                   if (!fits.length) return <span title={t('card.noLeadsFit')} className="text-muted-foreground">0</span>
@@ -303,18 +319,18 @@ export function PropertiesPage() {
                   )
                 },
               },
-              { key: 'listed', header: t('table.listed'), hideOnPhone: true, sortable: true, cell: (p) => <small className="whitespace-nowrap text-muted-foreground">{fmtDate(p.listedAt, i18n.language)}</small> },
+              { key: 'listed', header: t('table.listed'), hideBelow: 'wide', sortable: true, cell: (p) => <small className="whitespace-nowrap text-muted-foreground">{fmtDate(p.listedAt, i18n.language)}</small> },
               {
-                key: 'score', header: <span title={`${t('table.completionScore')} — ${t('ps.scoreHint')}`}>{t('table.complete')}</span>, hideOnPhone: true, sortable: true, cell: (p) => {
+                key: 'score', header: <span title={`${t('table.completionScore')} — ${t('ps.scoreHint')}`}>{t('table.complete')}</span>, hideBelow: 'xl', sortable: true, cell: (p) => {
                   const sc = listingScore(p)
                   return <span title={sc.missing.length ? t('ps.toReach', { list: sc.missing.map((m) => `${t(`score.${m.key}`)} (+${m.max - m.points}%)`).join(', ') }) : t('ps.complete')} className="inline-flex"><CompletionBar score={sc.score} /></span>
                 },
               },
               {
-                key: 'actions', header: <span className="sr-only">{t('table.actions')}</span>, className: 'w-9 py-1.5 pr-2 pl-0',
+                key: 'actions', header: <span className="sr-only">{t('table.actions')}</span>, className: 'w-9 py-1.5 pr-2 pl-0', sticky: true,
                 cell: (p) => <PropertyRowMenu property={p} onShare={() => setSharing(p)} onArchive={() => setArchiving([p])} />,
               },
-            ]} />
+            ] satisfies Column<Property>[]).filter((c) => !prefs.hidden.includes(c.key))} />
         )}
       </div>
 

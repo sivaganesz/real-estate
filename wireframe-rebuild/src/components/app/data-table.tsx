@@ -10,14 +10,28 @@ export type Column<T> = {
   header: ReactNode
   cell: (row: T) => ReactNode
   align?: 'left' | 'right'
-  /** Hide on narrow screens (below md). */
+  /** Hide on narrow screens (below md). The same as `hideBelow: 'md'`. */
   hideOnPhone?: boolean
+  /** Hide below this screen width, so the most useful columns fit smaller screens: md 768, lg 1024, xl 1280, wide 1440 px. */
+  hideBelow?: Breakpoint
+  /** Pinned to the right edge, so it stays in view when the table scrolls sideways (the row's ⋯ menu). */
+  sticky?: boolean
   className?: string
   /** The header becomes a button that sorts by this column (needs `sort` and `onSort` on the table). */
   sortable?: boolean
 }
 
 export type TableSort = { key: string; dir: 'asc' | 'desc' }
+
+export type Breakpoint = 'md' | 'lg' | 'xl' | 'wide'
+/** The screen width (px) each breakpoint starts at. */
+export const BREAKPOINT_PX: Record<Breakpoint, number> = { md: 768, lg: 1024, xl: 1280, wide: 1440 }
+// written out in full so Tailwind finds the classes
+const HIDE_BELOW: Record<Breakpoint, string> = { md: 'max-md:hidden', lg: 'max-lg:hidden', xl: 'max-xl:hidden', wide: 'max-[1440px]:hidden' }
+// a pinned cell paints the row's own colours (plain, hover, menu open, ticked), so rows look the same behind it
+const STICKY_CELL = 'sticky right-0 z-[1] bg-card [tr:hover>&]:bg-[color-mix(in_oklch,var(--muted)_50%,var(--card))] [tr:has([aria-expanded=true])>&]:bg-[color-mix(in_oklch,var(--muted)_50%,var(--card))] [tr[data-state=selected]>&]:bg-[color-mix(in_oklch,var(--accent)_60%,var(--card))] [tr[data-state=selected]:hover>&]:bg-[color-mix(in_oklch,var(--accent)_80%,var(--card))]'
+const STICKY_HEAD = 'sticky right-0 z-[1] bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]'
+const hideClass = <T,>(c: Column<T>) => (c.hideBelow ? HIDE_BELOW[c.hideBelow] : c.hideOnPhone ? HIDE_BELOW.md : undefined)
 
 /**
  * A typed table for lists (properties, leads, appointments). Rows open on click or Enter when `onRowClick` is set.
@@ -26,7 +40,7 @@ export type TableSort = { key: string; dir: 'asc' | 'desc' }
  * Selection (with `selected` + `onSelectedChange`): a checkbox per row and a "select all on this page" box in the header.
  * The page keeps the selected keys, so a selection can span pages.
  */
-export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, className, label, sort, onSort, selected, onSelectedChange, rowLabel }: {
+export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, className, label, sort, onSort, selected, onSelectedChange, rowLabel, dense }: {
   rows: T[]
   columns: Column<T>[]
   rowKey: (row: T) => string
@@ -43,6 +57,8 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
   onSelectedChange?: (next: Set<string>) => void
   /** A row's name for its checkbox ("Select Premium residential plot"). */
   rowLabel?: (row: T) => string
+  /** Compact rows: less padding, so more rows fit on screen. */
+  dense?: boolean
 }) {
   const { t } = useTranslation()
   if (!rows.length && empty) return <>{empty}</>
@@ -67,7 +83,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
               const Arrow = dir === 'asc' ? ArrowUp : dir === 'desc' ? ArrowDown : ArrowUpDown
               return (
                 <TableHead key={c.key} aria-sort={c.sortable && onSort ? (dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : 'none') : undefined}
-                  className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', c.hideOnPhone && 'max-md:hidden', c.className)}>
+                  className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', hideClass(c), c.sticky && STICKY_HEAD, c.className)}>
                   {c.sortable && onSort ? (
                     <button type="button" onClick={() => onSort(c.key)}
                       className={cn('group/sort inline-flex items-center gap-1 uppercase hover:text-foreground', dir && 'text-foreground')}>
@@ -93,12 +109,12 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
               className={cn(onRowClick && 'cursor-pointer focus-visible:bg-accent/50 focus-visible:outline-none', on && 'bg-accent/60 hover:bg-accent/80')}>
               {selectable && (
                 // the cell swallows the click, so ticking a box never opens the row
-                <TableCell className="w-8 py-[9px] pr-0 pl-3 align-top" onClick={(e) => e.stopPropagation()}>
+                <TableCell className={cn('w-8 pr-0 pl-3 align-top', dense ? 'py-1.5' : 'py-[9px]')} onClick={(e) => e.stopPropagation()}>
                   <Checkbox className="mt-0.5" checked={on} onCheckedChange={(v) => toggle(k, v === true)} aria-label={t('table.selectRow', { name: rowLabel?.(r) ?? k })} />
                 </TableCell>
               )}
               {columns.map((c) => (
-                <TableCell key={c.key} className={cn('px-3 py-[9px] align-top', c.align === 'right' && 'text-right tabular-nums', c.hideOnPhone && 'max-md:hidden', c.className)}>
+                <TableCell key={c.key} className={cn('px-3 align-top', dense ? 'py-1.5' : 'py-[9px]', c.align === 'right' && 'text-right tabular-nums', hideClass(c), c.sticky && STICKY_CELL, c.className)}>
                   {c.cell(r)}
                 </TableCell>
               ))}
