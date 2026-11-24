@@ -1,8 +1,8 @@
 # EstateOS — Status
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
-**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). Waiting on two things from you: the Gemini API key and the git remote to push to.
+**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Waiting on one thing from you: the git remote to push to.
 
 ## Phases
 
@@ -16,13 +16,18 @@ Last updated: 2026-11-23
 | 5 · Appointments and activities | One "activity" type for calls, visits, meetings, tasks; next step on every lead; clashes, visit feedback, in-app reminders | ✅ Done | `84a7334` | [05-appointments-and-activities.md](docs/05-appointments-and-activities.md) |
 | 6 · Property matching | Fit labels with reasons (no black-box score), both directions (customer → properties, property → customers), one tap to send | ✅ Done | `4a05a72` | [06-property-matching.md](docs/06-property-matching.md) |
 | 7 · Negotiations and bookings | Deals, offers, discount limits with approvals, holds, booking and confirmation, payment plan, registration, cancellation | ✅ Done | `51cd35b` | [07-negotiations-and-bookings.md](docs/07-negotiations-and-bookings.md) |
-| Gemini switch | Assistant uses Google Gemini | ✅ Done (code + tests) | `aad82e1` | [00-foundation.md](docs/00-foundation.md) |
+| Gemini switch | Assistant uses Google Gemini | ✅ Done, verified with a real key | `aad82e1`, `9331bd4` | [00-foundation.md](docs/00-foundation.md) |
 | Inventory insights | Most-enquired properties, slow-moving projects; counters pre-approve | ✅ Done | `1e882d0` | — |
 | End-to-end tests | Playwright journeys for each role, desktop and phone | ✅ Done | `70c43a1` | — |
 | Docs refresh | README, STATUS and docs pass | ✅ Done | — | — |
 | 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
 
 ## Done since last update
+
+**Gemini assistant connected** (`9331bd4`)
+
+- **Verified with a real key:** assistant chat with tool calls and property extraction both returned mode `"gemini"`.
+- **Fixes:** the `@google/genai` client uses `apiVersion: 'v1beta'` (v1 rejected function calling with this key type); the server logs the real Gemini error as `[gemini] status: message`; a dev restart reuses an embedded MongoDB already running on `127.0.0.1:27027` instead of crashing on the file lock.
 
 **Projects v2, from your wireframes 8–11** (`a885a80`, details in [08-projects-v2.md](docs/08-projects-v2.md))
 
@@ -35,13 +40,13 @@ Last updated: 2026-11-23
 - **One change from the wireframe:** units are not marked Booked/Sold by a click. Clicking an available unit offers **Start a deal for a customer**, so every booking still has its price approval, booking amount and payment plan. "Sold outside the app" stays on the unit's page, with a reason.
 - **AI** reads a DTCP/CMDA layout drawing into blocks and plot sizes (Gemini; offline, it asks for the key).
 
-**Earlier** (in the table above): inventory insights and counters that pre-approve (`1e882d0`), Playwright journeys (`70c43a1`), assistant on Gemini (`aad82e1`, `GEMINI_API_KEY` in `apps/api/.env`; tested with a scripted fake client only, nothing has called real Gemini yet).
+**Earlier** (in the table above): inventory insights and counters that pre-approve (`1e882d0`), Playwright journeys (`70c43a1`), assistant on Gemini (`aad82e1`, `GEMINI_API_KEY` in `apps/api/.env`; now verified with a real key, see above).
 
 ## Next up
 
-Suggestions once the key arrives:
+Suggestions:
 
-1. Try real Gemini on the sample brochure (describe-a-property), in the assistant chat, and on a real DTCP layout drawing.
+1. Try real Gemini on a real DTCP layout drawing (chat and describe-a-property are verified).
 2. Push to your git remote.
 3. Pick up any of the deferred items below.
 
@@ -59,7 +64,7 @@ Suggestions once the key arrives:
 
 | # | Decision | Why it matters |
 |---|---|---|
-| 1 | **Gemini API key** | Needed for the live AI assistant and for reading layout drawings. Until then it runs in offline mode. |
+| 1 | ~~**Gemini API key**~~ ✅ Received | Connected and verified (`9331bd4`). |
 | 2 | **Git remote URL** | There is no remote yet; the code can't be pushed until you share the repo link. |
 | 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
 | 4 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
@@ -76,6 +81,7 @@ pnpm dev                         # API on :4000, web on http://localhost:5173
 
 - No database setup: without `MONGODB_URI` the API starts an embedded MongoDB (data in `.data/mongo`) and seeds demo data on first run.
 - `pnpm seed` resets the database to the demo data.
+- **Gemini key:** put it in `apps/api/.env` as `GEMINI_API_KEY` (git-ignored, never committed). Node's `--env-file` does not override a variable that is already set, even to empty, so start the server from a fresh terminal. Run one dev server at a time: an old server holding port 4000 keeps answering in offline mode.
 
 Demo sign-ins (password `demo1234`):
 
