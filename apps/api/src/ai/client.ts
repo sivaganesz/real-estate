@@ -8,7 +8,8 @@ let client: GoogleGenAI | null = null;
 /** The assistant uses Google Gemini when GEMINI_API_KEY is set; otherwise rule-based offline mode. */
 export function gemini(): GoogleGenAI | null {
   if (!config.geminiKey) return null;
-  client ??= new GoogleGenAI({ apiKey: config.geminiKey });
+  // v1beta: the assistant needs function calling and JSON schema output, which v1 doesn't offer for every key type.
+  client ??= new GoogleGenAI({ apiKey: config.geminiKey, apiVersion: 'v1beta' });
   return client;
 }
 

@@ -77,6 +77,8 @@ export async function runAssistant(turns: ChatTurn[], context: AssistantContext 
       });
     } catch (err) {
       if (err instanceof ApiError) {
+        // Keep the real reason in the server log; users get a plain message.
+        console.error(`[gemini] ${err.status}: ${err.message.slice(0, 300)}`);
         if (err.status === 429) throw new HttpError(429, 'The assistant is busy right now. Try again in a moment.');
         if (err.status === 401 || err.status === 403 || (err.status === 400 && /api key/i.test(err.message))) throw new HttpError(503, 'The Gemini key is not valid. Ask an admin to check GEMINI_API_KEY.');
         throw new HttpError(502, 'The assistant could not answer just now. Please try again.');

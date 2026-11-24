@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { config } from '../config';
 
+const LOCAL_URI = 'mongodb://127.0.0.1:27027/estate';
 let memory: MongoMemoryServer | null = null;
 
 /**
@@ -11,6 +12,16 @@ let memory: MongoMemoryServer | null = null;
  */
 export async function connectDb(opts: { ephemeral?: boolean } = {}) {
   let uri = config.mongoUri;
+  // After a restart (watch mode, a second terminal) the embedded database may
+  // still be running and holding its files: reuse it instead of starting another.
+  if (!uri && !opts.ephemeral) {
+    try {
+      await mongoose.connect(LOCAL_URI, { serverSelectionTimeoutMS: 1500 });
+      return LOCAL_URI;
+    } catch {
+      await mongoose.disconnect().catch(() => {});
+    }
+  }
   if (!uri) {
     // The binary is downloaded once at install time into the workspace root cache.
     process.env.MONGOMS_DOWNLOAD_DIR ??= config.mongoBinaryDir;
