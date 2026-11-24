@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ArrowRight, CalendarDays, Check, Flame, MessageCircle, Phone, Send, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, Flame, MessageCircle, Phone, Send, Sparkles, UserPlus } from 'lucide-react';
 import { ACTIVITY_LABEL, DEAL_STATUS_LABEL, OPEN_STAGES, STAGE_META, formatINR, formatTime, relativeDay, type Stage } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -193,20 +193,48 @@ function Timeline({ items, className }: { items: AgendaItem[]; className?: strin
   );
 }
 
-/** The customer most worth a call right now, with what to send them. */
+/** Dots plus previous/next, for tiles that rotate through a few items. */
+function Pager({ count, index, onChange, label }: { count: number; index: number; onChange: (i: number) => void; label: string }) {
+  if (count < 2) return null;
+  const arrow = 'flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800';
+  return (
+    <div className="flex items-center gap-1.5">
+      <button className={arrow} onClick={() => onChange((index - 1 + count) % count)} aria-label={`Previous ${label}`}>
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      {Array.from({ length: count }, (_, i) => (
+        <button key={i} onClick={() => onChange(i)} aria-label={`${label} ${i + 1} of ${count}`} className={clsx('h-1.5 rounded-full transition-all', i === index ? 'w-4 bg-slate-800' : 'w-1.5 bg-slate-300 hover:bg-slate-400')} />
+      ))}
+      <button className={arrow} onClick={() => onChange((index + 1) % count)} aria-label={`Next ${label}`}>
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/** The three customers most worth a call right now, one at a time, with what to send them. */
 function Spotlight({ columns, matches, className }: { columns?: Column[]; matches?: Match[]; className?: string }) {
   const [sharing, setSharing] = useState(false);
+  const [at, setAt] = useState(0);
   const order: Stage[] = ['negotiation', 'visit', 'qualified', 'contacted', 'new'];
   const candidates = (columns ?? []).filter((c) => order.includes(c.stage)).flatMap((c) => c.leads);
-  const lead = candidates.sort((a, b) => Number(b.temperature === 'hot') - Number(a.temperature === 'hot') || order.indexOf(a.stage) - order.indexOf(b.stage))[0];
+  const top3 = candidates.sort((a, b) => Number(b.temperature === 'hot') - Number(a.temperature === 'hot') || order.indexOf(a.stage) - order.indexOf(b.stage)).slice(0, 3);
+  const lead = top3[at] ?? top3[0];
   const direct = useQuery({ queryKey: ['matches', lead?.id, 'top'], queryFn: () => api.get<{ items: { property: Property; fit: Match['fit']; reasons: Match['reasons'] }[] }>(`/matching/lead/${lead!.id}?limit=1`), enabled: !!lead });
   const top = matches?.find((m) => m.lead.id === lead?.id) ?? direct.data?.items[0];
   if (!lead) return <Tile className={className}><TileHead label="Spotlight" /><p className="text-sm text-slate-400">No open customers yet.</p></Tile>;
   return (
-    <Tile className={className}>
-      <TileHead label="Spotlight" right={lead.temperature === 'hot' && <span className="flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-600"><Flame className="h-3 w-3" /> Hot</span>} />
+    <Tile className={clsx('flex flex-col', className)}>
+      <TileHead label="Spotlight" right={<Pager count={top3.length} index={at} onChange={setAt} label="customer" />} />
       <Link to={`/leads/${lead.id}`} className="block">
-        <p className="text-lg font-semibold text-slate-900 hover:text-brand-800">{lead.name}</p>
+        <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 hover:text-brand-800">
+          <span className="truncate">{lead.name}</span>
+          {lead.temperature === 'hot' && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-600">
+              <Flame className="h-3 w-3" /> Hot
+            </span>
+          )}
+        </p>
         <p className="text-xs text-slate-500">
           {STAGE_META[lead.stage].label} · {lead.summary}
         </p>
@@ -225,7 +253,7 @@ function Spotlight({ columns, matches, className }: { columns?: Column[]; matche
           </p>
         )}
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-auto flex flex-wrap gap-2 pt-4">
         <a href={waLink(lead.phone)} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white hover:bg-slate-800">
           <MessageCircle className="h-4 w-4" /> Message
         </a>
@@ -253,7 +281,7 @@ function DealsTile({ deals, className }: { deals?: Deal[]; className?: string })
   const value = (deals ?? []).reduce((s, d) => s + (d.agreedPrice ?? d.currentPrice), 0);
   const stepOf = (d: Deal) => (d.status === 'negotiating' ? 1 : d.status === 'approval' ? 2 : d.status === 'approved' ? 3 : d.payments.every((p) => p.status === 'paid') ? 5 : 4);
   return (
-    <Tile className={className}>
+    <Tile className={clsx('flex flex-col', className)}>
       <TileHead label={`Deals in motion · ${formatINR(value)}`} right={<Link to="/deals" className="text-xs font-medium text-brand-700 hover:underline">All deals →</Link>} />
       {!list.length ? (
         <p className="py-8 text-center text-sm text-slate-400">No negotiations yet. Start one from a customer's page.</p>
@@ -294,7 +322,7 @@ function DealsTile({ deals, className }: { deals?: Deal[]; className?: string })
         </ul>
       )}
       {summary.data && (
-        <div className="mt-5 grid grid-cols-3 gap-2 border-t border-slate-100 pt-4">
+        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-slate-100 pt-4">
           {[
             ['Negotiating', formatINR(summary.data.negotiating.value) || '—'],
             ['Booked this month', summary.data.bookedThisMonth.count ? formatINR(summary.data.bookedThisMonth.value) : '—'],
@@ -315,14 +343,15 @@ function DealsTile({ deals, className }: { deals?: Deal[]; className?: string })
 /** Things owed to customers: overdue first, then today's calls, then anyone with no plan. */
 function FollowUps({ d, className }: { d?: Day; className?: string }) {
   const [doing, setDoing] = useState<AgendaItem | null>(null);
-  const items = [...(d?.overdue ?? []), ...(d?.today ?? []).filter((a) => a.type !== 'site_visit')].slice(0, 5);
+  const items = [...(d?.overdue ?? []), ...(d?.today ?? []).filter((a) => a.type !== 'site_visit')];
   // New leads waiting for a first call come right after what's overdue or due.
-  const fresh = (d?.newLeads ?? []).slice(0, Math.max(0, 6 - items.length));
-  const gaps = (d?.noNextStep ?? []).slice(0, Math.max(0, 6 - items.length - fresh.length));
+  const fresh = d?.newLeads ?? [];
+  const gaps = d?.noNextStep ?? [];
   return (
-    <Tile dark className={className}>
+    // On wide screens the tile takes its row's height from its neighbours and the list scrolls.
+    <Tile dark className={clsx('flex flex-col lg:h-0 lg:min-h-full', className)}>
       <TileHead dark label="Follow-ups" right={d && d.overdue.length > 0 && <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[11px] font-medium text-rose-200">{d.overdue.length} overdue</span>} />
-      <ul className="space-y-3">
+      <ul className="-mr-2 max-h-80 min-h-0 flex-1 space-y-3 overflow-y-auto pb-6 pr-2 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,black_88%,transparent)] lg:max-h-none">
         {items.map((a) => {
           const late = new Date(a.scheduledAt) < new Date();
           return (
@@ -371,21 +400,22 @@ function FollowUps({ d, className }: { d?: Day; className?: string }) {
   );
 }
 
-/** One strong, unsent match, big enough to act on. */
+/** The three best unsent matches, one at a time, big enough to act on. */
 function MatchOfTheDay({ matches, className }: { matches?: Match[]; className?: string }) {
   const [sharing, setSharing] = useState(false);
+  const [at, setAt] = useState(0);
   const leads = useQuery({ queryKey: ['leads', 'phones'], queryFn: () => api.get<{ items: Lead[] }>('/leads?open=true&limit=300'), enabled: !!matches?.length });
-  const m = matches?.[0];
+  const top3 = (matches ?? []).slice(0, 3);
+  const m = top3[at] ?? top3[0];
   if (!m) return null;
   const lead = leads.data?.items.find((l) => l.id === m.lead.id);
-  const others = (matches ?? []).slice(1, 4);
   return (
     <section className={clsx('overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-card', className)}>
       <div className="grid md:grid-cols-[320px_1fr]">
         <div className="relative">
           <PropertyCover property={m.property} className="h-48 w-full md:h-full" iconSize="h-14 w-14" />
           <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
-            <Sparkles className="h-3 w-3 text-ai-600" /> Match of the day
+            <Sparkles className="h-3 w-3 text-ai-600" /> {top3.length > 1 ? `Top match ${top3.indexOf(m) + 1} of ${top3.length}` : 'Match of the day'}
           </span>
         </div>
         <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center">
@@ -399,15 +429,9 @@ function MatchOfTheDay({ matches, className }: { matches?: Match[]; className?: 
             <div className="mt-2">
               <Reasons reasons={m.reasons} max={3} />
             </div>
-            {others.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {others.map((o) => (
-                  <Link key={o.lead.id + o.property.id} to={`/leads/${o.lead.id}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-200">
-                    {o.lead.name} · {o.property.title}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <div className="mt-4">
+              <Pager count={top3.length} index={top3.indexOf(m)} onChange={setAt} label="match" />
+            </div>
           </div>
           <div className="flex shrink-0 flex-col gap-2 md:w-48">
             <button disabled={!lead} onClick={() => setSharing(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">
