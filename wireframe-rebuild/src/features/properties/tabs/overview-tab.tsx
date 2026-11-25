@@ -13,7 +13,7 @@ import { KeyValueGrid } from '@/components/app/key-value-grid'
 import { SectionCard } from '@/components/app/section-card'
 import { StatusChip } from '@/components/app/status-chip'
 import { UserAvatar } from '@/components/app/user-avatar'
-import { AMENITIES, PROPERTY_TYPES, type FactDef } from '@/data/catalogue'
+import { amenityList, PROPERTY_TYPES, type FactDef, typeFacts } from '@/data/catalogue'
 import { DEMO_TODAY } from '@/data/seed'
 import { fmtDate, inr, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
@@ -52,13 +52,14 @@ function DetailsCard({ p }: { p: Property }) {
   const { t, i18n } = useTranslation()
   const L = useLabels()
   const can = useCan()
-  const { updateProperty } = useStore()
+  const { db, updateProperty } = useStore()
   const manager = can('property.manage')
   const [adding, setAdding] = useState<FactDef | null>(null)
   const [editAmen, setEditAmen] = useState(false)
   const def = PROPERTY_TYPES[p.type]
-  const filled = def.facts.filter((f) => p.specs[f.key] !== undefined && p.specs[f.key] !== '')
-  const empty = def.facts.filter((f) => p.specs[f.key] === undefined || p.specs[f.key] === '')
+  const facts = typeFacts(p.type, db.settings)
+  const filled = facts.filter((f) => p.specs[f.key] !== undefined && p.specs[f.key] !== '')
+  const empty = facts.filter((f) => p.specs[f.key] === undefined || p.specs[f.key] === '')
   const ppsf = p.areaSqft ? Math.round(p.price / p.areaSqft) : 0
   const editable = manager && !p.archived
   const toggleAmenity = (a: string) =>
@@ -82,16 +83,20 @@ function DetailsCard({ p }: { p: Property }) {
 
       <div className="mt-5 flex items-baseline justify-between gap-2 border-t pt-4">
         {label(t('props.typeSpecs', { type: L.type(p.type) }))}
-        <span className="text-xs text-muted-foreground">{t('props.filledOf', { n: filled.length, total: def.facts.length })}</span>
+        <span className="text-xs text-muted-foreground">{t('props.filledOf', { n: filled.length, total: facts.length })}</span>
       </div>
-      {filled.length ? (
-        <KeyValueGrid items={filled.map((f) => ({ key: f.key, label: L.fact(f.key, f.label), value: <span className="whitespace-normal">{L.factValue(f, p.specs[f.key])}</span> }))} />
+      {filled.length || p.extraDetails?.length ? (
+        <KeyValueGrid items={[
+          ...filled.map((f) => ({ key: f.key, label: L.fact(f.key, f.label), value: <span className="whitespace-normal">{L.factValue(f, p.specs[f.key])}</span> })),
+          // details only this property has
+          ...(p.extraDetails ?? []).map((x) => ({ key: 'extra-' + x.label, label: x.label, value: <span className="whitespace-normal">{x.value}</span> })),
+        ]} />
       ) : <p className="text-sm text-muted-foreground">{t('props.noDetails')}</p>}
 
       {/* amenities, inline */}
       <div className="mt-5 flex flex-wrap items-center gap-1.5 border-t pt-4">
         <span className="mr-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t('overview.amenities')}</span>
-        {(editAmen ? AMENITIES : p.amenities).map((a) => {
+        {(editAmen ? [...new Set([...amenityList(db.settings), ...p.amenities])] : p.amenities).map((a) => {
           const on = p.amenities.includes(a)
           return editAmen ? (
             <Chip key={a} pressed={on} onClick={() => toggleAmenity(a)}>

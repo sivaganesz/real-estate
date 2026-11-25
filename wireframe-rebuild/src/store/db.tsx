@@ -37,7 +37,7 @@ type Store = {
   user: User
   role: Role
   setRole: (r: Role) => void
-  /** PATCH /api/properties/:id — also appends to the property's history. */
+  /** PATCH /api/properties/:id — also appends to the property's history (unless historyText is empty, e.g. a draft's chat moving on). */
   updateProperty: (id: string, change: (p: Property) => void, historyText: string) => void
   /** POST /api/properties — returns the new id (PROP-<next number>). */
   addProperty: (build: (id: string) => Property, historyText: string) => string
@@ -86,7 +86,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!p) return prev
       change(p)
       p.updated = { by: user.id, at: DEMO_TODAY }
-      p.history.unshift({ id: `${id}-h${p.history.length + 1}`, at: DEMO_TODAY, by: user.id, text: historyText })
+      if (historyText) p.history.unshift({ id: `${id}-h${p.history.length + 1}`, at: DEMO_TODAY, by: user.id, text: historyText })
       return next
     })
   }, [user.id])
@@ -152,12 +152,16 @@ export function useStore(): Store {
 
 /* ---------- permissions (a fixed catalogue in code; roles map to it) ---------- */
 
-export type Permission = 'property.manage' | 'property.seeDrafts' | 'lead.seeAll'
+/**
+ * property.add: start a property with the AI assistant (executives' drafts go to a manager for approval) ·
+ * property.manage: publish and change published properties · property.seeDrafts: everyone's drafts.
+ */
+export type Permission = 'property.add' | 'property.manage' | 'property.seeDrafts' | 'lead.seeAll'
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  admin: ['property.manage', 'property.seeDrafts', 'lead.seeAll'],
-  manager: ['property.manage', 'property.seeDrafts', 'lead.seeAll'],
-  executive: [],
+  admin: ['property.add', 'property.manage', 'property.seeDrafts', 'lead.seeAll'],
+  manager: ['property.add', 'property.manage', 'property.seeDrafts', 'lead.seeAll'],
+  executive: ['property.add'],
 }
 
 export function useCan() {

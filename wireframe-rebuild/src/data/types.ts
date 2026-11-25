@@ -3,6 +3,7 @@
  * stable ids, references by id (never copied text), and who / when on every change.
  * Reused from the old wireframe (spec-system-wireframe/data.js), reshaped and typed.
  */
+import type { AssistantThread } from '@/lib/assistant'
 
 export type Role = 'admin' | 'manager' | 'executive'
 
@@ -112,6 +113,8 @@ export type Property = {
   areaSqft: number
   /** ₹, total. */
   price: number
+  /** Hide the price on the listing ("price on request"); the team still sees it. */
+  priceOnRequest?: boolean
   specs: Record<string, SpecValue>
   amenities: string[]
   location: PropertyLocation
@@ -127,7 +130,22 @@ export type Property = {
   archived?: Audit & { reason?: string }
   /** Our own properties marked "not similar" for this one's price check. */
   dismissedComparables?: string[]
+  /** Where each value came from (✨ AI, 🗺 Google, auto, 📄 file, or typed by the team). Keys as in the assistant: `price`, `spec:bhk`… */
+  sources?: Record<string, FactSource>
+  /** A draft an executive sent to a manager to approve and publish. Cleared when it's published or sent back. */
+  submitted?: Audit
+  /** The conversation that built this draft with the AI assistant, so it can be picked up again. */
+  assistant?: AssistantThread
+  /** Details only this property has ("Compound wall: built on all sides") — not a field of its type. */
+  extraDetails?: ExtraDetail[]
 }
+
+export type ExtraDetail = { label: string; value: string; added?: Audit }
+
+/** A field the team added for every property of a type (from a "new detail" card). The built-in fields are in the catalogue. */
+export type ExtraFact = { type: PropertyTypeKey; key: string; label: string; kind: 'number' | 'text'; added: Audit; fromPropertyId?: string }
+
+export type FactSource = 'ai' | 'google' | 'auto' | 'file' | 'team'
 
 /* ---------- leads (needed for matching and sharing) ---------- */
 
@@ -235,6 +253,10 @@ export type Settings = {
   stuckDays: number
   placeCategories: PlaceCategory[]
   approvalTypes: ApprovalType[]
+  /** Amenities the team added to the list (after the built-in ones). */
+  amenities?: string[]
+  /** Fields the team added to a property type. */
+  extraFacts?: ExtraFact[]
 }
 
 export type Database = {

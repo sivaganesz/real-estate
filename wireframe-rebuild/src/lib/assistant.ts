@@ -6,7 +6,8 @@
  * a person publishes.
  */
 import { CITIES, PROPERTY_TYPES, PURPOSES, TYPE_ORDER } from '@/data/catalogue'
-import type { Facing, Property, PropertyStatus, PropertyTypeKey, Purpose, SpecValue } from '@/data/types'
+import type { FactDef } from '@/data/catalogue'
+import type { ExtraDetail, FactSource, Facing, Property, PropertyStatus, PropertyTypeKey, Purpose, SpecValue } from '@/data/types'
 
 /* ---------- the draft the assistant fills ---------- */
 
@@ -19,6 +20,8 @@ export type Draft = {
   city?: string
   locality?: string
   price?: number
+  /** Hide the price on the listing ("price on request"). */
+  priceOnRequest?: boolean
   areaSqft?: number
   facing?: Facing
   specs: Record<string, SpecValue>
@@ -28,11 +31,15 @@ export type Draft = {
   exactLocation: boolean
   photos: number
   description?: string
+  /** Details only this property has (from a "new detail" card, or "＋ Something else" in the form). */
+  extraDetails?: ExtraDetail[]
   /** Edit mode only. */
   status?: PropertyStatus
+  /** Where each value came from, by fact key (`price`, `spec:bhk`, `title`…). */
+  sources?: Record<string, FactSource>
 }
 
-export const EMPTY_DRAFT: Draft = { specs: {}, amenities: [], approvals: [], exactLocation: false, photos: 0 }
+export const EMPTY_DRAFT: Draft = { specs: {}, amenities: [], approvals: [], exactLocation: false, photos: 0, sources: {} }
 
 /** One fact read from a message. `key` is a draft field, or `spec:<fact key>` for a type's own fact. */
 export type Fact = {
@@ -45,9 +52,12 @@ export type Fact = {
 /* ---------- reading a message ---------- */
 
 const UNIT_RE = '(l|lakh|lakhs|lac|lacs|cr|crore|crores|k)'
+/** A price under this with no unit is ambiguous (₹45, 45 lakh or 45 crore?), so the assistant asks. */
+export const PRICE_ASK_BELOW = 1000
+/** A rupee amount. Without a unit it is taken as rupees; a small bare number ("45") is asked about instead — see PRICE_ASK_BELOW. */
 function money(n: string, unit?: string): number {
   const v = parseFloat(n.replace(/,/g, ''))
-  if (!unit) return v >= 100000 ? v : v * 1e5 // a bare "62" in a price means 62 lakh
+  if (!unit) return v
   if (unit.startsWith('c')) return Math.round(v * 1e7)
   if (unit === 'k') return Math.round(v * 1e3)
   return Math.round(v * 1e5)
@@ -144,7 +154,11 @@ export function readMessage(text: string, draft: Draft, asking?: string): Fact[]
     q.match(new RegExp(`(?:price|rate|cost|asking|rent)\\s*(?:is|of|:)?\\s*(?:now)?\\s*([\\d,.]+)\\s*${UNIT_RE}?\\b`)) ??
     q.match(new RegExp(`([\\d.]+)\\s*${UNIT_RE}\\b(?!\\s*(?:sq|ft|acre))`))
   if (rent) add({ key: 'price', value: money(rent[1], rent[2] ?? (parseFloat(rent[1]) < 1000 ? 'k' : undefined)) })
-  else if (priced) add({ key: 'price', value: money(priced[1], priced[2]), note: /\bonwards\b/.test(q) ? { k: 'onwards' } : undefined })
+  else if (priced) {
+    const v = money(priced[1], priced[2])
+    if (!priced[2] && v < PRICE_ASK_BELOW) add({ key: 'priceUnit', value: v }) // "asking 45" — lakh or crore? the page asks
+    else add({ key: 'price', value: v, note: /\bonwards\b/.test(q) ? { k: 'onwards' } : undefined })
+  }
 
   // area: dimensions first (plots), then units
   const dims = q.match(/(\d+)\s*(?:ft|feet|')?\s*[x×*]\s*(\d+)\s*(?:ft|feet|')?/)
@@ -200,7 +214,10 @@ export function readMessage(text: string, draft: Draft, asking?: string): Fact[]
   // place: known localities and cities, then "<Locality>, <City>"
   for (const [city, locs] of Object.entries(CITIES)) {
     for (const loc of locs) {
-      const names = [loc, loc.replace(/\s*\(.*\)/, ''), ...(loc.match(/\(([^)]+)\)/)?.slice(1) ?? [])]
+      // a name in brackets is another name for the place ("OMR"), unless it only names the city ("K.K. Nagar (Trichy)")
+      const alias = loc.match(/\(([^)]+)\)/)?.[1]
+      const cityWord = alias && (Object.keys(CITIES).some((c) => c.toLowerCase() === alias.toLowerCase()) || /^(trichy|kovai)$/i.test(alias))
+      const names = [loc, loc.replace(/\s*\(.*\)/, ''), ...(alias && !cityWord ? [alias] : [])]
       if (names.some((n) => new RegExp(`\\b${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(q))) {
         add({ key: 'locality', value: loc }); add({ key: 'city', value: city })
       }
@@ -226,7 +243,11 @@ export function readMessage(text: string, draft: Draft, asking?: string): Fact[]
 /** Interpret a short reply as the answer to `asking`. */
 function answerTo(asking: string, raw: string, type?: PropertyTypeKey): Fact | null {
   const n = raw.match(/[\d,.]+/)?.[0]
-  if (asking === 'price' && n) return { key: 'price', value: money(n, raw.toLowerCase().match(new RegExp(UNIT_RE))?.[1]) }
+  if (asking === 'price' && n) {
+    const unit = raw.toLowerCase().match(new RegExp(`[\\d.]\\s*${UNIT_RE}\\b`))?.[1]
+    const v = money(n, unit)
+    return !unit && v < PRICE_ASK_BELOW ? { key: 'priceUnit', value: v } : { key: 'price', value: v }
+  }
   if (asking === 'area' && n) return { key: 'area', value: Number(n.replace(/,/g, '')) }
   if (asking === 'title') return { key: 'title', value: raw }
   if (asking === 'locality' && raw.length < 40) return { key: 'locality', value: cap(raw) }
@@ -246,9 +267,13 @@ function answerTo(asking: string, raw: string, type?: PropertyTypeKey): Fact | n
 
 /* ---------- applying facts ---------- */
 
-export function applyFacts(d: Draft, facts: Fact[]): Draft {
+/** Put facts into the draft. `source` is recorded for each one: 'ai' for the chat, 'team' for a value typed on the card. */
+export function applyFacts(d: Draft, facts: Fact[], source: FactSource = 'ai'): Draft {
   const next: Draft = structuredClone(d)
+  next.sources ??= {}
   for (const f of facts) {
+    if (f.key === 'priceUnit') continue // a question for the team, not a value
+    next.sources[f.key] = source
     if (f.key.startsWith('spec:')) next.specs[f.key.slice(5)] = f.value as SpecValue
     else if (f.key === 'amenities') next.amenities = [...new Set([...next.amenities, ...(f.value as string[])])]
     else if (f.key === 'approvals') next.approvals = [...new Set([...next.approvals, ...(f.value as string[])])]
@@ -261,7 +286,42 @@ export function applyFacts(d: Draft, facts: Fact[]): Draft {
     const keys = new Set(PROPERTY_TYPES[next.type].facts.map((x) => x.key))
     next.specs = Object.fromEntries(Object.entries(next.specs).filter(([k]) => keys.has(k)))
   }
-  if (!next.titleEdited) next.title = suggestTitle(next)
+  if (!next.titleEdited) {
+    next.title = suggestTitle(next)
+    if (next.title) next.sources.title = 'ai'
+  }
+  return next
+}
+
+/**
+ * Set one field from the details form, or clear it with an empty value. It is recorded as the team's own value.
+ * A new type keeps only that type's details and drops a purpose the type doesn't allow (a plot can't be rented).
+ */
+export function setFact(d: Draft, key: string, value: Fact['value'] | undefined, source: FactSource = 'team'): Draft {
+  if (value !== undefined && value !== '') {
+    const next = applyFacts(d, [{ key, value }], source)
+    if (key === 'type' && value !== d.type) {
+      const def = PROPERTY_TYPES[next.type!]
+      const keys = new Set(def.facts.map((x) => x.key))
+      next.specs = Object.fromEntries(Object.entries(next.specs).filter(([k]) => keys.has(k)))
+      if (next.purpose && !def.purposes.includes(next.purpose)) {
+        next.purpose = undefined
+        delete next.sources?.purpose
+      }
+    }
+    return next
+  }
+  const next: Draft = structuredClone(d)
+  next.sources ??= {}
+  delete next.sources[key]
+  if (key.startsWith('spec:')) delete next.specs[key.slice(5)]
+  else if (key === 'area') next.areaSqft = undefined
+  else if (key === 'title') { next.title = undefined; next.titleEdited = false }
+  else (next as Record<string, unknown>)[key] = undefined
+  if (!next.titleEdited) {
+    next.title = suggestTitle(next)
+    if (next.title) next.sources.title = 'ai'
+  }
   return next
 }
 
@@ -306,6 +366,12 @@ export type Question = { key: string; options?: { label: string; value: SpecValu
 export function nextQuestion(d: Draft): Question | null {
   const key = requiredKeys(d).find((k) => !isSet(d, k))
   if (!key) return isSet(d, 'title') ? null : { key: 'title' }
+  return questionFor(d, key)
+}
+
+/** The question for one fact, with one-tap answers where the answer is a choice. */
+export function questionFor(d: Draft, key: string): Question {
+  if (key === 'title' || key === 'exactLocation') return { key }
   if (key === 'purpose') return { key, options: (d.type ? PROPERTY_TYPES[d.type].purposes : PURPOSES).map((p) => ({ label: `purpose.${p}`, value: p, i18n: true })) }
   if (key === 'type') return { key, options: TYPE_ORDER.map((ty) => ({ label: `type.${ty}`, value: ty, i18n: true })) }
   if (key === 'city') return { key, options: Object.keys(CITIES).map((c) => ({ label: c, value: c })) }
@@ -331,6 +397,7 @@ export function draftToProperty(d: Draft, id: string, by: string, at: string, st
     facing: d.facing,
     areaSqft: d.areaSqft ?? 0,
     price: d.price ?? 0,
+    priceOnRequest: d.priceOnRequest || undefined,
     specs: { ...d.specs },
     amenities: [...d.amenities],
     location: { state: 'Tamil Nadu', city: d.city ?? '', locality: d.locality ?? '', exact: d.exactLocation, nearby: [] },
@@ -342,15 +409,17 @@ export function draftToProperty(d: Draft, id: string, by: string, at: string, st
     created: { by, at },
     updated: { by, at },
     history: [],
+    sources: { ...d.sources },
+    extraDetails: d.extraDetails?.length ? structuredClone(d.extraDetails) : undefined,
   }
 }
 
 export function propertyToDraft(p: Property): Draft {
   return {
     title: p.title, titleEdited: true, purpose: p.purpose, type: p.type, city: p.location.city, locality: p.location.locality,
-    price: p.price, areaSqft: p.areaSqft, facing: p.facing, specs: { ...p.specs }, amenities: [...p.amenities],
+    price: p.price, priceOnRequest: p.priceOnRequest, areaSqft: p.areaSqft, facing: p.facing, specs: { ...p.specs }, amenities: [...p.amenities],
     approvals: p.approvals.map((a) => a.approvalId), exactLocation: p.location.exact, photos: p.media.filter((m) => m.kind === 'photo').length,
-    description: p.description, status: p.status,
+    description: p.description, status: p.status, extraDetails: structuredClone(p.extraDetails ?? []),
   }
 }
 
@@ -401,3 +470,192 @@ export const SAMPLE_BROCHURE = {
     'Price ₹1.65 Cr. DTCP approved. Gated community, clubhouse, power backup, CCTV. Borewell and corporation water. Car parking.',
 }
 export const SAMPLE_SHEET = { file: 'ABC Realty — plots.xlsx', rows: 48 }
+
+/* ---------- the conversation, kept on the draft so it can be picked up again ---------- */
+
+/**
+ * A decision card: something the assistant can't settle alone, asked one at a time with buttons (spec-system-wireframe's queue).
+ * dup — looks like a property we already have · newAmenity / newDetail — not on our lists · priceUnit — "45": lakh or crore? ·
+ * priceCheck — the price per sq.ft. is far from similar listed properties · pin — a map link was pasted: is the pin right?
+ */
+export type Decision =
+  | { kind: 'dup'; id: string }
+  | { kind: 'newAmenity'; name: string }
+  | { kind: 'newDetail'; label: string; value: string; number: boolean }
+  | { kind: 'priceUnit'; n: number }
+  | { kind: 'priceCheck'; ppsf: number; min: number; max: number; n: number }
+  | { kind: 'pin' }
+
+/** The buttons on each card, in order; the first is the suggested one. `manager` adds the choices that change master data. */
+export function decisionChoices(x: Decision, o: { manager: boolean; hasType: boolean }): string[] {
+  switch (x.kind) {
+    case 'dup': return ['new', 'same']
+    case 'newAmenity': return o.manager ? ['list', 'only', 'skip'] : ['only', 'skip']
+    case 'newDetail': return o.manager && o.hasType ? ['type', 'only', 'skip'] : ['only', 'skip']
+    case 'priceUnit': return ['lakh', 'crore', 'rupees']
+    case 'priceCheck': return ['ok', 'change']
+    case 'pin': return ['ok', 'again', 'later']
+  }
+}
+
+const norm = (s: string) => s.toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '')
+
+/** Another property (listed or a draft) of the same type in the same locality, within 10% of the area. Checked once per draft. */
+export function findDuplicate(d: Draft, props: Property[], selfId?: string): Property | undefined {
+  if (!d.type || !d.locality || !d.areaSqft) return undefined
+  const loc = norm(d.locality)
+  return props.find((o) => o.id !== selfId && !o.archived && o.type === d.type && norm(o.location.locality) === loc &&
+    o.areaSqft > 0 && Math.abs(o.areaSqft - d.areaSqft!) / o.areaSqft <= 0.1)
+}
+
+/** The price per sq.ft. against listed properties of the same type, city and purpose (needs two): far below 60% of the lowest or above 160% of the highest. */
+export function priceOutlier(d: Draft, props: Property[], selfId?: string): Extract<Decision, { kind: 'priceCheck' }> | undefined {
+  if (!d.type || !d.city || !d.price || !d.areaSqft) return undefined
+  const xs = props
+    .filter((o) => o.id !== selfId && o.status !== 'draft' && !o.archived && o.type === d.type && o.location.city === d.city &&
+      o.purpose === (d.purpose ?? o.purpose) && o.price > 0 && o.areaSqft > 0)
+    .map((o) => Math.round(o.price / o.areaSqft))
+  if (xs.length < 2) return undefined
+  const ppsf = Math.round(d.price / d.areaSqft), min = Math.min(...xs), max = Math.max(...xs)
+  return ppsf < min * 0.6 || ppsf > max * 1.6 ? { kind: 'priceCheck', ppsf, min, max, n: xs.length } : undefined
+}
+
+/** Words that describe the property itself, not an amenity ("with east facing", "with 2 car parks"). */
+const NOT_AMENITY = /\b(parking|park(s)?\b|floor|bhk|road|water|borewell|approv|rera|dtcp|cmda|facing|sq|ft|feet|acre|cent|ground|bed ?rooms?|bath ?rooms?|toilets?|price|lakh|crore|tenant|possession|corner|loan|owner|ready)\b/i
+/** Labels that aren't a detail ("price is 45 lakhs", "it is ready"). */
+const NOT_LABEL = new Set(['it', 'this', 'that', 'there', 'price', 'rent', 'title', 'description', 'property', 'purpose', 'type', 'city', 'locality',
+  'area', 'location', 'size', 'rate', 'cost', 'asking', 'facing', 'status', 'plot', 'flat', 'house', 'land', 'shop', 'office', 'villa', 'apartment', 'which', 'what'])
+
+/**
+ * What a message mentions that isn't on our lists: amenities after "has / with / includes", and "label: value" details.
+ * A "label: value" that names one of the type's fields fills that field instead (`facts`).
+ */
+export function readNewThings(text: string, d: Draft, known: { amenities: string[]; facts: FactDef[] }): {
+  amenities: string[]; details: { label: string; value: string; number: boolean }[]; facts: Fact[]
+} {
+  const out = { amenities: [] as string[], details: [] as { label: string; value: string; number: boolean }[], facts: [] as Fact[] }
+  const plain = text.replace(/https?:\/\/\S+/gi, ' ')
+  if (/^\s*(title|description)\s*:/i.test(plain)) return out
+  const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+  for (const m of plain.matchAll(/\b(?:has|have|having|with|includes?|including|features?|comes with|amenities(?:\s*(?::|are|include))?)\s+(.+?)(?=[.;]|$)/gi)) {
+    for (const raw of m[1].split(/,|\band\b|&|\bplus\b/i)) {
+      const it = raw.trim().replace(/^(a|an|the|also|its own|own|good|nice|private)\s+/i, '').replace(/\s+(too|also|as well|facility|facilities|available)$/i, '').trim()
+      if (!it || /\d/.test(it) || it.split(/\s+/).length > 4 || it.length < 3) continue
+      const listed = known.amenities.find((a) => norm(a) === norm(it) || (norm(it).length > 3 && norm(a).includes(norm(it))))
+      if (listed) { if (!d.amenities.includes(listed)) out.facts.push({ key: 'amenities', value: [listed] }); continue }
+      if (AMENITY_WORDS.some(([re]) => re.test(it.toLowerCase())) || NOT_AMENITY.test(it)) continue
+      if (known.facts.some((f) => norm(f.label.replace(/\(.*\)/, '')) === norm(it))) continue
+      const name = capFirst(it.toLowerCase())
+      if (!d.amenities.some((a) => norm(a) === norm(name)) && !out.amenities.some((a) => norm(a) === norm(name))) out.amenities.push(name)
+    }
+  }
+
+  for (const clause of plain.split(/[,;\n]|\.(?=\s|$)/)) {
+    const m = clause.match(/^\s*(?:and\s+|also\s+|the\s+)?([a-z][a-z /&'-]{1,30}?)\s*(?::|=|\bis\b|\bare\b)\s*(.{1,40}?)\s*$/i)
+    if (!m) continue
+    const label = m[1].trim(), value = m[2].trim(), key = norm(label)
+    if (key.length < 3 || NOT_LABEL.has(key) || !value || /^(a|an|the)$/i.test(value)) continue
+    const fact = known.facts.find((f) => norm(f.key) === key || norm(f.label) === key || (key.length >= 5 && norm(f.label).startsWith(key)))
+    if (fact) {
+      const v = fact.kind === 'number' ? Number(value.replace(/[^\d.]/g, '')) || undefined
+        : fact.kind === 'select' ? fact.options!.find((o) => norm(o).includes(norm(value)) || norm(value).includes(norm(o)))
+          : capFirst(value)
+      if (v !== undefined) out.facts.push({ key: `spec:${fact.key}`, value: v })
+      continue
+    }
+    if ((d.extraDetails ?? []).some((x) => norm(x.label) === key) || out.details.some((x) => norm(x.label) === key)) continue
+    out.details.push({ label: capFirst(label.toLowerCase()), value: capFirst(value), number: /^\d[\d,.]*$/.test(value) })
+  }
+  return out
+}
+
+/** Chat messages hold i18n keys and data, never finished sentences, so switching language re-renders them. */
+export type ChatMsg =
+  | { id: number; from: 'user'; text: string }
+  | { id: number; from: 'ai'; kind: 'text'; key: string; values?: Record<string, string | number>; examples?: boolean }
+  | { id: number; from: 'ai'; kind: 'read'; facts: Fact[] }
+  | { id: number; from: 'ai'; kind: 'ask'; q: Question }
+  | { id: number; from: 'ai'; kind: 'photos' }
+  | { id: number; from: 'ai'; kind: 'amenities' }
+  | { id: number; from: 'ai'; kind: 'approvals' }
+  | { id: number; from: 'ai'; kind: 'ready' }
+  | { id: number; from: 'ai'; kind: 'decide'; d: Decision }
+
+/** A message before it gets its id. */
+export type NewChatMsg = ChatMsg extends infer M ? (M extends ChatMsg ? Omit<M, 'id'> : never) : never
+
+/** Optional steps the assistant offers once the required facts are in; each is offered once. */
+export type OptionalStep = 'photos' | 'amenities'
+export type AssistantThread = {
+  chat: ChatMsg[]
+  passed: OptionalStep[]
+  /** Decision cards still to answer; the first is shown. */
+  pending?: Decision[]
+  /** The duplicate check runs once, when type, locality and area are first known. */
+  dupChecked?: boolean
+}
+
+export type Step = { kind: 'ask'; q: Question } | { kind: 'photos' } | { kind: 'amenities' } | { kind: 'ready' }
+
+/** What the assistant says next: the next required fact; then photos and amenities (both skippable); then "ready to publish". */
+export function nextStep(d: Draft, passed: OptionalStep[]): Step {
+  const q = nextQuestion(d)
+  if (q) return { kind: 'ask', q }
+  if (!d.photos && !passed.includes('photos')) return { kind: 'photos' }
+  if (!passed.includes('amenities')) return { kind: 'amenities' }
+  return { kind: 'ready' }
+}
+
+/**
+ * The listing's completion score for a draft — the same weights as listingScore():
+ * purpose, type, city, locality, price, area 10 each · key details 15 · photos 10 · legal documents 10 · amenities 5.
+ * `docsUploaded`: approval documents in (by approval id), and whether any other legal document is in.
+ */
+export function draftScore(d: Draft, docs: { uploaded: string[]; any: boolean } = { uploaded: [], any: false }): number {
+  const core = d.type ? PROPERTY_TYPES[d.type].core.filter((k) => PROPERTY_TYPES[d.type!].facts.some((f) => f.key === k)) : []
+  const coreIn = core.filter((k) => isSet(d, `spec:${k}`)).length
+  const legal = d.approvals.length ? d.approvals.filter((a) => docs.uploaded.includes(a)).length / d.approvals.length : docs.any ? 1 : 0
+  const pts = CORE_ORDER.filter((k) => isSet(d, k)).length * 10 + (core.length ? (15 * coreIn) / core.length : 0) +
+    (d.photos > 0 ? 10 : 0) + 10 * legal + (d.amenities.length ? 5 : 0)
+  return Math.round(pts)
+}
+
+/* ---------- a draft record ⇄ the assistant's working copy ---------- */
+
+/** The assistant's working copy of a saved draft. The title counts as the team's own unless the AI suggested it. */
+export function draftFromRecord(p: Property): Draft {
+  const d = propertyToDraft(p)
+  // a saved draft keeps empty values as 0 / '' — the assistant treats them as not given yet
+  if (!d.title) d.title = undefined
+  if (!d.price) d.price = undefined
+  if (!d.areaSqft) d.areaSqft = undefined
+  if (!d.city) d.city = undefined
+  if (!d.locality) d.locality = undefined
+  // the record always has a purpose; in an assistant draft it counts only once someone gave it
+  if (p.sources && !p.sources.purpose) d.purpose = undefined
+  return { ...d, titleEdited: !!p.title && p.sources?.title !== 'ai', sources: { ...p.sources } }
+}
+
+/** Write the working copy onto the saved draft. Approvals keep their document state; photos are only ever added here. */
+export function draftIntoRecord(p: Property, d: Draft) {
+  p.title = d.title ?? ''
+  p.description = d.description
+  if (d.type) p.type = d.type
+  p.purpose = d.purpose ?? p.purpose
+  p.price = d.price ?? 0
+  p.priceOnRequest = d.priceOnRequest || undefined
+  p.areaSqft = d.areaSqft ?? 0
+  p.facing = d.facing
+  p.specs = { ...d.specs }
+  p.amenities = [...d.amenities]
+  p.location.city = d.city ?? ''
+  p.location.locality = d.locality ?? ''
+  p.location.exact = d.exactLocation
+  p.approvals = d.approvals.map((a) => p.approvals.find((x) => x.approvalId === a) ?? { approvalId: a, status: 'pending' as const })
+  const photos = p.media.filter((m) => m.kind === 'photo').length
+  for (let i = photos; i < d.photos; i++) p.media.push({ id: `${p.id}-ph${i + 1}`, kind: 'photo', url: '', isCover: i === 0 })
+  p.sources = { ...d.sources }
+  if (d.extraDetails?.length) p.extraDetails = structuredClone(d.extraDetails)
+  else delete p.extraDetails
+}

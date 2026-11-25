@@ -4,7 +4,7 @@
  * Labels carry their unit, as in the current wireframe ("Length (ft)"); screens translate them through i18n keys (`fact.<key>`).
  * Option values are stored data and are shown as stored.
  */
-import type { Category, Facing, LeadStage, PropertyStatus, PropertyTypeKey, Purpose } from './types'
+import type { Category, Facing, LeadStage, PropertyStatus, PropertyTypeKey, Purpose, Settings } from './types'
 
 export type FactDef = {
   key: string
@@ -18,6 +18,8 @@ export type FactDef = {
   plain?: boolean
   /** Never shown to customers (Share page, website). */
   internal?: boolean
+  /** Added by the team for this type (Settings → extraFacts), not built in. */
+  added?: boolean
 }
 
 export type PropertyTypeDef = {
@@ -165,6 +167,15 @@ export const CITIES: Record<string, string[]> = {
 export const AMENITIES = [
   'Gated community', 'Security', 'Park / open space', 'Power backup', 'Lift', 'Gym', 'Swimming pool', 'Clubhouse',
   'Rainwater harvesting', 'CCTV', 'Visitor parking', 'Loading bay',
+]
+
+/** Every amenity on the list: the built-in ones, then the ones the team added. */
+export const amenityList = (s: Settings): string[] => [...AMENITIES, ...(s.amenities ?? []).filter((a) => !AMENITIES.includes(a))]
+
+/** A type's fields: the built-in ones, then the ones the team added for it. */
+export const typeFacts = (type: PropertyTypeKey, s: Settings): FactDef[] => [
+  ...PROPERTY_TYPES[type].facts,
+  ...(s.extraFacts ?? []).filter((f) => f.type === type).map((f) => ({ key: f.key, label: f.label, kind: f.kind, added: true })),
 ]
 
 /** The one document suggested on the Legal tab: the EC. Any other document can be uploaded by name when the team wants. */

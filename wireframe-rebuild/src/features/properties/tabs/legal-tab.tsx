@@ -27,6 +27,8 @@ export function LegalTab({ p }: { p: Property }) {
   const can = useCan()
   const manager = can('property.manage')
   const editable = !p.archived
+  // a badge or document added by mistake can be taken off again: by anyone while the property is a draft, by a manager once it's published
+  const canRemove = editable && (manager || p.status === 'draft')
   const [newApproval, setNewApproval] = useState<{ name: string; doc: string } | null>(null)
   const [newDoc, setNewDoc] = useState<string | null>(null)
   const types = db.settings.approvalTypes
@@ -115,7 +117,7 @@ export function LegalTab({ p }: { p: Property }) {
                         {manager && <Button size="sm" variant="outline" onClick={() => verifyApproval(a.approvalId, a.status !== 'verified')}>{a.status === 'verified' ? t('documents.undoVerify') : t('documents.markVerified')}</Button>}
                       </>
                     ) : <Button size="sm" onClick={() => uploadApproval(a.approvalId)}><Upload /> {t('documents.uploadDoc')}</Button>}
-                    {manager && <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-danger" aria-label={t('documents.remove', { name: label(a.approvalId) })} onClick={() => removeApproval(a.approvalId)}><X /></Button>}
+                    {canRemove && <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-danger" aria-label={t('documents.remove', { name: label(a.approvalId) })} onClick={() => removeApproval(a.approvalId)}><X /></Button>}
                   </div>
                 )}
               </li>
@@ -155,10 +157,10 @@ export function LegalTab({ p }: { p: Property }) {
                 </div>
                 <Button size="sm" variant="outline" onClick={() => mock(d.file)}><Eye /> {t('documents.view')}</Button>
                 {manager && editable && (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => verifyDoc(d.id, !d.verified, docName(d.kind, d.name))}>{d.verified ? t('documents.undoVerify') : t('documents.markVerified')}</Button>
-                    <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-danger" aria-label={t('documents.remove', { name: docName(d.kind, d.name) })} onClick={() => removeDoc(d.id, docName(d.kind, d.name))}><X /></Button>
-                  </>
+                  <Button size="sm" variant="ghost" onClick={() => verifyDoc(d.id, !d.verified, docName(d.kind, d.name))}>{d.verified ? t('documents.undoVerify') : t('documents.markVerified')}</Button>
+                )}
+                {canRemove && (
+                  <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-danger" aria-label={t('documents.remove', { name: docName(d.kind, d.name) })} onClick={() => removeDoc(d.id, docName(d.kind, d.name))}><X /></Button>
                 )}
               </li>
             ))}

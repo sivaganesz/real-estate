@@ -152,12 +152,19 @@ Updated 25 Nov 2026.
 
 - [ ] **Drafts page:** same search, filters and pager as the list; tabs Draft / Ready to publish / Waiting for approval; "Needs: …" per row
 - [ ] **Add property with the ✨ AI assistant:**
-  - [ ] Chat that fills details from plain language, one question at a time, with quick replies
-  - [ ] Decision cards: possible duplicate, new amenity, new detail, lakh or crore, unusual price, map pin
-  - [ ] Summary card with completion ring, checklist and "Needed to publish"
-  - [ ] Publish (managers) or Submit for approval (executives); managers Approve & publish or Send back
-  - [ ] Drawer tabs: Details (four sections), Media, Legal documents, History
-  - [ ] Where each value came from: ✨ AI, 🗺 Google, auto, 📄 file
+  - [x] Chat that fills details from plain language, one question at a time, with quick replies; then photos, amenities and approvals (each skippable)
+  - [x] Saved as a draft property (with its conversation) once the type is known; picked up again at /properties/:id/edit
+  - [x] Decision cards, one at a time with buttons: possible duplicate, new amenity, new detail, lakh or crore, unusual price, map pin
+    - [x] Publish waits until the open cards are answered
+    - [x] "Add to list" / "For every <type>" change the master lists, so managers only; executives get "Only here" or "Skip"
+  - [x] Summary card with completion ring, suggested title (✎ to change), checklist and "Needed to publish"
+  - [x] Publish (managers) or Submit for approval (executives)
+  - [ ] Managers Approve & publish or Send back
+  - [x] "Review all details" button that opens the drawer; the summary's Add buttons open the drawer at that field
+  - [x] Drawer tabs: Details (four sections), Media, Legal documents, History; each tab has its own address
+    - [x] **New:** a change in the form moves the chat on to the next question
+    - [x] "＋ Something else": a detail for this property only (also shown on the property page)
+  - [x] Where each value came from: ✨ AI, 🗺 Google, auto, 📄 file
 - [ ] **Edit with AI:** the same page for a published property; "Save these changes?" table (old → new); managers only
 - [ ] **Share page (customer brochure):**
   - [ ] Brochure preview for a buyer or "Anyone"

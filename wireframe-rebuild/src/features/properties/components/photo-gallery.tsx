@@ -35,7 +35,7 @@ async function shrink(file: File): Promise<string> {
 /** Browsers keep about 5 MB per site; stay well under it. */
 const STORAGE_BUDGET = 4_500_000
 
-/** Add photos with the file picker: `pick()` opens it; render `input` (hidden) anywhere in the component. */
+/** Add photos with the file picker: `pick()` opens it; render `input` (hidden) anywhere in the component. `add` takes dropped files. */
 export function usePhotoUpload(p: Property) {
   const { t } = useTranslation()
   const { db, updateProperty } = useStore()
@@ -58,7 +58,7 @@ export function usePhotoUpload(p: Property) {
     <input ref={ref} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden
       onChange={(e) => { void add(e.target.files); e.target.value = '' }} />
   )
-  return { pick: () => ref.current?.click(), input }
+  return { pick: () => ref.current?.click(), input, add }
 }
 
 export function PhotoGallery({ p }: { p: Property }) {
