@@ -270,3 +270,10 @@ html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
   html { scrollbar-width: thin; scrollbar-color: var(--scrollbar) transparent; }
   .side-scroll { scrollbar-width: thin; scrollbar-color: var(--scrollbar-soft) transparent; }
 }
+
+/* "Download PDF" on the Share page prints the brochure only (the browser's "Save as PDF"). */
+@media print {
+  body:has(#brochure) * { visibility: hidden; }
+  body:has(#brochure) #brochure, body:has(#brochure) #brochure * { visibility: visible; }
+  body:has(#brochure) #brochure { position: absolute; inset: 0 auto auto 0; width: 100%; }
+}

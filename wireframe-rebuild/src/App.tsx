@@ -7,6 +7,7 @@ import { PropertiesPage } from '@/features/properties/pages/properties-page'
 import { AddPropertyPage } from '@/features/properties/assistant/add-property-page'
 import { DraftsPage } from '@/features/properties/pages/drafts-page'
 import { PropertyPage } from '@/features/properties/pages/property-page'
+import { SharePage } from '@/features/properties/pages/share-page'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
 import { SettingsPage } from '@/features/settings/settings-page'
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="properties/new/:tab?" element={<AddPropertyPage />} />
               <Route path="properties/drafts" element={<DraftsPage />} />
               <Route path="properties/:id/edit/:tab?" element={<AddPropertyPage />} />
+              <Route path="properties/:id/share" element={<SharePage />} />
               <Route path="properties/:id/:tab?" element={<PropertyPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="ui-kit" element={<UiKitPage />} />

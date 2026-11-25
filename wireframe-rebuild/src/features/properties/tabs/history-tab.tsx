@@ -29,6 +29,7 @@ function categoryOf(text: string): Cat {
   if (/approval|document|verif|rera|noc|deed/.test(s)) return 'docs'
   if (/location|place|route|road|map/.test(s)) return 'location'
   if (/photo|video/.test(s)) return 'media'
+  if (/brochure|shared/.test(s)) return 'buyers'
   return 'details'
 }
 

@@ -138,9 +138,14 @@ export type Property = {
   assistant?: AssistantThread
   /** Details only this property has ("Compound wall: built on all sides") — not a field of its type. */
   extraDetails?: ExtraDetail[]
+  /** Every time the brochure was shared (link, PDF or WhatsApp), newest first. */
+  shares?: ShareLog[]
 }
 
-export type ExtraDetail = { label: string; value: string; added?: Audit }
+/** `public`: shown on the customer brochure (they are internal until someone switches them on). */
+export type ExtraDetail = { label: string; value: string; added?: Audit; public?: boolean }
+
+export type ShareLog = { at: string; by: string; channel: 'whatsapp' | 'link' | 'pdf'; leadId?: string }
 
 /** A field the team added for every property of a type (from a "new detail" card). The built-in fields are in the catalogue. */
 export type ExtraFact = { type: PropertyTypeKey; key: string; label: string; kind: 'number' | 'text'; added: Audit; fromPropertyId?: string }

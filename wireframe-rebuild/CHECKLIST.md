@@ -169,11 +169,12 @@ Updated 25 Nov 2026.
   - [x] Where each value came from: ✨ AI, 🗺 Google, auto, 📄 file
 - [x] **Edit with AI:** the same page for a published property; "Save these changes?" table (old → new); managers only
   - [x] Changes in the details drawer save straight away; "Done — back to the property"
-- [ ] **Share page (customer brochure):**
-  - [ ] Brochure preview for a buyer or "Anyone"
-  - [ ] Options to show total cost, exact location and extra details
-  - [ ] "Before you share" checks and "never on the brochure" list
-  - [ ] Copy link, Download PDF, share log
+- [x] **Share page (customer brochure):** /properties/:id/share
+  - [x] Brochure preview for a buyer or "Anyone" ("Prepared for …", "Talk to" their executive)
+  - [x] Options to show total cost, exact location and extra details
+  - [x] "Before you share" checks and "never on the brochure" list (internal fields named)
+  - [x] Copy link, Download PDF (prints the brochure only), share log
+  - [x] **New:** Send on WhatsApp (simulated) when a buyer is chosen; "See the brochure" from the quick Share panel
   - [x] The quick **Share panel** (choose a lead, then WhatsApp, Copy link or PDF) already works from the list and the property page
 
 ## 4. Leads — next module

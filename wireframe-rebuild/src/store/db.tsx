@@ -41,8 +41,8 @@ type Store = {
   updateProperty: (id: string, change: (p: Property) => void, historyText: string) => void
   /** POST /api/properties — returns the new id (PROP-<next number>). */
   addProperty: (build: (id: string) => Property, historyText: string) => string
-  /** POST /api/leads/:id/shares — logs on the lead's timeline and counts as a recommendation. */
-  shareProperty: (propertyId: string, leadId: string, channel: ShareChannel) => void
+  /** POST /api/properties/:id/shares — logs the share on the property; with a lead, also on their timeline, where it counts as a recommendation. */
+  shareProperty: (propertyId: string, leadId: string | undefined, channel: ShareChannel, historyText?: string) => void
   /** POST / DELETE /api/leads/:id/recommendations/:propertyId — the buyer was told about it (call, WhatsApp, in person). */
   recommendProperty: (propertyId: string, leadId: string, on: boolean) => void
   /** DELETE /api/properties/:id — only offered for an archived property. */
@@ -100,13 +100,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return id
   }, [db.properties, user.id])
 
-  const shareProperty = useCallback<Store['shareProperty']>((propertyId, leadId, channel) => {
+  const shareProperty = useCallback<Store['shareProperty']>((propertyId, leadId, channel, historyText) => {
     setDb((prev) => {
       const next = structuredClone(prev)
-      const lead: Lead | undefined = next.leads.find((l) => l.id === leadId)
-      if (!lead) return prev
-      lead.activity.unshift({ id: `${leadId}-a${lead.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'shared', propertyId, text: channel })
-      markRecommended(lead, propertyId) // sharing counts as a recommendation
+      // on the property: the share log and a history line
+      const p = next.properties.find((x) => x.id === propertyId)
+      if (p) {
+        p.shares = [{ at: DEMO_TODAY, by: user.id, channel, leadId }, ...(p.shares ?? [])]
+        if (historyText) p.history.unshift({ id: `${p.id}-h${p.history.length + 1}`, at: DEMO_TODAY, by: user.id, text: historyText })
+      }
+      // on the lead (when it was shared with one): their timeline, and it counts as a recommendation
+      const lead: Lead | undefined = leadId ? next.leads.find((l) => l.id === leadId) : undefined
+      if (lead) {
+        lead.activity.unshift({ id: `${lead.id}-a${lead.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'shared', propertyId, text: channel })
+        markRecommended(lead, propertyId)
+      }
       return next
     })
   }, [user.id])

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Check, FileDown, Link2, MessageCircle, Search } from 'lucide-react'
+import { Check, Eye, FileDown, Link2, MessageCircle, Search } from 'lucide-react'
+import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ import { MATCH_TONE, PropertyPhoto } from './property-bits'
 /**
  * Share a property with one lead — the leads that fit come first, with their match.
  * Sending logs it on the lead's timeline and counts as a recommendation (the pipeline moves).
- * The brochure the customer opens (the Share page) and real WhatsApp sending come later.
+ * "See the brochure" opens the Share page (the brochure the customer gets); real WhatsApp sending comes later.
  */
 export function SharePanel({ property, open, onOpenChange, leadId }: { property: Property; open: boolean; onOpenChange: (o: boolean) => void; leadId?: string }) {
   const { t } = useTranslation()
@@ -40,7 +41,7 @@ export function SharePanel({ property, open, onOpenChange, leadId }: { property:
   const send = (channel: ShareChannel) => {
     const lead = db.leads.find((l) => l.id === chosen)
     if (!lead) return
-    shareProperty(property.id, lead.id, channel)
+    shareProperty(property.id, lead.id, channel) // the History tab shows it from the lead's timeline
     toast.success(t(`share.done.${channel}`, { name: lead.name }), { description: t('share.logged') })
     onOpenChange(false)
   }
@@ -61,6 +62,11 @@ export function SharePanel({ property, open, onOpenChange, leadId }: { property:
           <p className="truncate text-sm text-muted-foreground">{inrShort(property.price)} · {L.keyFacts(property).join(' · ')}</p>
         </div>
       </div>
+      {/* the full Share page: the brochure exactly as the customer gets it, with its options and checks */}
+      <Link to={`/properties/${property.id}/share${chosen ? `?lead=${chosen}` : ''}`} onClick={() => onOpenChange(false)}
+        className="-mt-1 inline-flex items-center gap-1 self-start text-sm font-medium text-primary hover:underline">
+        <Eye className="size-4" /> {t('brochure.seeBrochure')}
+      </Link>
       <p className="text-sm font-medium">{t('share.who')}</p>
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
