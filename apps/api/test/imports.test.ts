@@ -84,6 +84,17 @@ describe('bulk import', () => {
     expect(b.summary.total).toBeGreaterThan(5);
   });
 
+  it('imports once even when Import is pressed twice at the same moment', async () => {
+    const csv = 'Title,Type,For,Price,Area,City,Locality,BHK,Floor\n"3 BHK, double click test",Apartment,Sale,1.3 Cr,1500,Chennai,Adyar,3,5\n';
+    const b = (await manager.post('/api/imports').attach('file', Buffer.from(csv), 'double.csv')).body.batch;
+    const [one, two] = await Promise.all([manager.post(`/api/imports/${b.id}/commit`).send({ asLive: false, duplicates: 'skip' }), manager.post(`/api/imports/${b.id}/commit`).send({ asLive: false, duplicates: 'skip' })]);
+    expect([one.status, two.status].sort()).toEqual([200, 409]);
+    const found = (await manager.get('/api/properties?q=double%20click%20test&smart=false&listing=draft')).body;
+    expect(found.items.filter((p: { title: string }) => /double click test/.test(p.title))).toHaveLength(1);
+    // A late change to the mapping is refused once the import has run.
+    expect((await manager.patch(`/api/imports/${b.id}/mapping`).send({ mapping: [] })).status).toBe(404);
+  });
+
   it('accepts a CSV in our template and lets a column be remapped', async () => {
     const csv = 'Title,Type,For,Price,Area,City,Locality,BHK,Floor,My notes\n"2 BHK, sea view",Apartment,Sale,1.1 Cr,1200,Chennai,Besant Nagar,2,3,Key with watchman\n';
     let b = (await manager.post('/api/imports').attach('file', Buffer.from(csv), 'list.csv')).body.batch;

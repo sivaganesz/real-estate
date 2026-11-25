@@ -54,7 +54,7 @@ export function AssistantPage() {
   useAssistantPage({ page: 'Assistant', suggestions: quick.map((q) => q.prompt) });
 
   // This page replaces the side panel while it's open.
-  useEffect(() => a.setOpen(false), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => a.setOpen(false), []); // eslint-disable-line react-hooks/exhaustive-deps -- close the side panel once, when the page opens
   useEffect(() => inputRef.current?.focus(), [a.chatId]);
   // Scroll the conversation, not the window.
   useEffect(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }), [a.messages.length, a.pending]);

@@ -1,23 +1,26 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import type { Permission } from '@estate/shared';
 import { useAuth } from './lib/auth';
 import { Layout } from './components/Layout';
 import { PageLoader, EmptyState } from './components/ui';
 import { Login } from './pages/Login';
 import { Today } from './pages/Today';
-import { Settings } from './pages/Settings';
-import { Properties } from './pages/Properties';
-import { PropertyDetail } from './pages/PropertyDetail';
-import { ProjectDetail } from './pages/ProjectDetail';
-import { SharePage } from './pages/SharePage';
-import { Import } from './pages/Import';
-import { Leads } from './pages/Leads';
-import { LeadDetail } from './pages/LeadDetail';
-import { Calendar } from './pages/Calendar';
-import { Deals } from './pages/Deals';
-import { AssistantPage } from './pages/Assistant';
-import { ProjectWizard } from './pages/ProjectWizard';
+
+// Pages load when first opened, so the first screen (sign-in, Today) arrives quickly.
+const page = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) => lazy(() => load().then((m) => ({ default: m[name] })));
+const Settings = page(() => import('./pages/Settings'), 'Settings');
+const Properties = page(() => import('./pages/Properties'), 'Properties');
+const PropertyDetail = page(() => import('./pages/PropertyDetail'), 'PropertyDetail');
+const ProjectDetail = page(() => import('./pages/ProjectDetail'), 'ProjectDetail');
+const SharePage = page(() => import('./pages/SharePage'), 'SharePage');
+const Import = page(() => import('./pages/Import'), 'Import');
+const Leads = page(() => import('./pages/Leads'), 'Leads');
+const LeadDetail = page(() => import('./pages/LeadDetail'), 'LeadDetail');
+const Calendar = page(() => import('./pages/Calendar'), 'Calendar');
+const Deals = page(() => import('./pages/Deals'), 'Deals');
+const ProjectWizard = page(() => import('./pages/ProjectWizard'), 'ProjectWizard');
+const AssistantPage = page(() => import('./pages/Assistant'), 'AssistantPage');
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -34,6 +37,7 @@ export function Allowed({ permission, children }: { permission: Permission; chil
 
 export function App() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/p/:token" element={<SharePage />} />
@@ -88,5 +92,6 @@ export function App() {
         <Route path="*" element={<EmptyState title="Page not found" />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }

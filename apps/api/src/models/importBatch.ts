@@ -27,7 +27,7 @@ const importBatchSchema = new Schema(
     defaultType: String,
     defaultCity: String,
     rows: [rowSchema],
-    status: { type: String, enum: ['checking', 'done'], default: 'checking' },
+    status: { type: String, enum: ['checking', 'importing', 'done'], default: 'checking' },
     options: { asLive: Boolean, duplicates: String },
     counts: { imported: Number, updated: Number, skipped: Number, failed: Number },
     aiUsed: Boolean,

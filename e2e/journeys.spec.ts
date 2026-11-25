@@ -95,7 +95,8 @@ test.describe('sales manager', () => {
 
   test('approves a discount waiting for them', async ({ page }) => {
     await signIn(page, 'Sales manager');
-    await expect(page.getByText(/waiting for you/)).toBeVisible();
+    // The Decisions tile; the headline above it says it too.
+    await expect(page.getByText(/^\d+ waiting for you$/)).toBeVisible();
     await page.goto('/deals');
     await page.getByRole('button', { name: /Price approval/ }).click();
     await page.getByRole('button', { name: /^Approve ₹/ }).click();

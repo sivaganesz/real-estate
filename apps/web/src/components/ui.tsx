@@ -134,7 +134,7 @@ export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md'
     <span
       title={name}
       className={clsx('inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white', size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-8 w-8 text-xs')}
-      style={{ background: `hsl(${hue} 45% 48%)` }}
+      style={/* scan-ok: avatar colour is worked out from the name */ { background: `hsl(${hue} 45% 48%)` }}
     >
       {initials}
     </span>
@@ -147,7 +147,7 @@ export function Drawer({ open, onClose, title, children, footer, width = 'max-w-
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" />
       <div className={clsx('relative flex h-full w-full flex-col bg-white shadow-pop', width)}>
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <h3 className="text-base font-semibold text-slate-900">{title}</h3>
@@ -168,7 +168,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="absolute inset-0 bg-slate-900/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/30" onClick={onClose} aria-hidden="true" />
       <div className={clsx('relative max-h-[92vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-pop sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}>
         <div className="flex items-center justify-between px-5 pt-4">
           <h3 className="text-base font-semibold text-slate-900">{title}</h3>

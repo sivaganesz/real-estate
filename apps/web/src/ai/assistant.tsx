@@ -73,6 +73,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const storeKey = `estate.chats.${user?.id ?? 'anon'}`;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  // The latest messages, for sending without reading state inside an updater.
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
   const [chatId, setChatId] = useState(newId);
   const [chats, setChats] = useState<SavedChat[]>(() => readChats(storeKey));
   // A different person signed in: their own saved chats, and a fresh conversation.
@@ -139,11 +142,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       const t = text.trim();
       if (!t) return;
       if (opts?.panel !== false) setOpen(true);
-      setMessages((s) => {
-        const next = [...s, { role: 'user' as const, content: t }];
-        chat.mutate(next);
-        return next;
-      });
+      // Send outside the state update: React may run an updater twice, which would ask twice.
+      const next = [...messagesRef.current, { role: 'user' as const, content: t }];
+      messagesRef.current = next;
+      setMessages(next);
+      chat.mutate(next);
     },
     [chat],
   );
@@ -178,7 +181,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AssistantValue>(
     () => ({ open, setOpen, ask, chats, chatId, newChat, openChat, removeChat, messages, pending: chat.isPending, context, setContext, confirm, dismiss, reset: newChat }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- confirm and dismiss only read state through setMessages, so they need not trigger a new value
     [open, ask, chats, chatId, newChat, openChat, removeChat, messages, chat.isPending, context],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -196,6 +199,6 @@ export function useAssistantPage(ctx: PageContext) {
   const key = JSON.stringify(ctx);
   useEffect(() => {
     setContext(ctx);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` stands for ctx, which is a new object on every render
   }, [key, setContext]);
 }

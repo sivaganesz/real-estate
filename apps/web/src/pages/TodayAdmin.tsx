@@ -28,7 +28,7 @@ type Overview = {
     id: string;
     name: string;
     kind: string;
-    status: 'checking' | 'done';
+    status: 'checking' | 'importing' | 'done';
     rows: number;
     problems: number;
     counts: { imported?: number; updated?: number; failed?: number } | null;
@@ -288,7 +288,7 @@ function ImportsTile({ o, className }: { o?: Overview; className?: string }) {
                     {b.by ?? 'Someone'} · {relativeDay(b.at).toLowerCase()} · {b.rows} rows
                   </span>
                 </span>
-                {b.status === 'checking' ? (
+                {b.status !== 'done' ? (
                   <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Not finished</span>
                 ) : b.counts?.failed ? (
                   <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">{b.counts.failed} failed</span>

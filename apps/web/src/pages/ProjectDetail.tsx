@@ -12,6 +12,7 @@ import { Badge, Button, Card, EmptyState, ErrorNote, Input, Modal, PageLoader, S
 import { BuildingArt, Legend, STATE_STYLE, SiteGrid, SitePlanArt, TowerGrid, type DrawUnit, type UnitState } from '../components/ProjectViews';
 import { DealDrawer } from '../components/DealDrawer';
 import { useToast } from '../components/toast';
+import { useConfirm } from '../components/confirm';
 import { useAssistantPage } from '../ai/assistant';
 
 type UnitDeal = { id: string; status: DealStatus; leadId: string | null; customer: string; price: number; paid: number };
@@ -58,6 +59,7 @@ export function ProjectDetail() {
   const { can } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
+  const ask = useConfirm();
   const [params, setParams] = useSearchParams();
   const filter = (params.get('f') as Filter) ?? 'all';
   const view = (params.get('view') as 'grid' | 'plan') ?? 'grid';
@@ -139,7 +141,7 @@ export function ProjectDetail() {
             </Link>
           )}
           {can('property.publish') && project.published && (
-            <Button variant="ghost" loading={publish.isPending} onClick={() => confirm('Unpublish? Unsold units go back to draft and the sales team stops seeing them.') && publish.mutate(false)}>
+            <Button variant="ghost" loading={publish.isPending} onClick={async () => (await ask({ title: 'Unpublish this project?', body: 'Unsold units go back to draft and the sales team stops seeing them. You can publish again later.', confirmLabel: 'Unpublish', danger: true })) && publish.mutate(false)}>
               Unpublish
             </Button>
           )}

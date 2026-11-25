@@ -11,6 +11,7 @@ import { NextStepNote, StepTrack } from './DealSteps';
 import { Badge, Button, Drawer, ErrorNote, Field, Input, PageLoader, SectionTitle, Select, Textarea } from './ui';
 import { PropertyCover } from './PropertyCard';
 import { useToast } from './toast';
+import { useConfirm } from './confirm';
 
 /**
  * Everything about one deal, with only the next sensible actions shown:
@@ -41,6 +42,7 @@ function useAct(d: Deal) {
 function DealBody({ d }: { d: Deal }) {
   const { can, user } = useAuth();
   const act = useAct(d);
+  const ask = useConfirm();
   const open = ['negotiating', 'approval', 'approved'].includes(d.status);
   return (
     <div className="space-y-5">
@@ -92,7 +94,7 @@ function DealBody({ d }: { d: Deal }) {
       {d.status === 'approved' && <Book d={d} act={act} />}
       {(d.status === 'booked' || d.status === 'registered') && <Payments d={d} act={act} />}
       {d.status === 'booked' && can('deal.book') && (
-        <Button variant="primary" className="w-full" icon={<ShieldCheck className="h-4 w-4" />} loading={act.isPending} onClick={() => confirm('Sale deed registered? The unit will be marked sold.') && act.mutate({ path: 'register', msg: 'Registered — unit sold' })}>
+        <Button variant="primary" className="w-full" icon={<ShieldCheck className="h-4 w-4" />} loading={act.isPending} onClick={async () => (await ask({ title: 'Sale deed registered?', body: 'The unit will be marked sold and this deal completed. This cannot be undone.', confirmLabel: 'Yes, it is registered' })) && act.mutate({ path: 'register', msg: 'Registered — unit sold' })}>
           Sale registered
         </Button>
       )}

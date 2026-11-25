@@ -139,9 +139,24 @@ export async function fixRow(id: string, index: number, fixes: Record<string, un
  */
 export async function commitImport(id: string, opts: { asLive: boolean; duplicates: 'skip' | 'update' }, actor: Actor) {
   assertCan(actor, 'property.import');
-  const batch = await ImportBatch.findById(id);
-  if (!batch) throw notFound('Import');
-  if (batch.status === 'done') throw new HttpError(409, 'This import was already completed');
+  // Claim the import first, so a double click or a late edit can't run it twice
+  // or save over it while rows are being created.
+  const batch = await ImportBatch.findOneAndUpdate({ _id: id, status: 'checking' }, { $set: { status: 'importing' } }, { new: true });
+  if (!batch) {
+    const existing = await ImportBatch.findById(id).select('status').lean();
+    if (!existing) throw notFound('Import');
+    throw new HttpError(409, existing.status === 'done' ? 'This import was already completed' : 'This import is already running');
+  }
+  try {
+    return await runImport(batch, opts, actor);
+  } catch (err) {
+    // Something outside the rows failed: put the import back so it can be retried.
+    await ImportBatch.updateOne({ _id: batch._id, status: 'importing' }, { $set: { status: 'checking' } });
+    throw err;
+  }
+}
+
+async function runImport(batch: InstanceType<typeof ImportBatch>, opts: { asLive: boolean; duplicates: 'skip' | 'update' }, actor: Actor) {
   const asLive = opts.asLive && can(actor.role, 'property.publish');
   const counts = { imported: 0, updated: 0, skipped: 0, failed: 0 };
   for (const row of batch.rows) {
@@ -195,8 +210,8 @@ export async function commitImport(id: string, opts: { asLive: boolean; duplicat
   batch.options = opts;
   batch.counts = counts;
   batch.finishedAt = new Date();
-  batch.markModified('rows');
-  await batch.save();
+  // This import is claimed, so write the result directly rather than through a versioned save.
+  await ImportBatch.updateOne({ _id: batch._id }, { $set: { rows: batch.toObject().rows, status: 'done', options: opts, counts, finishedAt: batch.finishedAt } });
   if (batch.sender && batch.kind === 'sheet') await rememberFormat(batch.sender, batch.headers, batch.mapping as ColumnMap[]);
   await audit(actor, 'import', batch._id, 'commit', `Imported ${counts.imported}, updated ${counts.updated}, skipped ${counts.skipped} from ${batch.fileName}`);
   return batch.toObject();

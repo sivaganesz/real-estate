@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './lib/auth';
 import { AssistantProvider } from './ai/assistant';
 import { ToastProvider } from './components/toast';
+import { ConfirmProvider } from './components/confirm';
 import { App } from './App';
 import './features/pipeline';
 import './features/activities';
@@ -23,11 +24,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
+          <ConfirmProvider>
           <AuthProvider>
             <AssistantProvider>
               <App />
             </AssistantProvider>
           </AuthProvider>
+          </ConfirmProvider>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>

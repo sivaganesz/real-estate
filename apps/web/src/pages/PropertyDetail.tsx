@@ -10,6 +10,7 @@ import { Badge, Button, Card, EmptyState, ErrorNote, Input, Modal, PageLoader, S
 import { PropertyCover } from '../components/PropertyCard';
 import { AvailabilityModal, EditProperty, ShareSheet } from '../components/PropertyActions';
 import { useToast } from '../components/toast';
+import { useConfirm } from '../components/confirm';
 import { useAssistant, useAssistantPage } from '../ai/assistant';
 import { slots } from '../slots';
 
@@ -18,6 +19,7 @@ export function PropertyDetail() {
   const { can } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
+  const ask = useConfirm();
   const assistant = useAssistant();
   const [edit, setEdit] = useState(false);
   const [share, setShare] = useState(false);
@@ -186,7 +188,7 @@ export function PropertyDetail() {
                 Draft a buyer message
               </Button>
               {canEdit && p.listing !== 'archived' && (
-                <Button variant="ghost" size="sm" className="col-span-2 text-slate-500" icon={<Archive className="h-3.5 w-3.5" />} onClick={() => confirm('Archive this property? It will be hidden everywhere but kept on record.') && listing.mutate('archived')}>
+                <Button variant="ghost" size="sm" className="col-span-2 text-slate-500" icon={<Archive className="h-3.5 w-3.5" />} onClick={async () => (await ask({ title: 'Archive this property?', body: 'It will be hidden everywhere but kept on record.', confirmLabel: 'Archive', danger: true })) && listing.mutate('archived')}>
                   Archive
                 </Button>
               )}

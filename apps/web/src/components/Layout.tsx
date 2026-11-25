@@ -1,11 +1,11 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { LogOut, Search, Sparkles } from 'lucide-react';
 import { ROLE_LABEL } from '@estate/shared';
 import { useAuth } from '../lib/auth';
 import { NAV, TOP_NAV_ROLES, type NavItem } from '../nav';
-import { Avatar } from './ui';
+import { Avatar, PageLoader } from './ui';
 import { AssistantPanel } from '../ai/AssistantPanel';
 import { useAssistant } from '../ai/assistant';
 import { Reminders } from '../features/activities';
@@ -32,7 +32,10 @@ export function Layout() {
       <div className={clsx(!topNav && 'lg:pl-60')}>
         {topNav ? <TopNavbar items={items} /> : <TopBar />}
         <main className="mx-auto max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
-          <Outlet />
+          {/* The menu stays put while a page loads. */}
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

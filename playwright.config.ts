@@ -26,10 +26,12 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: 'pnpm --filter @estate/web dev',
+      // The built app, as Vercel serves it: steadier and quicker than the dev server.
+      // It goes to its own folder so it never replaces apps/web/dist.
+      command: 'pnpm --filter @estate/web exec vite build --outDir dist-e2e --emptyOutDir && pnpm --filter @estate/web exec vite preview --outDir dist-e2e --port 5190 --strictPort',
       url: 'http://localhost:5190',
-      env: { API_URL: 'http://localhost:4190', WEB_PORT: '5190', VITE_CACHE_DIR: 'node_modules/.vite-e2e' },
-      timeout: 120_000,
+      env: { API_URL: 'http://localhost:4190', VITE_CACHE_DIR: 'node_modules/.vite-e2e' },
+      timeout: 240_000,
       reuseExistingServer: false,
     },
   ],
