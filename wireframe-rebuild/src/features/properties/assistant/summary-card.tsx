@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusChip } from '@/components/app/status-chip'
 import { PROPERTY_TYPES } from '@/data/catalogue'
+import type { PropertyStatus } from '@/data/types'
 import { type Draft, isSet, missingKeys } from '@/lib/assistant'
 import { inrShort, sqft } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { CompletionRing } from '../components/property-bits'
+import { CompletionRing, PropertyStatusChip } from '../components/property-bits'
 import { useFactText } from './use-fact-text'
 
 /** What a checklist row's button does: ask for a fact in the chat, add photos, or tick approvals. */
@@ -22,8 +23,10 @@ type Props = {
   /** Sent to a manager for approval. */
   submitted: boolean
   publishLabel: string
-  /** Show the Publish / Submit button (hidden for an executive once submitted). */
-  showPublish: boolean
+  /** Edit with AI: the published property's status, shown instead of "Draft". */
+  status?: PropertyStatus
+  /** Replaces the Publish / Submit button: Approve & publish / Send back, "Waiting for approval", or Edit with AI's "Done". */
+  footer?: ReactNode
   canWrite: boolean
   onTitle: (title: string) => void
   onAdd: (target: AddTarget) => void
@@ -37,7 +40,7 @@ type Props = {
  * The right column: the listing taking shape. Completion ring and title, then one row per part of the listing —
  * ✓ done, ! required to publish, ○ optional (with the % it adds) — and what's still needed to publish.
  */
-export function SummaryCard({ draft: d, score, docs, submitted, publishLabel, showPublish, canWrite, onTitle, onAdd, onReview, onPublish, className }: Props) {
+export function SummaryCard({ draft: d, score, docs, submitted, publishLabel, status, footer, canWrite, onTitle, onAdd, onReview, onPublish, className }: Props) {
   const { t } = useTranslation()
   const ft = useFactText()
   const [editing, setEditing] = useState(false)
@@ -147,7 +150,8 @@ export function SummaryCard({ draft: d, score, docs, submitted, publishLabel, sh
             <p className="mt-0.5 flex items-center gap-1 text-meta text-muted-foreground"><Sparkles className="size-3 text-violet" /> {t('assistant.suggestedTitle')}</p>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {submitted ? <StatusChip tone="warning">{t('assistant.waiting')}</StatusChip> : <StatusChip tone="neutral" variant="outline">{t('status.draft')}</StatusChip>}
+            {status ? <PropertyStatusChip property={{ status }} />
+              : submitted ? <StatusChip tone="info">{t('assistant.waiting')}</StatusChip> : <StatusChip tone="neutral" variant="outline">{t('status.draft')}</StatusChip>}
             {d.approvals.filter((a) => !docs.uploaded.includes(a)).map((a) => (
               <StatusChip key={a} tone="warning" icon={<TriangleAlert />} title={t('approvalState.pendingHint')}>{ft.approval(a)} · {t('approvalState.pending')}</StatusChip>
             ))}
@@ -159,12 +163,12 @@ export function SummaryCard({ draft: d, score, docs, submitted, publishLabel, sh
 
       {missing.length ? (
         <p className="mb-3 text-sm text-danger">{t('assistant.needed', { list: missing.map((k) => ft.label(k, d.type)).join(', ') })}</p>
-      ) : (
+      ) : !status && (
         <p className="mb-3 flex items-center gap-1.5 text-sm text-success"><Check className="size-4" /> {t('assistant.allIn')}</p>
       )}
       <div className="flex flex-col gap-2">
         <Button variant="outline" className="w-full" onClick={onReview}>{t('drawer.review')}</Button>
-        {showPublish && <Button size="lg" className="w-full" disabled={missing.length > 0 || !canWrite} onClick={onPublish}>{publishLabel}</Button>}
+        {footer ?? <Button size="lg" className="w-full" disabled={missing.length > 0 || !canWrite} onClick={onPublish}>{publishLabel}</Button>}
       </div>
     </section>
   )

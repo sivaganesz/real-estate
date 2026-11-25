@@ -206,16 +206,3 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
 }
 
 const areaBasis = (p: Property) => ({ plot: 'plotArea', flat: 'builtUpArea', house: 'builtUpArea', commercial: 'usableArea', agri: 'landArea', industrial: 'plotArea' } as const)[p.type]
-
-/** Placeholder for Add property / Edit with AI — the next step of the Properties rebuild. */
-export function PropertyEditPlaceholder() {
-  const { t } = useTranslation()
-  const { id } = useParams()
-  useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties'), to: '/properties' }, ...(id ? [{ label: id, to: `/properties/${id}` }] : []), { label: id ? t('action.editWithAi') : t('props.add') }])
-  return (
-    <Page>
-      <PageHeader back={{ to: id ? `/properties/${id}` : '/properties', label: id ? t('assistant.backToProperty') : t('property.back') }} title={id ? t('action.editWithAi') : t('props.add')} />
-      <EmptyState icon={Sparkles} title={t('props.nextStepTitle')}>{t('props.nextStepBody')}</EmptyState>
-    </Page>
-  )
-}

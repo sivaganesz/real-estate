@@ -118,7 +118,9 @@ export function CompletionRing({ score, size = 40, className }: { score: number;
           strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} className={cn('transition-[stroke-dashoffset]', toneStroke[tone])} />
       </svg>
       {/* the % is sized to fit the ring, so it stays outside the type scale */}
-      <span className={cn('absolute tabular-nums', size > 50 ? 'text-[15px] font-medium' : 'text-[10.5px] tracking-tight')}>{score}%</span>
+      {/* three digits ("100%") take a size smaller to stay inside the ring */}
+      <span className={cn('absolute tabular-nums', size > 50 ? (score >= 100 ? 'text-[13px] font-medium tracking-tight' : 'text-[15px] font-medium')
+        : score >= 100 ? 'text-[9px] tracking-tighter' : 'text-[10.5px] tracking-tight')}>{score}%</span>
     </span>
   )
 }

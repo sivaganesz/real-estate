@@ -61,7 +61,8 @@ Updated 25 Nov 2026.
 ### 3.1 Property list
 
 - [x] Header buttons: Drafts (count), ＋ Add property, Bulk import
-  - [ ] Their pages are placeholders until built (see 3.3)
+  - [x] Drafts and Add property are built (see 3.3); Bulk import is still a placeholder
+  - [x] **New:** executives see Drafts (their own) and Add property too; managers see how many drafts wait for approval
 - [x] Keyword search: every word must match, in any order
 - [x] ✨ AI search: type or speak a sentence ("2 BHK flat in Madurai under 60 lakh"), with example phrases
 - [x] Filter pills: Type, City → Locality, Budget, Size, More (purpose, facing, corner, amenities), with ✕ on each and "Clear all"
@@ -150,8 +151,9 @@ Updated 25 Nov 2026.
 
 ### 3.3 Still to build in Properties
 
-- [ ] **Drafts page:** same search, filters and pager as the list; tabs Draft / Ready to publish / Waiting for approval; "Needs: …" per row
-- [ ] **Add property with the ✨ AI assistant:**
+- [x] **Drafts page:** same search, filters and pager as the list; tabs Draft / Ready to publish / Waiting for approval; "Needs: …" per row
+  - [x] Executives see the drafts they started; managers see everyone's
+- [x] **Add property with the ✨ AI assistant:**
   - [x] Chat that fills details from plain language, one question at a time, with quick replies; then photos, amenities and approvals (each skippable)
   - [x] Saved as a draft property (with its conversation) once the type is known; picked up again at /properties/:id/edit
   - [x] Decision cards, one at a time with buttons: possible duplicate, new amenity, new detail, lakh or crore, unusual price, map pin
@@ -159,13 +161,14 @@ Updated 25 Nov 2026.
     - [x] "Add to list" / "For every <type>" change the master lists, so managers only; executives get "Only here" or "Skip"
   - [x] Summary card with completion ring, suggested title (✎ to change), checklist and "Needed to publish"
   - [x] Publish (managers) or Submit for approval (executives)
-  - [ ] Managers Approve & publish or Send back
+  - [x] Managers Approve & publish or Send back (in the chat and on the summary card); a sent-back draft says so in its chat
   - [x] "Review all details" button that opens the drawer; the summary's Add buttons open the drawer at that field
   - [x] Drawer tabs: Details (four sections), Media, Legal documents, History; each tab has its own address
     - [x] **New:** a change in the form moves the chat on to the next question
     - [x] "＋ Something else": a detail for this property only (also shown on the property page)
   - [x] Where each value came from: ✨ AI, 🗺 Google, auto, 📄 file
-- [ ] **Edit with AI:** the same page for a published property; "Save these changes?" table (old → new); managers only
+- [x] **Edit with AI:** the same page for a published property; "Save these changes?" table (old → new); managers only
+  - [x] Changes in the details drawer save straight away; "Done — back to the property"
 - [ ] **Share page (customer brochure):**
   - [ ] Brochure preview for a buyer or "Anyone"
   - [ ] Options to show total cost, exact location and extra details

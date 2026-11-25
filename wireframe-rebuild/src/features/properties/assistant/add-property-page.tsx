@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ChevronUp, Lock, SearchX } from 'lucide-react'
+import { Check, ChevronUp, Lock, SearchX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -13,15 +13,14 @@ import type { Property, PropertyTypeKey } from '@/data/types'
 import { inr, inrShort } from '@/lib/format'
 import {
   type AssistantThread, applyFacts, type ChatMsg, draftFromRecord, draftIntoRecord, draftScore, draftToProperty, type Draft, EMPTY_DRAFT,
-  type Decision, type Fact, findDuplicate, missingKeys, type NewChatMsg, nextStep, type OptionalStep, priceOutlier, type Question, questionFor,
+  changesFor, type Decision, type Fact, findDuplicate, missingKeys, type NewChatMsg, nextStep, type OptionalStep, priceOutlier, type Question, questionFor,
   readMessage, readNewThings, setFact,
 } from '@/lib/assistant'
 import { decideValues } from './chat-panel'
 import { leadsForProperty } from '@/lib/matching'
 import { photoCount } from '@/lib/property'
-import { useCan, useStore } from '@/store/db'
+import { useCan, useStore, userName } from '@/store/db'
 import { CompletionRing } from '../components/property-bits'
-import { PropertyEditPlaceholder } from '../pages/property-page'
 import { ChatPanel, type ChatHandlers } from './chat-panel'
 import { DetailsDrawer, DRAWER_TABS, type DrawerTab } from './details-drawer'
 import type { FocusTarget, FormHandlers } from './details-form'
@@ -39,27 +38,30 @@ export function AddPropertyPage() {
   const { db, user } = useStore()
   const can = useCan()
   const record = id ? db.properties.find((p) => p.id === id) : undefined
-  useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties'), to: '/properties' }, { label: record ? `${t('props.add')} · ${record.id}` : t('props.add') }])
+  // a published property opens in Edit with AI: the same page, where each change is confirmed and saved straight to it
+  const editing = !!record && record.status !== 'draft'
+  useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.properties'), to: '/properties' },
+    ...(editing ? [{ label: record.id, to: `/properties/${record.id}` }, { label: t('action.editWithAi') }]
+      : [{ label: record ? `${t('props.add')} · ${record.id}` : t('props.add') }])])
 
-  // Edit with AI for a published property comes in a later step
-  if (record && record.status !== 'draft') return <PropertyEditPlaceholder />
-  const blocked = id && !record ? 'notFound' : !can('property.add') ? 'notAllowed'
-    : record && !can('property.seeDrafts') && record.created.by !== user.id ? 'notYours' : null
+  const blocked = id && !record ? 'notFound'
+    : editing ? (!can('property.manage') || record.archived ? 'editNotAllowed' : null)
+      : !can('property.add') ? 'notAllowed' : record && !can('property.seeDrafts') && record.created.by !== user.id ? 'notYours' : null
   if (blocked) {
     return (
       <Page>
         <EmptyState icon={blocked === 'notFound' ? SearchX : Lock} title={t(`assistant.${blocked}`)}
-          action={<Button asChild variant="outline"><Link to="/properties">{t('property.back')}</Link></Button>} />
+          action={<Button asChild variant="outline">{editing ? <Link to={`/properties/${record.id}`}>{t('assistant.backToProperty')}</Link> : <Link to="/properties">{t('property.back')}</Link>}</Button>} />
       </Page>
     )
   }
   const drawer = (DRAWER_TABS as readonly string[]).includes(tab ?? '') ? (tab as DrawerTab) : null
-  return <Assistant key={record?.id ?? 'new'} record={record} drawer={drawer} />
+  return <Assistant key={`${record?.id ?? 'new'}${editing ? ':edit' : ''}`} record={record} editing={editing} drawer={drawer} />
 }
 
 const SKIP_WORDS = /^(skip|no|nope|not now|later|none|nothing|done|no thanks|that'?s all|next)\b/i
 
-function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | null }) {
+function Assistant({ record, editing, drawer }: { record?: Property; editing: boolean; drawer: DrawerTab | null }) {
   const { t } = useTranslation()
   const ft = useFactText()
   const navigate = useNavigate()
@@ -71,11 +73,21 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
   // photos and approvals can also change in the drawer's Media and Legal tabs, which write to the saved draft: read them from it
   const draft: Draft = record ? { ...working, photos: photoCount(record), approvals: record.approvals.map((a) => a.approvalId) } : working
   const [focus, setFocus] = useState<FocusTarget | null>(null)
-  const [thread, setThread] = useState<AssistantThread>(() => record?.assistant ?? {
-    chat: record
-      ? [{ id: 0, from: 'ai', kind: 'text', key: 'assistant.resume' }, { id: 1, ...stepMsg(draftFromRecord(record), []) } as ChatMsg]
-      : [{ id: 0, from: 'ai', kind: 'text', key: 'assistant.hello' }],
-    passed: [],
+  const [thread, setThread] = useState<AssistantThread>(() => {
+    // Edit with AI starts afresh each time: no questions, it waits to be told what changed
+    if (editing) return { chat: [{ id: 0, from: 'ai', kind: 'text', key: 'assistant.edit.hello' }], passed: ['photos', 'amenities'], dupChecked: true }
+    const th: AssistantThread = record?.assistant ?? {
+      chat: record
+        ? [{ id: 0, from: 'ai', kind: 'text', key: 'assistant.resume' }, { id: 1, ...stepMsg(draftFromRecord(record), []) } as ChatMsg]
+        : [{ id: 0, from: 'ai', kind: 'text', key: 'assistant.hello' }],
+      passed: [],
+    }
+    // a manager opening a draft sent for approval is asked to approve it or send it back
+    const lastMsg = th.chat[th.chat.length - 1]
+    if (record?.submitted && manager && !(lastMsg?.from === 'ai' && lastMsg.kind === 'review')) {
+      return { ...th, chat: [...th.chat, { id: (lastMsg?.id ?? 0) + 1, from: 'ai', kind: 'review' }] }
+    }
+    return th
   })
   const [summaryOpen, setSummaryOpen] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -104,8 +116,12 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
     const next: AssistantThread = { ...thread, ...th, chat }
     setDraft(d)
     setThread(next)
-    if (record) {
-      updateProperty(record.id, (p) => { draftIntoRecord(p, d); p.assistant = next }, historyText)
+    if (record && editing) {
+      // Edit with AI writes straight to the published property; the conversation isn't kept
+      updateProperty(record.id, (p) => { draftIntoRecord(p, d); if (d.status) p.status = d.status }, historyText)
+    } else if (record) {
+      // the manager's approve / send back message is shown afresh each time, not saved with the draft
+      updateProperty(record.id, (p) => { draftIntoRecord(p, d); p.assistant = { ...next, chat: next.chat.filter((m) => m.from === 'user' || m.kind !== 'review') } }, historyText)
     } else if (d.type) {
       // the first save: the draft becomes a property record, and the address moves to it
       const newId = addProperty((pid) => ({ ...draftToProperty(d, pid, user.id, today, 'draft'), assistant: next }), t('history.draftAi'))
@@ -144,18 +160,18 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
     }
     return { pending, dupChecked }
   }
-  /** The next decision card if there is one, otherwise the next step. */
-  const nextMsg = (d: Draft, passed: OptionalStep[], pending: Decision[]): NewChatMsg =>
-    pending[0] ? { from: 'ai', kind: 'decide', d: pending[0] } : stepMsg(d, passed)
+  /** The next decision card if there is one, otherwise the next step (none in Edit with AI: it waits to be told). */
+  const nextMsg = (d: Draft, passed: OptionalStep[], pending: Decision[]): NewChatMsg | null =>
+    pending[0] ? { from: 'ai', kind: 'decide', d: pending[0] } : editing ? null : stepMsg(d, passed)
   const sameMsg = (a: ChatMsg, b: NewChatMsg) => JSON.stringify({ ...a, id: 0 }) === JSON.stringify({ ...b, id: 0 })
 
   /** Save a change from the chat, run the checks and add what the assistant says next. */
   const advance = (d: Draft, chat: ChatMsg[], o: { passed?: OptionalStep[]; pending?: Decision[]; history?: string; ask?: Question } = {}) => {
     const passed = o.passed ?? thread.passed
     const c = checks(d, o.pending ?? thread.pending ?? [])
-    const next: NewChatMsg = o.ask ? { from: 'ai', kind: 'ask', q: o.ask } : nextMsg(d, passed, c.pending)
+    const next = o.ask ? { from: 'ai', kind: 'ask', q: o.ask } as NewChatMsg : nextMsg(d, passed, c.pending)
     const lastMsg = chat[chat.length - 1]
-    commit(d, lastMsg && sameMsg(lastMsg, next) ? chat : said(chat, next), { passed, pending: c.pending, dupChecked: c.dupChecked }, o.history)
+    commit(d, !next || (lastMsg && sameMsg(lastMsg, next)) ? chat : said(chat, next), { passed, pending: c.pending, dupChecked: c.dupChecked }, o.history)
   }
 
   /**
@@ -168,8 +184,8 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
     let chat = thread.chat
     const lastMsg = chat[chat.length - 1]
     if (lastMsg?.from === 'ai' && ['ask', 'photos', 'amenities', 'approvals', 'ready', 'decide'].includes(lastMsg.kind)) {
-      if (!sameMsg(lastMsg, step)) chat = [...chat.slice(0, -1), { ...step, id: lastMsg.id } as ChatMsg]
-    } else if (step.from === 'ai' && step.kind === 'decide') chat = said(chat, step)
+      if (step && !sameMsg(lastMsg, step)) chat = [...chat.slice(0, -1), { ...step, id: lastMsg.id } as ChatMsg]
+    } else if (step?.from === 'ai' && step.kind === 'decide') chat = said(chat, step)
     commit(d, chat, { pending: c.pending, dupChecked: c.dupChecked }, historyText)
   }
 
@@ -235,7 +251,8 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
     }
     if (last?.from === 'ai' && (last.kind === 'photos' || last.kind === 'amenities') && SKIP_WORDS.test(text)) return skip(last.kind, chat)
 
-    const read = readMessage(text, draft, asking).filter((f) => f.key !== 'status')
+    // a status ("mark it reserved") is a change only for a published property
+    const read = readMessage(text, draft, asking).filter((f) => editing || f.key !== 'status')
     const type = (read.find((f) => f.key === 'type')?.value as PropertyTypeKey | undefined) ?? draft.type
     const extra = readNewThings(text, draft, { amenities: amenityList(db.settings), facts: type ? typeFacts(type, db.settings) : [] })
     // what needs the team's decision becomes a card: "45" (lakh or crore?), a pasted map link, new amenities and details
@@ -248,7 +265,14 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
     const facts = read.filter((f) => f.key !== 'priceUnit' && f.key !== 'exactLocation')
     for (const f of extra.facts) if (!facts.some((x) => x.key === f.key)) facts.push(f)
 
-    if (!facts.length && !cards.length) return advance(draft, said(chat, { from: 'ai', kind: 'text', key: 'assistant.notUnderstood' }))
+    if (!facts.length && !cards.length) return advance(draft, said(chat, { from: 'ai', kind: 'text', key: editing ? 'assistant.edit.notUnderstood' : 'assistant.notUnderstood' }))
+    if (editing && facts.length) {
+      // Edit with AI: nothing is changed until the manager confirms it — "Save these changes?" with old → new
+      const changes = changesFor(draft, facts)
+      if (changes.length) cards.unshift({ kind: 'changes', changes, facts })
+      else if (!cards.length) return advance(draft, said(chat, { from: 'ai', kind: 'text', key: 'assistant.edit.same' }))
+      return advance(draft, chat, { pending: addCards(cards) })
+    }
     const d = facts.length ? applyFacts(draft, facts) : draft
     advance(d, facts.length ? said(chat, { from: 'ai', kind: 'read', facts }) : chat, { pending: addCards(cards), history: facts.length ? filledText(facts, d) : '' })
   }
@@ -350,6 +374,14 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
         history = t('history.priceChecked', { rate: inr(x.ppsf) })
         break
       }
+      case 'changes': {
+        if (choice === 'cancel') { say('assistant.decide.changes.cancelled'); break }
+        d = applyFacts({ ...d, titleEdited: true }, x.facts.filter((f) => f.key !== 'type'))
+        const list = [...new Set(x.changes.map((c) => ft.label(c.key, d.type)))].join(', ')
+        say('assistant.decide.changes.saved', { list })
+        history = t('history.editedAi', { changes: list })
+        break
+      }
       case 'pin': {
         if (choice === 'again') { ask = questionFor(d, 'exactLocation'); break }
         if (choice === 'later') { say('assistant.decide.pin.notNow'); break }
@@ -408,6 +440,8 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
       toast.success(t('assistant.submittedToast'))
       return
     }
+    // a manager publishing a draft that was sent for approval approves it
+    const approvedBy = record.submitted ? userName(db, record.submitted.by) : ''
     let published: Property | undefined
     updateProperty(record.id, (p) => {
       draftIntoRecord(p, draft)
@@ -416,19 +450,54 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
       delete p.submitted
       delete p.assistant // the conversation belongs to the draft; Edit with AI starts afresh
       published = structuredClone(p)
-    }, t('history.publishedAi'))
+    }, approvedBy ? t('history.approvedAi', { name: approvedBy }) : t('history.publishedAi'))
     navigate(`/properties/${record.id}`)
     const fit = published ? leadsForProperty(published, db.leads, db.settings) : []
-    toast.success(t('property.published'), {
+    toast.success(approvedBy ? t('assistant.review.approvedToast', { name: approvedBy }) : t('property.published'), {
       description: fit.length ? t('property.publishedFit', { count: fit.length }) : t('property.publishedNoFit'),
       action: fit.length ? { label: t('matches.notify'), onClick: () => toast.success(t('matches.notified', { count: new Set(fit.map((m) => m.lead.ownerId)).size })) } : undefined,
     })
   }
 
-  const h: ChatHandlers = { onSend, onAnswer, onPhotos: () => fileRef.current?.click(), onSkip, onAmenity, onApproval, onDecide, onPublish: () => publish() }
+  /** A manager sends a draft back to the person who submitted it: it is an ordinary draft again, with a note in its chat. */
+  const sendBack = () => {
+    if (!record?.submitted) return
+    const name = userName(db, record.submitted.by)
+    const chat = said(thread.chat.filter((m) => m.from === 'user' || m.kind !== 'review'),
+      { from: 'user', text: t('assistant.review.sendBack') }, { from: 'ai', kind: 'text', key: 'assistant.review.sentBack', values: { name } })
+    const next: AssistantThread = { ...thread, chat }
+    setThread(next)
+    updateProperty(record.id, (p) => { delete p.submitted; p.assistant = next }, t('history.sentBack', { name }))
+    toast(t('assistant.review.sentBackToast', { name }))
+  }
+
+  /** Edit with AI: back to the property page (every confirmed change is already saved). */
+  const done = () => {
+    if (!record) return
+    navigate(`/properties/${record.id}`)
+    toast.success(t('assistant.edit.doneToast', { id: record.id }))
+  }
+
+  const h: ChatHandlers = {
+    onSend, onAnswer, onPhotos: () => fileRef.current?.click(), onSkip, onAmenity, onApproval, onDecide, onPublish: () => publish(),
+    onApprove: () => publish(), onSendBack: sendBack,
+  }
+  const footer = editing ? (
+    <>
+      <p className="mb-3 flex items-center gap-1.5 text-sm text-success"><Check className="size-4 shrink-0" /> {t('assistant.edit.savedTo', { id: record?.id })}</p>
+      <Button size="lg" className="w-full" onClick={done}>{t('assistant.edit.done')}</Button>
+    </>
+  ) : submitted && manager ? (
+    <div className="flex gap-2">
+      <Button size="lg" variant="outline" onClick={sendBack}>{t('assistant.review.sendBack')}</Button>
+      <Button size="lg" className="flex-1" disabled={missing.length > 0} onClick={() => publish()}><Check /> {t('assistant.review.approve')}</Button>
+    </div>
+  ) : submitted ? (
+    <p className="rounded-lg bg-info-soft px-3 py-2 text-sm text-info">{t('assistant.review.waitingNote')}</p>
+  ) : undefined
   const summary = (
-    <SummaryCard draft={draft} score={score} docs={docs} submitted={submitted} publishLabel={publishLabel} showPublish={manager || !submitted}
-      canWrite onTitle={onTitle} onAdd={onAdd} onReview={() => openDrawer('details')} onPublish={() => publish()} />
+    <SummaryCard draft={draft} score={score} docs={docs} submitted={submitted} publishLabel={publishLabel} status={editing ? record?.status : undefined}
+      footer={footer} canWrite onTitle={onTitle} onAdd={onAdd} onReview={() => openDrawer('details')} onPublish={() => publish()} />
   )
 
   return (
@@ -450,7 +519,8 @@ function Assistant({ record, drawer }: { record?: Property; drawer: DrawerTab | 
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
         <div className="lg:h-[calc(100svh-125px)]">
-          <ChatPanel chat={thread.chat} draft={draft} score={score} publishLabel={publishLabel} canWrite examples={!record} h={h} inputRef={inputRef} />
+          <ChatPanel chat={thread.chat} draft={draft} score={score} publishLabel={publishLabel} canWrite examples={!record} h={h} inputRef={inputRef}
+            placeholder={editing ? t('assistant.edit.placeholder') : undefined} submittedBy={record?.submitted ? userName(db, record.submitted.by) : undefined} />
         </div>
         <aside className="max-lg:hidden"><div className="sticky top-[100px]">{summary}</div></aside>
       </div>

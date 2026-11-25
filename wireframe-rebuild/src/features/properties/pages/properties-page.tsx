@@ -105,7 +105,9 @@ export function PropertiesPage() {
     specs: p.specs, amenities: p.amenities, status: p.status, archived: !!p.archived, date: p.listedAt ?? p.created.at,
     score: listingScore(p).score, attn: p.archived ? [] : attentionFor(p, db, DEMO_TODAY),
   })), [db])
-  const drafts = db.properties.filter((p) => p.status === 'draft' && !p.archived).length
+  // executives count the drafts they started; managers count everyone's
+  const drafts = db.properties.filter((p) => p.status === 'draft' && !p.archived && (can('property.seeDrafts') || p.created.by === user.id)).length
+  const waiting = db.properties.filter((p) => p.status === 'draft' && !p.archived && p.submitted).length
   const typeLabel = L.type
   const list = useMemo(() => sortList(items.filter((x) => matches(x, f, [], typeLabel)), f.sort), [items, f, typeLabel])
   const relax = !list.length ? relaxFor(items, f) : null
@@ -191,11 +193,17 @@ export function PropertiesPage() {
   return (
     <Page className="pb-0">
       <PageHeader title={t('ps.title')} description={t('ps.subtitle')}
-        actions={manager && (
+        actions={can('property.add') && (
           <>
-            {drafts > 0 && <Button variant="outline" asChild><Link to="/properties/drafts">📝 {t('ps.drafts')} <StatusChip tone="neutral" className="h-5">{drafts}</StatusChip></Link></Button>}
+            {drafts > 0 && (
+              <Button variant="outline" asChild>
+                <Link to="/properties/drafts" title={manager && waiting ? t('drafts.waitingHint', { count: waiting }) : undefined}>
+                  📝 {t('ps.drafts')} <StatusChip tone={manager && waiting ? 'info' : 'neutral'} className="h-5">{drafts}</StatusChip>
+                </Link>
+              </Button>
+            )}
             <Button asChild><Link to="/properties/new">＋ {t('props.add')}</Link></Button>
-            <Button variant="outline" asChild><Link to="/import">📥 {t('nav.import')}</Link></Button>
+            {manager && <Button variant="outline" asChild><Link to="/import">📥 {t('nav.import')}</Link></Button>}
           </>
         )} />
 

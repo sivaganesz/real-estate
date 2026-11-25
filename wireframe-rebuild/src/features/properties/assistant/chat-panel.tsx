@@ -30,6 +30,9 @@ export type ChatHandlers = {
   /** A decision card's button. */
   onDecide: (choice: string) => void
   onPublish: () => void
+  /** A manager's answer to a draft sent for approval. */
+  onApprove: () => void
+  onSendBack: () => void
 }
 
 /** The values a decision card's question and buttons show. `type` is the property type's name ("For all Flat / Apartment"). */
@@ -41,13 +44,14 @@ export function decideValues(x: Decision, type: string): Record<string, string |
     case 'priceUnit': return { n: x.n }
     case 'priceCheck': return { rate: inr(x.ppsf), min: inr(x.min), max: inr(x.max), count: x.n }
     case 'pin': return {}
+    case 'changes': return {}
   }
 }
 
 const scoreTone = (n: number): Tone => (n >= 80 ? 'success' : n >= 50 ? 'warning' : 'danger')
 
 /** The left column: "✨ AI assistant" with the listing's completion, the conversation, and the message box. */
-export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples, h, inputRef }: {
+export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples, h, inputRef, placeholder, submittedBy }: {
   chat: ChatMsg[]
   draft: Draft
   score: number
@@ -58,6 +62,10 @@ export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples
   examples: boolean
   h: ChatHandlers
   inputRef: RefObject<HTMLTextAreaElement | null>
+  /** The message box's hint ("Tell me what changed…" in Edit with AI). */
+  placeholder?: string
+  /** Who sent the draft for approval (shown on the manager's approve / send back message). */
+  submittedBy?: string
 }) {
   const { t } = useTranslation()
   const logRef = useRef<HTMLDivElement>(null)
@@ -86,7 +94,7 @@ export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples
       </header>
 
       <div ref={logRef} className="flex flex-1 flex-col gap-3 p-4 lg:min-h-0 lg:overflow-y-auto" aria-live="polite">
-        {chat.map((m, i) => <Message key={m.id} m={m} latest={i === chat.length - 1} draft={draft} publishLabel={publishLabel} canWrite={canWrite} h={h} />)}
+        {chat.map((m, i) => <Message key={m.id} m={m} latest={i === chat.length - 1} draft={draft} publishLabel={publishLabel} canWrite={canWrite} h={h} submittedBy={submittedBy} />)}
         {examples && fresh && canWrite && (
           <div className="flex flex-col items-start gap-1.5">
             <span className="text-meta text-muted-foreground">{t('assistant.try')}</span>
@@ -101,20 +109,22 @@ export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples
         <div ref={endRef} />
       </div>
 
-      <Composer disabled={!canWrite} onSend={h.onSend} onPhotos={h.onPhotos} inputRef={inputRef} />
+      <Composer disabled={!canWrite} onSend={h.onSend} onPhotos={h.onPhotos} inputRef={inputRef} placeholder={placeholder} />
     </section>
   )
 }
 
 /* ---------- one message ---------- */
 
-function Message({ m, latest, draft, publishLabel, canWrite, h }: {
-  m: ChatMsg; latest: boolean; draft: Draft; publishLabel: string; canWrite: boolean; h: ChatHandlers
+function Message({ m, latest, draft, publishLabel, canWrite, h, submittedBy }: {
+  m: ChatMsg; latest: boolean; draft: Draft; publishLabel: string; canWrite: boolean; h: ChatHandlers; submittedBy?: string
 }) {
   const { t } = useTranslation()
   const ft = useFactText()
   const { db } = useStore()
   const can = useCan()
+  /** A value in the changes table: statuses and lists in words, the rest as the assistant shows them. */
+  const changeText = (key: string, v: unknown) => (key === 'status' && v ? t(`status.${v}`) : ft.value(key, v, draft.type))
   const live = latest && canWrite // buttons only on the newest message
 
   if (m.from === 'user') {
@@ -213,6 +223,21 @@ function Message({ m, latest, draft, publishLabel, canWrite, h }: {
             <a className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline" target="_blank" rel="noopener noreferrer"
               href={`https://www.google.com/maps?q=${encodeURIComponent([draft.locality, draft.city].filter(Boolean).join(', '))}`}>{t('assistant.decide.pin.view')} <ExternalLink className="size-3" /></a>
           </>
+        ) : x.kind === 'changes' ? (
+          <>
+            {t('assistant.decide.changes.q')}
+            <table className="mt-1.5 text-meta">
+              <tbody>
+                {x.changes.map((c) => (
+                  <tr key={c.key}>
+                    <td className="py-0.5 pr-3 text-muted-foreground">{ft.label(c.key, draft.type)}</td>
+                    <td className="py-0.5 pr-2 text-muted-foreground line-through decoration-muted-foreground/50">{changeText(c.key, c.from) || '—'}</td>
+                    <td className="py-0.5 font-medium">→ {changeText(c.key, c.to)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         ) : x.kind === 'priceCheck' ? (
           <>{t('assistant.decide.priceCheck.q', { ...values, city: draft.city ?? '' })}{hint(t('assistant.decide.priceCheck.why', values))}</>
         ) : t(`assistant.decide.${x.kind}.q`, values)
@@ -229,6 +254,14 @@ function Message({ m, latest, draft, publishLabel, canWrite, h }: {
         )),
       )
     }
+    case 'review':
+      return bubble(
+        <>{t('assistant.review.q')}{submittedBy && hint(t('assistant.review.by', { name: submittedBy }))}</>,
+        <>
+          <Button size="sm" onClick={h.onApprove}><Check /> {t('assistant.review.approve')}</Button>
+          <Button size="sm" variant="outline" onClick={h.onSendBack}>{t('assistant.review.sendBack')}</Button>
+        </>,
+      )
     case 'ready': {
       const offer = db.settings.approvalTypes.filter((a) => !draft.approvals.includes(a.id))
       return bubble(
@@ -245,8 +278,8 @@ function Message({ m, latest, draft, publishLabel, canWrite, h }: {
 /* ---------- the message box ---------- */
 
 /** Enter sends; Shift+Enter adds a line. The clip adds photos. */
-function Composer({ onSend, onPhotos, disabled, inputRef }: {
-  onSend: (text: string) => void; onPhotos: () => void; disabled: boolean; inputRef: RefObject<HTMLTextAreaElement | null>
+function Composer({ onSend, onPhotos, disabled, inputRef, placeholder }: {
+  onSend: (text: string) => void; onPhotos: () => void; disabled: boolean; inputRef: RefObject<HTMLTextAreaElement | null>; placeholder?: string
 }) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -258,7 +291,7 @@ function Composer({ onSend, onPhotos, disabled, inputRef }: {
     <form className="sticky bottom-0 rounded-b-xl bg-card p-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static lg:pt-0 lg:pb-3" onSubmit={(e) => { e.preventDefault(); send() }}>
       <div className={cn('flex items-end gap-1 rounded-2xl border bg-background p-1.5 pl-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/30', disabled && 'opacity-60')}>
         <textarea ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} disabled={disabled}
-          placeholder={disabled ? t('assistant.readOnly') : t('assistant.placeholder')} aria-label={t('assistant.messageLabel')}
+          placeholder={disabled ? t('assistant.readOnly') : placeholder ?? t('assistant.placeholder')} aria-label={t('assistant.messageLabel')}
           className="max-h-32 min-h-8 flex-1 resize-none bg-transparent py-1.5 text-base outline-none field-sizing-content placeholder:text-muted-foreground md:text-sm" />
         <Button type="button" variant="ghost" size="icon" disabled={disabled} aria-label={t('assistant.addPhotos')} title={t('assistant.addPhotos')} onClick={onPhotos}><Paperclip /></Button>
         <Button type="submit" size="icon" className="rounded-full" disabled={disabled || !text.trim()} aria-label={t('assistant.send')} title={t('assistant.send')}><SendHorizontal /></Button>

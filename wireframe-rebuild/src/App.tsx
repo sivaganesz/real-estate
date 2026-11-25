@@ -5,7 +5,8 @@ import { AppShell } from '@/components/layout/app-shell'
 import { ALL_NAV_ITEMS } from '@/components/layout/nav'
 import { PropertiesPage } from '@/features/properties/pages/properties-page'
 import { AddPropertyPage } from '@/features/properties/assistant/add-property-page'
-import { PropertyEditPlaceholder, PropertyPage } from '@/features/properties/pages/property-page'
+import { DraftsPage } from '@/features/properties/pages/drafts-page'
+import { PropertyPage } from '@/features/properties/pages/property-page'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
 import { SettingsPage } from '@/features/settings/settings-page'
@@ -22,7 +23,7 @@ export default function App() {
               <Route index element={<Navigate to="/properties" replace />} />
               <Route path="properties" element={<PropertiesPage />} />
               <Route path="properties/new/:tab?" element={<AddPropertyPage />} />
-              <Route path="properties/drafts" element={<PropertyEditPlaceholder />} />
+              <Route path="properties/drafts" element={<DraftsPage />} />
               <Route path="properties/:id/edit/:tab?" element={<AddPropertyPage />} />
               <Route path="properties/:id/:tab?" element={<PropertyPage />} />
               <Route path="settings" element={<SettingsPage />} />

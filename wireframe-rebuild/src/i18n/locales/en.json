@@ -639,7 +639,9 @@
     "detailNewType": "New field for every {{type}}: {{label}} = {{value}}",
     "detailNewOnly": "Detail for this property only: {{label}} = {{value}}",
     "priceChecked": "Price per sq.ft. checked — kept at {{rate}}",
-    "pinConfirmed": "Map pin confirmed"
+    "pinConfirmed": "Map pin confirmed",
+    "approvedAi": "Published with the AI assistant (approved — sent by {{name}})",
+    "sentBack": "Sent back to {{name}} as a draft"
   },
   "share": {
     "title": "Share with a lead",
@@ -890,7 +892,34 @@
         "later": "Later",
         "confirmed": "Pin confirmed — the exact location is set.",
         "notNow": "OK — the map shows the locality until the pin is confirmed."
+      },
+      "changes": {
+        "q": "Save these changes?",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saved": "Saved — {{list}} updated.",
+        "cancelled": "Cancelled — nothing was changed."
       }
+    },
+    "editNotAllowed": "Only an Admin or Sales manager can change a published property",
+    "edit": {
+      "hello": "Tell me what changed — like “price is now 75 lakhs” or “mark it reserved”. I’ll check with you before saving.",
+      "placeholder": "Tell me what changed…",
+      "notUnderstood": "I didn’t find a change in that. Try “price is now 75 lakhs”, “mark it reserved” or “it has a gym”.",
+      "same": "That’s already what the listing says — nothing to change.",
+      "savedTo": "Changes are saved to {{id}} as you confirm them",
+      "done": "Done — back to the property",
+      "doneToast": "Saved — {{id}} is up to date"
+    },
+    "review": {
+      "q": "Waiting for your approval.",
+      "by": "Sent by {{name}}.",
+      "approve": "Approve & publish",
+      "sendBack": "Send back",
+      "sentBack": "Sent back to {{name}} as a draft.",
+      "sentBackToast": "Sent back to {{name}}",
+      "approvedToast": "Approved and published — {{name}} will see it in the list",
+      "waitingNote": "Waiting for a manager’s approval — you can still add details."
     }
   },
   "shell": {
@@ -1066,8 +1095,6 @@
         "buyers": "Buyers"
       }
     },
-    "nextStepTitle": "Coming in the next step",
-    "nextStepBody": "Add a property and Edit with AI move here next — describe it in your own words, speak it or drop a brochure, and the assistant fills the listing.",
     "propertyId": "Property ID",
     "typeSpecs": "{{type}} specifications",
     "addAmenities": "Add amenities",
@@ -1451,5 +1478,26 @@
     "autoHint": "Worked out automatically",
     "file": "File",
     "fileHint": "From the import file"
+  },
+  "drafts": {
+    "title": "Drafts",
+    "subtitle": "Properties being added — not in the property list yet. Open one to continue with the AI assistant.",
+    "allProperties": "All properties",
+    "searchHint": "Search the drafts, or describe what you’re looking for.",
+    "state": {
+      "draft": "Draft",
+      "ready": "Ready to publish",
+      "waiting": "Waiting for approval"
+    },
+    "none": "No drafts — everything has been published.",
+    "noneMatch": "No drafts match these filters.",
+    "untitled": "Untitled property",
+    "needs": "Needs: {{list}}",
+    "approvals": "Approvals",
+    "updated": "Updated",
+    "count_one": "draft",
+    "count_other": "drafts",
+    "waitingHint_one": "{{count}} waiting for your approval",
+    "waitingHint_other": "{{count}} waiting for your approval"
   }
 }

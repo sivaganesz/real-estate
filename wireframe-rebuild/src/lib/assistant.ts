@@ -485,6 +485,8 @@ export type Decision =
   | { kind: 'priceUnit'; n: number }
   | { kind: 'priceCheck'; ppsf: number; min: number; max: number; n: number }
   | { kind: 'pin' }
+  /** Edit with AI: what a message would change on a published property ("Save these changes?"). */
+  | { kind: 'changes'; changes: Change[]; facts: Fact[] }
 
 /** The buttons on each card, in order; the first is the suggested one. `manager` adds the choices that change master data. */
 export function decisionChoices(x: Decision, o: { manager: boolean; hasType: boolean }): string[] {
@@ -495,6 +497,7 @@ export function decisionChoices(x: Decision, o: { manager: boolean; hasType: boo
     case 'priceUnit': return ['lakh', 'crore', 'rupees']
     case 'priceCheck': return ['ok', 'change']
     case 'pin': return ['ok', 'again', 'later']
+    case 'changes': return ['save', 'cancel']
   }
 }
 
@@ -581,6 +584,8 @@ export type ChatMsg =
   | { id: number; from: 'ai'; kind: 'approvals' }
   | { id: number; from: 'ai'; kind: 'ready' }
   | { id: number; from: 'ai'; kind: 'decide'; d: Decision }
+  /** A manager opening a draft sent for approval: Approve & publish, or Send back. */
+  | { id: number; from: 'ai'; kind: 'review' }
 
 /** A message before it gets its id. */
 export type NewChatMsg = ChatMsg extends infer M ? (M extends ChatMsg ? Omit<M, 'id'> : never) : never
