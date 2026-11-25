@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin, ShieldCheck } from 'lucide-react';
-import { AREA_UNIT_LABEL, TYPE_DETAILS, formatINR, type AreaUnit, type PropertyType } from '@estate/shared';
+import { AREA_UNIT_LABEL, TYPE_DETAILS, buyerTotal, formatINR, type AreaUnit, type PropertyType } from '@estate/shared';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/ui';
 import { PropertyCover } from '../components/PropertyCard';
@@ -43,7 +43,7 @@ export function SharePage() {
       </div>
     );
   const photos = p.media.filter((m) => m.kind === 'photo');
-  const total = p.purpose === 'sale' && p.price ? Math.round(p.price * 1.09) : null;
+  const total = p.purpose === 'sale' && p.price ? buyerTotal(p.price).total : null;
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-3xl">

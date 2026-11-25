@@ -7,7 +7,6 @@ import { AVAILABILITY, PROPERTY_TYPES } from '@estate/shared';
 import { requirePermission } from '../../lib/auth';
 import { badRequest, notFound, parse } from '../../lib/http';
 import { Property } from '../../models/property';
-import { Audit } from '../../models/audit';
 import { documentUpload, memoryUpload, photoUpload, publicUrl } from '../../lib/uploads';
 import {
   createProperty,
@@ -22,6 +21,7 @@ import {
   updateProperty,
 } from '../../services/properties';
 import { fitCounts } from '../../services/matching';
+import { comparables, propertyHistory } from '../../services/propertyInsights';
 import { createProject, generateUnits, getProjectWithUnits, listProjects, publishReadyUnits, revisePrices, updateProject } from '../../services/projects';
 import { applyLayout, layoutFromMap, setProjectPublished, syncApprovals } from '../../services/projectLayout';
 import { Project } from '../../models/property';
@@ -127,8 +127,11 @@ propertiesRouter.get('/:id', async (req, res) => {
 });
 
 propertiesRouter.get('/:id/history', async (req, res) => {
-  const items = await Audit.find({ entity: 'property', entityId: String(req.params.id) }).sort({ createdAt: -1 }).limit(50).lean();
-  res.json({ items: items.map((a) => ({ id: String(a._id), at: a.createdAt, actor: a.actorName, viaAI: a.viaAI, action: a.action, summary: a.summary })) });
+  res.json({ items: await propertyHistory(String(req.params.id), req.actor) });
+});
+
+propertiesRouter.get('/:id/comparables', async (req, res) => {
+  res.json(await comparables(String(req.params.id), req.actor));
 });
 
 propertiesRouter.patch('/:id', async (req, res) => {
@@ -178,11 +181,15 @@ propertiesRouter.post('/:id/documents', requirePermission('property.edit'), docu
   const p = await Property.findById(String(req.params.id));
   if (!p || !req.file) throw notFound('Property');
   const url = publicUrl('documents', req.file.filename);
-  p.documents.push({ name, url, uploadedAt: new Date() });
   if (approval) {
+    // An approval's document lives on the approval. A new file has to be checked again.
     const a = p.approvals.find((x) => x.name === approval);
-    if (a) a.documentUrl = url;
-    else p.approvals.push({ name: approval, documentUrl: url });
+    if (a) {
+      a.documentUrl = url;
+      a.verified = false;
+    } else p.approvals.push({ name: approval, documentUrl: url, verified: false });
+  } else {
+    p.documents.push({ name, url, uploadedAt: new Date() });
   }
   await p.save();
   await audit(req.actor, 'property', p._id, 'document', `Uploaded ${name}`);

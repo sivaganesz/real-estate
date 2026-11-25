@@ -132,7 +132,7 @@ export const PropertyInput = z.object({
   amenities: z.array(z.string()).default([]),
   description: z.string().max(4000).nullish(),
   highlights: z.array(z.string().max(160)).max(8).default([]),
-  approvals: z.array(z.object({ name: z.string(), documentUrl: z.string().nullish() })).default([]),
+  approvals: z.array(z.object({ name: z.string().trim().min(1).max(60), documentUrl: z.string().nullish(), verified: z.boolean().optional() })).default([]),
   sources: z.record(z.string()).optional(),
 });
 export type PropertyInput = z.infer<typeof PropertyInput>;
@@ -242,4 +242,18 @@ export function propertyCompletion(p: Parameters<typeof propertyReadiness>[0]): 
   check(has(p.description), 1);
   for (const a of p.approvals ?? []) check(!!a.documentUrl, 1);
   return total ? Math.round((done / total) * 100) : 0;
+}
+
+/**
+ * What a buyer pays on top of the price at registration (Tamil Nadu rates).
+ * An estimate: the final charges depend on the guideline value.
+ */
+export const BUYER_COSTS = [
+  { key: 'stamp', label: 'Stamp duty', pct: 7 },
+  { key: 'registration', label: 'Registration', pct: 2 },
+] as const;
+
+export function buyerTotal(price: number) {
+  const parts = BUYER_COSTS.map((c) => ({ ...c, amount: Math.round((price * c.pct) / 100) }));
+  return { parts, total: price + parts.reduce((t, p) => t + p.amount, 0) };
 }

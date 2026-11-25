@@ -11,6 +11,7 @@ export function Popover({
   children,
   align = 'left',
   className,
+  wrapClass,
   label,
 }: {
   trigger: (open: boolean) => ReactNode;
@@ -18,6 +19,8 @@ export function Popover({
   children: (close: () => void) => ReactNode;
   align?: 'left' | 'right';
   className?: string;
+  /** Classes for the outer box, e.g. to fill a grid cell. */
+  wrapClass?: string;
   label: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -45,7 +48,7 @@ export function Popover({
     };
   }, [open]);
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className={clsx('relative', wrapClass)}>
       <button ref={button} type="button" aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen(!open)} className={buttonClass(open)}>
         {trigger(open)}
       </button>

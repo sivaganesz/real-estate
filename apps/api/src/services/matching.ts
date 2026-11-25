@@ -176,7 +176,7 @@ export async function leadsForProperty(propertyId: string, actor: Actor, opts: {
     .sort((a, b) => b.m.score - a.m.score)
     .slice(0, opts.limit ?? 8);
   return out.map(({ l, m }) => ({
-    lead: { id: String(l._id), name: l.name, stage: l.stage, temperature: l.temperature, owner: (l.ownerId as unknown as { name?: string })?.name ?? null },
+    lead: { id: String(l._id), name: l.name, phone: l.phone, stage: l.stage, temperature: l.temperature, owner: (l.ownerId as unknown as { name?: string })?.name ?? null },
     ...m,
   }));
 }

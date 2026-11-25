@@ -3,20 +3,17 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Check, Copy, MessageCircle, Send, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react';
-import { STAGE_META, type Stage } from '@estate/shared';
 import { api } from '../lib/api';
-import { TEMP_DOT, waLink, type Lead } from '../lib/leads';
+import { waLink, type Lead } from '../lib/leads';
 import { keyFacts, priceLabel, type Property } from '../lib/property';
 import { Badge, Button, Card, Modal, SectionTitle, Segmented, Textarea, type Tone } from '../components/ui';
 import { PropertyCover } from '../components/PropertyCard';
 import { useToast } from '../components/toast';
 import { leadSlots } from '../slots-leads';
-import { slots } from '../slots';
-import { useAuth } from '../lib/auth';
 
-type Reason = { ok: 'yes' | 'near' | 'no' | 'info'; text: string };
-type Fit = 'strong' | 'good' | 'partial';
-const FIT: Record<Fit, { label: string; tone: Tone }> = { strong: { label: 'Strong fit', tone: 'green' }, good: { label: 'Good fit', tone: 'brand' }, partial: { label: 'Partial fit', tone: 'amber' } };
+export type Reason = { ok: 'yes' | 'near' | 'no' | 'info'; text: string };
+export type Fit = 'strong' | 'good' | 'partial';
+export const FIT: Record<Fit, { label: string; tone: Tone }> = { strong: { label: 'Strong fit', tone: 'green' }, good: { label: 'Good fit', tone: 'brand' }, partial: { label: 'Partial fit', tone: 'amber' } };
 
 export function Reasons({ reasons, max = 4, inline }: { reasons: Reason[]; max?: number; inline?: boolean }) {
   return (
@@ -209,41 +206,4 @@ function LeadMatches({ lead }: { lead: Lead }) {
   );
 }
 
-/** On a property page: which open customers this suits. */
-function BuyersWhoFit({ property }: { property: Property }) {
-  const { can } = useAuth();
-  const q = useQuery({ queryKey: ['buyers', property.id], queryFn: () => api.get<{ items: { lead: { id: string; name: string; stage: Stage; temperature: 'hot' | 'warm' | 'cold'; owner: string | null }; fit: Fit; reasons: Reason[] }[] }>(`/matching/property/${property.id}`), enabled: property.listing === 'live' && property.availability !== 'sold' });
-  if (property.listing !== 'live' || property.availability === 'sold' || property.availability === 'booked') return null;
-  return (
-    <Card className="p-5">
-      <SectionTitle>Buyers who fit {q.data ? `(${q.data.items.length})` : ''}</SectionTitle>
-      {!q.data ? (
-        <p className="text-sm text-slate-500">Looking…</p>
-      ) : !q.data.items.length ? (
-        <p className="text-sm text-slate-500">No open customer {can('lead.viewAll') ? '' : 'of yours '}fits this one right now.</p>
-      ) : (
-        <ul className="space-y-3">
-          {q.data.items.slice(0, 6).map((b) => (
-            <li key={b.lead.id}>
-              <Link to={`/leads/${b.lead.id}`} className="flex items-center gap-2">
-                <span className={clsx('h-2 w-2 rounded-full', TEMP_DOT[b.lead.temperature])} />
-                <span className="flex-1 truncate text-sm font-medium text-slate-800 hover:text-brand-800">{b.lead.name}</span>
-                <Badge tone={FIT[b.fit].tone}>{FIT[b.fit].label}</Badge>
-              </Link>
-              <p className="ml-4 text-xs text-slate-400">
-                {STAGE_META[b.lead.stage].label}
-                {can('lead.viewAll') && b.lead.owner ? ` · ${b.lead.owner}` : ''}
-              </p>
-              <div className="ml-4">
-                <Reasons reasons={b.reasons} max={2} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
 leadSlots.top.push(LeadMatches);
-slots.propertySide.unshift(BuyersWhoFit);

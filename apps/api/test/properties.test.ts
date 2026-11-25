@@ -72,6 +72,48 @@ describe('properties', () => {
     expect(rent.every((p: { purpose: string }) => p.purpose === 'rent')).toBe(true);
   });
 
+  it("shows a property's history with buyer events, only to those who may see them", async () => {
+    const unit = (await manager.get('/api/properties?q=B904&smart=false')).body.items[0];
+    const h = (await manager.get(`/api/properties/${unit.id}/history`)).body.items as { kind: string; text: string }[];
+    expect(h.some((i) => i.kind === 'deal' && /Ramesh Krishnan/.test(i.text))).toBe(true);
+    // Ramesh is Priya's customer: she sees the deal, Arun doesn't.
+    expect(((await exec.get(`/api/properties/${unit.id}/history`)).body.items as { kind: string }[]).some((i) => i.kind === 'deal')).toBe(true);
+    const arun = await login(app, EMAIL.arun);
+    expect(((await arun.get(`/api/properties/${unit.id}/history`)).body.items as { kind: string }[]).some((i) => i.kind === 'deal')).toBe(false);
+  });
+
+  it('finds similar properties for a price check, one unit per project', async () => {
+    const p = (await manager.get('/api/properties?q=2 BHK resale in Porur&smart=false')).body.items[0];
+    const c = (await manager.get(`/api/properties/${p.id}/comparables`)).body;
+    expect(c.items.length).toBeGreaterThan(0);
+    expect(c.stats.min).toBeLessThanOrEqual(c.stats.max);
+    expect(['in_line', 'above', 'below', null]).toContain(c.verdict);
+    const projects = c.items.filter((i: { code: string }) => i.code).map((i: { id: string }) => i.id);
+    expect(new Set(projects).size).toBe(projects.length);
+  });
+
+  it('adds and removes approvals; an edit keeps the verified mark and cannot fake it', async () => {
+    const p = (await manager.get('/api/properties?q=2 BHK in Chromepet&smart=false')).body.items[0];
+    const get = async () => (await manager.get(`/api/properties/${p.id}`)).body.property as { approvals: { name: string; documentUrl?: string; verified?: boolean }[] };
+    expect((await manager.patch(`/api/properties/${p.id}`).send({ approvals: [{ name: 'DTCP' }] })).status).toBe(200);
+    const up = await manager.post(`/api/properties/${p.id}/documents`).field('name', 'DTCP').field('approval', 'DTCP').attach('file', Buffer.from('%PDF-1.4 test'), 'dtcp.pdf');
+    expect(up.status).toBeLessThan(300);
+    expect((await manager.post(`/api/properties/${p.id}/approvals/DTCP/verify`)).status).toBe(200);
+    await manager.patch(`/api/properties/${p.id}`).send({ description: 'Five minutes from the metro.' });
+    expect((await get()).approvals.find((a) => a.name === 'DTCP')).toMatchObject({ verified: true });
+    // A replaced document has to be checked again, and approval documents aren't listed twice.
+    await manager.post(`/api/properties/${p.id}/documents`).field('name', 'DTCP').field('approval', 'DTCP').attach('file', Buffer.from('%PDF-1.4 new'), 'dtcp-2.pdf');
+    const after = (await manager.get(`/api/properties/${p.id}`)).body.property as { approvals: { name: string; verified?: boolean }[]; documents: { name: string }[] };
+    expect(after.approvals.find((a) => a.name === 'DTCP')?.verified).toBe(false);
+    expect(after.documents.some((d) => d.name === 'DTCP')).toBe(false);
+    expect((await manager.post(`/api/properties/${p.id}/approvals/DTCP/verify`)).status).toBe(200);
+    // Saying "verified" in an edit doesn't make it so.
+    await manager.patch(`/api/properties/${p.id}`).send({ approvals: [{ name: 'DTCP' }, { name: 'RERA', verified: true }] });
+    expect((await get()).approvals.find((a) => a.name === 'RERA')?.verified).toBe(false);
+    await manager.patch(`/api/properties/${p.id}`).send({ approvals: [{ name: 'RERA' }] });
+    expect((await get()).approvals.map((a) => a.name)).toEqual(['RERA']);
+  });
+
   it('understands plain-language search', async () => {
     const res = await exec.get('/api/properties?q=' + encodeURIComponent('2 bhk under 70 lakhs in porur'));
     expect(res.body.understood).toEqual(['2 BHK', 'up to ₹70,00,000', 'Porur']);

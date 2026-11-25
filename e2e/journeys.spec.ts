@@ -78,6 +78,22 @@ test.describe('sales manager', () => {
     await expect(page.getByText('Available').first()).toBeVisible();
   });
 
+  test('walks through a property’s tabs: price, matching buyers, history', async ({ page }) => {
+    await signIn(page, 'Sales manager');
+    await page.goto('/properties?q=2 BHK resale in Porur');
+    await page.getByRole('link', { name: '2 BHK resale in Porur' }).first().click();
+    await expect(page.getByRole('heading', { name: /2 BHK resale in Porur/ })).toBeVisible();
+    await expect(page.getByText('Price check')).toBeVisible();
+    await page.getByRole('tab', { name: /^Price/ }).click();
+    await expect(page.getByText('Total for the buyer')).toBeVisible();
+    await expect(page.getByText(/side by side/)).toBeVisible();
+    await page.getByRole('tab', { name: /Matching customers/ }).click();
+    await expect(page.getByText(/customers? fits? this property/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Send to / }).first()).toBeVisible();
+    await page.getByRole('tab', { name: /History/ }).click();
+    await expect(page.getByRole('button', { name: /^All · / })).toBeVisible();
+  });
+
   test('imports an owner’s messy sheet through the Check screen', async ({ page }) => {
     await signIn(page, 'Sales manager');
     await page.goto('/properties/import');

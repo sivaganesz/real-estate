@@ -169,6 +169,13 @@ export async function updateProperty(id: string, raw: Record<string, unknown>, a
     sources: { ...(p.sources ?? {}), ...((raw.sources as object) ?? {}) },
   });
   const data = normalise(input);
+  // An edit keeps each approval's document and verified mark; only the verify step can mark it.
+  const before = new Map((p.approvals ?? []).map((a) => [a.name, a]));
+  data.approvals = input.approvals.map((a) => {
+    const old = before.get(a.name);
+    const documentUrl = a.documentUrl ?? old?.documentUrl ?? null;
+    return { name: a.name, documentUrl, verified: !!old?.verified && documentUrl === old?.documentUrl };
+  });
   if (p.listing === 'live') {
     const r = propertyReadiness(data as Parameters<typeof propertyReadiness>[0]);
     if (!r.ready) throw badRequest(`A live property needs: ${r.missing.map((m) => m.label).join(', ')}`);
