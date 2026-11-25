@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { Sun, Settings, Building2, Users, CalendarDays, Handshake } from 'lucide-react';
+import { Sun, Settings, Building2, Users, CalendarDays, Handshake, Sparkles } from 'lucide-react';
 import type { Permission, Role } from '@estate/shared';
 
-export type NavItem = { to: string; label: string; icon: ReactNode; permission?: Permission; mobile?: boolean };
+export type NavItem = { to: string; label: string; icon: ReactNode; permission?: Permission; mobile?: boolean; accent?: boolean };
 
 /** One menu for everyone; each role sees only what its permissions allow. */
 export const NAV: NavItem[] = [
@@ -11,6 +11,7 @@ export const NAV: NavItem[] = [
   { to: '/properties', label: 'Properties', icon: <Building2 className="h-[18px] w-[18px]" />, mobile: true },
   { to: '/calendar', label: 'Calendar', icon: <CalendarDays className="h-[18px] w-[18px]" />, mobile: true },
   { to: '/deals', label: 'Deals', icon: <Handshake className="h-[18px] w-[18px]" />, permission: 'deal.create' },
+  { to: '/assistant', label: 'AI Assistant', icon: <Sparkles className="h-[18px] w-[18px]" />, accent: true },
   { to: '/settings', label: 'Settings', icon: <Settings className="h-[18px] w-[18px]" />, permission: 'settings.manage' },
 ];
 

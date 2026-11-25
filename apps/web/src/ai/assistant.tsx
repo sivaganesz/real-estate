@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useAuth } from '../lib/auth';
 
 export type RecordRef = { kind: 'property' | 'project' | 'lead' | 'deal' | 'activity' | 'user'; id: string; title: string; subtitle?: string };
 export type Proposal = { id: string; summary: string; state?: 'pending' | 'confirmed' | 'dismissed' | 'failed'; result?: string };
@@ -22,10 +23,18 @@ export type PageContext = {
   suggestions?: string[];
 };
 
+export type SavedChat = { id: string; title: string; at: string; messages: Message[] };
+
 type AssistantValue = {
   open: boolean;
   setOpen: (v: boolean) => void;
-  ask: (text: string) => void;
+  /** Sends a question. Opens the side panel unless `panel: false` (the full Assistant page). */
+  ask: (text: string, opts?: { panel?: boolean }) => void;
+  chats: SavedChat[];
+  chatId: string;
+  newChat: () => void;
+  openChat: (id: string) => void;
+  removeChat: (id: string) => void;
   messages: Message[];
   pending: boolean;
   context: PageContext;
@@ -39,10 +48,75 @@ const Ctx = createContext<AssistantValue | null>(null);
 
 type ChatReply = { mode: 'gemini' | 'offline'; reply: string; records: RecordRef[]; proposals: Proposal[]; done: string[] };
 
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+/** Past conversations live in this browser only, per user: a convenience, never the source of truth. */
+function readChats(key: string): SavedChat[] {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as SavedChat[]) : [];
+  } catch {
+    return [];
+  }
+}
+function writeChats(key: string, chats: SavedChat[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(chats));
+  } catch {
+    // Storage full or blocked: chats just won't be remembered.
+  }
+}
+
 export function AssistantProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const storeKey = `estate.chats.${user?.id ?? 'anon'}`;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chatId, setChatId] = useState(newId);
+  const [chats, setChats] = useState<SavedChat[]>(() => readChats(storeKey));
+  // A different person signed in: their own saved chats, and a fresh conversation.
+  useEffect(() => {
+    setChats(readChats(storeKey));
+    setMessages([]);
+    setChatId(newId());
+  }, [storeKey]);
+
+  // Keep the current conversation in the saved list (newest first, at most 20).
+  useEffect(() => {
+    const first = messages.find((m) => m.role === 'user');
+    if (!first) return;
+    setChats((list) => {
+      const next = [{ id: chatId, title: first.content.slice(0, 80), at: new Date().toISOString(), messages }, ...list.filter((c) => c.id !== chatId)].slice(0, 20);
+      writeChats(storeKey, next);
+      return next;
+    });
+  }, [messages, chatId, storeKey]);
+
+  const newChat = useCallback(() => {
+    setMessages([]);
+    setChatId(newId());
+  }, []);
+  const openChat = useCallback(
+    (id: string) => {
+      const c = chats.find((x) => x.id === id);
+      if (!c) return;
+      setChatId(c.id);
+      setMessages(c.messages);
+    },
+    [chats],
+  );
+  const removeChat = useCallback(
+    (id: string) => {
+      setChats((list) => {
+        const next = list.filter((c) => c.id !== id);
+        writeChats(storeKey, next);
+        return next;
+      });
+      if (id === chatId) newChat();
+    },
+    [storeKey, chatId, newChat],
+  );
   const [context, setContext] = useState<PageContext>({ page: 'Home' });
   const contextRef = useRef(context);
   contextRef.current = context;
@@ -61,10 +135,10 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   });
 
   const ask = useCallback(
-    (text: string) => {
+    (text: string, opts?: { panel?: boolean }) => {
       const t = text.trim();
       if (!t) return;
-      setOpen(true);
+      if (opts?.panel !== false) setOpen(true);
       setMessages((s) => {
         const next = [...s, { role: 'user' as const, content: t }];
         chat.mutate(next);
@@ -103,9 +177,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AssistantValue>(
-    () => ({ open, setOpen, ask, messages, pending: chat.isPending, context, setContext, confirm, dismiss, reset: () => setMessages([]) }),
+    () => ({ open, setOpen, ask, chats, chatId, newChat, openChat, removeChat, messages, pending: chat.isPending, context, setContext, confirm, dismiss, reset: newChat }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, ask, messages, chat.isPending, context],
+    [open, ask, chats, chatId, newChat, openChat, removeChat, messages, chat.isPending, context],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

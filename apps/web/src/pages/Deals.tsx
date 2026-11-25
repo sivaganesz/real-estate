@@ -60,7 +60,7 @@ export function Deals() {
           const n = live.filter((d) => dealStep(d) === i).length;
           const on = step === i;
           return (
-            <button key={st.label} onClick={() => setStep(on ? null : i)} className={clsx('relative flex flex-col rounded-2xl border p-3 text-left transition', on ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200/80 bg-white hover:border-slate-300', i === 4 && 'col-span-2 sm:col-span-1')}>
+            <button key={st.label} onClick={() => setStep(on ? null : i)} aria-label={`Step ${i + 1}: ${st.label}, ${n} ${n === 1 ? 'deal' : 'deals'}`} aria-pressed={on} className={clsx('relative flex flex-col rounded-2xl border p-3 text-left transition', on ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200/80 bg-white hover:border-slate-300', i === 4 && 'col-span-2 sm:col-span-1')}>
               <span className="flex w-full items-center gap-2">
                 <span className={clsx('flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold', on ? 'bg-white/15' : 'bg-slate-100 text-slate-600')}>{i + 1}</span>
                 <span className="ml-auto text-right">

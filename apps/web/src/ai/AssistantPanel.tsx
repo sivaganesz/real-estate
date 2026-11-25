@@ -75,61 +75,7 @@ export function AssistantPanel() {
           </div>
         )}
 
-        {a.messages.map((m, i) =>
-          m.role === 'user' ? (
-            <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-brand-700 px-3.5 py-2 text-sm text-white">{m.content}</p>
-            </div>
-          ) : (
-            <div key={i} className="space-y-2">
-              <div className={clsx('max-w-[95%] rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm', m.error ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-800')}>
-                <RichText text={m.content} />
-              </div>
-              {m.done?.map((d) => (
-                <p key={d} className="flex items-start gap-1.5 text-xs text-emerald-700">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {d}
-                </p>
-              ))}
-              {m.proposals?.map((p) => (
-                <div key={p.id} className="rounded-xl border border-ai-200 bg-ai-50/60 p-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ai-700">Needs your confirmation</p>
-                  <p className="mt-1 text-sm text-slate-800">{p.summary}</p>
-                  {p.state === 'pending' ? (
-                    <div className="mt-2 flex gap-2">
-                      <Button size="sm" variant="primary" icon={<Check className="h-3.5 w-3.5" />} onClick={() => a.confirm(i, p.id)}>
-                        Confirm
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => a.dismiss(i, p.id)}>
-                        Not now
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className={clsx('mt-2 text-xs', p.state === 'confirmed' ? 'text-emerald-700' : p.state === 'failed' ? 'text-rose-600' : 'text-slate-500')}>
-                      {p.state === 'confirmed' ? `✓ ${p.result}` : p.state === 'failed' ? p.result : 'Dismissed'}
-                    </p>
-                  )}
-                </div>
-              ))}
-              {!!m.records?.length && (
-                <div className="flex flex-wrap gap-1.5">
-                  {m.records.map((r) => (
-                    <RecordChip key={`${r.kind}${r.id}`} r={r} onClick={() => window.innerWidth < 1024 && a.setOpen(false)} />
-                  ))}
-                </div>
-              )}
-            </div>
-          ),
-        )}
-        {a.pending && (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <span className="flex gap-1">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500 [animation-delay:-.2s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500 [animation-delay:-.1s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500" />
-            </span>
-            Working on it…
-          </div>
-        )}
+        <Conversation onRecord={() => window.innerWidth < 1024 && a.setOpen(false)} />
         <div ref={endRef} />
       </div>
 
@@ -157,6 +103,80 @@ export function AssistantPanel() {
         <p className="mt-1.5 text-center text-[11px] text-slate-400">Enter to send · Ctrl/⌘ K to open or close</p>
       </div>
     </aside>
+  );
+}
+
+/**
+ * The messages of the current conversation: answers, what was done, things to
+ * confirm, and links to the records behind them. `wide` is the full Assistant page.
+ */
+export function Conversation({ wide, onRecord }: { wide?: boolean; onRecord?: () => void }) {
+  const a = useAssistant();
+  return (
+    <>
+      {a.messages.map((m, i) =>
+        m.role === 'user' ? (
+          <div key={i} className="flex justify-end">
+            <p className={clsx('max-w-[85%] whitespace-pre-wrap text-sm text-white', wide ? 'rounded-3xl rounded-br-lg bg-slate-900 px-4 py-2.5' : 'rounded-2xl rounded-br-md bg-brand-700 px-3.5 py-2')}>{m.content}</p>
+          </div>
+        ) : (
+          <div key={i} className={clsx(wide && 'flex gap-3')}>
+            {wide && (
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-ai-600 to-brand-600 text-white">
+                <Sparkles className="h-4 w-4" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className={clsx('text-sm', m.error ? 'rounded-2xl bg-rose-50 px-3.5 py-2.5 text-rose-700' : wide ? 'pt-1 text-[15px] text-slate-800' : 'max-w-[95%] rounded-2xl rounded-bl-md bg-slate-100 px-3.5 py-2.5 text-slate-800')}>
+                <RichText text={m.content} />
+              </div>
+              {m.done?.map((d) => (
+                <p key={d} className="flex items-start gap-1.5 text-xs text-emerald-700">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {d}
+                </p>
+              ))}
+              {m.proposals?.map((p) => (
+                <div key={p.id} className="rounded-2xl border border-ai-200 bg-ai-50/60 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ai-700">Needs your confirmation</p>
+                  <p className="mt-1 text-sm text-slate-800">{p.summary}</p>
+                  {p.state === 'pending' ? (
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="primary" icon={<Check className="h-3.5 w-3.5" />} onClick={() => a.confirm(i, p.id)}>
+                        Confirm
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => a.dismiss(i, p.id)}>
+                        Not now
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className={clsx('mt-2 text-xs', p.state === 'confirmed' ? 'text-emerald-700' : p.state === 'failed' ? 'text-rose-600' : 'text-slate-500')}>
+                      {p.state === 'confirmed' ? `✓ ${p.result}` : p.state === 'failed' ? p.result : 'Dismissed'}
+                    </p>
+                  )}
+                </div>
+              ))}
+              {!!m.records?.length && (
+                <div className="flex flex-wrap gap-1.5">
+                  {m.records.map((r) => (
+                    <RecordChip key={`${r.kind}${r.id}`} r={r} onClick={onRecord} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ),
+      )}
+      {a.pending && (
+        <div className={clsx('flex items-center gap-2 text-sm text-slate-500', wide && 'pl-11')}>
+          <span className="flex gap-1">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500 [animation-delay:-.2s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500 [animation-delay:-.1s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ai-500" />
+          </span>
+          Working on it…
+        </div>
+      )}
+    </>
   );
 }
 
@@ -232,7 +252,7 @@ function inline(s: string) {
 
 type SpeechCtor = new () => { lang: string; interimResults: boolean; onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; onend: () => void; start: () => void; stop: () => void };
 
-function VoiceButton({ onText }: { onText: (t: string) => void }) {
+export function VoiceButton({ onText }: { onText: (t: string) => void }) {
   const [on, setOn] = useState(false);
   const w = window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
   const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;

@@ -28,7 +28,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @estate/web dev',
       url: 'http://localhost:5190',
-      env: { API_URL: 'http://localhost:4190', WEB_PORT: '5190' },
+      env: { API_URL: 'http://localhost:4190', WEB_PORT: '5190', VITE_CACHE_DIR: 'node_modules/.vite-e2e' },
       timeout: 120_000,
       reuseExistingServer: false,
     },

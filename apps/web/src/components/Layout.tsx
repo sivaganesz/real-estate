@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { LogOut, Search, Sparkles } from 'lucide-react';
@@ -19,12 +19,14 @@ import { Reminders } from '../features/activities';
 export function Layout() {
   const { user, can } = useAuth();
   const assistant = useAssistant();
+  // The full Assistant page takes the place of the side panel.
+  const onAssistantPage = useLocation().pathname === '/assistant';
   if (!user) return null;
   const items = NAV.filter((n) => !n.permission || can(n.permission));
   const topNav = TOP_NAV_ROLES.includes(user.role);
 
   return (
-    <div className={clsx('min-h-screen transition-[padding]', assistant.open && 'lg:pr-[420px]')}>
+    <div className={clsx('min-h-screen transition-[padding]', assistant.open && !onAssistantPage && 'lg:pr-[420px]')}>
       {!topNav && <Sidebar items={items} />}
 
       <div className={clsx(!topNav && 'lg:pl-60')}>
@@ -35,7 +37,7 @@ export function Layout() {
       </div>
 
       <BottomBar items={items} />
-      <AssistantPanel />
+      {!onAssistantPage && <AssistantPanel />}
     </div>
   );
 }
@@ -57,9 +59,19 @@ function TopNavbar({ items }: { items: NavItem[] }) {
               to={n.to}
               end={n.to === '/'}
               className={({ isActive }) =>
-                clsx('rounded-full px-4 py-1.5 text-sm transition', isActive ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900')
+                clsx(
+                  'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition',
+                  n.accent
+                    ? isActive
+                      ? 'bg-gradient-to-r from-ai-600 to-brand-600 font-semibold text-white shadow-sm'
+                      : 'bg-white font-medium text-ai-700 ring-1 ring-ai-200 hover:ring-ai-300'
+                    : isActive
+                      ? 'bg-white font-semibold text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900',
+                )
               }
             >
+              {n.accent && <Sparkles className="h-3.5 w-3.5" />}
               {n.label}
             </NavLink>
           ))}
@@ -118,7 +130,12 @@ function Sidebar({ items }: { items: NavItem[] }) {
             key={n.to}
             to={n.to}
             end={n.to === '/'}
-            className={({ isActive }) => clsx('flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition', isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')}
+            className={({ isActive }) =>
+              clsx(
+                'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition',
+                n.accent ? (isActive ? 'bg-gradient-to-r from-ai-50 to-brand-50 text-ai-700' : 'text-ai-700 hover:bg-ai-50') : isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+              )
+            }
           >
             {n.icon}
             {n.label}

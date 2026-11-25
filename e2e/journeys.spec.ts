@@ -24,7 +24,9 @@ test.describe('sales executive', () => {
     await page.getByRole('button', { name: 'Interested', exact: true }).first().click();
     await page.getByPlaceholder(/What was said/).fill('Wants a 2 BHK near Porur, budget 65 lakhs');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByText('Call · Interested')).toBeVisible();
+    // The phone run follows the desktop run on the same data, so this call may be the second one.
+    await expect(page.getByText('Logged', { exact: true })).toBeVisible();
+    await expect(page.getByText('Call · Interested').first()).toBeVisible();
     await expect(page.locator('h1 + span, h1 ~ span').filter({ hasText: 'Contacted' }).first()).toBeVisible();
   });
 
@@ -104,7 +106,7 @@ test.describe('sales manager', () => {
     await signIn(page, 'Sales manager');
     await page.goto('/deals');
     await expect(page.getByText('A deal is one customer buying one property')).toBeVisible();
-    await page.getByRole('button', { name: /Agree the price/ }).click();
+    await page.getByRole('button', { name: /^Step 1: Agree the price/ }).click();
     await expect(page.getByText(/Step 1: Agree the price/)).toBeVisible();
     await expect(page.getByText(/Your move:/).first()).toBeVisible();
   });
@@ -129,6 +131,22 @@ test.describe('assistant (offline mode)', () => {
     await box.fill('Find 2 BHK apartments under 70 lakhs in Porur');
     await box.press('Enter');
     await expect(page.getByText(/^Found \d+/)).toBeVisible();
+  });
+});
+
+test.describe('assistant page', () => {
+  test('asks from the full page and keeps the chat', async ({ page }) => {
+    await signIn(page, 'Sales executive');
+    await page.getByRole('link', { name: 'AI Assistant' }).click();
+    await expect(page.getByText(/How can I help with your/)).toBeVisible();
+    await page.getByRole('button', { name: 'Leads needing attention' }).click();
+    await expect(page.getByText('Which of my leads need attention today?')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Mohammed Irfan/ }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'New chat' }).click();
+    await expect(page.getByText(/How can I help with your/)).toBeVisible();
+    await page.getByRole('button', { name: 'Past chats' }).click();
+    await page.getByRole('button', { name: /^Which of my leads need attention today/ }).click();
+    await expect(page.getByRole('link', { name: /Mohammed Irfan/ }).first()).toBeVisible();
   });
 });
 

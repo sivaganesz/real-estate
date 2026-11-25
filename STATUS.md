@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-25
 
-**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed).
+**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed). The demo is deployed: web on Vercel, API on Render (free plan, data resets to the demo data on restart).
 
 ## Phases
 
@@ -23,6 +23,24 @@ Last updated: 2026-11-25
 | 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
 
 ## Done since last update
+
+**Deployed** (`0e6d478`, `3fd4760`, `4b478c6`)
+
+- **Web on Vercel:** `apps/web/vercel.json` rewrites `/api` and `/uploads` to the Render API and serves index.html for every route. Vercel Root Directory is `apps/web`.
+- **API on Render:** `render.yaml` Blueprint, service `estateos-api`, https://estateos-api-iy6k.onrender.com. It runs its own built-in MongoDB, so no database account is needed, with a 0.25 GB WiredTiger cache to fit the free plan's 512 MB.
+- **Free-plan limits:** the service sleeps after 15 minutes idle, and data plus uploaded files reset to the demo data on every restart or redeploy. Setting `MONGODB_URI` (e.g. Atlas) keeps data permanently.
+- **Verified on Render:** health ok, demo login works, assistant mode is `gemini` (gemini-2.5-flash).
+
+**Clearer customer page, leads list, calendar and deals** (`aed4da1`)
+
+- **Customer page:** a header with four facts (next step, last spoke, days in stage, properties sent) and the stage steps; compact property matches showing 3 with "show more"; one About panel (looking for, contact, enquiries); activity counts in History.
+- **Leads list:** count tiles that filter (needs attention, hot, no next step, new this week) and richer rows.
+- **Calendar:** a Monday–Sunday week grid coloured by kind, a "New appointment" dialog, and add-on-a-day shortcuts; on phones, a day strip and list.
+- **Deals:** explained by five steps (agree the price, approval, booking amount, payments, registered), a "Needs your action" list, and a plain "Your move" next step on every deal and in the deal drawer.
+- **Demo data:** a fuller week of meetings at office hours, including Priya's.
+- Tests: 73 API, 15 e2e.
+
+**Executive Today** (`2b31051`): no gaps; follow-ups scroll; Spotlight and the property match rotate through the top 3 with arrows and dots.
 
 **Role dashboards** (`87be5d3`)
 
@@ -52,6 +70,11 @@ Last updated: 2026-11-25
 
 ## Next up
 
+In progress:
+
+- A full-screen AI Assistant page.
+- Fixing one unreliable e2e journey.
+
 Suggestions:
 
 1. Try real Gemini on a real DTCP layout drawing (chat and describe-a-property are verified).
@@ -71,10 +94,9 @@ Suggestions:
 
 | # | Decision | Why it matters |
 |---|---|---|
-| 1 | ~~**Gemini API key**~~ ✅ Received | Connected and verified (`9331bd4`). |
-| 2 | ~~**Git remote URL**~~ ✅ Received | Set to https://github.com/sivaganesz/real-estate. Work goes on branch `feat/estate-platform`; main is not pushed. |
-| 3 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
-| 4 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
+| 1 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
+| 2 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
+| 3 | **Keep data permanently?** MongoDB Atlas plus cloud file storage | On Render's free plan, data and uploaded files reset to the demo data on every restart or redeploy. |
 
 ## How to run
 
@@ -90,6 +112,8 @@ pnpm dev                         # API on :4000, web on http://localhost:5173
 - `pnpm seed` resets the database to the demo data.
 - **Gemini key:** put it in `apps/api/.env` as `GEMINI_API_KEY` (git-ignored, never committed). Node's `--env-file` does not override a variable that is already set, even to empty, so start the server from a fresh terminal. Run one dev server at a time: an old server holding port 4000 keeps answering in offline mode.
 
+**Deploy:** Vercel with Root Directory `apps/web`; Render Blueprint from `render.yaml`, with `GEMINI_API_KEY` set in Render.
+
 Demo sign-ins (password `demo1234`):
 
 | Role | Email |
@@ -103,7 +127,7 @@ Demo sign-ins (password `demo1234`):
 | Check | Command | Last result |
 |---|---|---|
 | API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 73 passing |
-| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 13 journeys passing (11 on desktop, 2 also on phone) |
+| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 15 journeys; one is unreliable (fix in progress) |
 | Typecheck | `pnpm typecheck` | Clean |
 | Web build | `pnpm build` | Clean |
 

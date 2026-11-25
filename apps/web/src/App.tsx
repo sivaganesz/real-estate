@@ -16,6 +16,7 @@ import { Leads } from './pages/Leads';
 import { LeadDetail } from './pages/LeadDetail';
 import { Calendar } from './pages/Calendar';
 import { Deals } from './pages/Deals';
+import { AssistantPage } from './pages/Assistant';
 import { ProjectWizard } from './pages/ProjectWizard';
 
 function Protected({ children }: { children: ReactNode }) {
@@ -47,6 +48,7 @@ export function App() {
         <Route path="leads" element={<Leads />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="calendar" element={<Calendar />} />
+        <Route path="assistant" element={<AssistantPage />} />
         <Route path="deals" element={<Deals />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
