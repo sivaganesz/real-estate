@@ -27,7 +27,7 @@ export const NAV: NavGroup[] = [
     items: [
       { to: '/properties', labelKey: 'nav.properties', icon: '🏠', ready: true, count: (db) => db.properties.filter((p) => p.status === 'available' && !p.archived).length },
       { to: '/projects', labelKey: 'nav.projects', icon: '🏢', count: () => 0 },
-      { to: '/leads', labelKey: 'nav.leads', icon: '👤', count: activeLeads },
+      { to: '/leads', labelKey: 'nav.leads', icon: '👤', ready: true, count: activeLeads },
       { to: '/import', labelKey: 'nav.import', icon: '📥' },
     ],
   },

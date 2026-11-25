@@ -233,7 +233,15 @@ export type Lead = {
   activity: LeadActivity[]
   /** The deal under way: their offer against the asking price, and the seller's counter. */
   negotiation?: { propertyId: string; offered?: number; counter?: number; notes?: string }
+  /** A manager's choice of classification; without it the suggested one is used (lib/classification.ts). */
+  classification?: Classification
+  /** HNI status — recorded only from what the customer chose to share; verified only with their consent. */
+  hni?: { status: HniStatus; potential: boolean }
 }
+
+/** What kind of customer this is — separate from how ready they are to buy. A high budget never makes someone an HNI. */
+export type Classification = 'general' | 'qualifiedBuyer' | 'investor' | 'highValue' | 'potentialHni' | 'verifiedHni'
+export type HniStatus = 'notDetermined' | 'notVerified' | 'potential' | 'consentInProgress' | 'verified' | 'declined'
 
 export type BuyerPurpose = 'ownUse' | 'investment' | 'rentalIncome' | 'businessUse' | 'secondHome' | 'other'
 

@@ -61,12 +61,12 @@ type Props = {
   understood: ReactNode
 }
 
-const optCls = (on: boolean, list?: boolean) => cn(
+export const optCls = (on: boolean, list?: boolean) => cn(
   'inline-flex items-center gap-2 text-ui text-foreground hover:bg-muted',
   list ? 'w-full justify-between rounded-[7px] px-2.5 py-[7px] text-left' : 'rounded-full border bg-card px-[11px] py-1',
   on && (list ? 'bg-accent font-medium text-primary hover:bg-accent' : 'border-primary/30 bg-accent font-medium text-primary hover:bg-accent'),
 )
-const Sub = ({ children, first }: { children: ReactNode; first?: boolean }) =>
+export const Sub = ({ children, first }: { children: ReactNode; first?: boolean }) =>
   <p className={cn('mx-0.5 mb-1.5 text-caption tracking-[.05em] text-muted-foreground uppercase', first ? 'mt-0.5' : 'mt-3')}>{children}</p>
 
 export function SearchBar(p: Props) {
@@ -244,7 +244,7 @@ export function SearchBar(p: Props) {
 }
 
 /** A filter pill: label + caret, or label + ✕ once set. Opens its panel below. */
-function PillButton({ label, set, open, onOpenChange, onClear, clearLabel, children, align = 'start', plain }: {
+export function PillButton({ label, set, open, onOpenChange, onClear, clearLabel, children, align = 'start', plain }: {
   label: string; set: boolean; open: boolean; onOpenChange: (o: boolean) => void; onClear: () => void; clearLabel: string; children: ReactNode; align?: 'start' | 'end'; plain?: boolean
 }) {
   return (

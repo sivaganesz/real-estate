@@ -11,6 +11,7 @@ import { SharePage } from '@/features/properties/pages/share-page'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
 import { SettingsPage } from '@/features/settings/settings-page'
+import { LeadsPage } from '@/features/leads/leads-page'
 import { StoreProvider } from '@/store/db'
 
 /** Routes. Sections not rebuilt yet get a placeholder page from the nav list, so every menu item works. */
@@ -28,6 +29,9 @@ export default function App() {
               <Route path="properties/:id/edit/:tab?" element={<AddPropertyPage />} />
               <Route path="properties/:id/share" element={<SharePage />} />
               <Route path="properties/:id/:tab?" element={<PropertyPage />} />
+              <Route path="leads" element={<LeadsPage />} />
+              {/* the lead page and Add lead come next; until then they show the Leads placeholder */}
+              <Route path="leads/*" element={<ModulePlaceholderPage item={ALL_NAV_ITEMS.find((i) => i.to === '/leads')!} />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="ui-kit" element={<UiKitPage />} />
               {ALL_NAV_ITEMS.filter((i) => !i.ready).map((i) => (

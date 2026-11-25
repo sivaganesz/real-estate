@@ -3,12 +3,11 @@
  * Every action maps to a future API endpoint (noted on each), so screens don't change when the real backend arrives.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { DEMO_TODAY, seedDatabase } from '@/data/seed'
+import { DATA_VERSION, DEMO_TODAY, seedDatabase } from '@/data/seed'
 import type { Database, Lead, Property, Role, User } from '@/data/types'
 
 const DB_KEY = 'realspec-rebuild-db'
 const ROLE_KEY = 'realspec-rebuild-role'
-const DB_VERSION = 5
 
 /** Who the demo signs in as for each role. */
 const DEMO_USER_FOR: Record<Role, string> = { admin: 'u-admin', manager: 'u-mgr', executive: 'u-ex01' }
@@ -45,6 +44,8 @@ type Store = {
   shareProperty: (propertyId: string, leadId: string | undefined, channel: ShareChannel, historyText?: string) => void
   /** POST / DELETE /api/leads/:id/recommendations/:propertyId — the buyer was told about it (call, WhatsApp, in person). */
   recommendProperty: (propertyId: string, leadId: string, on: boolean) => void
+  /** PATCH /api/leads/:id — e.g. move stage or reassign; `note` goes on the lead's timeline. */
+  updateLead: (id: string, change: (l: Lead) => void, note?: string) => void
   /** POST /api/leads/:id/activity — a note on each lead's timeline about a property (e.g. "PROP-1005 was archived"). */
   noteOnLeads: (leadIds: string[], propertyId: string, text: string) => void
   /**
@@ -72,7 +73,7 @@ const StoreContext = createContext<Store | null>(null)
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<Database>(() => {
     const saved = load<Database>(DB_KEY)
-    return saved && saved.version === DB_VERSION ? saved : seedDatabase()
+    return saved && saved.version === DATA_VERSION ? saved : seedDatabase()
   })
   const [role, setRoleState] = useState<Role>(() => load<Role>(ROLE_KEY) ?? 'manager')
 
@@ -137,6 +138,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [user.id])
 
+  const updateLead = useCallback<Store['updateLead']>((id, change, note) => {
+    setDb((prev) => {
+      const next = structuredClone(prev)
+      const l = next.leads.find((x) => x.id === id)
+      if (!l) return prev
+      change(l)
+      if (note) l.activity.unshift({ id: `${l.id}-a${l.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'note', text: note })
+      return next
+    })
+  }, [user.id])
+
   const noteOnLeads = useCallback<Store['noteOnLeads']>((leadIds, propertyId, text) => {
     if (!leadIds.length) return
     setDb((prev) => {
@@ -176,8 +188,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, noteOnLeads, deleteProperty, updateSettings, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, noteOnLeads, deleteProperty, updateSettings, resetDemo],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

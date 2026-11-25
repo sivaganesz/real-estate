@@ -23,11 +23,11 @@ export type Column<T> = {
 
 export type TableSort = { key: string; dir: 'asc' | 'desc' }
 
-export type Breakpoint = 'md' | 'lg' | 'xl' | 'wide'
+export type Breakpoint = 'md' | 'lg' | 'xl' | 'wide' | '2xl'
 /** The screen width (px) each breakpoint starts at. */
-export const BREAKPOINT_PX: Record<Breakpoint, number> = { md: 768, lg: 1024, xl: 1280, wide: 1440 }
+export const BREAKPOINT_PX: Record<Breakpoint, number> = { md: 768, lg: 1024, xl: 1280, wide: 1440, '2xl': 1536 }
 // written out in full so Tailwind finds the classes
-const HIDE_BELOW: Record<Breakpoint, string> = { md: 'max-md:hidden', lg: 'max-lg:hidden', xl: 'max-xl:hidden', wide: 'max-[1440px]:hidden' }
+const HIDE_BELOW: Record<Breakpoint, string> = { md: 'max-md:hidden', lg: 'max-lg:hidden', xl: 'max-xl:hidden', wide: 'max-[1440px]:hidden', '2xl': 'max-2xl:hidden' }
 // a pinned cell paints the row's own colours (plain, hover, menu open, ticked), so rows look the same behind it
 const STICKY_CELL = 'sticky right-0 z-[1] bg-card [tr:hover>&]:bg-[color-mix(in_oklch,var(--muted)_50%,var(--card))] [tr:has([aria-expanded=true])>&]:bg-[color-mix(in_oklch,var(--muted)_50%,var(--card))] [tr[data-state=selected]>&]:bg-[color-mix(in_oklch,var(--accent)_60%,var(--card))] [tr[data-state=selected]:hover>&]:bg-[color-mix(in_oklch,var(--accent)_80%,var(--card))]'
 const STICKY_HEAD = 'sticky right-0 z-[1] bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]'

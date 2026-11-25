@@ -2,7 +2,7 @@
  * Seed data — reused from the old wireframe (spec-system-wireframe/data.js) and reshaped to the v3 types.
  * ALL DATA IS FICTIONAL. Prices, schools, hospitals, distances and comparables are illustrative only.
  * Added in v3: two drafts (PROP-1013, PROP-1014), descriptions, and "exact location" flags.
- * Dropped in v3: HNI and classification (out of scope).
+ * Classification (lib/classification.ts) and an HNI status per lead are back for the Leads list (26 Nov).
  */
 import type {
   ApprovalClaim, Comparable, Database, Facing, Lead, LeadActivity, Media, NearbyPlace, Property, PropertyDocument, Settings, User,
@@ -340,6 +340,8 @@ export function seedLeads(): Lead[] {
     L({ id: 'LEAD-1006', name: 'Lakshmi Narayanan', phone: '+91 98xxxxxx06', email: 'lakshmi.n@example.com', source: 'Referral', enquiryDate: '2026-10-15', ownerId: 'u-ex03', purpose: 'investment',
       qualification: { need: 'clear', timeline: 'm1to3', authority: 'sole', funding: 'own', fundingReady: 'ready' },
       engagement: { responded: true, docsRequested: true, siteVisited: false }, purposeNote: 'Investment',
+      // indicators recorded from voluntary conversation only; no financial documents asked for
+      hni: { status: 'potential', potential: true },
       budget: budget(30000000, 35000000, 40000000),
       requirement: req({ type: 'house', cities: ['Coimbatore'], localities: ['Vadavalli'], sizeSqft: 3500, bhk: '4 BHK', parking: 'required', possession: 'ready', amenities: ['Gated community', 'Swimming pool'] }),
       stage: 'visitScheduled', stageSince: '2026-11-10', nextFollowUp: '2026-11-19', recommendedPropertyIds: ['PROP-1008'],
@@ -414,7 +416,10 @@ export function seedLeads(): Lead[] {
   ]
 }
 
+/** The shape of the stored demo data. Raise it when that shape changes: saved data of another version is replaced by this seed. */
+export const DATA_VERSION = 6
+
 export function seedDatabase(): Database {
   seq = 0
-  return { version: 5, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
+  return { version: DATA_VERSION, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
 }

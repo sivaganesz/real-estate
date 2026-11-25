@@ -182,10 +182,14 @@ Updated 25 Nov 2026.
 
 ## 4. Leads — next module
 
-- [ ] **Leads list:**
-  - [ ] Search; filters by stage, executive, purpose, property type and readiness band; sort
-  - [ ] Columns: purpose, looking for, budget, readiness, classification, stage, owner, next follow-up (overdue / today)
-  - [ ] HNI classification shows "Restricted" to executives
+- [x] **Leads list** (design agreed 26 Nov):
+  - [x] Search and ✨ sentence search; filter pills: stage, executive (managers), purpose, property type + city, readiness, classification; sort: most ready, next follow-up, newest
+  - [x] Follow-up tabs: All · Overdue · Due today · Upcoming · Closed / Lost
+  - [x] Columns: lead, purpose, looking for, budget, ready to buy, classification, stage, owner, next follow-up (overdue / today); columns can be hidden
+  - [x] Table or cards, remembered per user; ⋯ menu: open, call, WhatsApp, log activity, move stage, reassign (managers)
+  - [x] "⚠ Needs attention" on demand: overdue, no follow-up date, ready to buy but no site visit
+  - [x] Executives see their own leads; HNI classification shows "Restricted" to them
+  - [ ] Opening a lead, Log activity, and marking Lost with a reason come with the Lead page
 - [ ] **Add / edit lead:**
   - [ ] Basic information; assigned executive (auto-assign to the least busy); stage; consent to follow up
   - [ ] Purpose; budget (min / preferred / max / flexibility, what it includes, funding)
