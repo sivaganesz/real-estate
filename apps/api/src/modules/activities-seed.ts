@@ -14,10 +14,16 @@ registerSeeder('activities', async () => {
     d.setHours(hour, minute, 0, 0);
     return d;
   };
-  /** Today at office hours when that's still ahead; otherwise a little later today, so it stays "today". */
-  const todayAt = (hour: number, minute: number, fallbackHours: number) => {
+  /**
+   * Today at office hours when that's still ahead. Late in the day, the rest of
+   * today's plans are spread between now and midnight (in the same order), so
+   * they still show as today whenever the demo data is created.
+   */
+  const todayAt = (hour: number, minute: number, share: number) => {
     const d = dayAt(0, hour, minute);
-    return d.getTime() > now ? d : hoursFromNow(fallbackHours);
+    if (d.getTime() > now) return d;
+    const end = dayAt(0, 23, 59).getTime();
+    return new Date(Math.floor((now + (end - now) * share) / 60_000) * 60_000);
   };
   const nextSaturday = () => {
     const d = new Date(now);
@@ -36,7 +42,7 @@ registerSeeder('activities', async () => {
     ['Abdul Rahman', 'meeting', dayAt(-1, 11), 'Hand over the booking receipt', undefined, 'Receipt handed over; reminded him the agreement instalment is due.'],
     ['Ramesh Krishnan', 'meeting', dayAt(-2, 15), 'Walk through the Green Meadows clubhouse', undefined, 'Liked the amenities; still wants ₹1.5 L off.'],
     // Priya's week: meetings with her customers.
-    ['Abdul Rahman', 'meeting', todayAt(13, 0, 2), 'Explain the payment plan to his family'],
+    ['Abdul Rahman', 'meeting', todayAt(13, 0, 0.45), 'Explain the payment plan to his family'],
     ['Abdul Rahman', 'meeting', dayAt(1, 11), 'Collect the agreement-for-sale cheque'],
     ['Ramesh Krishnan', 'meeting', dayAt(1, 16), 'Second look at B904 with his wife'],
     ['Lakshmi Narayanan', 'meeting', dayAt(3, 11), 'Compare Palm Grove villa floor plans'],
@@ -47,9 +53,9 @@ registerSeeder('activities', async () => {
     ['Mohammed Irfan', 'call', dayAt(-1, 17), 'Check if B-block brochure helped'],
     ['Suresh Kumar', 'call', dayAt(-2, 12), 'Road width answer for Sunrise Enclave'],
     // Today.
-    ['Sangeetha Raman', 'call', todayAt(11, 30, 1.5), 'Confirm plot budget and location'],
-    ['Ramesh Krishnan', 'meeting', todayAt(16, 0, 3), 'Price follow-up on A402'],
-    ['Fathima Begum', 'call', todayAt(17, 30, 5), 'Share loan tie-up details'],
+    ['Sangeetha Raman', 'call', todayAt(11, 30, 0.25), 'Confirm plot budget and location'],
+    ['Ramesh Krishnan', 'meeting', todayAt(16, 0, 0.65), 'Price follow-up on A402'],
+    ['Fathima Begum', 'call', todayAt(17, 30, 0.85), 'Share loan tie-up details'],
     // The rest of the week.
     ['Tarun Agarwal', 'meeting', dayAt(1, 10), 'Discuss factory shed layout'],
     ['Anitha Joseph', 'site_visit', dayAt(1, 11), undefined, () => prop({ locality: 'Sholinganallur' })],

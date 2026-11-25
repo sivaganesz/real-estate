@@ -288,6 +288,7 @@ function useRefresh(leadId: string, extra?: () => void) {
 export function CompleteDialog({ id, type, title, leadId, leadName, properties, onClose, onChanged }: { id: string; type: ActivityType; title: string; leadId: string; leadName?: string; properties: { id: string; title: string }[]; onClose: () => void; onChanged?: () => void }) {
   const toast = useToast();
   const refresh = useRefresh(leadId, onChanged);
+  const [planning, setPlanning] = useState(false);
   const [outcome, setOutcome] = useState(type === 'call' ? 'Interested' : '');
   const [notes, setNotes] = useState('');
   const [interest, setInterest] = useState('');
@@ -330,7 +331,24 @@ export function CompleteDialog({ id, type, title, leadId, leadName, properties, 
             <Button variant="ghost" onClick={onClose}>
               Nothing for now
             </Button>
-            <Button variant="primary" disabled={!nextWhen} onClick={() => api.post('/activities', { leadId, type: nextType, scheduledAt: nextWhen!.toISOString(), force: true }).then(() => { refresh(); toast('Next step planned'); onClose(); })}>
+            <Button
+              variant="primary"
+              disabled={!nextWhen}
+              loading={planning}
+              onClick={async () => {
+                setPlanning(true);
+                try {
+                  await api.post('/activities', { leadId, type: nextType, scheduledAt: nextWhen!.toISOString(), force: true });
+                  refresh();
+                  toast('Next step planned');
+                  onClose();
+                } catch (e) {
+                  toast(e instanceof Error ? e.message : 'Could not plan it', 'error');
+                } finally {
+                  setPlanning(false);
+                }
+              }}
+            >
               Plan it
             </Button>
           </>

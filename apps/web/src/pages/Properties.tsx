@@ -76,6 +76,10 @@ function Units() {
   const availability = (params.get('availability')?.split(',').filter(Boolean) ?? []) as Availability[];
   const listing = params.get('listing') ?? '';
   const sort = params.get('sort') ?? 'newest';
+  // Project flats live under their project; a search or the toggle brings them in.
+  const withUnits = params.get('units') === '1' || !!q;
+  const PAGE = 24;
+  const [shown, setShown] = useState(PAGE);
   const [view, setView] = useState<'grid' | 'table'>(() => (localStorage.getItem('propView') as 'grid' | 'table') ?? 'grid');
 
   const update = (patch: Record<string, string | null>) => {
@@ -86,10 +90,17 @@ function Units() {
   const toggle = <T extends string>(key: string, list: T[], v: T) => update({ [key]: (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]).join(',') || null });
 
   const res = useQuery({
-    queryKey: ['properties', { q, types, availability, listing, sort }],
+    queryKey: ['properties', { q, types, availability, listing, sort, withUnits }],
     // Sold units are history, not inventory: hidden unless asked for.
-    queryFn: () => api.get<{ items: Property[]; total: number; understood: string[] }>(`/properties${qs({ q, types, availability: availability.length ? availability : ['available', 'held', 'booked'], listing: listing || undefined, sort, limit: 120 })}`),
+    queryFn: () => api.get<{ items: Property[]; total: number; understood: string[] }>(`/properties${qs({ q, types, availability: availability.length ? availability : ['available', 'held', 'booked'], listing: listing || undefined, sort, standalone: withUnits ? undefined : true, limit: 200 })}`),
   });
+  // A new search or filter starts again from the first page.
+  const filterKey = JSON.stringify({ q, types, availability, listing, sort, withUnits });
+  const [lastKey, setLastKey] = useState(filterKey);
+  if (lastKey !== filterKey) {
+    setLastKey(filterKey);
+    setShown(PAGE);
+  }
 
   return (
     <>
@@ -149,6 +160,9 @@ function Units() {
             </FilterChip>
           </>
         )}
+        <FilterChip on={withUnits} onClick={() => update({ units: params.get('units') === '1' ? null : '1' })}>
+          Include project units
+        </FilterChip>
         <div className="ml-auto flex items-center gap-2">
           <select value={sort} onChange={(e) => update({ sort: e.target.value })} className="rounded-lg border-0 bg-transparent text-xs text-slate-600 focus:ring-0">
             <option value="newest">Newest</option>
@@ -178,16 +192,32 @@ function Units() {
         ) : (
           <>
             <p className="mb-3 text-xs text-slate-500">
-              {res.data.total} {res.data.total === 1 ? 'property' : 'properties'}{!availability.length && ' · sold ones hidden'}
+              {res.data.total} {res.data.total === 1 ? 'property' : 'properties'}
+              {!availability.length && ' · sold ones hidden'}
+              {!withUnits && (
+                <>
+                  {' · project units are under '}
+                  <button type="button" onClick={() => update({ tab: 'projects' })} className="link">
+                    Projects
+                  </button>
+                </>
+              )}
             </p>
             {view === 'grid' ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {res.data.items.map((p) => (
+                {res.data.items.slice(0, shown).map((p) => (
                   <PropertyCard key={p.id} p={p} />
                 ))}
               </div>
             ) : (
-              <PropertyTable items={res.data.items} />
+              <PropertyTable items={res.data.items.slice(0, shown)} />
+            )}
+            {res.data.items.length > shown && (
+              <div className="mt-5 flex justify-center">
+                <Button onClick={() => setShown(shown + PAGE)}>
+                  Show more · {res.data.items.length - shown} left
+                </Button>
+              </div>
             )}
           </>
         )}

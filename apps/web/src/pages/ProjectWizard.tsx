@@ -186,11 +186,11 @@ function Wizard({ project, units }: { project?: Project; units: Property[] }) {
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{project ? `Edit ${project.name}` : 'Add a project'}</h1>
         <div className="flex gap-2">
           {!project?.published && (
-            <Button loading={save.isPending && !save.variables} disabled={!b.name.trim() || !b.city.trim() || !b.locality.trim() || !b.type} onClick={() => save.mutate(false)}>
+            <Button loading={save.isPending && !save.variables} disabled={save.isPending || !b.name.trim() || !b.city.trim() || !b.locality.trim() || !b.type} onClick={() => save.mutate(false)}>
               Save draft
             </Button>
           )}
-          <Button variant="primary" disabled={!ready || !can('property.publish')} loading={save.isPending && !!save.variables} onClick={() => save.mutate(true)} title={ready ? undefined : `Still needed: ${completion.missing.join(', ')}`}>
+          <Button variant="primary" disabled={save.isPending || !ready || !can('property.publish')} loading={save.isPending && !!save.variables} onClick={() => save.mutate(true)} title={ready ? undefined : `Still needed: ${completion.missing.join(', ')}`}>
             {project?.published ? 'Save changes' : ready ? 'Publish project' : `Publish · ${completion.missing.length} needed`}
           </Button>
         </div>

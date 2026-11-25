@@ -154,11 +154,11 @@ export function AddProperty({ open, onClose }: { open: boolean; onClose: () => v
           <Button variant="ghost" onClick={close}>
             Cancel
           </Button>
-          <Button loading={save.isPending && !save.variables?.publish} onClick={() => save.mutate({ publish: false })}>
+          <Button disabled={save.isPending} loading={save.isPending && !save.variables?.publish} onClick={() => save.mutate({ publish: false })}>
             Save as draft
           </Button>
           {can('property.publish') && (
-            <Button variant="primary" disabled={!readiness.ready} title={readiness.ready ? undefined : `Still needed: ${readiness.missing.map((m) => m.label).join(', ')}`} loading={save.isPending && save.variables?.publish} onClick={() => save.mutate({ publish: true })}>
+            <Button variant="primary" disabled={!readiness.ready || save.isPending} title={readiness.ready ? undefined : `Still needed: ${readiness.missing.map((m) => m.label).join(', ')}`} loading={save.isPending && save.variables?.publish} onClick={() => save.mutate({ publish: true })}>
               Save & publish
             </Button>
           )}
@@ -234,7 +234,7 @@ export function AddProperty({ open, onClose }: { open: boolean; onClose: () => v
               </li>
             ))}
           </ul>
-          <Button size="sm" className="mt-2" onClick={() => save.mutate({ publish: false, allowDuplicate: true })}>
+          <Button size="sm" className="mt-2" loading={save.isPending} onClick={() => save.mutate({ publish: false, allowDuplicate: true })}>
             It's different — save anyway
           </Button>
         </div>

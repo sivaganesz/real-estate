@@ -1,9 +1,31 @@
+import { useState, type InputHTMLAttributes } from 'react';
 import clsx from 'clsx';
 import { PROPERTY_TYPES, PROPERTY_TYPE_LABEL, FINANCING_LABEL, TIMELINE_LABEL, type Requirement } from '@estate/shared';
 import { Field, Input, Select } from './ui';
 import { usePlaces } from '../lib/property';
 
 const lakhs = (v?: number | null) => (v ? String(+(v / 100_000).toFixed(2)) : '');
+const list = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
+
+/**
+ * Shows exactly what is typed while the field is in use ("72.", "Porur, "), and the
+ * tidy value from the data otherwise. The data is updated on every keystroke.
+ */
+function DraftInput({ shown, onText, ...rest }: { shown: string; onText: (text: string) => void } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <Input
+      {...rest}
+      value={draft ?? shown}
+      onFocus={() => setDraft(shown)}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        onText(e.target.value);
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
 
 /** A compact editor for what a customer wants. Budget is typed in lakhs, as people say it. */
 export function RequirementEditor({ value, onChange }: { value: Partial<Requirement>; onChange: (r: Partial<Requirement>) => void }) {
@@ -11,7 +33,7 @@ export function RequirementEditor({ value, onChange }: { value: Partial<Requirem
   const r = value;
   const set = <K extends keyof Requirement>(k: K, v: Requirement[K] | undefined | null) => onChange({ ...r, [k]: v === '' || v === null ? undefined : v });
   const rent = r.purpose === 'rent';
-  const money = (s: string) => (s === '' ? undefined : rent ? Number(s) : Math.round(Number(s) * 100_000));
+  const money = (s: string) => (s.trim() === '' || Number.isNaN(Number(s)) ? undefined : rent ? Number(s) : Math.round(Number(s) * 100_000));
   return (
     <div className="space-y-3">
       <div>
@@ -44,10 +66,10 @@ export function RequirementEditor({ value, onChange }: { value: Partial<Requirem
           <Input type="number" min={1} max={10} value={r.bedrooms ?? ''} onChange={(e) => set('bedrooms', e.target.value ? Number(e.target.value) : undefined)} />
         </Field>
         <Field label={rent ? 'Rent from (₹)' : 'Budget from (lakhs)'}>
-          <Input inputMode="decimal" value={rent ? r.budgetMin ?? '' : lakhs(r.budgetMin)} onChange={(e) => set('budgetMin', money(e.target.value))} />
+          <DraftInput inputMode="decimal" shown={rent ? String(r.budgetMin ?? '') : lakhs(r.budgetMin)} onText={(t) => set('budgetMin', money(t))} />
         </Field>
         <Field label={rent ? 'Rent up to (₹)' : 'Budget up to (lakhs)'}>
-          <Input inputMode="decimal" value={rent ? r.budgetMax ?? '' : lakhs(r.budgetMax)} onChange={(e) => set('budgetMax', money(e.target.value))} />
+          <DraftInput inputMode="decimal" shown={rent ? String(r.budgetMax ?? '') : lakhs(r.budgetMax)} onText={(t) => set('budgetMax', money(t))} />
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -55,7 +77,7 @@ export function RequirementEditor({ value, onChange }: { value: Partial<Requirem
           <Input list="req-cities" value={r.city ?? ''} onChange={(e) => set('city', e.target.value)} />
         </Field>
         <Field label="Localities (comma separated)">
-          <Input list="req-localities" value={(r.localities ?? []).join(', ')} onChange={(e) => set('localities', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} />
+          <DraftInput list="req-localities" shown={(r.localities ?? []).join(', ')} onText={(t) => set('localities', list(t))} />
         </Field>
         <datalist id="req-cities">{places.data?.cities.map((c) => <option key={c} value={c} />)}</datalist>
         <datalist id="req-localities">{places.data?.localities.map((c) => <option key={c} value={c} />)}</datalist>
@@ -83,7 +105,7 @@ export function RequirementEditor({ value, onChange }: { value: Partial<Requirem
         </Field>
       </div>
       <Field label="Must-haves (comma separated)">
-        <Input value={(r.mustHaves ?? []).join(', ')} onChange={(e) => set('mustHaves', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="East facing, Gated community, Near a school" />
+        <DraftInput shown={(r.mustHaves ?? []).join(', ')} onText={(t) => set('mustHaves', list(t))} placeholder="East facing, Gated community, Near a school" />
       </Field>
     </div>
   );

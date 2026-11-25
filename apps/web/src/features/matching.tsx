@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
@@ -41,14 +41,21 @@ export function ShareDialog({ lead, propertyIds, onClose }: { lead: { id: string
       void qc.invalidateQueries({ queryKey: ['timeline', lead.id] });
       void qc.invalidateQueries({ queryKey: ['shortlist', lead.id] });
       void qc.invalidateQueries({ queryKey: ['best-matches'] });
+      void qc.invalidateQueries({ queryKey: ['lead', lead.id] });
     },
   });
   const [text, setText] = useState<string | null>(null);
-  if (!share.data && !share.isPending && !share.error) share.mutate();
+  // Prepare the message once when the dialog opens (the ref also covers React's double-run in development).
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    share.mutate();
+  }, [share]);
   const message = text ?? share.data?.message ?? '';
   return (
     <Modal open onClose={onClose} title={`Send to ${lead.name}`}>
-      {share.isPending ? (
+      {share.isPending || share.isIdle ? (
         <p className="text-sm text-slate-500">Preparing links…</p>
       ) : share.error ? (
         <p className="text-sm text-rose-600">{share.error.message}</p>

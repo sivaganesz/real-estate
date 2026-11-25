@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserPlus } from 'lucide-react';
-import { ROLE_LABEL, ROLES, PERMISSIONS, type Role } from '@estate/shared';
+import { ROLE_LABEL, ROLES, PERMISSIONS, PERMISSION_INFO, type Permission, type Role } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth, useUsers, type User } from '../lib/auth';
 import { PageHeader } from '../components/Layout';
@@ -62,7 +62,7 @@ export function Settings() {
         <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="text-left text-xs text-slate-500">
-              <th className="pb-2 font-medium">Permission</th>
+              <th className="pb-2 font-medium">What they can do</th>
               {ROLES.map((r) => (
                 <th key={r} className="pb-2 text-center font-medium">
                   {ROLE_LABEL[r]}
@@ -70,18 +70,27 @@ export function Settings() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {Object.entries(PERMISSIONS).map(([k, roles]) => (
-              <tr key={k}>
-                <td className="py-1.5 text-slate-700">{k}</td>
-                {ROLES.map((r) => (
-                  <td key={r} className="text-center">
-                    {(roles as readonly Role[]).includes(r) ? <span className="text-emerald-600">✓</span> : <span className="text-slate-300">—</span>}
-                  </td>
-                ))}
+          {[...new Set(Object.values(PERMISSION_INFO).map((i) => i.group))].map((group) => (
+            <tbody key={group} className="divide-y divide-slate-100">
+              <tr>
+                <th colSpan={ROLES.length + 1} className="pb-1.5 pt-4 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                  {group}
+                </th>
               </tr>
-            ))}
-          </tbody>
+              {(Object.entries(PERMISSIONS) as [Permission, readonly Role[]][])
+                .filter(([k]) => PERMISSION_INFO[k].group === group)
+                .map(([k, roles]) => (
+                  <tr key={k}>
+                    <td className="py-1.5 text-slate-700">{PERMISSION_INFO[k].label}</td>
+                    {ROLES.map((r) => (
+                      <td key={r} className="text-center">
+                        {roles.includes(r) ? <span className="text-emerald-600" aria-label="Yes">✓</span> : <span className="text-slate-300" aria-label="No">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          ))}
         </table>
       </Card>
       {editing && <UserModal user={editing === 'new' ? null : editing} managers={managers} onClose={() => setEditing(null)} />}

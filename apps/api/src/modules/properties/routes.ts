@@ -80,8 +80,7 @@ propertiesRouter.get('/', async (req, res) => {
     }
   }
   const result = await searchProperties(filters, req.actor);
-  const items = f.standalone ? result.items.filter((i) => !i.projectId) : result.items;
-  res.json({ items, total: f.standalone ? items.length : result.total, understood });
+  res.json({ items: result.items, total: result.total, understood });
 });
 
 propertiesRouter.get('/places', async (_req, res) => {

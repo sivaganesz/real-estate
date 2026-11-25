@@ -179,7 +179,8 @@ export function PropertyDetail() {
                 </Button>
               )}
               {canEdit && (
-                <Button icon={<Pencil className="h-4 w-4" />} onClick={() => setEdit(true)}>
+                // Full width unless "Availability" sits beside it (live listings only).
+                <Button icon={<Pencil className="h-4 w-4" />} className={p.listing === 'live' && can('property.availability') ? undefined : 'col-span-2'} onClick={() => setEdit(true)}>
                   Edit
                 </Button>
               )}

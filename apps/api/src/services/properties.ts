@@ -22,6 +22,8 @@ const PREFIX: Record<PropertyType, string> = { apartment: 'APT', villa: 'VIL', p
 
 export type PropertyFilters = {
   q?: string;
+  /** Only listings that are not units of a project. */
+  standalone?: boolean;
   types?: PropertyType[];
   purpose?: 'sale' | 'rent' | 'lease';
   budgetMin?: number;
@@ -70,6 +72,7 @@ export function buildPropertyQuery(f: PropertyFilters, actor: Actor): FilterQuer
   if (!can(actor.role, 'property.edit')) q.listing = 'live';
   else if (f.listing?.length) q.listing = { $in: f.listing };
   else q.listing = { $ne: 'archived' };
+  if (f.standalone) q.projectId = null;
   if (f.types?.length) q.type = { $in: f.types };
   if (f.purpose) q.purpose = f.purpose;
   if (f.budgetMin || f.budgetMax) q.price = { ...(f.budgetMin ? { $gte: f.budgetMin } : {}), ...(f.budgetMax ? { $lte: f.budgetMax } : {}) };
