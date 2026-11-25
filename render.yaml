@@ -1,6 +1,6 @@
 # The EstateOS API on Render. The web app is on Vercel and reaches this
 # service through the rewrites in apps/web/vercel.json, so both must use the
-# same address (https://estateos-api.onrender.com).
+# same address (https://estateos-api-iy6k.onrender.com).
 #
 # No external database: the API runs its own built-in MongoDB, as in
 # development. On the free plan the disk is temporary, so whenever the service
