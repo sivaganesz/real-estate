@@ -39,7 +39,7 @@ import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
 type ListState = { f: PSFilters; aiOpen: boolean; attnHidden: boolean; page: number; size: number; gridSize: number }
 let saved: ListState = { f: {}, aiOpen: false, attnHidden: false, page: 1, size: 10, gridSize: 12 }
 
-/** Cards come in rows of 2, 3 or 4, so the grid pages in multiples of 12. */
+/** Cards come in rows of 2, 3, 4 or (very wide screens) 6, so the grid pages in multiples of 12. */
 const GRID_SIZES = [12, 24, 48, 96]
 
 /**
@@ -192,7 +192,7 @@ export function PropertiesPage() {
   const attnFix = (p: Property, a: Attention) => a.key === 'details' ? `/properties/${p.id}/edit` : a.key === 'price' ? `/properties/${p.id}/price` : a.key === 'docs' ? `/properties/${p.id}/legal` : `/properties/${p.id}/matching`
 
   return (
-    <Page className="pb-0">
+    <Page full className="pb-0">
       <PageHeader title={t('ps.title')} description={t('ps.subtitle')}
         actions={can('property.add') && (
           <>
@@ -223,7 +223,7 @@ export function PropertiesPage() {
       )}
 
       {/* search + tabs stay at the top while the table scrolls */}
-      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[83px]">
+      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[49px]">
         <SearchBar filters={f} items={items} onChange={(nf) => setF(nf, true)} onSet={onSet}
           onClearPill={(pl) => { setOpen(null); setF(dropKeys(f, PILL_KEYS[pl as Exclude<Pill, 'sort'>])) }}
           onClearAll={() => { setOpen(null); setF({}) }}
@@ -266,7 +266,7 @@ export function PropertiesPage() {
         {list.length === 0 ? (
           <EmptyState variant="card" action={relaxButton || undefined}>{t('ps.noneMatch')}</EmptyState>
         ) : grid ? (
-          <ul aria-label={t('ps.title')} className={cn('grid pb-2 sm:grid-cols-2', compact ? 'gap-3 lg:grid-cols-3 xl:grid-cols-4' : 'gap-4 xl:grid-cols-3 2xl:grid-cols-4')}>
+          <ul aria-label={t('ps.title')} className={cn('grid pb-2 sm:grid-cols-2', compact ? 'gap-3 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6' : 'gap-4 xl:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-6')}>
             {shown.map((x) => {
               const p = x.raw
               const fits = p.status === 'available' && !p.archived ? leadsForProperty(p, leads, db.settings) : []

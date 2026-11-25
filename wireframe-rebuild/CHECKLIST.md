@@ -17,7 +17,7 @@ Updated 25 Nov 2026.
 
 | Section | Status |
 |---|---|
-| App shell (sidebar, top bar, demo ribbon) | Done |
+| App shell (sidebar, top bar) | Done |
 | Theme (light / dark) and language (English / Tamil) | Done |
 | Properties — list | Done |
 | Properties — property page | Mostly done; design changes in progress |
@@ -46,7 +46,7 @@ Updated 25 Nov 2026.
 
 ## 2. App shell (every page)
 
-- [x] Demo ribbon: "WIREFRAME … fictional data", demo date, **Reset demo data**
+- [x] **Changed (26 Nov):** the dark WIREFRAME ribbon is removed; **Reset demo data** is in the top bar after "Viewing as" (in the ☰ menu on a phone), and its hint gives the demo date
 - [x] Sidebar with groups and live counts (Properties, Leads, Appointments)
   - [ ] Projects count, once Projects is built
 - [x] HNI qualification shows 🔒 to Sales executives
@@ -55,6 +55,7 @@ Updated 25 Nov 2026.
 - [x] "Viewing as" role switch (Admin / Sales manager / Sales executive), remembered
 - [x] **Changed:** the English / தமிழ் switch moved to Settings
 - [x] **Changed:** "System map" and "Test scenario 001" removed from the menu (24 Nov)
+- [x] **Changed (26 Nov):** on large screens, list pages (Properties, Drafts) fill the full width; other pages keep their width and are centred. The card grid shows 6 per row from 2,200 px
 
 ## 3. Properties
 

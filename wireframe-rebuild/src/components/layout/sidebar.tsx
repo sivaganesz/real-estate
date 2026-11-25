@@ -94,7 +94,7 @@ export function Sidebar() {
   return (
     <aside className={cn('hidden shrink-0 border-r bg-card transition-[width] duration-200 motion-reduce:transition-none lg:block',
       collapsed ? 'w-16' : 'w-[236px]')}>
-      <div className="sticky top-[30px] z-30 h-[calc(100svh-30px)]">
+      <div className="sticky top-0 z-30 h-svh">
         <div className="side-scroll h-full overflow-x-hidden overflow-y-auto overscroll-contain px-2.5 py-3.5">
           {collapsed ? (
             <div className="flex justify-center pt-1 pb-3.5">

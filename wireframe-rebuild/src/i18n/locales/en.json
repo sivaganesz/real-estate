@@ -51,7 +51,8 @@
     "viewingAs": "Demo — signed in as {{name}}",
     "reset": "Reset demo data",
     "resetDone": "Demo data reset",
-    "switchRole": "Demo — view as"
+    "switchRole": "Demo — view as",
+    "resetHint": "Demo date {{date}} · all data is fictional sample data, saved in this browser. Puts the sample data back as it was."
   },
   "action": {
     "add": "Add",
@@ -933,9 +934,6 @@
     "bulkImport": "Bulk import",
     "account": "Account and demo settings",
     "wireframeNote": "Wireframe · all data is fictional and saved only in this browser.",
-    "wireframe": "WIREFRAME",
-    "ribbon": "Real Estate Specification & Lead Management — V1 MVP · all data is fictional mock data · edits are saved in this browser",
-    "demoDate": "Demo date: {{date}}",
     "publicEnquiry": "Public enquiry",
     "lead": "Lead",
     "property": "Property",

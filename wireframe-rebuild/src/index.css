@@ -15,6 +15,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* very wide screens (large or 4K monitors): list grids show more cards per row */
+  --breakpoint-3xl: 120rem;
+  --breakpoint-4xl: 137.5rem;
   /* Inter for Latin text; Tamil characters fall through to Noto Sans Tamil */
   --font-sans: 'Inter Variable', 'Noto Sans Tamil', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
   --font-heading: var(--font-sans);

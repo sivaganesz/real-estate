@@ -102,14 +102,14 @@ export function DraftsPage() {
       : <span className="text-muted-foreground">{t('drafts.searchHint')}</span>
 
   return (
-    <Page className="pb-0">
+    <Page full className="pb-0">
       <PageHeader title={t('drafts.title')} description={t('drafts.subtitle')}
         actions={<>
           <Button variant="outline" asChild><Link to="/properties">← {t('drafts.allProperties')}</Link></Button>
           <Button asChild><Link to="/properties/new">＋ {t('props.add')}</Link></Button>
         </>} />
 
-      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[83px]">
+      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[49px]">
         <SearchBar filters={f} items={items.map((x) => x.item)} onChange={(nf) => setSt((s) => ({ ...s, f: nf }))}
           onSet={(k, v) => { setF(setValue(f, k, v)); if (['type', 'sort', 'budget'].includes(k)) setOpen(null) }}
           onClearPill={(pl) => { setOpen(null); setF(dropKeys(f, PILL_KEYS[pl as Exclude<Pill, 'sort'>])) }}

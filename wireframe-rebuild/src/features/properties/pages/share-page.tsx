@@ -117,7 +117,7 @@ function ShareView({ p, leadId }: { p: Property; leadId?: string }) {
         <Brochure p={p} lead={lead} opt={opt} places={places} verified={verified.map((a) => a.approvalId)}
           contact={lead?.ownerId ? userName(db, lead.ownerId) : role === 'executive' ? user.name : ''} />
 
-        <aside className="flex flex-col gap-4 print:hidden lg:sticky lg:top-[100px]">
+        <aside className="flex flex-col gap-4 print:hidden lg:sticky lg:top-[70px]">
           <SectionCard title={t('brochure.panelTitle')}>
             {!live && <Callout tone="warning" className="mb-3">{t('brochure.notLive', { status: p.archived ? t('ps.archived') : t(`status.${p.status}`) })}</Callout>}
 
