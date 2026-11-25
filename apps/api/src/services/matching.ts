@@ -256,3 +256,18 @@ export async function bestMatchesToday(actor: Actor) {
   }
   return out;
 }
+
+/**
+ * For a page of listings: how many open customers each one fits. One read of
+ * the leads, then the same scoring as the property's "Matching customers".
+ */
+export async function fitCounts(properties: (Record<string, unknown> & { id: string; purpose?: string })[], actor: Actor) {
+  const leads = await Lead.find({ ...leadScope(actor), stage: { $in: OPEN_STAGES } }).select('requirement shortlist').lean();
+  const usable = leads.filter((l) => isQualified(l.requirement as never) || (l.requirement as Partial<Requirement>)?.types?.length);
+  const out = new Map<string, number>();
+  for (const p of properties) {
+    const doc = { ...p, _id: p.id } as never;
+    out.set(p.id, usable.filter((l) => (l.requirement as Partial<Requirement>)?.purpose === p.purpose && scoreMatch(l.requirement as never, doc, l.shortlist as Shortlist)).length);
+  }
+  return out;
+}

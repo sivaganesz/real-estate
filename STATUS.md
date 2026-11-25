@@ -24,6 +24,26 @@ Last updated: 2026-11-25
 
 ## Done since last update
 
+**Demo polish** (`ce40bbd`)
+
+- Budget, localities and must-haves type normally (e.g. 72.5, "Porur, Adyar").
+- Save buttons can't fire twice (deal actions, add property, project wizard, plan next), and "Send to customer" prepares its message once.
+- Today's demo meetings always fall today, whenever the data is created.
+- **Properties** shows standalone listings by default; project units are under Projects or the "Include project units" chip, 24 at a time with "Show more".
+- **Settings** lists permissions in plain words, grouped by area.
+- The property page's Edit button is full width when alone.
+
+**Review fixes** (`0c34950`)
+
+- An in-app confirm dialog replaces the browser pop-ups.
+- Pages load lazily and libraries get their own file: main JS went from 635 kB to 264 kB.
+- The assistant sends each question only once.
+- Imports are claimed before they run, so a double click can't import twice; there's a new API test for it.
+- e2e runs against the built app (vite preview, `dist-e2e`).
+- A project-only skill `.claude/skills/frontend-review` (adapted from Pandi2352/frontend-skills), plus `AGENTS.md` with the project's frontend decisions and a one-line `CLAUDE.md`.
+
+**AI Assistant page** (`cf5d12a`): `/assistant` with a greeting, quick actions per role, a + menu, voice, and past chats per user in the browser; it shares its conversation with the side panel.
+
 **Deployed** (`0e6d478`, `3fd4760`, `4b478c6`)
 
 - **Web on Vercel:** `apps/web/vercel.json` rewrites `/api` and `/uploads` to the Render API and serves index.html for every route. Vercel Root Directory is `apps/web`.
@@ -70,15 +90,15 @@ Last updated: 2026-11-25
 
 ## Next up
 
-In progress:
-
-- A full-screen AI Assistant page.
-- Fixing one unreliable e2e journey.
-
-Suggestions:
-
-1. Try real Gemini on a real DTCP layout drawing (chat and describe-a-property are verified).
-2. Pick up any of the deferred items below.
+- **Demo to the team**, for UI approval. Checklist:
+  - don't push on demo day (it redeploys Render and resets the data);
+  - wake the site about 5 minutes before;
+  - try one AI quick action;
+  - use desktop Chrome and show Admin, then Manager, then Executive.
+- **After approval, from the frontend review** (about 8–10 hours in batches):
+  - High: dialog focus and Esc, and the project wizard's retry guard.
+  - Medium: error states with retry, labels and screen-reader support, a phone "More" menu, keeping views fresh after changes, and shared pieces for duplicated code.
+  - Low: cleanup.
 
 **Projects, not built yet** (doc 08 §7): plot sizes edited one by one (only via the layout map today), a site plan drawn from the actual drawing, more than one flat plan per tower (e.g. penthouse floors), project photos and brochure.
 
@@ -97,6 +117,7 @@ Suggestions:
 | 1 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
 | 2 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
 | 3 | **Keep data permanently?** MongoDB Atlas plus cloud file storage | On Render's free plan, data and uploaded files reset to the demo data on every restart or redeploy. |
+| 4 | **Remove the one-click demo sign-in** before real use | Anyone with the link can sign in as a demo user while it is there. |
 
 ## How to run
 
@@ -126,9 +147,10 @@ Demo sign-ins (password `demo1234`):
 
 | Check | Command | Last result |
 |---|---|---|
-| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 73 passing |
-| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 15 journeys; one is unreliable (fix in progress) |
+| API tests (vitest + supertest, in-memory MongoDB) | `pnpm test` | 74 passing |
+| End-to-end (Playwright, desktop + phone) | `pnpm e2e` | 16 journeys passing |
 | Typecheck | `pnpm typecheck` | Clean |
-| Web build | `pnpm build` | Clean |
+| Web build | `pnpm build` | Clean, no size warning |
+| Frontend review scanner | `node .claude/skills/frontend-review/scripts/scan.mjs apps/web` | 0 findings |
 
 `pnpm e2e` starts its own API on port 4190 (fresh in-memory database, offline AI) and web on 5190, so it doesn't touch your dev server.

@@ -55,6 +55,23 @@ describe('properties', () => {
     expect(res.body.details.duplicates[0].title).toMatch(/Velachery/);
   });
 
+  it('gives the list page counts per status and how many leads fit each listing', async () => {
+    const r = (await manager.get('/api/properties?standalone=true&withCounts=true&withFit=true&limit=200')).body;
+    expect(r.counts.all).toBe(r.counts.available + r.counts.held + r.counts.booked + r.counts.sold + r.counts.draft);
+    expect(r.items.every((p: { projectId: string | null }) => !p.projectId)).toBe(true);
+    expect(r.items.every((p: { fitCount: number }) => typeof p.fitCount === 'number')).toBe(true);
+    expect(r.items.some((p: { fitCount: number }) => p.fitCount > 0)).toBe(true);
+    // Executives see live listings only, so no drafts or archived in their counts.
+    const e = (await exec.get('/api/properties?withCounts=true')).body;
+    expect(e.counts.draft).toBe(0);
+    expect(e.counts.archived).toBe(0);
+    // Size, purpose and locality filters.
+    const big = (await manager.get('/api/properties?areaMin=2000&smart=false')).body.items;
+    expect(big.every((p: { areaSqft: number }) => p.areaSqft >= 2000)).toBe(true);
+    const rent = (await manager.get('/api/properties?purpose=rent')).body.items;
+    expect(rent.every((p: { purpose: string }) => p.purpose === 'rent')).toBe(true);
+  });
+
   it('understands plain-language search', async () => {
     const res = await exec.get('/api/properties?q=' + encodeURIComponent('2 bhk under 70 lakhs in porur'));
     expect(res.body.understood).toEqual(['2 BHK', 'up to ₹70,00,000', 'Porur']);

@@ -222,3 +222,24 @@ export const ProjectInput = z.object({
   approvals: z.array(z.string().min(1)).optional(),
 });
 export type ProjectInput = z.infer<typeof ProjectInput>;
+
+/**
+ * How complete a listing is, 0–100. What's needed to go live counts double;
+ * photos count double too (buyers look first); the description, approval
+ * documents and optional details make up the rest.
+ */
+export function propertyCompletion(p: Parameters<typeof propertyReadiness>[0]): number {
+  const has = (v: unknown) => v !== undefined && v !== null && v !== '';
+  let total = 0;
+  let done = 0;
+  const check = (ok: boolean, weight: number) => {
+    total += weight;
+    if (ok) done += weight;
+  };
+  for (const v of [p.title, p.price, p.area, p.city, p.locality]) check(has(v), 2);
+  for (const f of TYPE_DETAILS[p.type] ?? []) check(has(p.details?.[f.key]), f.required ? 2 : 1);
+  check(!!p.media?.length, 2);
+  check(has(p.description), 1);
+  for (const a of p.approvals ?? []) check(!!a.documentUrl, 1);
+  return total ? Math.round((done / total) * 100) : 0;
+}

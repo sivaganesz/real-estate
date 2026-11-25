@@ -22,7 +22,8 @@ export function PropertyDetail() {
   const ask = useConfirm();
   const assistant = useAssistant();
   const [edit, setEdit] = useState(false);
-  const [share, setShare] = useState(false);
+  // "?share=1" (from the list's row menu) opens the share sheet straight away.
+  const [share, setShare] = useState(() => new URLSearchParams(window.location.search).get('share') === '1');
   const [avail, setAvail] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 

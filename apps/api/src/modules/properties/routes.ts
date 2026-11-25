@@ -18,8 +18,10 @@ import {
   serialiseProperty,
   setAvailability,
   setListing,
+  statusCounts,
   updateProperty,
 } from '../../services/properties';
+import { fitCounts } from '../../services/matching';
 import { createProject, generateUnits, getProjectWithUnits, listProjects, publishReadyUnits, revisePrices, updateProject } from '../../services/projects';
 import { applyLayout, layoutFromMap, setProjectPublished, syncApprovals } from '../../services/projectLayout';
 import { Project } from '../../models/property';
@@ -42,6 +44,13 @@ const ListQuery = z.object({
   standalone: z.boolean().optional(),
   budgetMax: z.number().optional(),
   budgetMin: z.number().optional(),
+  areaMin: z.number().optional(),
+  areaMax: z.number().optional(),
+  purpose: z.enum(['sale', 'rent', 'lease']).optional(),
+  localities: z.array(z.string()).optional(),
+  amenities: z.array(z.string()).optional(),
+  withFit: z.boolean().optional(),
+  withCounts: z.boolean().optional(),
   bedrooms: z.number().optional(),
   city: z.string().optional(),
   sort: z.enum(['newest', 'price_asc', 'price_desc', 'updated']).optional(),
@@ -63,6 +72,12 @@ propertiesRouter.get('/', async (req, res) => {
     listing: csv(qy.listing),
     budgetMax: num(qy.budgetMax),
     budgetMin: num(qy.budgetMin),
+    areaMin: num(qy.areaMin),
+    areaMax: num(qy.areaMax),
+    localities: csv(qy.localities),
+    amenities: csv(qy.amenities),
+    withFit: qy.withFit === 'true' || undefined,
+    withCounts: qy.withCounts === 'true' || undefined,
     bedrooms: num(qy.bedrooms),
     limit: num(qy.limit),
     skip: num(qy.skip),
@@ -80,7 +95,10 @@ propertiesRouter.get('/', async (req, res) => {
     }
   }
   const result = await searchProperties(filters, req.actor);
-  res.json({ items: result.items, total: result.total, understood });
+  // Optional extras for the list page: leads that fit each listing, and counts per status tab.
+  const [fit, counts] = await Promise.all([f.withFit ? fitCounts(result.items as never, req.actor) : null, f.withCounts ? statusCounts(filters, req.actor) : null]);
+  const items = fit ? result.items.map((i) => ({ ...i, fitCount: fit.get(i.id) ?? 0 })) : result.items;
+  res.json({ items, total: result.total, understood, ...(counts ? { counts } : {}) });
 });
 
 propertiesRouter.get('/places', async (_req, res) => {

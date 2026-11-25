@@ -267,3 +267,20 @@ export async function publicProperty(token: string) {
     availability: p.availability === 'available' ? 'available' : 'unavailable',
   };
 }
+
+/**
+ * How many listings sit in each state for the same search, for the status tabs.
+ * Live listings count by availability; drafts and archived only for those who can edit.
+ */
+export async function statusCounts(f: PropertyFilters, actor: Actor) {
+  const base = buildPropertyQuery({ ...f, availability: undefined, listing: undefined }, actor);
+  const editor = can(actor.role, 'property.edit');
+  const [byAvailability, draft, archived] = await Promise.all([
+    Property.aggregate<{ _id: Availability; n: number }>([{ $match: { ...base, listing: 'live' } }, { $group: { _id: '$availability', n: { $sum: 1 } } }]),
+    editor ? Property.countDocuments({ ...base, listing: 'draft' }) : Promise.resolve(0),
+    editor ? Property.countDocuments({ ...base, listing: 'archived' }) : Promise.resolve(0),
+  ]);
+  const live = (a: Availability) => byAvailability.find((x) => x._id === a)?.n ?? 0;
+  const counts = { available: live('available'), held: live('held'), booked: live('booked'), sold: live('sold'), draft, archived };
+  return { ...counts, all: counts.available + counts.held + counts.booked + counts.sold + draft };
+}
