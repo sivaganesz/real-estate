@@ -73,9 +73,9 @@ export function PropertyDetail() {
     },
   });
   const upload = useMutation({
-    mutationFn: (files: FileList) => {
+    mutationFn: (files: File[]) => {
       const fd = new FormData();
-      [...files].forEach((f) => fd.append('files', f));
+      files.forEach((f) => fd.append('files', f));
       return api.upload(`/properties/${id}/photos`, fd);
     },
     onSuccess: () => {
@@ -267,7 +267,9 @@ export function PropertyDetail() {
         className="hidden"
         aria-label="Add photos"
         onChange={(e) => {
-          if (e.target.files?.length) upload.mutate(e.target.files);
+          // Copy the files first: clearing the input below empties its live file list.
+          const files = [...(e.target.files ?? [])];
+          if (files.length) upload.mutate(files);
           // Let the same file be picked again after a failed upload.
           e.target.value = '';
         }}

@@ -71,6 +71,7 @@ const propertySchema = new Schema(
     media: [{ url: String, kind: { type: String, enum: ['photo', 'floorplan', 'video'], default: 'photo' }, caption: String }],
     documents: [{ name: String, url: String, uploadedAt: Date }],
     approvals: [{ _id: false, name: String, documentUrl: String, verified: Boolean }],
+    location: { type: new Schema({ lat: Number, lng: Number }, { _id: false }), default: undefined },
 
     listing: { type: String, enum: LISTING_STATES, default: 'draft', index: true },
     availability: { type: String, enum: AVAILABILITY, default: 'available', index: true },

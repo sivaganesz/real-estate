@@ -133,6 +133,8 @@ export const PropertyInput = z.object({
   description: z.string().max(4000).nullish(),
   highlights: z.array(z.string().max(160)).max(8).default([]),
   approvals: z.array(z.object({ name: z.string().trim().min(1).max(60), documentUrl: z.string().nullish(), verified: z.boolean().optional() })).default([]),
+  /** The exact spot, when someone has set it; otherwise maps use the locality. */
+  location: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).nullish(),
   sources: z.record(z.string()).optional(),
 });
 export type PropertyInput = z.infer<typeof PropertyInput>;
@@ -256,4 +258,85 @@ export const BUYER_COSTS = [
 export function buyerTotal(price: number) {
   const parts = BUYER_COSTS.map((c) => ({ ...c, amount: Math.round((price * c.pct) / 100) }));
   return { parts, total: price + parts.reduce((t, p) => t + p.amount, 0) };
+}
+
+
+/**
+ * Rough centres of the localities and cities we sell in, so every property can
+ * show a map before anyone sets its exact spot.
+ */
+export const PLACE_COORDS: Record<string, [number, number]> = {
+  // Cities
+  chennai: [13.0827, 80.2707],
+  coimbatore: [11.0168, 76.9558],
+  madurai: [9.9252, 78.1198],
+  tiruchirappalli: [10.7905, 78.7047],
+  trichy: [10.7905, 78.7047],
+  bengaluru: [12.9716, 77.5946],
+  bangalore: [12.9716, 77.5946],
+  // Chennai
+  adyar: [13.0012, 80.2565],
+  ambattur: [13.1143, 80.1548],
+  'anna nagar': [13.085, 80.2101],
+  'ashok nagar': [13.0373, 80.2123],
+  avadi: [13.1067, 80.097],
+  'besant nagar': [13.0003, 80.2667],
+  chromepet: [12.9516, 80.1462],
+  egmore: [13.0732, 80.2609],
+  guduvanchery: [12.8448, 80.06],
+  guindy: [13.0067, 80.2206],
+  kelambakkam: [12.7871, 80.221],
+  kilpauk: [13.0839, 80.2423],
+  kodambakkam: [13.0521, 80.2255],
+  madipakkam: [12.9623, 80.1986],
+  medavakkam: [12.9171, 80.1923],
+  mogappair: [13.0837, 80.175],
+  mylapore: [13.0339, 80.2619],
+  nanganallur: [12.9796, 80.188],
+  navalur: [12.8459, 80.2265],
+  nungambakkam: [13.0569, 80.2425],
+  pallavaram: [12.9675, 80.1491],
+  pammal: [12.9749, 80.1347],
+  perambur: [13.1186, 80.234],
+  perungudi: [12.9654, 80.2461],
+  poonamallee: [13.0473, 80.0945],
+  porur: [13.0382, 80.1565],
+  saidapet: [13.0213, 80.2231],
+  sholinganallur: [12.901, 80.2279],
+  siruseri: [12.8256, 80.2196],
+  't. nagar': [13.0418, 80.2341],
+  't nagar': [13.0418, 80.2341],
+  tambaram: [12.9249, 80.1],
+  thiruporur: [12.7256, 80.1897],
+  thiruvanmiyur: [12.983, 80.2594],
+  thoraipakkam: [12.9416, 80.2362],
+  uthandi: [12.8676, 80.2433],
+  valasaravakkam: [13.0405, 80.1729],
+  vandalur: [12.8925, 80.081],
+  velachery: [12.9815, 80.218],
+  villivakkam: [13.108, 80.2095],
+  'west mambalam': [13.039, 80.221],
+  // Coimbatore
+  gandhipuram: [11.0183, 76.9725],
+  peelamedu: [11.0275, 77.0237],
+  'rs puram': [11.0089, 76.9497],
+  saravanampatti: [11.078, 77.0006],
+};
+
+/** Where to centre a map: the exact spot, else the locality, else the city. */
+export function mapPoint(p: { location?: { lat: number; lng: number } | null; locality?: string | null; city?: string | null }): { lat: number; lng: number; level: 'exact' | 'locality' | 'city' } | null {
+  if (p.location) return { ...p.location, level: 'exact' };
+  const find = (name?: string | null) => {
+    const n = (name ?? '').toLowerCase().trim();
+    if (!n) return null;
+    if (PLACE_COORDS[n]) return PLACE_COORDS[n];
+    // "Sholinganallur, OMR" or "Near Porur junction": use the first known name inside.
+    const key = Object.keys(PLACE_COORDS).find((k) => n.includes(k));
+    return key ? PLACE_COORDS[key] : null;
+  };
+  const loc = find(p.locality);
+  if (loc) return { lat: loc[0], lng: loc[1], level: 'locality' };
+  const city = find(p.city);
+  if (city) return { lat: city[0], lng: city[1], level: 'city' };
+  return null;
 }

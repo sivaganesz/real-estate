@@ -160,6 +160,7 @@ propertiesRouter.post('/:id/photos', requirePermission('property.edit'), photoUp
   const p = await Property.findById(String(req.params.id));
   if (!p) throw notFound('Property');
   const files = (req.files as Express.Multer.File[]) ?? [];
+  if (!files.length) throw badRequest('Choose at least one photo');
   for (const f of files) p.media.push({ url: publicUrl('photos', f.filename), kind: 'photo' });
   await p.save();
   await audit(req.actor, 'property', p._id, 'media', `Added ${files.length} photo${files.length === 1 ? '' : 's'}`);

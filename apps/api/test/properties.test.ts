@@ -114,6 +114,17 @@ describe('properties', () => {
     expect((await get()).approvals.map((a) => a.name)).toEqual(['RERA']);
   });
 
+  it('saves an exact location, refuses impossible ones, and can clear it', async () => {
+    const p = (await manager.get('/api/properties?q=2 BHK in Chromepet&smart=false')).body.items[0];
+    expect((await manager.patch(`/api/properties/${p.id}`).send({ location: { lat: 12.9516, lng: 80.1462 } })).status).toBe(200);
+    expect((await manager.get(`/api/properties/${p.id}`)).body.property.location).toEqual({ lat: 12.9516, lng: 80.1462 });
+    expect((await manager.patch(`/api/properties/${p.id}`).send({ location: { lat: 123, lng: 80 } })).status).toBe(400);
+    await manager.patch(`/api/properties/${p.id}`).send({ location: null });
+    expect((await manager.get(`/api/properties/${p.id}`)).body.property.location ?? null).toBeNull();
+    // Executives can't change it.
+    expect((await exec.patch(`/api/properties/${p.id}`).send({ location: { lat: 13, lng: 80 } })).status).toBe(403);
+  });
+
   it('understands plain-language search', async () => {
     const res = await exec.get('/api/properties?q=' + encodeURIComponent('2 bhk under 70 lakhs in porur'));
     expect(res.body.understood).toEqual(['2 BHK', 'up to ₹70,00,000', 'Porur']);

@@ -40,6 +40,7 @@ export type Property = {
   media: { url: string; kind: string; caption?: string }[];
   documents: { name: string; url: string; uploadedAt: string }[];
   approvals: { name: string; documentUrl?: string | null; verified?: boolean }[];
+  location?: { lat: number; lng: number } | null;
   listing: ListingState;
   availability: Availability;
   heldUntil?: string | null;
