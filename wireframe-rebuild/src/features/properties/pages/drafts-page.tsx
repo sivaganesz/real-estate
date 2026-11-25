@@ -109,7 +109,7 @@ export function DraftsPage() {
           <Button asChild><Link to="/properties/new">＋ {t('props.add')}</Link></Button>
         </>} />
 
-      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[49px]">
+      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[calc(3rem+1px)]">
         <SearchBar filters={f} items={items.map((x) => x.item)} onChange={(nf) => setSt((s) => ({ ...s, f: nf }))}
           onSet={(k, v) => { setF(setValue(f, k, v)); if (['type', 'sort', 'budget'].includes(k)) setOpen(null) }}
           onClearPill={(pl) => { setOpen(null); setF(dropKeys(f, PILL_KEYS[pl as Exclude<Pill, 'sort'>])) }}
@@ -121,9 +121,9 @@ export function DraftsPage() {
             const on = st.tab === o.v
             return (
               <button key={o.v || 'all'} type="button" onClick={() => setSt((s) => ({ ...s, tab: o.v, page: 1 }))} aria-current={on ? 'page' : undefined}
-                className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+                className={cn('-mb-px border-b-2 px-3 pt-2 pb-[0.5625rem] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
                 {o.v ? t(`drafts.state.${o.v}`) : t('attn.all')}
-                <span className={cn('ml-1 rounded-full px-[7px] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
+                <span className={cn('ml-1 rounded-full px-[0.4375rem] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
               </button>
             )
           })}
@@ -190,14 +190,14 @@ export function DraftsPage() {
       <div className="z-10 -mx-4 flex flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:sticky md:bottom-0 md:-mx-6 md:px-6">
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
+            <button type="button" className="inline-flex h-[1.875rem] items-center gap-1.5 rounded-full border bg-card px-3">
               {t('ps.rowsPerPage')} <b className="text-foreground">{size}</b> <span className="text-micro">▾</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-auto min-w-[150px] rounded-xl p-2">
+          <PopoverContent side="top" align="start" className="w-auto min-w-[9.375rem] rounded-xl p-2">
             {PAGE_SIZES.map((n) => (
               <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, size: n, page: 1 }))}
-                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{t('ps.rows', { n })}</button>
+                className={cn('block w-full rounded-[0.4375rem] px-2.5 py-[0.4375rem] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{t('ps.rows', { n })}</button>
             ))}
           </PopoverContent>
         </Popover>

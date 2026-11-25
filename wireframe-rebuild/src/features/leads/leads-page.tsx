@@ -6,7 +6,7 @@
  * separate assessments — a high budget never makes someone an HNI.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import {
   ArrowUpRight, LayoutGrid, List, MapPin, MessageCircle, MoreHorizontal, NotebookPen, Phone, Search, Sparkles, Tag, UserRound, Users, Wallet,
 } from 'lucide-react'
@@ -42,6 +42,7 @@ import {
   attentionOf, filterCount, inTab, isActive, isOverdue, isDueToday, LEAD_ATTENTION, LEAD_EXAMPLES, LEAD_TABS, type LeadFilters, type LeadItem,
   leadItems, type LeadSort, type LeadTab, matchesLead, parseLeadSentence, sortLeads,
 } from './lead-list'
+import { LeadsToday } from './leads-today'
 
 export const STAGE_TONE: Record<LeadStage, Tone> = {
   new: 'neutral', contacted: 'neutral', qualified: 'info', recommended: 'primary', visitScheduled: 'violet', negotiation: 'warning', closed: 'success', lost: 'danger',
@@ -72,7 +73,13 @@ function useLeadView(userId: string, manager: boolean): [View, (v: View) => void
 
 type Pill = 'stage' | 'owner' | 'purpose' | 'type' | 'band' | 'cls' | 'sort'
 
+/** /leads shows the current list; /leads?design=new the "Today" prototype (26 Nov), to compare the two. */
 export function LeadsPage() {
+  const [search] = useSearchParams()
+  return search.get('design') === 'new' ? <LeadsToday /> : <LeadsList />
+}
+
+function LeadsList() {
   const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
@@ -153,6 +160,7 @@ export function LeadsPage() {
     <Page full className="pb-0">
       <PageHeader title={t('leads.title')} description={t('leads.subtitle')}
         actions={<>
+          <Button variant="outline" asChild className="border-violet/40 text-violet"><Link to="/leads?design=new"><Sparkles /> {t('today.tryNew')}</Link></Button>
           <Button variant="outline" asChild><Link to="/enquiry">📝 {t('leads.enquiryForm')}</Link></Button>
           <Button asChild><Link to="/leads/new">＋ {t('leads.add')}</Link></Button>
         </>} />
@@ -172,19 +180,19 @@ export function LeadsPage() {
       )}
 
       {/* search, pills and tabs stay at the top while the list scrolls */}
-      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[49px]">
+      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[calc(3rem+1px)]">
         {st.aiOpen ? (
           <div className="mb-2">
             <form onSubmit={(e) => { e.preventDefault(); ask(f.aiText ?? '') }}
-              className="flex items-center gap-2 rounded-[14px] border-[1.5px] border-violet/40 bg-card py-2 pr-2 pl-3.5 shadow-[0_0_0_4px_var(--violet-soft)]">
-              <Sparkles className="size-[18px] shrink-0 text-violet" />
+              className="flex items-center gap-2 rounded-[0.875rem] border-[1.5px] border-violet/40 bg-card py-2 pr-2 pl-3.5 shadow-[0_0_0_4px_var(--violet-soft)]">
+              <Sparkles className="size-[1.125rem] shrink-0 text-violet" />
               <input autoFocus value={f.aiText ?? ''} onChange={(e) => setSt((s) => ({ ...s, f: { ...s.f, aiText: e.target.value } }))}
                 onKeyDown={(e) => { if (e.key === 'Escape') setSt((s) => ({ ...s, aiOpen: false })) }}
                 placeholder={t('leads.aiPlaceholder')} aria-label={t('leads.aiPlaceholder')} className="min-w-0 flex-1 bg-transparent py-1.5 text-prompt outline-none" />
               <Button size="sm" type="submit">{t('search.go')}</Button>
               <Button size="sm" type="button" variant="outline" onClick={() => setSt((s) => ({ ...s, aiOpen: false }))}>{t('ps.backToNormal')}</Button>
             </form>
-            <div className="mx-0.5 mt-2 flex min-h-[26px] flex-wrap items-center gap-1.5 text-ui" aria-live="polite">
+            <div className="mx-0.5 mt-2 flex min-h-[1.625rem] flex-wrap items-center gap-1.5 text-ui" aria-live="polite">
               {f.aiMiss ? <span className="font-medium text-warning">{t('leads.aiMiss')}</span>
                 : f.aiRan ? <span className="text-muted-foreground">{t('leads.found', { count: list.length })}</span>
                   : <span className="text-muted-foreground">{t('ps.try')}</span>}
@@ -194,12 +202,12 @@ export function LeadsPage() {
         ) : null}
         <div className="mb-2 flex flex-col gap-2 lg:flex-row lg:items-start">
           {!st.aiOpen && (
-            <div className="relative flex w-full items-center lg:w-[300px]" role="search">
+            <div className="relative flex w-full items-center lg:w-[18.75rem]" role="search">
               <Search className="pointer-events-none absolute left-3 size-3.5 opacity-50" />
               <input type="search" value={f.q ?? ''} onChange={(e) => setF({ ...f, q: e.target.value || undefined })} placeholder={t('leads.searchPlaceholder')} aria-label={t('leads.searchPlaceholder')}
                 className="h-8 w-full rounded-full border bg-card pr-10 pl-8 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20" />
               <button type="button" onClick={() => setSt((s) => ({ ...s, aiOpen: true }))} title={t('leads.aiTitle')} aria-label={t('leads.aiTitle')}
-                className="absolute right-1 grid h-[26px] w-7 place-items-center rounded-full bg-gradient-to-br from-violet-soft to-accent ring-1 ring-violet/25 ring-inset hover:from-violet/20">
+                className="absolute right-1 grid h-[1.625rem] w-7 place-items-center rounded-full bg-gradient-to-br from-violet-soft to-accent ring-1 ring-violet/25 ring-inset hover:from-violet/20">
                 <Sparkles className="size-3.5 text-violet" />
               </button>
             </div>
@@ -233,9 +241,9 @@ export function LeadsPage() {
               const on = st.tab === o.k
               return (
                 <button key={o.k} type="button" onClick={() => setSt((s) => ({ ...s, tab: o.k, page: 1 }))} aria-current={on ? 'page' : undefined}
-                  className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+                  className={cn('-mb-px border-b-2 px-3 pt-2 pb-[0.5625rem] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
                   {t(`leads.tab.${o.k}`)}
-                  <span className={cn('ml-1 rounded-full px-[7px] text-label', o.k === 'overdue' && o.n ? 'bg-danger-soft text-danger' : on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
+                  <span className={cn('ml-1 rounded-full px-[0.4375rem] text-label', o.k === 'overdue' && o.n ? 'bg-danger-soft text-danger' : on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
                 </button>
               )
             })}
@@ -313,14 +321,14 @@ export function LeadsPage() {
       <div className="z-10 -mx-4 flex flex-wrap items-center gap-3 bg-background px-4 py-2.5 text-ui text-muted-foreground md:sticky md:bottom-0 md:-mx-6 md:px-6">
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
+            <button type="button" className="inline-flex h-[1.875rem] items-center gap-1.5 rounded-full border bg-card px-3">
               {cards ? t('ps.cardsPerPage') : t('ps.rowsPerPage')} <b className="text-foreground">{size}</b> <span className="text-micro">▾</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-auto min-w-[150px] rounded-xl p-2">
+          <PopoverContent side="top" align="start" className="w-auto min-w-[9.375rem] rounded-xl p-2">
             {(cards ? GRID_SIZES : PAGE_SIZES).map((n) => (
               <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, ...(cards ? { gridSize: n } : { size: n }), page: 1 }))}
-                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{cards ? t('ps.cards', { n }) : t('ps.rows', { n })}</button>
+                className={cn('block w-full rounded-[0.4375rem] px-2.5 py-[0.4375rem] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{cards ? t('ps.cards', { n }) : t('ps.rows', { n })}</button>
             ))}
           </PopoverContent>
         </Popover>

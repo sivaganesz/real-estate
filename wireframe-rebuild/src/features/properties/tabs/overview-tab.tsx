@@ -31,7 +31,7 @@ export function OverviewTab({ p, matches }: { p: Property; matches: Match[] }) {
   const live = p.status === 'available' && !p.archived
   return (
     // phone: photos, then the side cards (matching on top), then the details; desktop: two columns
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_21.25rem] lg:grid-rows-[auto_1fr]">
       <div className="order-1 min-w-0 lg:col-start-1 lg:row-start-1"><PhotoGallery p={p} /></div>
       <div className="order-3 flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-2">
         <DetailsCard p={p} />

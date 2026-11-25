@@ -179,7 +179,7 @@ function Row({ state, ai, pts, action, children }: { state: 'done' | 'req' | 'to
   const { t } = useTranslation()
   return (
     <li className="flex min-h-11 items-center gap-2.5 border-b border-dashed py-1.5 text-sm last:border-0">
-      <span aria-hidden className={cn('flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+      <span aria-hidden className={cn('flex size-5 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-bold',
         state === 'done' ? 'bg-success-soft text-success' : state === 'req' ? 'bg-danger-soft text-danger' : 'border text-muted-foreground')}>
         {state === 'done' ? <Check className="size-3" /> : state === 'req' ? '!' : ''}
       </span>

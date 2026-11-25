@@ -56,5 +56,5 @@ export function PageHeader({ title, description, actions, back, eyebrow, classNa
  * - otherwise the page is capped (1380 px, or 1600 px with `wide`) and centred, so text stays readable on a large screen.
  */
 export function Page({ children, className, wide, full }: { children: ReactNode; className?: string; wide?: boolean; full?: boolean }) {
-  return <div className={cn('w-full px-4 pt-5 pb-[60px] md:px-6', !full && 'mx-auto', full ? '' : wide ? 'max-w-[1600px]' : 'max-w-[1380px]', className)}>{children}</div>
+  return <div className={cn('w-full px-4 pt-5 pb-[3.75rem] md:px-6', !full && 'mx-auto', full ? '' : wide ? 'max-w-[100rem]' : 'max-w-[86.25rem]', className)}>{children}</div>
 }

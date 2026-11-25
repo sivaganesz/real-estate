@@ -224,7 +224,7 @@ export function PropertiesPage() {
       )}
 
       {/* search + tabs stay at the top while the table scrolls */}
-      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[49px]">
+      <div className="z-10 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 lg:sticky lg:top-[calc(3rem+1px)]">
         <SearchBar filters={f} items={items} onChange={(nf) => setF(nf, true)} onSet={onSet}
           onClearPill={(pl) => { setOpen(null); setF(dropKeys(f, PILL_KEYS[pl as Exclude<Pill, 'sort'>])) }}
           onClearAll={() => { setOpen(null); setF({}) }}
@@ -237,8 +237,8 @@ export function PropertiesPage() {
               const on = (f.status ?? '') === o.v
               return (
                 <button key={o.v || 'all'} type="button" onClick={() => setF({ ...f, status: o.v || undefined })} aria-current={on ? 'page' : undefined}
-                  className={cn('-mb-px border-b-2 px-3 pt-2 pb-[9px] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
-                  {o.l} <span className={cn('ml-1 rounded-full px-[7px] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
+                  className={cn('-mb-px border-b-2 px-3 pt-2 pb-[0.5625rem] text-ui font-medium whitespace-nowrap', on ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+                  {o.l} <span className={cn('ml-1 rounded-full px-[0.4375rem] text-label', on ? 'bg-accent text-primary' : 'bg-muted text-muted-foreground')}>{o.n}</span>
                 </button>
               )
             })}
@@ -360,14 +360,14 @@ export function PropertiesPage() {
       <div className="flex flex-wrap items-center gap-3 py-2.5 text-ui text-muted-foreground">
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="inline-flex h-[30px] items-center gap-1.5 rounded-full border bg-card px-3">
+            <button type="button" className="inline-flex h-[1.875rem] items-center gap-1.5 rounded-full border bg-card px-3">
               {grid ? t('ps.cardsPerPage') : t('ps.rowsPerPage')} <b className="text-foreground">{size}</b> <span className="text-micro">▾</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-auto min-w-[150px] rounded-xl p-2">
+          <PopoverContent side="top" align="start" className="w-auto min-w-[9.375rem] rounded-xl p-2">
             {(grid ? GRID_SIZES : PAGE_SIZES).map((n) => (
               <button key={n} type="button" onClick={() => setSt((s) => ({ ...s, ...(grid ? { gridSize: n } : { size: n }), page: 1 }))}
-                className={cn('block w-full rounded-[7px] px-2.5 py-[7px] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{grid ? t('ps.cards', { n }) : t('ps.rows', { n })}</button>
+                className={cn('block w-full rounded-[0.4375rem] px-2.5 py-[0.4375rem] text-left text-ui text-foreground hover:bg-muted', n === size && 'bg-accent text-primary')}>{grid ? t('ps.cards', { n }) : t('ps.rows', { n })}</button>
             ))}
           </PopoverContent>
         </Popover>

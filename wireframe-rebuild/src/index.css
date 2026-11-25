@@ -98,17 +98,17 @@
 
   /* type scale: the small sizes the wireframe uses, named by job. Tailwind's own text-xs (12), text-sm (14),
      text-base (16) and text-xl (20) cover the rest. Registered with cn in src/lib/utils.ts. */
-  --text-micro: 10px;   /* tiny markers: the ▾ arrows, map labels, the % in a completion ring */
-  --text-caption: 11px; /* sidebar group names, counts, small labels */
-  --text-label: 11.5px; /* table headings, tab counts */
-  --text-meta: 12.5px;  /* chips, IDs, secondary actions */
-  --text-ui: 13px;      /* tabs, filter pills, breadcrumbs, compact controls */
-  --text-prompt: 14.5px; /* the AI sentence box */
+  --text-micro: 0.625rem;   /* tiny markers: the ▾ arrows, map labels, the % in a completion ring */
+  --text-caption: 0.6875rem; /* sidebar group names, counts, small labels */
+  --text-label: 0.71875rem; /* table headings, tab counts */
+  --text-meta: 0.78125rem;  /* chips, IDs, secondary actions */
+  --text-ui: 0.8125rem;      /* tabs, filter pills, breadcrumbs, compact controls */
+  --text-prompt: 0.90625rem; /* the AI sentence box */
 }
 
 :root,
 .light {
-  --radius: 10px;
+  --radius: 0.625rem;
   --card-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 1px rgb(16 24 40 / 0.03);
 
   --background: #f3f4f7;
@@ -247,6 +247,12 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Laptops and desktops: everything is sized in rem, so a 90% root makes 100% zoom look as 90% did before (26 Nov) —
+     less cramped, with more on screen. Phones and tablets keep the full size for readability.
+     Breakpoints are unaffected (media queries use the browser default, not this). */
+  @media (min-width: 64rem) {
+    html { font-size: 90%; }
   }
   body {
     @apply bg-background text-foreground antialiased;

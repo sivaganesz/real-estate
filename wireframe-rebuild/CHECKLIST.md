@@ -46,6 +46,7 @@ Updated 25 Nov 2026.
 
 ## 2. App shell (every page)
 
+- [x] **Changed (26 Nov):** comfortable size — from 1024 px the whole UI is 90% (sizes are in rem), so 100% zoom looks as 90% did; phones and tablets keep full size
 - [x] **Changed (26 Nov):** the dark WIREFRAME ribbon is removed; **Reset demo data** is in the top bar after "Viewing as" (in the ☰ menu on a phone), and its hint gives the demo date
 - [x] Sidebar with groups and live counts (Properties, Leads, Appointments)
   - [ ] Projects count, once Projects is built
@@ -190,6 +191,7 @@ Updated 25 Nov 2026.
   - [x] "⚠ Needs attention" on demand: overdue, no follow-up date, ready to buy but no site visit
   - [x] Executives see their own leads; HNI classification shows "Restricted" to them
   - [ ] Opening a lead, Log activity, and marking Lost with a reason come with the Lead page
+- [ ] **Prototype (26 Nov): "Today" design** at /leads?design=new — summary tiles, saved views, list grouped by follow-up, actions on hover (Call · WhatsApp · ✓ Done), preview panel. Waiting for review: replace the current list, or keep both
 - [ ] **Add / edit lead:**
   - [ ] Basic information; assigned executive (auto-assign to the least busy); stage; consent to follow up
   - [ ] Purpose; budget (min / preferred / max / flexibility, what it includes, funding)

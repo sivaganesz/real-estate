@@ -113,7 +113,7 @@ export function NeighbourhoodCard({ p }: { p: Property }) {
       </p>
 
       {/* the map, with the list of places over it (below it on a phone) */}
-      <div className="relative overflow-hidden rounded-xl border md:h-[360px]">
+      <div className="relative overflow-hidden rounded-xl border md:h-[22.5rem]">
         <div className="relative h-64 overflow-hidden bg-[color-mix(in_oklch,var(--success-soft)_55%,var(--card))] [--cx:50%] md:absolute md:inset-0 md:h-auto md:[--cx:64%]"
           style={{ containerType: 'size' }} aria-label={t('nb.mapLabel')} role="img">
           <span className="absolute top-[18%] left-[8%] h-[30%] w-[22%] rounded-[40%_60%_50%_45%] bg-success-soft opacity-80" aria-hidden />
@@ -149,7 +149,7 @@ export function NeighbourhoodCard({ p }: { p: Property }) {
           </Button>
         </div>
 
-        <div className="z-[6] overflow-y-auto bg-card p-1.5 md:absolute md:top-3 md:bottom-3 md:left-3 md:w-[300px] md:rounded-xl md:shadow-lg">
+        <div className="z-[6] overflow-y-auto bg-card p-1.5 md:absolute md:top-3 md:bottom-3 md:left-3 md:w-[18.75rem] md:rounded-xl md:shadow-lg">
           {groups.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-muted-foreground">
               {cust ? <><p>{t('nb.nothingToAdvertise')}</p><p className="text-xs">{t('nb.nothingHint')}</p></>

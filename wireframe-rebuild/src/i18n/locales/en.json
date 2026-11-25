@@ -1714,5 +1714,69 @@
     "stageMoved": "{{name}} moved to {{stage}}",
     "reassignNote": "Reassigned to {{name}}",
     "reassigned": "{{name}} reassigned to {{to}}"
+  },
+  "today": {
+    "tryNew": "Try the new design",
+    "backToTable": "← Current design",
+    "subtitle": "Who to talk to today · {{date}}",
+    "tile": {
+      "overdue": "Overdue",
+      "overdueHint": "Follow-ups past their date",
+      "today": "Due today",
+      "todayHint": "Follow-ups planned for today",
+      "hot": "Hot leads",
+      "hotHint": "Ready to buy (80+)",
+      "new": "New this week",
+      "newHint": "Enquired in the last 7 days"
+    },
+    "views": "Saved views",
+    "view": {
+      "all": "All",
+      "hot": "Hot leads",
+      "investors": "Investors",
+      "hni": "HNI",
+      "closed": "Closed / Lost"
+    },
+    "searchPlaceholder": "Search leads…",
+    "askPlaceholder": "e.g. investors in Madurai under 50 lakh",
+    "toSearch": "Back to keyword search",
+    "filter": "Filter",
+    "showing_one": "{{count}} lead",
+    "showing_other": "{{count}} leads",
+    "group": {
+      "overdue": "Overdue",
+      "today": "Today",
+      "week": "This week",
+      "later": "Later",
+      "none": "No follow-up date",
+      "closed": "Closed / Lost"
+    },
+    "noDate": "No date",
+    "emptyTitle": "All caught up",
+    "emptyBody": "No leads here — try another view or clear the filters.",
+    "pick": "Pick a lead to see a summary.",
+    "wants": "Looking for",
+    "next": "Next step",
+    "noNext": "No follow-up planned — set one with ✓ Done.",
+    "overdueSince": "Follow-up was due {{date}} ({{days}} days ago)",
+    "dueToday": "Follow-up due today",
+    "followUpOn": "Follow-up on {{date}}",
+    "best_one": "Best match",
+    "best_other": "Best matches",
+    "noMatches": "No property fits yet.",
+    "last": "Last contact",
+    "openFull": "Open full lead page",
+    "done": "Done",
+    "nextWhen": "Follow-up done — when is the next one?",
+    "when": {
+      "tomorrow": "Tomorrow",
+      "in3": "In 3 days",
+      "nextWeek": "Next week",
+      "none": "No more follow-up"
+    },
+    "doneNote": "Follow-up done · next on {{date}}",
+    "doneNoteNone": "Follow-up done · nothing more planned",
+    "doneToast": "Follow-up with {{name}} logged",
+    "nextOn": "Next follow-up {{date}}"
   }
 }

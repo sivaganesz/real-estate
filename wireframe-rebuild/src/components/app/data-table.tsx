@@ -73,7 +73,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
         <TableHeader className="bg-[color-mix(in_oklch,var(--muted)_45%,var(--card))]">
           <TableRow className="hover:bg-transparent">
             {selectable && (
-              <TableHead className="w-8 py-[9px] pr-0 pl-3">
+              <TableHead className="w-8 py-[0.5625rem] pr-0 pl-3">
                 <Checkbox aria-label={t('table.selectAll')} checked={onPage === keys.length && onPage > 0 ? true : onPage ? 'indeterminate' : false}
                   onCheckedChange={() => toggleAll(onPage < keys.length)} />
               </TableHead>
@@ -83,7 +83,7 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
               const Arrow = dir === 'asc' ? ArrowUp : dir === 'desc' ? ArrowDown : ArrowUpDown
               return (
                 <TableHead key={c.key} aria-sort={c.sortable && onSort ? (dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : 'none') : undefined}
-                  className={cn('h-auto px-3 py-[9px] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', hideClass(c), c.sticky && STICKY_HEAD, c.className)}>
+                  className={cn('h-auto px-3 py-[0.5625rem] text-label font-semibold tracking-[.04em] text-muted-foreground uppercase', c.align === 'right' && 'text-right', hideClass(c), c.sticky && STICKY_HEAD, c.className)}>
                   {c.sortable && onSort ? (
                     <button type="button" onClick={() => onSort(c.key)}
                       className={cn('group/sort inline-flex items-center gap-1 uppercase hover:text-foreground', dir && 'text-foreground')}>
@@ -109,12 +109,12 @@ export function DataTable<T>({ rows, columns, rowKey, onRowClick, empty, classNa
               className={cn(onRowClick && 'cursor-pointer focus-visible:bg-accent/50 focus-visible:outline-none', on && 'bg-accent/60 hover:bg-accent/80')}>
               {selectable && (
                 // the cell swallows the click, so ticking a box never opens the row
-                <TableCell className={cn('w-8 pr-0 pl-3 align-top', dense ? 'py-1.5' : 'py-[9px]')} onClick={(e) => e.stopPropagation()}>
+                <TableCell className={cn('w-8 pr-0 pl-3 align-top', dense ? 'py-1.5' : 'py-[0.5625rem]')} onClick={(e) => e.stopPropagation()}>
                   <Checkbox className="mt-0.5" checked={on} onCheckedChange={(v) => toggle(k, v === true)} aria-label={t('table.selectRow', { name: rowLabel?.(r) ?? k })} />
                 </TableCell>
               )}
               {columns.map((c) => (
-                <TableCell key={c.key} className={cn('px-3 align-top', dense ? 'py-1.5' : 'py-[9px]', c.align === 'right' && 'text-right tabular-nums', hideClass(c), c.sticky && STICKY_CELL, c.className)}>
+                <TableCell key={c.key} className={cn('px-3 align-top', dense ? 'py-1.5' : 'py-[0.5625rem]', c.align === 'right' && 'text-right tabular-nums', hideClass(c), c.sticky && STICKY_CELL, c.className)}>
                   {c.cell(r)}
                 </TableCell>
               ))}

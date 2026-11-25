@@ -63,7 +63,7 @@ type Props = {
 
 export const optCls = (on: boolean, list?: boolean) => cn(
   'inline-flex items-center gap-2 text-ui text-foreground hover:bg-muted',
-  list ? 'w-full justify-between rounded-[7px] px-2.5 py-[7px] text-left' : 'rounded-full border bg-card px-[11px] py-1',
+  list ? 'w-full justify-between rounded-[0.4375rem] px-2.5 py-[0.4375rem] text-left' : 'rounded-full border bg-card px-[0.6875rem] py-1',
   on && (list ? 'bg-accent font-medium text-primary hover:bg-accent' : 'border-primary/30 bg-accent font-medium text-primary hover:bg-accent'),
 )
 export const Sub = ({ children, first }: { children: ReactNode; first?: boolean }) =>
@@ -93,7 +93,7 @@ export function SearchBar(p: Props) {
 
   const panels: Record<Pill, ReactNode> = {
     type: (
-      <div className="flex max-h-[260px] w-[236px] flex-col overflow-y-auto">
+      <div className="flex max-h-[16.25rem] w-[14.75rem] flex-col overflow-y-auto">
         <button type="button" className={optCls(!f.type, true)} onClick={() => p.onSet('type', '')}>{t('ps.allTypes')}</button>
         {(['residential', 'commercial'] as const).map((cat) => (
           <div key={cat}>
@@ -109,8 +109,8 @@ export function SearchBar(p: Props) {
       </div>
     ),
     city: (
-      <div className="w-[340px] max-w-full">
-        <div className="flex max-h-[168px] flex-col overflow-y-auto">
+      <div className="w-[21.25rem] max-w-full">
+        <div className="flex max-h-[10.5rem] flex-col overflow-y-auto">
           <button type="button" className={optCls(!f.city, true)} onClick={() => p.onSet('city', '')}>{t('ps.allCities')}</button>
           {cities.map((c) => (
             <button key={c} type="button" className={optCls(f.city === c, true)} onClick={() => p.onSet('city', c)}>{c} <small className="font-normal text-muted-foreground">{cnt((x) => x.city === c)}</small></button>
@@ -128,7 +128,7 @@ export function SearchBar(p: Props) {
       </div>
     ),
     budget: (
-      <div className="w-[300px] max-w-full">
+      <div className="w-[18.75rem] max-w-full">
         <div className="flex flex-wrap gap-1.5">
           {BUDGETS.map(([lo, hi, k]) => (
             <button key={k} type="button" className={optCls((a.minPrice ?? '') === lo && (a.maxPrice ?? '') === hi)} onClick={() => p.onSet('budget', `${lo}-${hi}`)}>{t(`filters.budgets.${k}`)}</button>
@@ -139,7 +139,7 @@ export function SearchBar(p: Props) {
       </div>
     ),
     size: (
-      <div className="w-[300px] max-w-full">
+      <div className="w-[18.75rem] max-w-full">
         {(residential || a.bhk) && (
           <>
             <Sub first>{t('ps.bedrooms')}</Sub>
@@ -154,7 +154,7 @@ export function SearchBar(p: Props) {
       </div>
     ),
     more: (
-      <div className="w-[340px] max-w-full">
+      <div className="w-[21.25rem] max-w-full">
         <Sub first>{t('fact.purpose')}</Sub>
         <div className="flex gap-1.5">
           <button type="button" className={optCls(!f.purpose)} onClick={() => p.onSet('purpose', '')}>{t('ps.any')}</button>
@@ -173,7 +173,7 @@ export function SearchBar(p: Props) {
       </div>
     ),
     sort: (
-      <div className="flex w-[200px] flex-col">
+      <div className="flex w-[12.5rem] flex-col">
         {SORTS.map((s) => <button key={s || 'newest'} type="button" className={optCls((f.sort ?? '') === s, true)} onClick={() => p.onSet('sort', s)}>{t(`ps.sort.${s || 'newest'}`)}</button>)}
       </div>
     ),
@@ -208,9 +208,9 @@ export function SearchBar(p: Props) {
   if (p.aiOpen) {
     return (
       <div className="mb-2">
-        <div className={cn('flex items-center gap-2 rounded-[14px] border-[1.5px] bg-card py-2 pr-2 pl-3.5 shadow-[0_0_0_4px_var(--violet-soft)]',
+        <div className={cn('flex items-center gap-2 rounded-[0.875rem] border-[1.5px] bg-card py-2 pr-2 pl-3.5 shadow-[0_0_0_4px_var(--violet-soft)]',
           p.listening ? 'border-danger shadow-[0_0_0_4px_var(--danger-soft)]' : 'border-violet/40')}>
-          <Sparkles className="size-[18px] shrink-0 text-violet" />
+          <Sparkles className="size-[1.125rem] shrink-0 text-violet" />
           <textarea ref={boxRef} rows={1} value={f.aiText ?? ''} aria-label={t('ps.aiLabel')}
             placeholder={p.listening ? t('ps.listening') : t('ps.aiPlaceholder')}
             onChange={(e) => { p.onChange({ ...f, aiText: e.target.value }); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px' }}
@@ -222,19 +222,19 @@ export function SearchBar(p: Props) {
           <button type="button" onClick={p.onToggleAi} title={t('ps.backToNormal')} aria-label={t('ps.backToNormal')}
             className="grid size-8 shrink-0 place-items-center rounded-full border bg-card hover:bg-muted"><ChevronUp className="size-4" /></button>
         </div>
-        <div className="mx-0.5 mt-2 mb-2.5 flex min-h-[26px] flex-wrap items-center gap-1.5 text-ui" aria-live="polite">{p.understood}</div>
+        <div className="mx-0.5 mt-2 mb-2.5 flex min-h-[1.625rem] flex-wrap items-center gap-1.5 text-ui" aria-live="polite">{p.understood}</div>
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start">{pillRow}</div>
       </div>
     )
   }
   return (
     <div className="mb-2 flex flex-col gap-2 lg:flex-row lg:items-start">
-      <div className="relative flex w-full items-center lg:w-[300px]" role="search">
+      <div className="relative flex w-full items-center lg:w-[18.75rem]" role="search">
         <Search className="pointer-events-none absolute left-3 size-3.5 opacity-50" />
         <input type="search" value={f.q ?? ''} onChange={(e) => p.onChange({ ...f, q: e.target.value || undefined })} placeholder={t('ps.searchPlaceholder')} aria-label={t('search.label')}
           className="h-8 w-full rounded-full border bg-card pr-10 pl-8 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20" />
         <button type="button" onClick={p.onToggleAi} title={t('ps.aiTitle')} aria-label={t('ps.aiTitle')}
-          className="absolute right-1 grid h-[26px] w-7 place-items-center rounded-full bg-gradient-to-br from-violet-soft to-accent ring-1 ring-violet/25 ring-inset hover:from-violet/20">
+          className="absolute right-1 grid h-[1.625rem] w-7 place-items-center rounded-full bg-gradient-to-br from-violet-soft to-accent ring-1 ring-violet/25 ring-inset hover:from-violet/20">
           <Sparkles className="size-3.5 text-violet" />
         </button>
       </div>
@@ -254,7 +254,7 @@ export function PillButton({ label, set, open, onOpenChange, onClear, clearLabel
         open && !plain && 'border-primary ring-[3px] ring-accent')}>
         <PopoverTrigger asChild>
           <button type="button" className={cn('flex h-full items-center gap-1.5 pl-3', set ? 'pr-1' : 'pr-3')} title={label}>
-            <span className="max-w-[170px] truncate">{label}</span>
+            <span className="max-w-[10.625rem] truncate">{label}</span>
             {!set && <span className="text-micro text-muted-foreground">▾</span>}
           </button>
         </PopoverTrigger>
@@ -263,7 +263,7 @@ export function PillButton({ label, set, open, onOpenChange, onClear, clearLabel
             className="mr-1.5 grid size-4 place-items-center rounded-full text-micro hover:bg-primary/15">✕</button>
         )}
       </div>
-      <PopoverContent align={align} sideOffset={6} className="w-auto max-w-[calc(100vw-32px)] min-w-[220px] rounded-xl p-2">{children}</PopoverContent>
+      <PopoverContent align={align} sideOffset={6} className="w-auto max-w-[calc(100vw-2rem)] min-w-[13.75rem] rounded-xl p-2">{children}</PopoverContent>
     </Popover>
   )
 }

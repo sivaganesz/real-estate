@@ -119,8 +119,8 @@ export function CompletionRing({ score, size = 40, className }: { score: number;
       </svg>
       {/* the % is sized to fit the ring, so it stays outside the type scale */}
       {/* three digits ("100%") take a size smaller to stay inside the ring */}
-      <span className={cn('absolute tabular-nums', size > 50 ? (score >= 100 ? 'text-[13px] font-medium tracking-tight' : 'text-[15px] font-medium')
-        : score >= 100 ? 'text-[9px] tracking-tighter' : 'text-[10.5px] tracking-tight')}>{score}%</span>
+      <span className={cn('absolute tabular-nums', size > 50 ? (score >= 100 ? 'text-[0.8125rem] font-medium tracking-tight' : 'text-[0.9375rem] font-medium')
+        : score >= 100 ? 'text-[0.5625rem] tracking-tighter' : 'text-[0.6563rem] tracking-tight')}>{score}%</span>
     </span>
   )
 }

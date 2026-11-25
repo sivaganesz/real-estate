@@ -517,12 +517,12 @@ function Assistant({ record, editing, drawer }: { record?: Property; editing: bo
         <span className="flex items-center gap-1 text-sm text-primary">{t('assistant.summary')} <ChevronUp className="size-4" /></span>
       </button>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
-        <div className="lg:h-[calc(100svh-95px)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(21.25rem,27.5rem)]">
+        <div className="lg:h-[calc(100svh-5.9375rem)]">
           <ChatPanel chat={thread.chat} draft={draft} score={score} publishLabel={publishLabel} canWrite examples={!record} h={h} inputRef={inputRef}
             placeholder={editing ? t('assistant.edit.placeholder') : undefined} submittedBy={record?.submitted ? userName(db, record.submitted.by) : undefined} />
         </div>
-        <aside className="max-lg:hidden"><div className="sticky top-[70px]">{summary}</div></aside>
+        <aside className="max-lg:hidden"><div className="sticky top-[4.375rem]">{summary}</div></aside>
       </div>
 
       <SidePanel open={summaryOpen} onOpenChange={setSummaryOpen} title={t('assistant.summary')} className="lg:hidden">

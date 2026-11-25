@@ -83,7 +83,7 @@ export function ChatPanel({ chat, draft, score, publishLabel, canWrite, examples
 
   return (
     <section aria-label={t('assistant.panelTitle')}
-      className="flex min-h-[65svh] flex-col rounded-xl border bg-card shadow-card lg:h-full lg:min-h-[440px] lg:overflow-hidden">
+      className="flex min-h-[65svh] flex-col rounded-xl border bg-card shadow-card lg:h-full lg:min-h-[27.5rem] lg:overflow-hidden">
       <header className="flex items-center gap-3 border-b px-4 py-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold"><Sparkles className="size-4 text-violet" /> {t('assistant.panelTitle')}</h2>
         <span className="flex-1" />

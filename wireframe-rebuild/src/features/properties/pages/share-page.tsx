@@ -113,11 +113,11 @@ function ShareView({ p, leadId }: { p: Property; leadId?: string }) {
       <PageHeader className="print:hidden" title={t('brochure.title')} description={t('brochure.subtitle')}
         actions={<Button variant="outline" asChild><Link to={`/properties/${p.id}`}><ArrowLeft /> {p.id}</Link></Button>} />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]">
         <Brochure p={p} lead={lead} opt={opt} places={places} verified={verified.map((a) => a.approvalId)}
           contact={lead?.ownerId ? userName(db, lead.ownerId) : role === 'executive' ? user.name : ''} />
 
-        <aside className="flex flex-col gap-4 print:hidden lg:sticky lg:top-[70px]">
+        <aside className="flex flex-col gap-4 print:hidden lg:sticky lg:top-[4.375rem]">
           <SectionCard title={t('brochure.panelTitle')}>
             {!live && <Callout tone="warning" className="mb-3">{t('brochure.notLive', { status: p.archived ? t('ps.archived') : t(`status.${p.status}`) })}</Callout>}
 
@@ -239,7 +239,7 @@ function Brochure({ p, lead, opt, places, verified, contact }: {
   return (
     <article id="brochure" aria-label={t('brochure.preview')} className="overflow-hidden rounded-xl border bg-card shadow-card print:rounded-none print:border-0 print:shadow-none">
       <header className="flex items-center gap-2.5 px-5 py-3.5">
-        <span className="grid size-7 place-items-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">RE</span>
+        <span className="grid size-7 place-items-center rounded-md bg-primary text-[0.6875rem] font-bold text-primary-foreground">RE</span>
         <b className="text-sm">RealSpec Properties</b>
         <span className="flex-1" />
         <small className="text-meta text-muted-foreground">{lead && <>{t('brochure.preparedFor')} <b className="text-foreground">{lead.name}</b> · </>}{fmtDate(today, i18n.language)}</small>

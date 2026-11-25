@@ -43,7 +43,7 @@ export function DetailsDrawer({ tab, onTab, onClose, draft, record, canWrite, fo
 
   return (
     <Sheet open={!!tab} onOpenChange={(o) => { if (!o) onClose() }}>
-      <SheetContent side="right" showCloseButton={false} className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[620px]">
+      <SheetContent side="right" showCloseButton={false} className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[38.75rem]">
         <div className="flex items-start gap-3 border-b bg-card px-4 pt-3.5 sm:px-5">
           <div className="min-w-0 flex-1">
             <SheetTitle className="truncate text-base">{draft.title || t('props.details')}</SheetTitle>

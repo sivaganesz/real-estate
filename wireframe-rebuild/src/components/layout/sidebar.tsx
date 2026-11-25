@@ -9,7 +9,7 @@ import { NAV, type NavItem } from './nav'
 
 /** The "RE" logo square. */
 function Logo() {
-  return <span className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-primary text-ui font-bold text-primary-foreground">RE</span>
+  return <span className="grid size-[1.875rem] shrink-0 place-items-center rounded-lg bg-primary text-ui font-bold text-primary-foreground">RE</span>
 }
 
 /** The brand block: "RE" logo and RealSpec CRM. */
@@ -32,15 +32,15 @@ function Item({ item, collapsed, onNavigate }: { item: NavItem; collapsed?: bool
   const link = (
     <NavLink to={item.to} onClick={onNavigate} aria-label={collapsed ? label : undefined}
       className={({ isActive }) => cn(
-        'flex items-center rounded-lg py-[7px] text-sm font-medium',
-        collapsed ? 'justify-center px-0' : 'gap-[9px] px-2.5',
+        'flex items-center rounded-lg py-[0.4375rem] text-sm font-medium',
+        collapsed ? 'justify-center px-0' : 'gap-[0.5625rem] px-2.5',
         isActive ? 'bg-accent text-primary' : 'text-secondary-foreground hover:bg-muted',
       )}>
-      <span className="w-[18px] text-center opacity-80" aria-hidden>{item.icon}</span>
+      <span className="w-[1.125rem] text-center opacity-80" aria-hidden>{item.icon}</span>
       {!collapsed && <>
         <span className="truncate">{label}</span>
         {locked ? <span className="ml-auto text-caption" aria-label={t('nav.restricted')}>🔒</span>
-          : count !== undefined && <span className="ml-auto rounded-[10px] bg-muted px-[7px] text-caption text-muted-foreground tabular-nums">{count}</span>}
+          : count !== undefined && <span className="ml-auto rounded-[0.625rem] bg-muted px-[0.4375rem] text-caption text-muted-foreground tabular-nums">{count}</span>}
       </>}
     </NavLink>
   )
@@ -93,7 +93,7 @@ export function Sidebar() {
   const toggle = (next: boolean) => { setCollapsed(next); saveCollapsed(next) }
   return (
     <aside className={cn('hidden shrink-0 border-r bg-card transition-[width] duration-200 motion-reduce:transition-none lg:block',
-      collapsed ? 'w-16' : 'w-[236px]')}>
+      collapsed ? 'w-16' : 'w-[14.75rem]')}>
       <div className="sticky top-0 z-30 h-svh">
         <div className="side-scroll h-full overflow-x-hidden overflow-y-auto overscroll-contain px-2.5 py-3.5">
           {collapsed ? (
@@ -101,7 +101,7 @@ export function Sidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button" onClick={() => toggle(false)} aria-label={t('nav.expand')}
-                    className="group relative grid size-[30px] place-items-center rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                    className="group relative grid size-[1.875rem] place-items-center rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     <span className="transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"><Logo /></span>
                     <span className="absolute inset-0 grid place-items-center rounded-lg border bg-card text-primary opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                       <ChevronRight className="size-4" aria-hidden />

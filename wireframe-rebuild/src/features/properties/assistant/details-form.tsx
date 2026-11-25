@@ -325,8 +325,8 @@ export function DetailsForm({ draft: d, record, canWrite, focus, h }: {
       {steps.map((s, i) => {
         const open = !closed.has(s.k)
         return (
-          <li key={s.k} id={`sec-${s.k}`} tabIndex={-1} className="relative grid grid-cols-[32px_minmax(0,1fr)] gap-3 pb-5 outline-none">
-            {i < steps.length - 1 && <span aria-hidden className="absolute top-9 bottom-1 left-[15px] w-0.5 rounded bg-border" />}
+          <li key={s.k} id={`sec-${s.k}`} tabIndex={-1} className="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3 pb-5 outline-none">
+            {i < steps.length - 1 && <span aria-hidden className="absolute top-9 bottom-1 left-[0.9375rem] w-0.5 rounded bg-border" />}
             <span aria-hidden className={cn('relative z-10 flex size-8 items-center justify-center rounded-full border-2 bg-card text-sm font-bold',
               s.done ? 'border-success/60 bg-success-soft text-success' : 'border-primary/30 text-primary')}>
               {s.done ? <Check className="size-4" /> : i + 1}
