@@ -357,20 +357,20 @@ function StageTrack({ l, onMove, onLose }: { l: Lead; onMove: (s: LeadStage) => 
   const { t } = useTranslation()
   const at = STAGE_ORDER.indexOf(l.stage)
   return (
-    <nav aria-label={t('lead.stages')} className="flex items-stretch gap-1 overflow-x-auto rounded-2xl border bg-card p-1.5 shadow-card [scrollbar-width:none]">
+    <nav aria-label={t('lead.stages')} className="flex items-center gap-1 overflow-x-auto rounded-2xl border bg-card p-1.5 shadow-card [scrollbar-width:none] sm:flex-wrap">
       {STAGE_ORDER.map((s, i) => {
         const done = i < at, now = i === at
         return (
           <button key={s} type="button" onClick={() => onMove(s)} aria-current={now ? 'step' : undefined} title={now ? t('lead.stageSince') : t('lead.moveTo', { stage: t(`stage.${s}`) })}
-            className={cn('flex min-w-28 flex-1 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-center text-sm whitespace-nowrap transition-colors',
+            className={cn('flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-center text-sm whitespace-nowrap transition-colors',
               now ? cn(toneSoft[STAGE_TONE[s]], 'font-semibold') : done ? 'text-foreground hover:bg-muted' : 'text-muted-foreground hover:bg-muted')}>
-            {done ? <Check className="size-3.5 text-success" /> : <span className={cn('size-2 rounded-full', now ? toneFill[STAGE_TONE[s]] : 'border border-muted-foreground/40')} />}
+            {done ? <Check className="size-3.5 shrink-0 text-success" /> : <span className={cn('size-2 shrink-0 rounded-full', now ? toneFill[STAGE_TONE[s]] : 'border border-muted-foreground/40')} />}
             {t(`stage.${s}`)}
           </button>
         )
       })}
-      <button type="button" onClick={onLose} className="flex shrink-0 items-center gap-1 rounded-xl px-2.5 text-sm text-muted-foreground hover:bg-danger-soft hover:text-danger" title={t('lost.mark')}>
-        <X className="size-3.5" /> {t('stage.lost')}
+      <button type="button" onClick={onLose} className="flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2 text-sm whitespace-nowrap text-muted-foreground hover:bg-danger-soft hover:text-danger" title={t('lost.mark')}>
+        <X className="size-3.5 shrink-0" /> {t('stage.lost')}
       </button>
     </nav>
   )
