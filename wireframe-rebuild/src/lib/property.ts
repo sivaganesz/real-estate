@@ -4,7 +4,7 @@
  */
 import { PROPERTY_TYPES, REQUIRED_CORE } from '@/data/catalogue'
 import { DEMO_TODAY } from '@/data/seed'
-import type { Comparable, Database, NearbyPlace, Property, Settings } from '@/data/types'
+import type { Comparable, Database, Lead, NearbyPlace, Property, Settings, SiteVisit } from '@/data/types'
 import { daysBetween } from './format'
 
 /* ---------- required to publish ---------- */
@@ -169,4 +169,28 @@ export function placesFor(p: Property, settings: Settings, view: PlaceView): Nea
     const cat = settings.placeCategories.find((c) => c.id === pl.categoryId)
     return !(cat?.routeCheck && pl.status === 'existing' && !pl.routeChecked)
   })
+}
+
+/* ---------- leads linked to a property (archive and delete) ---------- */
+
+/** How a lead's record points at a property: recommended, site visits, a negotiation, a shared brochure. */
+export type LeadLink = { lead: Lead; recommended: boolean; visits: number; negotiation: boolean; shared: boolean; upcoming: SiteVisit[] }
+
+/**
+ * The leads whose records refer to this property (from spec-system-wireframe's propertyLinks). They keep the reference when it is
+ * archived; while any exist, it can't be deleted. `upcoming`: site visits still booked from today on — archiving doesn't cancel them.
+ */
+export function linkedLeads(propertyId: string, leads: Lead[], today: string = DEMO_TODAY): LeadLink[] {
+  return leads.map((lead) => {
+    const visits = lead.visits.filter((v) => v.propertyId === propertyId)
+    const link: LeadLink = {
+      lead,
+      recommended: lead.recommendedPropertyIds.includes(propertyId),
+      visits: visits.length,
+      negotiation: lead.negotiation?.propertyId === propertyId,
+      shared: lead.activity.some((a) => a.type === 'shared' && a.propertyId === propertyId),
+      upcoming: visits.filter((v) => v.status === 'scheduled' && v.date >= today),
+    }
+    return link.recommended || link.visits || link.negotiation || link.shared ? link : null
+  }).filter((x): x is LeadLink => x !== null)
 }

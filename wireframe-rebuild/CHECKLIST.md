@@ -100,9 +100,9 @@ Updated 25 Nov 2026.
 - [x] Executives: status, Share, "🔒 Changes by a manager"
 - [x] Archived: banner, Restore, Delete
 - [x] Archive dialog with an optional reason
-  - [ ] List the linked leads and warn about upcoming appointments
+  - [x] List the linked leads (they get a note on their timeline) and warn about site visits still booked; the same dialog for several at once
 - [x] Delete dialog
-  - [ ] Block Delete when leads are linked, and offer "Archive instead"
+  - [x] **Changed (26 Nov):** Delete is in the ⋯ menu for any property (not only archived), to correct a wrong import or a duplicate. No leads linked: a warning, then delete. Leads linked: they are listed and a box must be ticked; they lose the property (recommendations, booked visits cancelled, negotiation cleared) with a note on their timeline
 - [ ] Project unit link and hold information (needs Projects)
 
 **Overview tab**

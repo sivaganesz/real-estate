@@ -45,8 +45,14 @@ type Store = {
   shareProperty: (propertyId: string, leadId: string | undefined, channel: ShareChannel, historyText?: string) => void
   /** POST / DELETE /api/leads/:id/recommendations/:propertyId — the buyer was told about it (call, WhatsApp, in person). */
   recommendProperty: (propertyId: string, leadId: string, on: boolean) => void
-  /** DELETE /api/properties/:id — only offered for an archived property. */
-  deleteProperty: (id: string) => void
+  /** POST /api/leads/:id/activity — a note on each lead's timeline about a property (e.g. "PROP-1005 was archived"). */
+  noteOnLeads: (leadIds: string[], propertyId: string, text: string) => void
+  /**
+   * DELETE /api/properties/:id — to correct a mistake (a wrong import or a property added twice). Leads that refer to it lose it:
+   * it leaves their recommendations, booked site visits for it are cancelled, a negotiation on it is cleared, and `leadNote`
+   * goes on their timeline. Their past activity is kept.
+   */
+  deleteProperty: (id: string, leadNote?: string) => void
   /** PATCH /api/settings — master data such as approval badges. Admin / Sales manager only. */
   updateSettings: (change: (s: Database['settings']) => void) => void
   resetDemo: () => void
@@ -131,9 +137,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [user.id])
 
-  const deleteProperty = useCallback<Store['deleteProperty']>((id) => {
-    setDb((prev) => ({ ...prev, properties: prev.properties.filter((p) => p.id !== id) }))
-  }, [])
+  const noteOnLeads = useCallback<Store['noteOnLeads']>((leadIds, propertyId, text) => {
+    if (!leadIds.length) return
+    setDb((prev) => {
+      const next = structuredClone(prev)
+      next.leads.filter((l) => leadIds.includes(l.id)).forEach((l) => {
+        l.activity.unshift({ id: `${l.id}-a${l.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'note', propertyId, text })
+      })
+      return next
+    })
+  }, [user.id])
+
+  const deleteProperty = useCallback<Store['deleteProperty']>((id, leadNote) => {
+    setDb((prev) => {
+      const next = structuredClone(prev)
+      next.properties = next.properties.filter((p) => p.id !== id)
+      for (const l of next.leads) {
+        const linked = l.recommendedPropertyIds.includes(id) || l.visits.some((v) => v.propertyId === id) || l.negotiation?.propertyId === id ||
+          l.activity.some((a) => a.type === 'shared' && a.propertyId === id)
+        if (!linked) continue
+        l.recommendedPropertyIds = l.recommendedPropertyIds.filter((x) => x !== id)
+        l.visits.forEach((v) => { if (v.propertyId === id && v.status === 'scheduled') v.status = 'cancelled' })
+        if (l.negotiation?.propertyId === id) delete l.negotiation
+        if (leadNote) l.activity.unshift({ id: `${l.id}-a${l.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'note', propertyId: id, text: leadNote })
+      }
+      return next
+    })
+  }, [user.id])
 
   const updateSettings = useCallback<Store['updateSettings']>((change) => {
     setDb((prev) => {
@@ -146,8 +176,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, deleteProperty, updateSettings, resetDemo }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, deleteProperty, updateSettings, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, noteOnLeads, deleteProperty, updateSettings, resetDemo],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads } from '@/store/db'
 import type { Property } from '@/data/types'
 import { PropertyCard } from '../components/property-card'
-import { ArchiveDialog, BulkBar, PropertyRowMenu, usePropertyActions } from '../components/list-actions'
+import { ArchiveDialog, BulkBar, DeleteDialog, PropertyRowMenu, usePropertyActions } from '../components/list-actions'
 import { SharePanel } from '../components/share-panel'
 import { ListOptions, useListPrefs } from '../components/list-options'
 import { CompletionBar, PropertyPhoto, PropertyStatusChip } from '../components/property-bits'
@@ -93,6 +93,7 @@ export function PropertiesPage() {
   /* ticked rows (managers, table view): kept across pages, cleared when the filters or the view change */
   const [sel, setSel] = useState<Set<string>>(() => new Set())
   const [archiving, setArchiving] = useState<Property[]>([])
+  const [deleting, setDeleting] = useState<Property | null>(null)
   const [sharing, setSharing] = useState<Property | null>(null)
   const act = usePropertyActions()
   // any filter change goes back to page 1
@@ -336,7 +337,7 @@ export function PropertiesPage() {
               },
               {
                 key: 'actions', header: <span className="sr-only">{t('table.actions')}</span>, className: 'w-9 py-1.5 pr-2 pl-0', sticky: true,
-                cell: (p) => <PropertyRowMenu property={p} onShare={() => setSharing(p)} onArchive={() => setArchiving([p])} />,
+                cell: (p) => <PropertyRowMenu property={p} onShare={() => setSharing(p)} onArchive={() => setArchiving([p])} onDelete={() => setDeleting(p)} />,
               },
             ] satisfies Column<Property>[]).filter((c) => !prefs.hidden.includes(c.key))} />
         )}
@@ -379,6 +380,7 @@ export function PropertiesPage() {
 
       <ArchiveDialog list={archiving} onOpenChange={(o) => { if (!o) setArchiving([]) }}
         onConfirm={(reason) => { act.archive(archiving, reason); setSel(new Set()) }} />
+      {deleting && <DeleteDialog property={deleting} open onOpenChange={(o) => { if (!o) setDeleting(null) }} onDeleted={() => setSel(new Set())} />}
       {sharing && <SharePanel property={sharing} open onOpenChange={(o) => { if (!o) setSharing(null) }} />}
     </Page>
   )

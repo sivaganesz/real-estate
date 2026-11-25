@@ -6,9 +6,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { Callout } from '@/components/app/callout'
-import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { EmptyState } from '@/components/app/empty-state'
 import { Page, PageHeader } from '@/components/app/page-header'
 import { useCrumbs } from '@/components/layout/crumbs'
@@ -22,6 +20,7 @@ import { isListed, pendingApprovals } from '@/lib/property'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import type { Property, PropertyStatus } from '@/data/types'
 import { ApprovalChips, PropertyStatusChip } from '../components/property-bits'
+import { ArchiveDialog, DeleteDialog, usePropertyActions } from '../components/list-actions'
 import { SharePanel } from '../components/share-panel'
 import { HistoryTab } from '../tabs/history-tab'
 import { LegalTab } from '../tabs/legal-tab'
@@ -55,13 +54,12 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
   const { t, i18n } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
-  const { db, user, today, updateProperty, deleteProperty } = useStore()
+  const { db, today, updateProperty } = useStore()
   const can = useCan()
   const leads = useVisibleLeads()
   const manager = can('property.manage')
   const [share, setShare] = useState<{ open: boolean; leadId?: string }>({ open: false })
   const [archiving, setArchiving] = useState(false)
-  const [reason, setReason] = useState('')
   const [deleting, setDeleting] = useState(false)
   const matches = useMemo(() => leadsForProperty(p, leads, db.settings), [p, leads, db.settings])
   const ppsf = p.areaSqft ? Math.round(p.price / p.areaSqft) : 0
@@ -76,19 +74,10 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
     updateProperty(p.id, (x) => { x.status = s; if (s !== 'draft') x.listedAt ??= today }, t('history.status', { status: t(`status.${s}`) }))
     toast.success(t('property.statusChanged', { status: t(`status.${s}`) }))
   }
-  const archive = () => {
-    updateProperty(p.id, (x) => { x.archived = { by: user.id, at: today, reason: reason.trim() || undefined } }, t('history.archived', { reason: reason.trim() || '—' }))
-    toast.success(t('props.archivedToast'))
-    setReason('')
-  }
+  const act = usePropertyActions()
   const restore = () => {
     updateProperty(p.id, (x) => { delete x.archived }, t('history.restored'))
     toast.success(t('props.restoredToast'))
-  }
-  const remove = () => {
-    deleteProperty(p.id)
-    toast.success(t('props.deletedToast', { id: p.id }))
-    navigate('/properties?view=archived')
   }
 
   const actions = p.archived ? (
@@ -112,6 +101,7 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
         <DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label={t('props.more')}><MoreHorizontal /></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setArchiving(true)}><Archive /> {t('props.archive')}</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}><Trash2 /> {t('props.delete')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>
@@ -194,13 +184,8 @@ function PropertyView({ p, tab }: { p: Property; tab: Tab }) {
 
       {share.open && <SharePanel property={p} open={share.open} leadId={share.leadId} onOpenChange={(o) => setShare({ open: o })} />}
 
-      <ConfirmDialog open={archiving} onOpenChange={setArchiving} title={t('props.archiveTitle', { title: p.title })} confirmLabel={t('props.archive')} onConfirm={archive}>
-        <p className="mb-3">{t('props.archiveBody')}</p>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('props.archiveReason')} aria-label={t('props.archiveReason')} />
-      </ConfirmDialog>
-      <ConfirmDialog open={deleting} onOpenChange={setDeleting} danger title={t('props.deleteTitle', { id: p.id })} confirmLabel={t('props.deleteConfirm')} onConfirm={remove}>
-        {t('props.deleteBody')}
-      </ConfirmDialog>
+      <ArchiveDialog list={archiving ? [p] : []} onOpenChange={setArchiving} onConfirm={(reason) => act.archive([p], reason)} />
+      <DeleteDialog property={p} open={deleting} onOpenChange={setDeleting} onDeleted={() => navigate(p.archived ? '/properties?view=archived' : '/properties')} />
     </Page>
   )
 }

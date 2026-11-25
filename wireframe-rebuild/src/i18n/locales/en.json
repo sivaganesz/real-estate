@@ -992,7 +992,6 @@
     "readOnlyHint": "Only an Admin or Sales manager changes a published property. You can add photos, documents and nearby places, and check routes.",
     "archive": "Archive",
     "archiveTitle": "Archive “{{title}}”?",
-    "archiveBody": "It leaves the property list, matching and new bookings. Links to leads and its history are kept, and it can be restored.",
     "archiveReason": "Why? (optional) — e.g. owner withdrew it",
     "archivedToast": "Property archived",
     "restore": "Restore",
@@ -1001,7 +1000,6 @@
     "archivedBody": "Hidden from the property list, matching and new bookings. Links to leads and its history are kept.",
     "delete": "Delete",
     "deleteTitle": "Delete {{id}} for good?",
-    "deleteBody": "This can’t be undone. Leads that mention it keep their history.",
     "deleteConfirm": "Delete permanently",
     "deletedToast": "{{id}} deleted",
     "tab": {
@@ -1574,5 +1572,48 @@
     "footerHint": "RealSpec Properties · reply to this message or call to book a site visit",
     "fine": "Details as provided by the owner and checked by our team. Distances marked ~ are approximate. Approval documents and title papers are shared on request — please verify them before buying.",
     "seeBrochure": "See the brochure (Share page)"
+  },
+  "archive": {
+    "will": "Archiving will:",
+    "will1": "hide it from the property list (find it again in the Archived tab);",
+    "will2": "take it out of matching, recommendations and new site-visit bookings;",
+    "will3": "keep its details, documents, history and every lead link — you can restore it any time.",
+    "linked_one": "{{count}} lead refers to this —",
+    "linked_other": "{{count}} leads refer to this —",
+    "linkedKeep": "they keep the link and get a note on their timeline:",
+    "why": {
+      "recommended": "recommended",
+      "visits_one": "{{count}} site visit",
+      "visits_other": "{{count}} site visits",
+      "negotiation": "negotiation",
+      "shared": "brochure shared"
+    },
+    "booked_one": "{{count}} site visit is still booked:",
+    "booked_other": "{{count}} site visits are still booked:",
+    "bookedHint": "Archiving doesn’t cancel them — reschedule or cancel them with the lead.",
+    "leadNote": "{{id}} ({{title}}) was archived — it’s no longer offered."
+  },
+  "del": {
+    "removes": "This can’t be undone. Its details, location, {{approvals}} and {{docs}}, {{comparables}}, {{photos}} and the change history will be removed.",
+    "n": {
+      "approvals_one": "{{count}} approval badge",
+      "approvals_other": "{{count}} approval badges",
+      "docs_one": "{{count}} document",
+      "docs_other": "{{count}} documents",
+      "comparables_one": "{{count}} comparable",
+      "comparables_other": "{{count}} comparables",
+      "photos_one": "{{count}} photo",
+      "photos_other": "{{count}} photos"
+    },
+    "linked_one": "{{count}} lead is linked to this property:",
+    "linked_other": "{{count}} leads are linked to this property:",
+    "whatHappens": "Deleting removes it from their recommendations and clears a negotiation on it; a note goes on their timeline, and their past activity is kept.",
+    "bookedCancelled_one": "{{count}} booked site visit will be cancelled.",
+    "bookedCancelled_other": "{{count}} booked site visits will be cancelled.",
+    "confirmLinked_one": "I understand — delete {{id}} and remove it from this lead",
+    "confirmLinked_other": "I understand — delete {{id}} and remove it from these {{count}} leads",
+    "leadNote": "{{id}} ({{title}}) was deleted — added by mistake.",
+    "leadsUpdated_one": "{{count}} lead updated.",
+    "leadsUpdated_other": "{{count}} leads updated."
   }
 }
