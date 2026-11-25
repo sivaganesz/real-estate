@@ -6,11 +6,12 @@
  */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { CalendarPlus, Check, MessageSquareText, TriangleAlert, X } from 'lucide-react'
+import { CalendarPlus, Check, LayoutGrid, List, MapPin, MessageSquareText, TriangleAlert, UserRound, Wallet, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Callout } from '@/components/app/callout'
+import { Meter } from '@/components/app/meter'
 import { Segmented } from '@/components/app/segmented'
 import { SectionCard } from '@/components/app/section-card'
 import { StatusChip } from '@/components/app/status-chip'
@@ -26,11 +27,26 @@ import type { Property } from '@/data/types'
 import { MATCH_TONE } from '../components/property-bits'
 import { pitchFor, type Point } from '../pitch'
 
+/** List rows or profile cards, remembered per user in this browser (list by default). */
+type MatchView = 'list' | 'cards'
+const VIEW_KEY = 'realspec-rebuild-match-view'
+function useMatchView(userId: string): [MatchView, (v: MatchView) => void] {
+  const read = (): Record<string, MatchView> => { try { return JSON.parse(localStorage.getItem(VIEW_KEY) ?? '{}') } catch { return {} } }
+  const [views, setViews] = useState(read)
+  const set = (v: MatchView) => {
+    const next = { ...views, [userId]: v }
+    setViews(next)
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify(next)) } catch { /* storage blocked: the choice lasts until reload */ }
+  }
+  return [views[userId] ?? 'list', set]
+}
+
 export function MatchingTab({ p }: { p: Property }) {
   const { t } = useTranslation()
-  const { db } = useStore()
+  const { db, user } = useStore()
   const leads = useVisibleLeads()
   const [sort, setSort] = useState<'fit' | 'ready'>('fit')
+  const [view, setView] = useMatchView(user.id)
   const live = isOnOffer(p)
   const list = useMemo(() => {
     const m = leadsForProperty(p, leads, db.settings).map((x) => ({ ...x, ready: readiness(x.lead, db) }))
@@ -46,8 +62,17 @@ export function MatchingTab({ p }: { p: Property }) {
     <div className="flex flex-col gap-5">
       <SectionCard
         title={list.length ? t('props.match.title', { count: list.length }) : t('props.match.none')}
-        action={list.length > 1 && <Segmented variant="pill" label={t('sort.label')} value={sort} onChange={setSort}
-          segments={[{ value: 'fit', label: t('props.match.bestFit') }, { value: 'ready', label: t('props.match.mostReady') }]} />}>
+        action={list.length > 0 && (
+          <>
+            {list.length > 1 && <Segmented variant="pill" label={t('sort.label')} value={sort} onChange={setSort}
+              segments={[{ value: 'fit', label: t('props.match.bestFit') }, { value: 'ready', label: t('props.match.mostReady') }]} />}
+            <Segmented<MatchView> variant="pill" label={t('props.match.viewLabel')} value={view} onChange={setView}
+              segments={[
+                { value: 'list', label: <span className="max-sm:sr-only">{t('props.match.viewList')}</span>, icon: <List aria-hidden /> },
+                { value: 'cards', label: <span className="max-sm:sr-only">{t('props.match.viewCards')}</span>, icon: <LayoutGrid aria-hidden /> },
+              ]} />
+          </>
+        )}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           {(['strong', 'good', 'weak', 'conditional'] as MatchLabel[]).filter(count).map((l) => (
             <StatusChip key={l} tone={MATCH_TONE[l]}>{t('props.match.count', { count: count(l), label: t(`match.${l}`).toLowerCase() })}</StatusChip>
@@ -57,7 +82,9 @@ export function MatchingTab({ p }: { p: Property }) {
         </div>
         <p className="mb-3 text-sm text-muted-foreground">{t('props.match.rule')}</p>
         {list.length ? (
-          <ul className="flex flex-col gap-2">{list.map((m) => <BuyerCard key={m.lead.id} m={m} ready={m.ready} p={p} />)}</ul>
+          view === 'cards'
+            ? <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{list.map((m) => <BuyerProfile key={m.lead.id} m={m} ready={m.ready} p={p} />)}</ul>
+            : <ul className="flex flex-col gap-2">{list.map((m) => <BuyerCard key={m.lead.id} m={m} ready={m.ready} p={p} />)}</ul>
         ) : <p className="text-sm text-muted-foreground">{t('props.match.noneHint')}</p>}
       </SectionCard>
 
@@ -87,11 +114,11 @@ export function MatchingTab({ p }: { p: Property }) {
   )
 }
 
-function BuyerCard({ m, ready, p }: { m: Match; ready: ReturnType<typeof readiness>; p: Property }) {
+/** One buyer's facts, pitch and actions — shared by the list row and the profile card, so both say exactly the same. */
+function useBuyer(m: Match, p: Property) {
   const { t } = useTranslation()
   const { db, recommendProperty } = useStore()
   const can = useCan()
-  const [open, setOpen] = useState(false)
   const l = m.lead
   const recommended = l.recommendedPropertyIds.includes(p.id)
   const visit = l.visits.filter((v) => v.propertyId === p.id && v.status === 'scheduled')[0]
@@ -112,6 +139,115 @@ function BuyerCard({ m, ready, p }: { m: Match; ready: ReturnType<typeof readine
     recommendProperty(p.id, l.id, !recommended)
     toast.success(t(recommended ? 'props.match.unrecommended' : 'props.match.recommended', { name: l.name }), { description: recommended ? undefined : t('share.logged') })
   }
+  const warningText = (w: Match['reasons'][number]) =>
+    t(`reason.${w.key}`, { ...w.values, list: String(w.values?.list ?? '').split(',').filter(Boolean).map((a) => t(`approval.${a}`, { defaultValue: a })).join(', ') })
+  const owner = can('lead.seeAll') && l.ownerId ? userName(db, l.ownerId) : ''
+  return { l, recommended, visit, pitch: points.map(say), want, warnings, warningText, owner, toggle }
+}
+
+/** "Recommend" / "Recommended" and "Visit" (or the booked date). */
+function BuyerActions({ b, className, grow }: { b: ReturnType<typeof useBuyer>; className?: string; grow?: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <div className={cn('flex items-center gap-1.5', className)}>
+      <Button size="sm" variant={b.recommended ? 'secondary' : 'outline'} onClick={b.toggle} className={cn(grow && 'flex-1')}
+        title={b.recommended ? t('props.match.undoHint') : t('props.match.recommendHint')}>
+        <Check /> {b.recommended ? t('props.match.isRecommended') : t('props.match.recommend')}
+      </Button>
+      {b.visit ? <StatusChip tone="info" icon={<CalendarPlus />}>{b.visit.date}</StatusChip>
+        : <Button size="sm" variant="outline" className={cn(grow && 'flex-1')} onClick={() => toast(t('property.comingNext', { what: t('property.bookVisitModule') }))}><CalendarPlus /> {t('props.match.visit')}</Button>}
+    </div>
+  )
+}
+
+/** The fit's reasons (✓ / ✕), shown with "Why 95?". */
+function Reasons({ m }: { m: Match }) {
+  const { t } = useTranslation()
+  return (
+    <ul className="mt-2 flex flex-wrap gap-1.5">
+      {m.reasons.filter((r) => r.ok !== null).map((r, i) => (
+        <li key={i}><StatusChip tone={r.ok ? 'success' : 'danger'} icon={r.ok ? <Check /> : <X />}>{t(`reason.${r.key}`, { ...r.values })}</StatusChip></li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * Profile card, compact: name and fit score on top (purpose and stage on one line below, the same in every card), how ready
+ * they are, budget, what they want and their executive, a short "what to tell them", then Recommend / Visit level at the bottom.
+ */
+function BuyerProfile({ m, ready, p }: { m: Match; ready: ReturnType<typeof readiness>; p: Property }) {
+  const { t } = useTranslation()
+  const b = useBuyer(m, p)
+  const [open, setOpen] = useState(false)
+  const l = b.l
+  const tell = b.pitch.join(' · ')
+  const fact = (Icon: typeof Wallet, label: string, text: string) => (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <dt className="sr-only">{label}</dt>
+      <Icon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+      <dd className="truncate" title={text}>{text}</dd>
+    </div>
+  )
+  return (
+    <li className="flex flex-col rounded-xl border bg-card text-sm">
+      <div className="flex items-start gap-2.5 p-3 pb-2">
+        <UserAvatar name={l.name} />
+        <div className="min-w-0 flex-1">
+          <Link to={`/leads/${l.id}`} className="block truncate font-semibold text-primary hover:underline" title={l.name}>{l.name}</Link>
+          <p className="truncate text-meta text-muted-foreground">
+            {l.purpose && <span title={l.purposeNote}>{t(`purpose.buyer.${l.purpose}`)} · </span>}{t(`stage.${l.stage}`)}
+          </p>
+        </div>
+        <div className="shrink-0 text-right leading-tight">
+          <span className={cn('block text-xl font-semibold tabular-nums', toneText[MATCH_TONE[m.label]])}>{m.score}</span>
+          <span className="text-micro text-muted-foreground">{t(`match.long.${m.label}`)}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 px-3">
+        <div className="flex items-center gap-2 text-meta">
+          <span className="shrink-0 text-muted-foreground first-letter:uppercase">{t('props.match.readyToBuy')}</span>
+          <Meter value={ready.total} tone={BAND_TONE[ready.band]} label={t('props.match.readyToBuy')} className="flex-1" />
+          <b className={cn('w-6 text-right tabular-nums', toneText[BAND_TONE[ready.band]])} title={t(`readiness.${ready.band}`)}>{ready.total}</b>
+        </div>
+        <dl className="flex flex-col gap-1 text-meta">
+          {fact(Wallet, t('props.match.budget'), `${inrShort(l.budget.min)} – ${inrShort(l.budget.max)}`)}
+          {fact(MapPin, t('props.match.wants'), b.want)}
+          {b.owner && fact(UserRound, t('props.match.executive'), b.owner)}
+        </dl>
+        {tell && (
+          // the padding sits outside the clamped text, so a fourth line never peeks out under the third
+          <div className="rounded-md bg-muted/60 px-2 py-1.5 text-meta" title={`${t('props.match.tellThem')}: ${tell}`}>
+            <p className="line-clamp-3">
+              <MessageSquareText aria-hidden className="mr-1 inline size-3.5 -translate-y-px text-muted-foreground" />{tell}
+            </p>
+          </div>
+        )}
+        {b.warnings.length > 0 && (
+          <p className="flex flex-wrap gap-1">
+            {b.warnings.map((w) => <StatusChip key={w.key} tone="warning" icon={<TriangleAlert />} className="h-auto py-0.5 whitespace-normal">{b.warningText(w)}</StatusChip>)}
+          </p>
+        )}
+        <div>
+          <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="text-meta text-primary hover:underline">
+            {open ? t('props.match.hideWhy') : t('props.match.why', { score: m.score })}
+          </button>
+          {open && <Reasons m={m} />}
+        </div>
+      </div>
+      <span className="flex-1" />
+      <BuyerActions b={b} grow className="mt-2.5 border-t px-3 py-2.5" />
+    </li>
+  )
+}
+
+/** List row: the buyer, budget and wants on the left; the fit score and actions on the right. */
+function BuyerCard({ m, ready, p }: { m: Match; ready: ReturnType<typeof readiness>; p: Property }) {
+  const { t } = useTranslation()
+  const b = useBuyer(m, p)
+  const [open, setOpen] = useState(false)
+  const l = b.l
 
   return (
     <li className="flex flex-col gap-3 rounded-xl border p-3.5 sm:flex-row sm:items-start">
@@ -126,25 +262,19 @@ function BuyerCard({ m, ready, p }: { m: Match; ready: ReturnType<typeof readine
             </span>
           </p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {inrShort(l.budget.min)} – {inrShort(l.budget.max)} · {want}{can('lead.seeAll') && l.ownerId ? ` · ${userName(db, l.ownerId)}` : ''}
+            {inrShort(l.budget.min)} – {inrShort(l.budget.max)} · {b.want}{b.owner ? ` · ${b.owner}` : ''}
           </p>
-          {points.length > 0 && (
+          {b.pitch.length > 0 && (
             <p className="mt-1.5 flex items-start gap-1.5 text-sm" title={t('props.match.sayTitle', { name: l.name.split(' ')[0] })}>
-              <MessageSquareText className="mt-0.5 size-4 shrink-0 text-muted-foreground" /> <span>{points.map(say).join(' · ')}</span>
+              <MessageSquareText className="mt-0.5 size-4 shrink-0 text-muted-foreground" /> <span>{b.pitch.join(' · ')}</span>
             </p>
           )}
-          {warnings.length > 0 && (
+          {b.warnings.length > 0 && (
             <p className="mt-2 flex flex-wrap gap-1.5">
-              {warnings.map((w) => <StatusChip key={w.key} tone="warning" icon={<TriangleAlert />} className="h-auto py-0.5 whitespace-normal">{t(`reason.${w.key}`, { ...w.values, list: String(w.values?.list ?? '').split(',').filter(Boolean).map((a) => t(`approval.${a}`, { defaultValue: a })).join(', ') })}</StatusChip>)}
+              {b.warnings.map((w) => <StatusChip key={w.key} tone="warning" icon={<TriangleAlert />} className="h-auto py-0.5 whitespace-normal">{b.warningText(w)}</StatusChip>)}
             </p>
           )}
-          {open && (
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {m.reasons.filter((r) => r.ok !== null).map((r, i) => (
-                <li key={i}><StatusChip tone={r.ok ? 'success' : 'danger'} icon={r.ok ? <Check /> : <X />}>{t(`reason.${r.key}`, { ...r.values })}</StatusChip></li>
-              ))}
-            </ul>
-          )}
+          {open && <Reasons m={m} />}
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2 pl-12 sm:flex-col sm:items-end sm:pl-0">
@@ -155,13 +285,7 @@ function BuyerCard({ m, ready, p }: { m: Match; ready: ReturnType<typeof readine
         <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="text-sm text-primary hover:underline">
           {open ? t('props.match.hideWhy') : t('props.match.why', { score: m.score })}
         </button>
-        <div className="flex items-center gap-1.5">
-          <Button size="sm" variant={recommended ? 'secondary' : 'outline'} onClick={toggle} title={recommended ? t('props.match.undoHint') : t('props.match.recommendHint')}>
-            <Check /> {recommended ? t('props.match.isRecommended') : t('props.match.recommend')}
-          </Button>
-          {visit ? <StatusChip tone="info" icon={<CalendarPlus />}>{visit.date}</StatusChip>
-            : <Button size="sm" variant="outline" onClick={() => toast(t('property.comingNext', { what: t('property.bookVisitModule') }))}><CalendarPlus /> {t('props.match.visit')}</Button>}
-        </div>
+        <BuyerActions b={b} />
       </div>
     </li>
   )

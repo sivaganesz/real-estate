@@ -71,6 +71,7 @@ Updated 25 Nov 2026.
   - [x] **New:** Oldest, Area ↑↓, Most complete
 - [x] Status tabs with counts (All, Available, Under negotiation, Reserved, On hold, Booked, Sold, Archived); empty tabs hidden
 - [x] "✨ N properties need attention" strip: missing details, price out of range, no site visits in 45+ days, approval documents pending; each with a fix link
+  - [x] **Changed (26 Nov):** hidden until the "✨ Needs attention N" button beside the view switch is clicked; clicking again hides it
 - [x] No results: "Show N without [filter]"
 - [x] Pager: rows per page, Prev / Next, "Showing x–y of N"
 - [x] Table: Property, Location, Area, Asking price, Status, Listed, Completion score
@@ -146,6 +147,7 @@ Updated 25 Nov 2026.
 - [x] "N buyers fit" with strong / good / weak / conditional counts; sort by best fit or most ready
 - [x] Each buyer: fit score and label, "Why N?", talking points, Recommend, site-visit booking
 - [x] "Close — over budget" buyers
+- [x] **New (26 Nov):** List or Profile cards layout (budget, what they want, executive, ready-to-buy bar, what to tell them, fit score, Recommend / Visit), remembered per user
 
 **History tab**
 - [x] Filter chips (Details, Price, Status, Location, Documents, Photos, Buyers), grouped by day

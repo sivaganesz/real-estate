@@ -1070,7 +1070,14 @@
       "readyToBuy": "ready to buy",
       "in": "in",
       "flexible": "+{{pct}}% flexible",
-      "openLead": "Open lead"
+      "openLead": "Open lead",
+      "viewLabel": "Layout",
+      "viewList": "List",
+      "viewCards": "Profile cards",
+      "budget": "Budget",
+      "wants": "Looking for",
+      "executive": "Sales executive",
+      "tellThem": "What to tell them"
     },
     "hist": {
       "subtitle": "Changes to the property, and what happened with buyers",

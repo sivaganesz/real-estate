@@ -37,7 +37,8 @@ import { type Pill, SearchBar, useFilterWords } from '../search/search-bar'
 
 /** List state kept between visits (as the current wireframe keeps UI.filters in memory). */
 type ListState = { f: PSFilters; aiOpen: boolean; attnHidden: boolean; page: number; size: number; gridSize: number }
-let saved: ListState = { f: {}, aiOpen: false, attnHidden: false, page: 1, size: 10, gridSize: 12 }
+// the "need attention" strip stays closed until someone opens it with the ✨ Needs attention button
+let saved: ListState = { f: {}, aiOpen: false, attnHidden: true, page: 1, size: 10, gridSize: 12 }
 
 /** Cards come in rows of 2, 3, 4 or (very wide screens) 6, so the grid pages in multiples of 12. */
 const GRID_SIZES = [12, 24, 48, 96]
@@ -243,8 +244,12 @@ export function PropertiesPage() {
             })}
           </div>
           <div className="flex shrink-0 items-center gap-3 border-b pb-1 pl-3">
-            {st.attnHidden && (
-              <button type="button" onClick={() => setSt((s) => ({ ...s, attnHidden: false }))} className="text-meta font-medium whitespace-nowrap text-violet">✨ {t('ps.needsAttention')}</button>
+            {/* opens and closes the "need attention" strip (closing also drops its filter) */}
+            {flagged > 0 && (
+              <Chip tone="violet" size="sm" pressed={!st.attnHidden} className="whitespace-nowrap"
+                onClick={() => setSt((s) => ({ ...s, attnHidden: !s.attnHidden, f: s.attnHidden ? s.f : { ...s.f, attn: undefined } }))}>
+                ✨ {t('ps.needsAttention')} <b className="ml-0.5">{flagged}</b>
+              </Chip>
             )}
             <ListOptions prefs={prefs} onChange={setPrefs} fixedLabel={grid ? undefined : t('table.property')}
               columns={grid ? undefined : [
