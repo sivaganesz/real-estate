@@ -295,7 +295,7 @@ const facing = (f: Facing) => f
 
 export function seedLeads(): Lead[] {
   const L = (l: Omit<Lead, 'recommendedPropertyIds' | 'visits' | 'activity'> & Partial<Pick<Lead, 'recommendedPropertyIds' | 'visits' | 'activity'>>): Lead =>
-    ({ recommendedPropertyIds: [], visits: [], activity: [], ...l })
+    ({ recommendedPropertyIds: [], visits: [], activity: [], consent: { followUp: true, at: l.enquiryDate, how: l.source }, contactPref: l.source === 'Website' || l.source === 'Social media' ? 'whatsapp' : 'call', ...l })
   return [
     L({ id: 'LEAD-1001', name: 'Arun', phone: '+91 98xxxxxx01', source: 'Website', enquiryDate: '2026-11-16', ownerId: 'u-ex01', purpose: 'ownUse',
       qualification: { need: 'clear', timeline: 'm1to3', authority: 'joint', funding: 'combination', fundingReady: 'arranging' },
@@ -387,7 +387,7 @@ export function seedLeads(): Lead[] {
       engagement: { responded: true, docsRequested: true, siteVisited: true },
       budget: budget(4500000, 5000000, 5500000),
       requirement: req({ type: 'flat', cities: ['Madurai'], localities: ['Anna Nagar'], sizeSqft: 1000, bhk: '2 BHK', parking: 'required', possession: 'ready' }),
-      stage: 'lost', stageSince: '2026-10-20',
+      stage: 'lost', stageSince: '2026-10-20', lost: { reason: 'boughtElsewhere', note: 'Bought a resale flat nearby at a lower price.', at: '2026-10-20', by: 'u-ex02' },
       visits: [{ id: 'VIS-005', propertyId: 'PROP-1005', date: '2026-10-02', status: 'completed', feedback: 'Liked the flat, felt the price was high.' }],
       activity: [act('2026-10-20', 'call', 'Bought a resale flat nearby at a lower price.', 'u-ex02')] }),
     L({ id: 'LEAD-1013', name: 'Ramesh Traders (Ramesh M)', phone: '+91 98xxxxxx13', email: 'accounts@rameshtraders.example', source: 'Channel partner', enquiryDate: '2026-08-20', ownerId: 'u-ex04', purpose: 'businessUse',
@@ -417,7 +417,7 @@ export function seedLeads(): Lead[] {
 }
 
 /** The shape of the stored demo data. Raise it when that shape changes: saved data of another version is replaced by this seed. */
-export const DATA_VERSION = 6
+export const DATA_VERSION = 7
 
 export function seedDatabase(): Database {
   seq = 0

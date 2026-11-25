@@ -237,7 +237,15 @@ export type Lead = {
   classification?: Classification
   /** HNI status — recorded only from what the customer chose to share; verified only with their consent. */
   hni?: { status: HniStatus; potential: boolean }
+  /** Consent to be followed up (DPDP): when and how it was given; withdrawn stops follow-ups. */
+  consent?: { followUp: boolean; at: string; how: string; withdrawnAt?: string }
+  /** How they prefer to be contacted. */
+  contactPref?: 'call' | 'whatsapp' | 'email'
+  /** Why the lead was lost (set with the Lost stage). */
+  lost?: { reason: LostReason; note?: string; at: string; by: string }
 }
+
+export type LostReason = 'boughtElsewhere' | 'budget' | 'noInventory' | 'notResponding' | 'postponed' | 'loan' | 'other'
 
 /** What kind of customer this is — separate from how ready they are to buy. A high budget never makes someone an HNI. */
 export type Classification = 'general' | 'qualifiedBuyer' | 'investor' | 'highValue' | 'potentialHni' | 'verifiedHni'

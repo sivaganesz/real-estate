@@ -1778,5 +1778,234 @@
     "doneNoteNone": "Follow-up done · nothing more planned",
     "doneToast": "Follow-up with {{name}} logged",
     "nextOn": "Next follow-up {{date}}"
+  },
+  "lead": {
+    "notYours": "This lead belongs to another executive",
+    "notFound": "Lead not found",
+    "back": "Leads",
+    "followUpSet": "Next follow-up set to {{date}}",
+    "followUpCleared": "Next follow-up cleared",
+    "visitNote": "Site visit booked: {{id}} on {{date}} {{time}}",
+    "visitBooked": "Site visit booked for {{date}}",
+    "sections": "Lead sections",
+    "tab": {
+      "activity": "Activity",
+      "matches": "Matches",
+      "qualification": "Qualification",
+      "hni": "HNI"
+    },
+    "bedrooms": "{{n}} bedrooms",
+    "possession": {
+      "ready": "Ready to move",
+      "underConstruction": "Under construction OK"
+    },
+    "parkingNeeded": "Parking needed",
+    "prefers": "prefers {{how}}",
+    "pref": {
+      "call": "a call",
+      "whatsapp": "WhatsApp",
+      "email": "email"
+    },
+    "consentHint": "Given {{date}} via {{how}}",
+    "consentOk": "Consent to follow up",
+    "consentNo": "No consent to follow up",
+    "consentFirst": "Record consent before planning follow-ups",
+    "edit": "Edit lead",
+    "editModule": "Editing a lead (Add / Edit lead form)",
+    "bookVisit": "Book site visit",
+    "why": "Why {{score}}?",
+    "budget": "Budget",
+    "preferred": "prefers {{amount}}",
+    "flex": "Can stretch {{pct}}% → up to {{ceiling}}",
+    "visits": "Site visits",
+    "visitStatus": {
+      "scheduled": "Booked",
+      "completed": "Done",
+      "cancelled": "Cancelled",
+      "noShow": "No-show"
+    },
+    "noVisits": "No site visits yet.",
+    "negotiation": "Negotiation",
+    "offer": "Offer {{offer}} · seller’s counter {{counter}}",
+    "stages": "Sales stage",
+    "stageSince": "Current stage",
+    "moveTo": "Move to {{stage}}",
+    "nextStep": "Next step",
+    "noFollowUp": "No follow-up planned",
+    "followUpIn_one": "Follow-up {{date}} — tomorrow",
+    "followUpIn_other": "Follow-up {{date}} — in {{count}} days",
+    "reschedule": "Reschedule",
+    "newDate": "New follow-up date",
+    "logged": "Added to the timeline",
+    "act": {
+      "shared": "Brochure shared ({{channel}}):",
+      "recommended": "Recommended",
+      "unrecommended": "Recommendation removed:",
+      "type": {
+        "call": "Call",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "meeting": "Meeting",
+        "visit": "Visit",
+        "note": "Note",
+        "shared": "Shared",
+        "recommended": "Recommended"
+      },
+      "placeholder": {
+        "call": "What did you talk about? What did they ask for?",
+        "whatsapp": "What did you send, and what did they reply?",
+        "visit": "How did the visit go? What did they like or not?",
+        "note": "A note for the team…"
+      },
+      "what": "What happened",
+      "next": "Next follow-up",
+      "log": "Log",
+      "enquiry": "Enquired via {{source}}",
+      "none": "Nothing logged yet."
+    },
+    "noMatches": "No property fits yet",
+    "noMatchesHint": "When a property meets their type, city and budget it shows here.",
+    "shareBrochure": "Share brochure",
+    "bookVisitTitle": "Book a site visit for {{name}}",
+    "bookVisitHint": "It goes on their timeline and becomes the next follow-up.",
+    "property": "Property",
+    "date": "Date",
+    "time": "Time"
+  },
+  "lost": {
+    "mark": "Mark as lost",
+    "title": "Mark {{name}} as lost?",
+    "why": "Why was the lead lost? It helps the team learn what to change.",
+    "reason": {
+      "boughtElsewhere": "Bought elsewhere",
+      "budget": "Budget mismatch",
+      "noInventory": "No suitable property",
+      "notResponding": "Not responding",
+      "postponed": "Postponed purchase",
+      "loan": "Loan not approved",
+      "other": "Other"
+    },
+    "notePh": "A short note (needed for “Other”)",
+    "confirm": "Mark as lost",
+    "note": "Marked lost — {{reason}}",
+    "toast": "{{name}} marked as lost",
+    "banner": "Lost — {{reason}}",
+    "reopen": "Reopen",
+    "reopened": "Reopened — back to Contacted",
+    "reopenedToast": "{{name}} reopened"
+  },
+  "next": {
+    "visit": "Site visit at {{property}} on {{date}} {{time}} — confirm a day before and share the location.",
+    "visitLoan": "Site visit at {{property}} on {{date}} {{time}} — confirm a day before; their loan is ready, so ask about booking if they like it.",
+    "negotiation": "Offer {{offer}} vs counter {{counter}} — a {{gap}} gap. Call to agree a middle figure.",
+    "negotiationOpen": "Negotiation open on {{property}} — get their offer in writing.",
+    "afterVisit": "Ask how they found {{property}}, and what would make them book.",
+    "firstCall": "First call — confirm budget, timeline and who decides.",
+    "bookVisit": "They have {{property}} — offer a site visit this week.",
+    "recommend": "Recommend {{property}} — a {{score}} fit they haven’t seen yet.",
+    "checkIn": "Check in — last contact {{days}} days ago."
+  },
+  "qual": {
+    "row": {
+      "budget": "Budget fits a property",
+      "requirement": "Clear requirement",
+      "timeline": "Purchase timeline",
+      "funding": "Funding ready",
+      "authority": "Decision-making",
+      "engagement": "Engagement"
+    },
+    "answer": {
+      "budget": {
+        "fits": "A property fits the budget",
+        "stretch": "Only with a stretch",
+        "none": "Nothing fits yet"
+      },
+      "need": {
+        "clear": "Clear and specific",
+        "partly": "Partly defined",
+        "exploring": "Just exploring"
+      },
+      "requirement": {
+        "clear": "Clear and specific",
+        "partly": "Partly defined",
+        "exploring": "Just exploring"
+      },
+      "timeline": {
+        "m1": "Within 1 month",
+        "m1to3": "1–3 months",
+        "m3to6": "3–6 months",
+        "m6to12": "6–12 months",
+        "undecided": "Not decided"
+      },
+      "authority": {
+        "sole": "Decides alone",
+        "joint": "With family / partners",
+        "needsApproval": "Needs someone’s approval",
+        "unknown": "Not known yet"
+      },
+      "fundingType": {
+        "own": "Own funds",
+        "loan": "Home loan",
+        "combination": "Own funds + loan"
+      },
+      "funding": {
+        "ready": "Funds ready",
+        "arranging": "Arranging funds",
+        "undecided": "Not decided"
+      }
+    },
+    "q": {
+      "need": "Requirement",
+      "timeline": "Timeline",
+      "authority": "Who decides",
+      "fundingType": "How they’ll pay",
+      "funding": "Funding readiness",
+      "engagement": "Engagement"
+    },
+    "say": {
+      "need": "What exactly are you looking for?",
+      "timeline": "When are you planning to buy?",
+      "authority": "Will you decide yourself, or with family or partners?",
+      "fundingType": "Will you use your own funds, a home loan, or both?",
+      "funding": "Have you arranged the funds or the loan?"
+    },
+    "eng": {
+      "responded": "Responded",
+      "docsRequested": "Asked for documents",
+      "siteVisited": "Visited a site"
+    },
+    "score": "Ready-to-buy score",
+    "band": {
+      "high": "80–100 High priority",
+      "qualified": "60–79 Qualified",
+      "developing": "40–59 Developing",
+      "early": "Below 40 Early stage"
+    },
+    "fair": "Starting rules — adjust in Settings once there is conversion data. No points are ever given for name, appearance, occupation, caste, religion or other personal characteristics."
+  },
+  "hniTab": {
+    "restricted": "HNI assessment is for Admins and Sales managers",
+    "restrictedHint": "Ask your manager if you think this customer is an HNI.",
+    "ruleTitle": "A status, never a score",
+    "rule": "Record only what the customer chose to share. Potential indicators are not proof of wealth, and “Verified HNI” needs the customer’s consent and a proper verification.",
+    "status": "HNI status",
+    "st": {
+      "notDetermined": "Not determined",
+      "notVerified": "Not verified",
+      "potential": "Potential — indicators recorded",
+      "consentInProgress": "Consent obtained — verifying",
+      "verified": "Verified",
+      "declined": "Customer declined verification"
+    },
+    "statusNote": "HNI status: {{status}}",
+    "verifiedNeedsConsent": "“Verified” is available only after consent and verification are in progress.",
+    "cls": "Classification",
+    "auto": "Auto — {{cls}}",
+    "clsHint": "Leave on Auto unless you know better; “Verified HNI” needs a verified status.",
+    "clsNote": "Classification set to {{cls}}",
+    "potential": "Potential HNI indicators recorded",
+    "potentialHint": "From what they told us — e.g. owns several properties, investing for rental income.",
+    "potentialOn": "Potential HNI indicators recorded",
+    "potentialOff": "Potential HNI indicators removed"
   }
 }
