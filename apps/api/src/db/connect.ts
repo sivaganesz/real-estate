@@ -30,7 +30,8 @@ export async function connectDb(opts: { ephemeral?: boolean } = {}) {
     } else {
       fs.mkdirSync(config.dataDir, { recursive: true });
       memory = await MongoMemoryServer.create({
-        instance: { dbPath: config.dataDir, storageEngine: 'wiredTiger', port: 27027 },
+        // A small cache keeps the embedded database inside a 512 MB server (Render's free plan).
+        instance: { dbPath: config.dataDir, storageEngine: 'wiredTiger', port: 27027, args: ['--wiredTigerCacheSizeGB', '0.25'] },
       });
     }
     uri = memory.getUri('estate');

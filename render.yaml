@@ -1,6 +1,11 @@
 # The EstateOS API on Render. The web app is on Vercel and reaches this
 # service through the rewrites in apps/web/vercel.json, so both must use the
 # same address (https://estateos-api.onrender.com).
+#
+# No external database: the API runs its own built-in MongoDB, as in
+# development. On the free plan the disk is temporary, so whenever the service
+# restarts or redeploys the data goes back to the demo data. Set MONGODB_URI
+# (e.g. a MongoDB Atlas cluster) to keep data permanently instead.
 services:
   - type: web
     name: estateos-api
@@ -8,6 +13,7 @@ services:
     plan: free
     region: singapore
     # tsx (which runs the TypeScript server) is a dev dependency, so install those too.
+    # The install also downloads the built-in MongoDB.
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
     startCommand: pnpm --filter @estate/api start
     healthCheckPath: /api/health
@@ -16,11 +22,6 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
-      # A real MongoDB is used in production; skip downloading the embedded one.
-      - key: MONGOMS_DISABLE_POSTINSTALL
-        value: "1"
-      - key: MONGODB_URI
-        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: JWT_SECRET
