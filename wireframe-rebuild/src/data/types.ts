@@ -201,6 +201,8 @@ export type SiteVisit = {
   time?: string
   status: 'scheduled' | 'completed' | 'cancelled' | 'noShow'
   feedback?: string
+  /** How interested the customer was after a completed visit. */
+  interest?: 'high' | 'medium' | 'low'
 }
 
 export type Lead = {

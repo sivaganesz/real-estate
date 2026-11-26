@@ -33,7 +33,7 @@ import { type Tone, toneFill, toneSoft, toneText } from '@/components/app/tone'
 import { UserAvatar } from '@/components/app/user-avatar'
 import { useCrumbs } from '@/components/layout/crumbs'
 import { STAGE_ORDER } from '@/data/catalogue'
-import type { Classification, HniStatus, Lead, LeadActivity, LeadStage, LostReason } from '@/data/types'
+import type { Classification, HniStatus, Lead, LeadActivity, LeadStage, LostReason, SiteVisit } from '@/data/types'
 import { useIsPhone } from '@/hooks/use-media-query'
 import { CLASSIFICATIONS, classificationOf, isHni, suggestedClassification } from '@/lib/classification'
 import { hasFollowUpConsent } from '@/lib/consent'
@@ -47,8 +47,10 @@ import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bit
 import { isActive } from './lead-list'
 import { ConsentControl } from './consent-control'
 import { DoneButton } from './done-button'
+import { OfferDialog } from './offer-dialog'
 import { RescheduleButton } from './reschedule-button'
-import { dueOf, suggestNext } from './next-step'
+import { VisitOutcomeDialog } from './visit-outcome'
+import { dueOf, needsOutcome, suggestNext } from './next-step'
 
 const TABS = ['activity', 'matches', 'qualification', 'hni'] as const
 type Tab = (typeof TABS)[number]
@@ -284,13 +286,15 @@ function Assessments({ l, top, why, onWhy }: { l: Lead; top?: Match; why: boolea
 function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () => void; onBook: () => void }) {
   const { t } = useTranslation()
   const L = useLabels()
-  const { db } = useStore()
+  const { db, today } = useStore()
   const can = useCan()
   const manager = can('lead.seeAll')
   const a = useLead(l)
   const cls = classificationOf(l, db)
   const hniHidden = isHni(cls) && !manager
   const [why, setWhy] = useState(false)
+  const [outcomeFor, setOutcomeFor] = useState<SiteVisit | null>(null)
+  const [offering, setOffering] = useState(false)
   const r = l.requirement
   const b = l.budget
   const ceiling = Math.round(b.max * (1 + (b.flexPct || 0) / 100))
@@ -351,6 +355,7 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
           <DropdownMenuContent align="end" className="min-w-48">
             <DropdownMenuItem onClick={() => toast(t('property.comingNext', { what: t('lead.editModule') }))}><Pencil /> {t('lead.edit')}</DropdownMenuItem>
             {isActive(l) && <DropdownMenuItem onClick={onBook}><CalendarPlus /> {t('lead.bookVisit')}</DropdownMenuItem>}
+            {isActive(l) && <DropdownMenuItem onClick={() => setOffering(true)}><Handshake /> {l.negotiation ? t('lead.offerForm.titleUpdate') : t('lead.offerForm.titleStart')}</DropdownMenuItem>}
             {isActive(l) && (
               <>
                 <DropdownMenuSeparator />
@@ -392,27 +397,40 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
             </p>
           </div>
         ))}
-        {l.negotiation && group(Handshake, <>{t('lead.group.negotiating')} · <Link to={`/properties/${l.negotiation.propertyId}`} className="text-primary normal-case hover:underline">{l.negotiation.propertyId}</Link></>, (
+        {(l.negotiation || l.stage === 'negotiation') && group(Handshake, l.negotiation
+          ? <>{t('lead.group.negotiating')} · <Link to={`/properties/${l.negotiation.propertyId}`} className="text-primary normal-case hover:underline">{l.negotiation.propertyId}</Link></>
+          : t('lead.group.negotiating'), l.negotiation ? (
           <OfferScale offered={l.negotiation.offered} counter={l.negotiation.counter} asking={db.properties.find((p) => p.id === l.negotiation!.propertyId)?.price} notes={l.negotiation.notes} />
-        ))}
+        ) : <p className="text-sm text-muted-foreground">{t('lead.offerForm.none')}</p>,
+        isActive(l) && <button type="button" onClick={() => setOffering(true)} className={headerLink}>{l.negotiation ? t('lead.offerForm.update') : `＋ ${t('lead.offerForm.record')}`}</button>)}
         {group(CalendarPlus, t('lead.visits'), visits.length ? (
           <ul className="flex flex-col gap-2 text-sm">
-            {visits.map((v) => (
-              <li key={v.id}>
-                <p className="flex items-center gap-2">
-                  <span className={cn('size-1.5 shrink-0 rounded-full', v.status === 'scheduled' ? 'bg-info' : v.status === 'completed' ? 'bg-success' : 'bg-muted-foreground')} />
-                  <span className="min-w-0">
-                    <Link to={`/properties/${v.propertyId}`} className="font-medium text-primary hover:underline">{v.propertyId}</Link>
-                    <span className="text-muted-foreground"> · {fmtDate(v.date)}{v.time ? ` ${v.time}` : ''} · {t(`lead.visitStatus.${v.status}`)}</span>
-                  </span>
-                </p>
-                {v.feedback && <p className="mt-0.5 pl-3.5 text-xs text-muted-foreground">“{v.feedback}”</p>}
-              </li>
-            ))}
+            {visits.map((v) => {
+              const due = needsOutcome(v, today)
+              return (
+                <li key={v.id}>
+                  <p className="flex items-center gap-2">
+                    <span className={cn('size-1.5 shrink-0 rounded-full', due ? 'bg-warning' : v.status === 'scheduled' ? 'bg-info' : v.status === 'completed' ? 'bg-success' : v.status === 'noShow' ? 'bg-danger' : 'bg-muted-foreground')} />
+                    <span className="min-w-0 flex-1">
+                      <Link to={`/properties/${v.propertyId}`} className="font-medium text-primary hover:underline">{v.propertyId}</Link>
+                      <span className="text-muted-foreground"> · {fmtDate(v.date)}{v.time ? ` ${v.time}` : ''} · </span>
+                      {due ? <span className="font-medium text-warning">{t('lead.outcome.needed')}</span> : <span className="text-muted-foreground">{t(`lead.visitStatus.${v.status}`)}{v.interest ? ` · ${t('lead.outcome.interestShort', { level: t(`lead.outcome.interest.${v.interest}`) })}` : ''}</span>}
+                    </span>
+                    {v.status === 'scheduled' && (
+                      <Button size="sm" variant={due ? 'default' : 'outline'} className="h-6 shrink-0 px-2 text-xs" onClick={() => setOutcomeFor(v)}>{t('lead.outcome.record')}</Button>
+                    )}
+                  </p>
+                  {v.feedback && <p className="mt-0.5 pl-3.5 text-xs text-muted-foreground">“{v.feedback}”</p>}
+                </li>
+              )
+            })}
           </ul>
         ) : <p className="text-sm text-muted-foreground">{t('lead.noVisits')}</p>,
         isActive(l) && <button type="button" onClick={onBook} className={headerLink}>＋ {t('lead.bookShort')}</button>)}
       </div>
+      <VisitOutcomeDialog lead={l} visit={outcomeFor} onOpenChange={(o) => { if (!o) setOutcomeFor(null) }} />
+      <OfferDialog lead={l} open={offering} onOpenChange={setOffering}
+        propertyIds={[...l.visits.filter((v) => v.status === 'completed').map((v) => v.propertyId), ...l.recommendedPropertyIds, ...(top ? [top.property.id] : [])]} />
     </aside>
   )
 }

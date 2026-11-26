@@ -4,7 +4,7 @@
  * (stage, booked or past visits, the negotiation, matches, last contact), so the screen won't change when the AI arrives.
  * Suggestions hold an i18n key and values, never a finished sentence.
  */
-import type { Database, Lead } from '@/data/types'
+import type { Database, Lead, SiteVisit } from '@/data/types'
 import { daysBetween, inrShort } from '@/lib/format'
 import { propertiesForLead } from '@/lib/matching'
 import { isActive } from './lead-list'
@@ -18,9 +18,14 @@ export function dueOf(l: Lead, today: string): Due {
   return d < 0 ? { kind: 'overdue', date: l.nextFollowUp, days: -d } : d === 0 ? { kind: 'today', date: l.nextFollowUp } : { kind: 'later', date: l.nextFollowUp, days: d }
 }
 
+/** A booked visit whose day has passed still needs its outcome (completed, no-show or cancelled). */
+export const needsOutcome = (v: SiteVisit, today: string) => v.status === 'scheduled' && v.date < today
+
 export function suggestNext(l: Lead, db: Database, today: string): Suggestion | null {
   if (!isActive(l)) return null
   const title = (id: string) => db.properties.find((p) => p.id === id)?.title ?? id
+  const pending = l.visits.filter((v) => needsOutcome(v, today)).sort((a, b) => a.date.localeCompare(b.date))[0]
+  if (pending) return { key: 'next.recordOutcome', values: { property: title(pending.propertyId), date: pending.date }, propertyId: pending.propertyId }
   const booked = l.visits.filter((v) => v.status === 'scheduled' && v.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0]
   if (booked) {
     const loan = l.qualification.funding !== 'own' && l.qualification.fundingReady === 'ready'
