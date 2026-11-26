@@ -290,4 +290,6 @@ export type Database = {
   properties: Property[]
   leads: Lead[]
   settings: Settings
+  /** Demo leads added to the seed later that this data already has (data/seed.ts → addMissingSeedLeads). */
+  seedAdded?: string[]
 }

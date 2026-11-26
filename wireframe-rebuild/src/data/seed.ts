@@ -414,7 +414,105 @@ export function seedLeads(): Lead[] {
       requirement: req({ type: 'commercial', cities: ['Tiruchirappalli', 'Madurai'], sizeSqft: 5000, commCategory: 'Commercial building', occupancy: 'tenanted' }),
       stage: 'contacted', stageSince: '2026-11-13', nextFollowUp: '2026-11-20',
       activity: [act('2026-11-13', 'call', 'Stated a ₹5–7 Cr range; no timeline or funding plan yet.', 'u-ex01')] }),
+    // added 27 Nov: five more leads at different stages (merged into saved demo data too — see addMissingSeedLeads)
+    L({ id: 'LEAD-1016', name: 'Sathish Kumar', phone: '+91 98xxxxxx16', email: 'sathish.k@example.com', source: 'Referral', enquiryDate: '2026-11-08', ownerId: 'u-ex02', purpose: 'ownUse',
+      qualification: { need: 'clear', timeline: 'm1to3', authority: 'joint', funding: 'loan', fundingReady: 'arranging' },
+      engagement: { responded: true, docsRequested: true, siteVisited: false }, purposeNote: 'Plot to build a house near his parents',
+      budget: budget(2500000, 3000000, 3200000, 5),
+      requirement: req({ type: 'plot', cities: ['Madurai'], localities: ['Ponmeni', 'Vilangudi'], sizeSqft: 1300, facing: facing('W'), corner: 'any' }),
+      stage: 'recommended', stageSince: '2026-11-12', nextFollowUp: '2026-11-18', recommendedPropertyIds: ['PROP-1012'],
+      activity: [act('2026-11-12', 'whatsapp', 'Sent the Ponmeni plot brochure; he will check with his wife and the bank.', 'u-ex02'),
+        act('2026-11-08', 'call', 'Referred by Arun. Wants a West-facing plot near Ponmeni; home loan being arranged.', 'u-ex02')] }),
+    L({ id: 'LEAD-1017', name: 'Revathi Balaji', phone: '+91 98xxxxxx17', email: 'revathi.b@example.com', source: 'Property portal', enquiryDate: '2026-11-05', ownerId: 'u-ex04', purpose: 'ownUse',
+      qualification: { need: 'clear', timeline: 'm1', authority: 'joint', funding: 'combination', fundingReady: 'ready' },
+      engagement: { responded: true, docsRequested: true, siteVisited: false }, purposeNote: 'Moving to Chennai for work',
+      budget: budget(8500000, 9500000, 10000000, 3),
+      requirement: req({ type: 'flat', cities: ['Chennai'], localities: ['Sholinganallur (OMR)'], sizeSqft: 1400, bhk: '3 BHK', parking: 'required', possession: 'ready', amenities: ['Lift', 'Security'] }),
+      stage: 'visitScheduled', stageSince: '2026-11-14', nextFollowUp: '2026-11-21', recommendedPropertyIds: ['PROP-1006'],
+      visits: [{ id: 'VIS-007', propertyId: 'PROP-1006', date: '2026-11-22', time: '10:30', status: 'scheduled' }],
+      activity: [act('2026-11-14', 'call', 'Visit to the OMR flat fixed for 22 Nov, 10:30, with her husband.', 'u-ex04'),
+        act('2026-11-06', 'email', 'Sent the floor plan and the maintenance charges.', 'u-ex04')] }),
+    L({ id: 'LEAD-1018', name: 'Abdul Rahman', phone: '+91 98xxxxxx18', source: 'Channel partner', enquiryDate: '2026-10-28', ownerId: 'u-ex01', purpose: 'businessUse',
+      qualification: { need: 'clear', timeline: 'm1to3', authority: 'sole', funding: 'own', fundingReady: 'ready' },
+      engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'Storage for his distribution business',
+      budget: budget(22000000, 25000000, 28000000),
+      requirement: req({ type: 'commercial', cities: ['Madurai'], localities: ['Kappalur'], sizeSqft: 9000, commCategory: 'Warehouse', occupancy: 'vacant', amenities: ['Loading bay'] }),
+      stage: 'qualified', stageSince: '2026-11-03', nextFollowUp: '2026-11-13',
+      activity: [act('2026-11-03', 'meeting', 'Met at the office: needs 9,000+ sq.ft. near the ring road, loading bay a must.', 'u-ex01')] }),
+    L({ id: 'LEAD-1019', name: 'Nithya Prakash', phone: '+91 98xxxxxx19', source: 'Walk-in', enquiryDate: '2026-11-11', ownerId: 'u-ex03', purpose: 'ownUse',
+      qualification: { need: 'partly', timeline: 'm3to6', authority: 'joint', funding: 'loan', fundingReady: 'undecided' },
+      engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'A bigger home for a growing family',
+      budget: budget(11000000, 13000000, 14000000, 5),
+      requirement: req({ type: 'house', cities: ['Coimbatore'], localities: ['Peelamedu', 'Saravanampatti'], sizeSqft: 1800, bhk: '3 BHK', parking: 'required', possession: 'any' }),
+      stage: 'contacted', stageSince: '2026-11-11', nextFollowUp: '2026-11-16',
+      activity: [act('2026-11-11', 'meeting', 'Walked in with her husband; liked the idea of an independent house; loan not started.', 'u-ex03')] }),
+    L({ id: 'LEAD-1020', name: 'Gopal Krishnan', phone: '+91 98xxxxxx20', source: 'Phone enquiry', enquiryDate: '2026-11-16', ownerId: 'u-ex02', purpose: 'investment',
+      qualification: { need: 'exploring', timeline: 'undecided', authority: 'sole', funding: 'own', fundingReady: 'ready' },
+      engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'Investment',
+      budget: budget(2500000, 3000000, 3500000),
+      requirement: req({ type: 'plot', cities: ['Madurai'], localities: ['Thiruparankundram', 'Thirunagar'], sizeSqft: 1500 }),
+      stage: 'new', stageSince: '2026-11-16', nextFollowUp: '2026-11-17',
+      activity: [act('2026-11-16', 'call', 'Called in about plots near Thiruparankundram as an investment; pays from savings.', 'u-ex02')] }),
+    // four more (27 Nov): one in negotiation, one with nothing that fits yet, one lost with a reason, one without consent
+    L({ id: 'LEAD-1021', name: 'Meenakshi Sundaram', phone: '+91 98xxxxxx21', email: 'meenakshi.s@example.com', source: 'Website', enquiryDate: '2026-10-20', ownerId: 'u-ex03', purpose: 'ownUse',
+      qualification: { need: 'clear', timeline: 'm1', authority: 'sole', funding: 'combination', fundingReady: 'ready' },
+      engagement: { responded: true, docsRequested: true, siteVisited: true }, purposeNote: 'Moving closer to her daughter’s school',
+      budget: budget(4500000, 5000000, 5500000),
+      requirement: req({ type: 'flat', cities: ['Madurai'], localities: ['Anna Nagar', 'K.K. Nagar'], sizeSqft: 1000, bhk: '2 BHK', parking: 'required', possession: 'ready', amenities: ['Lift'] }),
+      stage: 'negotiation', stageSince: '2026-11-09', nextFollowUp: '2026-11-17', recommendedPropertyIds: ['PROP-1005'],
+      negotiation: { propertyId: 'PROP-1005', offered: 4900000, counter: 5100000, notes: 'Seller may include the modular kitchen if she meets ₹51 L.' },
+      visits: [{ id: 'VIS-008', propertyId: 'PROP-1005', date: '2026-11-02', time: '17:00', status: 'completed', interest: 'high', feedback: 'Loved the light and the school is 5 minutes away.' }],
+      activity: [act('2026-11-09', 'call', 'Offered ₹49 L; seller countered at ₹51 L.', 'u-ex03'),
+        act('2026-11-02', 'visit', 'Site visit to PROP-1005 — very keen.', 'u-ex03')] }),
+    L({ id: 'LEAD-1022', name: 'Harish Venkat', phone: '+91 98xxxxxx22', source: 'Social media', enquiryDate: '2026-11-10', ownerId: 'u-ex04', purpose: 'investment',
+      qualification: { need: 'partly', timeline: 'm6to12', authority: 'sole', funding: 'own', fundingReady: 'arranging' },
+      engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'Land bank near the new bus terminus',
+      budget: budget(3000000, 4000000, 4500000),
+      requirement: req({ type: 'plot', cities: ['Chennai'], localities: ['Tambaram'], sizeSqft: 1200, minRoadFt: 30 }),
+      // nothing listed in Chennai fits yet: the Tambaram plot is still a draft
+      stage: 'contacted', stageSince: '2026-11-10', nextFollowUp: '2026-11-19',
+      activity: [act('2026-11-10', 'whatsapp', 'Wants a plot near the Tambaram bus terminus; will wait for the right one.', 'u-ex04')] }),
+    L({ id: 'LEAD-1023', name: 'Shalini Arun', phone: '+91 98xxxxxx23', email: 'shalini.a@example.com', source: 'Referral', enquiryDate: '2026-09-25', ownerId: 'u-ex02', purpose: 'secondHome',
+      qualification: { need: 'clear', timeline: 'm6to12', authority: 'joint', funding: 'loan', fundingReady: 'undecided' },
+      engagement: { responded: true, docsRequested: true, siteVisited: true }, purposeNote: 'Weekend home near the hills',
+      budget: budget(25000000, 28000000, 30000000),
+      requirement: req({ type: 'house', cities: ['Coimbatore'], localities: ['Vadavalli'], sizeSqft: 3000, bhk: '3 BHK', amenities: ['Gated community'] }),
+      stage: 'lost', stageSince: '2026-11-07', recommendedPropertyIds: ['PROP-1008'],
+      visits: [{ id: 'VIS-009', propertyId: 'PROP-1008', date: '2026-10-18', status: 'completed', interest: 'medium', feedback: 'Liked it, but ₹3.4 Cr is above what the bank will lend.' }],
+      lost: { reason: 'budget', note: 'Loan eligibility capped at ₹2.6 Cr; may come back next year.', at: '2026-11-07', by: 'u-ex02' },
+      activity: [act('2026-11-07', 'note', 'Marked lost — over budget. Loan capped at ₹2.6 Cr; may come back next year.', 'u-ex02'),
+        act('2026-10-18', 'visit', 'Visited the Vadavalli villa with her husband.', 'u-ex02')] }),
+    L({ id: 'LEAD-1024', name: 'Prakash Raj', phone: '+91 98xxxxxx24', source: 'Social media', enquiryDate: '2026-11-15', ownerId: 'u-ex01', purpose: 'rentalIncome',
+      qualification: { need: 'clear', timeline: 'm1to3', authority: 'sole', funding: 'own', fundingReady: 'ready' },
+      engagement: { responded: false, docsRequested: false, siteVisited: false }, purposeNote: 'Rental income',
+      budget: budget(7500000, 8500000, 9000000),
+      requirement: req({ type: 'commercial', cities: ['Tiruchirappalli'], localities: ['Thillai Nagar'], sizeSqft: 600, commCategory: 'Shop / Showroom', occupancy: 'tenanted' }),
+      // a Facebook lead form without the consent box ticked: no follow-up until consent is recorded
+      stage: 'new', stageSince: '2026-11-15', consent: undefined,
+      activity: [act('2026-11-15', 'note', 'Facebook lead form: wants a tenanted shop in Thillai Nagar. The consent box was not ticked.', 'system')] }),
   ]
+}
+
+/**
+ * Demo leads added to the seed after someone's data was saved (27 Nov: LEAD-1016 – LEAD-1024) are merged in on load,
+ * so they appear without "Reset demo data" and nothing already saved is lost. A lead whose id is already taken (one
+ * made in the browser) keeps its id; the seed lead gets the next free one.
+ */
+export const SEED_ADDITIONS = ['LEAD-1016', 'LEAD-1017', 'LEAD-1018', 'LEAD-1019', 'LEAD-1020', 'LEAD-1021', 'LEAD-1022', 'LEAD-1023', 'LEAD-1024']
+export function addMissingSeedLeads(db: Database): Database {
+  const added = db.seedAdded ?? []
+  const missing = SEED_ADDITIONS.filter((id) => !added.includes(id))
+  if (!missing.length) return db
+  const leads = [...db.leads]
+  for (const l of seedLeads().filter((x) => missing.includes(x.id))) {
+    const lead = structuredClone(l)
+    if (leads.some((x) => x.id === lead.id)) {
+      const max = Math.max(1000, ...leads.map((x) => Number(x.id.replace(/\D/g, '')) || 0))
+      lead.id = `LEAD-${max + 1}`
+    }
+    leads.push(lead)
+  }
+  return { ...db, leads, seedAdded: [...added, ...missing] }
 }
 
 /** The shape of the stored demo data. Raise it when that shape changes: saved data of another version is replaced by this seed. */
@@ -422,5 +520,5 @@ export const DATA_VERSION = 7
 
 export function seedDatabase(): Database {
   seq = 0
-  return { version: DATA_VERSION, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS) }
+  return { version: DATA_VERSION, users: USERS, properties: seedProperties(), leads: seedLeads(), settings: structuredClone(DEFAULT_SETTINGS), seedAdded: [...SEED_ADDITIONS] }
 }

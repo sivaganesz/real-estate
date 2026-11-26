@@ -3,7 +3,7 @@
  * Every action maps to a future API endpoint (noted on each), so screens don't change when the real backend arrives.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { DATA_VERSION, DEMO_TODAY, seedDatabase } from '@/data/seed'
+import { addMissingSeedLeads, DATA_VERSION, DEMO_TODAY, seedDatabase } from '@/data/seed'
 import type { Database, Lead, Property, Role, User } from '@/data/types'
 import { hasFollowUpConsent } from '@/lib/consent'
 
@@ -79,7 +79,8 @@ const StoreContext = createContext<Store | null>(null)
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<Database>(() => {
     const saved = load<Database>(DB_KEY)
-    return saved && saved.version === DATA_VERSION ? saved : seedDatabase()
+    // saved data keeps everyone's edits; demo leads added to the seed since are merged in
+    return saved && saved.version === DATA_VERSION ? addMissingSeedLeads(saved) : seedDatabase()
   })
   const [role, setRoleState] = useState<Role>(() => load<Role>(ROLE_KEY) ?? 'manager')
 
