@@ -520,7 +520,7 @@ function NextStep({ l, onBook }: { l: Lead; onBook: (propertyId: string) => void
     <section className={cn('rounded-2xl border bg-card p-4 shadow-card sm:p-5', due.kind === 'overdue' && 'border-danger/30')}>
       <div className="flex flex-wrap items-start gap-3">
         <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', toneSoft[tone])}><CalendarClock className="size-5" /></span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 max-md:basis-[calc(100%-3.25rem)]">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t('lead.nextStep')}</p>
           <p className={cn('font-semibold', due.kind === 'overdue' && 'text-danger', due.kind === 'today' && 'text-warning')}>
             {due.kind === 'none' ? t('lead.noFollowUp') : due.kind === 'overdue' ? t('today.overdueSince', { date: fmtDate(due.date), days: due.days })
@@ -533,10 +533,11 @@ function NextStep({ l, onBook }: { l: Lead; onBook: (propertyId: string) => void
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-2 sm:ml-auto">
+        {/* phone: the buttons get their own row under the text, full width (Done is also in the bottom bar there) */}
+        <div className="flex flex-wrap gap-2 max-md:w-full max-md:pl-13 max-md:*:flex-1 md:ml-auto">
           {s?.key === 'next.bookVisit' && s.propertyId && <Button size="sm" variant="outline" onClick={() => onBook(s.propertyId!)}><CalendarPlus /> {t('lead.bookVisit')}</Button>}
           <RescheduleButton current={l.nextFollowUp} today={today} canSchedule={a.consent} onPick={a.setFollowUp} />
-          <DoneButton lead={l} />
+          <DoneButton lead={l} className="max-md:hidden" />
         </div>
       </div>
     </section>

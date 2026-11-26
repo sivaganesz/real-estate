@@ -28,7 +28,7 @@ export function RescheduleButton({ current, today, canSchedule, onPick }: {
   const label = current ? t('lead.reschedule') : t('lead.schedule')
   if (!canSchedule) {
     // a disabled button gets no hover events, so the hint sits on a wrapper
-    return <span title={t('lead.consentFirst')}><Button size="sm" variant="outline" disabled><CalendarClock /> {label}</Button></span>
+    return <span title={t('lead.consentFirst')} className="inline-flex"><Button size="sm" variant="outline" disabled className="flex-1"><CalendarClock /> {label}</Button></span>
   }
   // closing from code doesn't call onOpenChange, so go back to the list here too
   const pick = (date: string) => { setOpen(false); setCalendar(false); onPick(date) }
