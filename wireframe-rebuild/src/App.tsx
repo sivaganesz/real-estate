@@ -8,6 +8,7 @@ import { AddPropertyPage } from '@/features/properties/assistant/add-property-pa
 import { DraftsPage } from '@/features/properties/pages/drafts-page'
 import { PropertyPage } from '@/features/properties/pages/property-page'
 import { SharePage } from '@/features/properties/pages/share-page'
+import { LeadFormPage } from '@/features/leads/lead-form'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
 import { SettingsPage } from '@/features/settings/settings-page'
@@ -31,8 +32,8 @@ export default function App() {
               <Route path="properties/:id/share" element={<SharePage />} />
               <Route path="properties/:id/:tab?" element={<PropertyPage />} />
               <Route path="leads" element={<LeadsPage />} />
-              {/* Add lead comes next; until then it shows the Leads placeholder */}
-              <Route path="leads/new" element={<ModulePlaceholderPage item={ALL_NAV_ITEMS.find((i) => i.to === '/leads')!} />} />
+              <Route path="leads/new" element={<LeadFormPage />} />
+              <Route path="leads/:id/edit" element={<LeadFormPage />} />
               <Route path="leads/:id/:tab?" element={<LeadPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="ui-kit" element={<UiKitPage />} />

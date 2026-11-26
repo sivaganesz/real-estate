@@ -353,7 +353,7 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" className="-mt-1 -mr-1 size-8 shrink-0" aria-label={t('props.more')}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
-            <DropdownMenuItem onClick={() => toast(t('property.comingNext', { what: t('lead.editModule') }))}><Pencil /> {t('lead.edit')}</DropdownMenuItem>
+            <DropdownMenuItem asChild><Link to={`/leads/${l.id}/edit`}><Pencil /> {t('lead.edit')}</Link></DropdownMenuItem>
             {isActive(l) && <DropdownMenuItem onClick={onBook}><CalendarPlus /> {t('lead.bookVisit')}</DropdownMenuItem>}
             {isActive(l) && <DropdownMenuItem onClick={() => setOffering(true)}><Handshake /> {l.negotiation ? t('lead.offerForm.titleUpdate') : t('lead.offerForm.titleStart')}</DropdownMenuItem>}
             {isActive(l) && (

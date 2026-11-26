@@ -47,6 +47,8 @@ type Store = {
   recommendProperty: (propertyId: string, leadId: string, on: boolean) => void
   /** PATCH /api/leads/:id — e.g. move stage or reassign; `note` goes on the lead's timeline. */
   updateLead: (id: string, change: (l: Lead) => void, note?: string) => void
+  /** POST /api/leads — returns the new id (LEAD-<next number>); `note` starts the lead's timeline. */
+  addLead: (build: (id: string) => Lead, note: string) => string
   /** POST /api/leads/:id/activity — a note on each lead's timeline about a property (e.g. "PROP-1005 was archived"). */
   noteOnLeads: (leadIds: string[], propertyId: string, text: string) => void
   /**
@@ -156,6 +158,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [user.id])
 
+  const addLead = useCallback<Store['addLead']>((build, note) => {
+    const max = Math.max(1000, ...db.leads.map((l) => Number(l.id.replace(/\D/g, '')) || 0))
+    const id = `LEAD-${max + 1}`
+    const l = build(id)
+    l.activity = [{ id: `${id}-a1`, at: DEMO_TODAY, by: user.id, type: 'note', text: note }, ...l.activity]
+    setDb((prev) => ({ ...prev, leads: [l, ...prev.leads] }))
+    return id
+  }, [db.leads, user.id])
+
   const noteOnLeads = useCallback<Store['noteOnLeads']>((leadIds, propertyId, text) => {
     if (!leadIds.length) return
     setDb((prev) => {
@@ -195,8 +206,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, noteOnLeads, deleteProperty, updateSettings, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

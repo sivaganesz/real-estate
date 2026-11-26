@@ -9,63 +9,33 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { AmountInput } from '@/components/app/amount-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { STAGE_ORDER } from '@/data/catalogue'
 import type { Lead } from '@/data/types'
+import { fromAmountField, toAmountField } from '@/lib/amount'
 import { inrShort } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/store/db'
-
-type Unit = 'L' | 'Cr'
-const FACTOR: Record<Unit, number> = { L: 1e5, Cr: 1e7 }
-
-/** A rupee amount as the number someone would type: ₹1.28 Cr → 1.28 Cr, ₹85 L → 85 L. */
-const toField = (n?: number): { v: string; unit: Unit } =>
-  !n ? { v: '', unit: 'L' } : n >= 1e7 ? { v: String(+(n / 1e7).toFixed(4)), unit: 'Cr' } : { v: String(+(n / 1e5).toFixed(2)), unit: 'L' }
-const fromField = (f: { v: string; unit: Unit }) => {
-  const x = parseFloat(f.v)
-  return Number.isFinite(x) && x > 0 ? Math.round(x * FACTOR[f.unit]) : undefined
-}
-
-function Amount({ label, value, onChange, hint }: { label: string; value: { v: string; unit: Unit }; onChange: (f: { v: string; unit: Unit }) => void; hint?: string }) {
-  const { t } = useTranslation()
-  const n = fromField(value)
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium">{label}</span>
-      <span className="flex">
-        <Input inputMode="decimal" value={value.v} onChange={(e) => onChange({ ...value, v: e.target.value.replace(/[^\d.]/g, '') })} className="rounded-r-none" placeholder="0" />
-        {(['L', 'Cr'] as const).map((u, i) => (
-          <button key={u} type="button" onClick={() => onChange({ ...value, unit: u })} aria-pressed={value.unit === u}
-            className={cn('h-9 border border-l-0 px-2.5 text-sm', i === 1 && 'rounded-r-md', value.unit === u ? 'bg-accent font-medium text-primary' : 'text-muted-foreground hover:bg-muted')}>
-            {t(`lead.offerForm.unit.${u}`)}
-          </button>
-        ))}
-      </span>
-      <span className="min-h-4 text-xs text-muted-foreground">{n ? inrShort(n) : hint}</span>
-    </label>
-  )
-}
 
 export function OfferDialog({ lead: l, open, propertyIds, onOpenChange }: { lead: Lead; open: boolean; propertyIds: string[]; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation()
   const { db, today, updateLead } = useStore()
   const n = l.negotiation
   const [pid, setPid] = useState('')
-  const [offer, setOffer] = useState(toField())
-  const [counter, setCounter] = useState(toField())
+  const [offer, setOffer] = useState(toAmountField())
+  const [counter, setCounter] = useState(toAmountField())
   const [notes, setNotes] = useState('')
   const [was, setWas] = useState(false)
   // fill from the current negotiation each time it opens
   if (open !== was) {
     setWas(open)
-    if (open) { setPid(n?.propertyId ?? propertyIds[0] ?? ''); setOffer(toField(n?.offered)); setCounter(toField(n?.counter)); setNotes(n?.notes ?? '') }
+    if (open) { setPid(n?.propertyId ?? propertyIds[0] ?? ''); setOffer(toAmountField(n?.offered)); setCounter(toAmountField(n?.counter)); setNotes(n?.notes ?? '') }
   }
   const options = [...new Set([...(n ? [n.propertyId] : []), ...propertyIds])].map((id) => db.properties.find((p) => p.id === id)).filter(Boolean)
   const asking = db.properties.find((p) => p.id === pid)?.price
-  const o = fromField(offer), c = fromField(counter)
+  const o = fromAmountField(offer), c = fromAmountField(counter)
   const gap = o && c ? c - o : null
 
   const save = () => {
@@ -96,8 +66,8 @@ export function OfferDialog({ lead: l, open, propertyIds, onOpenChange }: { lead
             {asking ? <span className="text-xs text-muted-foreground">{t('lead.offerForm.asking', { amount: inrShort(asking) })}</span> : null}
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <Amount label={t('lead.offerForm.offer')} value={offer} onChange={setOffer} hint={t('lead.offerForm.optional')} />
-            <Amount label={t('lead.offerForm.counter')} value={counter} onChange={setCounter} hint={t('lead.offerForm.optional')} />
+            <AmountInput label={t('lead.offerForm.offer')} value={offer} onChange={setOffer} hint={t('lead.offerForm.optional')} />
+            <AmountInput label={t('lead.offerForm.counter')} value={counter} onChange={setCounter} hint={t('lead.offerForm.optional')} />
           </div>
           {gap !== null && (
             <p className={cn('rounded-lg px-3 py-2 text-sm', gap > 0 ? 'bg-warning-soft' : 'bg-success-soft text-success')}>
