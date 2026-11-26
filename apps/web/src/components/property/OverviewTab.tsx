@@ -1,111 +1,42 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import { ArrowRight, Camera, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Images, Ruler, Sparkles, TrendingUp, X } from 'lucide-react';
-import { TYPE_DETAILS, propertyCompletion } from '@estate/shared';
+import { ArrowRight, Camera, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Images, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { PROPERTY_CATEGORY, PROPERTY_TYPE_LABEL, TYPE_DETAILS, detailValue, formatINR, propertyCompletion } from '@estate/shared';
 import { TEMP_DOT } from '../../lib/leads';
-import { areaLabel, type Property } from '../../lib/property';
-import { Badge, Card } from '../ui';
+import { AVAILABILITY_TONE, areaLabel, availabilityLabel, priceLabel, type Property } from '../../lib/property';
+import { Badge, Button, Card } from '../ui';
 import { FIT, Reasons } from '../../features/matching';
 import { slots } from '../../slots';
-import { DETAIL_ICON, RangeBar, Ring, amenityIcon } from './visuals';
+import { RangeBar, Ring, amenityIcon } from './visuals';
 import { VERDICT, canMatch, perSqft, useBuyers, useComparables } from './data';
 import { LocationCard } from './LocationCard';
 
 type Tab = 'overview' | 'legal' | 'price' | 'matching' | 'history';
 
-const show = (v: unknown, unit?: string) => (typeof v === 'boolean' ? (v ? 'Yes' : 'No') : `${v}${unit ? ` ${unit}` : ''}`);
 const filled = (v: unknown) => v !== null && v !== undefined && v !== '';
+const PURPOSE_TEXT = { sale: 'Sale', rent: 'Rent', lease: 'Lease' } as const;
+/** A field label inside a sentence: "Carpet area" → "carpet area", but "UDS (…)" and "(BHK)" keep their capitals. */
+const inSentence = (label: string) => (/^[A-Z]{2,}\b/.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1));
 
-export function OverviewTab({ p, canEdit, onEdit, onAddPhotos, uploading, goTab }: { p: Property; canEdit: boolean; onEdit: () => void; onAddPhotos: () => void; uploading: boolean; goTab: (t: Tab) => void }) {
-  const fields = TYPE_DETAILS[p.type];
-  const known = fields.filter((f) => filled(p.details[f.key]));
-  // The first facts become icon tiles; the rest are listed underneath.
-  const tiles = known.slice(0, 6);
-  const rest = known.slice(6);
-  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? Math.round(p.price / p.areaSqft) : null;
-
+export function OverviewTab({ p, canEdit, onEdit, onEditWithAi, onAddPhotos, uploading, goTab }: { p: Property; canEdit: boolean; onEdit: () => void; onEditWithAi: () => void; onAddPhotos: () => void; uploading: boolean; goTab: (t: Tab) => void }) {
   return (
-    // One grid for the whole tab, so every card lines up: the property on the left, location and checks on the right.
+    // One grid for the whole tab, so every card lines up: the property on the left, checks and location on the right.
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <div className="min-w-0 space-y-4">
         <Gallery p={p} canEdit={canEdit} onAdd={onAddPhotos} uploading={uploading} />
-        {/* At a glance */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <Tile icon={Ruler} label="Area" value={areaLabel(p) ?? '—'} hint={rate ? `${perSqft(rate)}/sq.ft` : undefined} />
-          {tiles.map((f) => (
-            <Tile key={f.key} icon={DETAIL_ICON[f.key] ?? CheckCircle2} label={f.label} value={show(p.details[f.key], f.unit)} source={p.sources?.[`details.${f.key}`]} />
-          ))}
-          {canEdit && known.length < fields.length && (
-            <button type="button" onClick={onEdit} className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 p-3 text-left text-xs text-slate-500 transition hover:border-brand-400 hover:text-brand-700">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base">＋</span>
-              Add {fields.length - known.length} more {fields.length - known.length === 1 ? 'detail' : 'details'}
-            </button>
-          )}
-        </div>
+        <DetailsCard p={p} canEdit={canEdit} onEdit={onEdit} onEditWithAi={onEditWithAi} />
 
-        {(p.description || p.highlights.length > 0 || rest.length > 0 || p.address || p.unitNumber) && (
-          <Card className="rounded-3xl p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">About this property</h2>
-              <span className="flex items-center gap-2 text-xs text-slate-500">
-                {known.length} of {fields.length} details
-                <span className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
-                  <span className="block h-full rounded-full bg-brand-500" style={{ width: `${fields.length ? (known.length / fields.length) * 100 : 100}%` }} />
-                </span>
-              </span>
-            </div>
-            {p.description && <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{p.description}</p>}
-            {p.highlights.length > 0 && (
-              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
-                {p.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2 text-sm text-slate-700">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> {h}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {(rest.length > 0 || p.address || p.unitNumber) && (
-              <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
-                {rest.map((f) => (
-                  <div key={f.key}>
-                    <dt className="text-xs text-slate-500">{f.label}</dt>
-                    <dd className="text-sm font-medium text-slate-800">{show(p.details[f.key], f.unit)}</dd>
-                  </div>
-                ))}
-                {p.unitNumber && (
-                  <div>
-                    <dt className="text-xs text-slate-500">Unit</dt>
-                    <dd className="text-sm font-medium text-slate-800">{`${p.block ? `${p.block}-` : ''}${p.unitNumber}`}</dd>
-                  </div>
-                )}
-                {p.address && (
-                  <div className="col-span-2 sm:col-span-3">
-                    <dt className="text-xs text-slate-500">Address</dt>
-                    <dd className="text-sm font-medium text-slate-800">{`${p.address}${p.pincode ? ` – ${p.pincode}` : ''}`}</dd>
-                  </div>
-                )}
-              </dl>
-            )}
-          </Card>
-        )}
-
-        {p.amenities.length > 0 && (
-          <Card className="rounded-3xl p-5">
-            <h2 className="mb-3 text-sm font-semibold text-slate-900">Amenities · {p.amenities.length}</h2>
-            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {p.amenities.map((a) => {
-                const Icon = amenityIcon(a);
-                return (
-                  <li key={a} className="flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-brand-700 shadow-sm">
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    {a}
-                  </li>
-                );
-              })}
+        {p.highlights.length > 0 && (
+          <Card className="rounded-3xl p-5 sm:p-6">
+            <h2 className="mb-3 text-base font-semibold text-slate-900">Highlights</h2>
+            <ul className="grid gap-1.5 sm:grid-cols-2">
+              {p.highlights.map((h) => (
+                <li key={h} className="flex items-start gap-2 text-sm text-slate-700">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> {h}
+                </li>
+              ))}
             </ul>
           </Card>
         )}
@@ -132,36 +63,208 @@ export function OverviewTab({ p, canEdit, onEdit, onAddPhotos, uploading, goTab 
       </div>
 
       <aside className="space-y-4">
-        <LocationCard p={p} canEdit={canEdit} />
         <PriceCheck p={p} onMore={() => goTab('price')} />
         {canMatch(p) && <TopBuyers p={p} onMore={() => goTab('matching')} />}
         {canEdit && <ToDo p={p} onEdit={onEdit} onAddPhotos={onAddPhotos} />}
         {slots.propertySide.map((S, i) => (
           <S key={i} property={p} />
         ))}
+        {/* Location last: the checks above are what people act on first. */}
+        <LocationCard p={p} canEdit={canEdit} />
       </aside>
     </div>
   );
 }
 
-function Tile({ icon: Icon, label, value, hint, source }: { icon: typeof Ruler; label: string; value: ReactNode; hint?: string; source?: string }) {
+/**
+ * Everything recorded about the property in one card: the main facts, every
+ * specification of its type (empty ones too, so gaps are visible) and amenities.
+ */
+function DetailsCard({ p, canEdit, onEdit, onEditWithAi }: { p: Property; canEdit: boolean; onEdit: () => void; onEditWithAi: () => void }) {
+  // Facing is a main fact for every type, so it isn't repeated under specifications.
+  const fields = TYPE_DETAILS[p.type];
+  const specs = fields.filter((f) => f.key !== 'facing');
+  const known = fields.filter((f) => filled(p.details[f.key])).length;
+  const facing = fields.find((f) => f.key === 'facing');
+  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? Math.round(p.price / p.areaSqft) : null;
+  const status = p.listing === 'live' ? { text: availabilityLabel(p.availability), tone: AVAILABILITY_TONE[p.availability] } : p.listing === 'draft' ? { text: 'Draft', tone: 'amber' as const } : { text: 'Archived', tone: 'slate' as const };
+  const missing = canEdit ? (
+    <button type="button" onClick={onEdit} className="text-sm font-medium text-brand-700 hover:underline">
+      Add
+    </button>
+  ) : (
+    <span className="text-slate-300">—</span>
+  );
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-card">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <p className="flex items-center gap-1 text-[11px] text-slate-500">
-          {label}
-          {source && (
-            <span title={`Read from: “${source}”`}>
-              <Sparkles className="h-3 w-3 text-ai-500" />
-            </span>
-          )}
-        </p>
-        <p className="truncate text-sm font-semibold text-slate-900">{value}</p>
-        {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
+    <Card className="rounded-3xl p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-slate-900">Property details</h2>
+        {canEdit && (
+          <Button size="sm" variant="ai" icon={<Sparkles className="h-3.5 w-3.5" />} onClick={onEditWithAi}>
+            Edit with AI
+          </Button>
+        )}
       </div>
+
+      {p.description ? (
+        <Description text={p.description} />
+      ) : (
+        canEdit && (
+          <button type="button" onClick={onEdit} className="mt-2 text-sm font-medium text-brand-700 hover:underline">
+            Add a description
+          </button>
+        )
+      )}
+
+      <Section title="Main information">
+        <Fact label="Property ID">
+          <span className="font-mono text-[13px] tracking-tight">{p.code}</span>
+        </Fact>
+        <Fact label="Type">
+          {PROPERTY_TYPE_LABEL[p.type]}
+          {PROPERTY_CATEGORY[p.type] !== PROPERTY_TYPE_LABEL[p.type] && <span className="text-xs font-normal text-slate-400"> · {PROPERTY_CATEGORY[p.type]}</span>}
+        </Fact>
+        <Fact label="Purpose">{PURPOSE_TEXT[p.purpose]}</Fact>
+        <Fact label={p.purpose === 'sale' ? 'Asking price' : 'Rent'}>
+          {/* The exact amount here; the header shows the short form (₹54 L). */}
+          {p.price ? (p.purpose === 'sale' ? formatINR(p.price, { short: false }) : priceLabel(p)) : missing}
+          {p.price && p.priceNegotiable ? <span className="text-xs font-normal text-slate-400"> · Negotiable</span> : null}
+        </Fact>
+        <Fact label="Area">
+          {areaLabel(p) ?? missing}
+          {rate ? <span className="text-xs font-normal text-slate-400"> · {perSqft(rate)}/sq.ft</span> : null}
+        </Fact>
+        <Fact label="Location">{[p.locality, p.city].filter(Boolean).join(', ') || missing}</Fact>
+        {facing && <Fact label="Facing" source={p.sources?.['details.facing']}>{filled(p.details.facing) ? String(p.details.facing) : missing}</Fact>}
+        <Fact label="Status">
+          <Badge tone={status.tone}>{status.text}</Badge>
+        </Fact>
+        <Fact label="Listed on">{new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Fact>
+        {p.unitNumber && <Fact label="Unit">{`${p.block ? `${p.block}-` : ''}${p.unitNumber}`}</Fact>}
+        {p.address && (
+          <Fact label="Address" wide>
+            {`${p.address}${p.pincode ? ` – ${p.pincode}` : ''}`}
+          </Fact>
+        )}
+      </Section>
+
+      <Section
+        collapsible
+        title={`${PROPERTY_TYPE_LABEL[p.type]} specifications`}
+        aside={
+          <span className="flex items-center gap-2 text-xs text-slate-500">
+            {known} of {fields.length} filled in
+            <span className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-100">
+              <span className={clsx('block h-full rounded-full', known === fields.length ? 'bg-emerald-500' : 'bg-brand-500')} style={{ width: `${fields.length ? (known / fields.length) * 100 : 100}%` }} />
+            </span>
+          </span>
+        }
+      >
+        {specs.map((f) => {
+          const v = p.details[f.key];
+          return (
+            <Fact key={f.key} label={f.label} source={p.sources?.[`details.${f.key}`]}>
+              {filled(v) ? detailValue(f, v) : missing}
+            </Fact>
+          );
+        })}
+      </Section>
+
+      <div className="mt-5 border-t border-slate-100 pt-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Amenities</h3>
+          {p.amenities.map((a) => {
+            const Icon = amenityIcon(a);
+            return (
+              <span key={a} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700">
+                <Icon className="h-3.5 w-3.5 text-brand-600" /> {a}
+              </span>
+            );
+          })}
+          {!p.amenities.length && !canEdit && <span className="text-sm text-slate-400">None recorded</span>}
+          {canEdit && (
+            <button type="button" onClick={onEdit} className="inline-flex items-center gap-1 rounded-full border border-dashed border-brand-300 px-3 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50">
+              <Plus className="h-3.5 w-3.5" /> {p.amenities.length ? 'Edit amenities' : 'Add amenities'}
+            </button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** The description, cut to 3 lines with an Expand link when it is longer. */
+function Description({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const [long, setLong] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+  // Only offer Expand when the text really is cut off; check again when the width changes.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || open) return;
+    const check = () => setLong(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, text]);
+  return (
+    <div className="mt-3">
+      <p id="property-description" ref={ref} className={clsx('whitespace-pre-line text-sm leading-relaxed text-slate-700', !open && 'line-clamp-3')}>
+        {/* Collapsed, paragraphs run together so the preview fills all 3 lines before the "…". */}
+        {open ? text : text.replace(/\s*\n+\s*/g, ' ')}
+      </p>
+      {(long || open) && (
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="property-description" className="mt-1 inline-flex items-center gap-0.5 text-sm font-medium text-brand-700 hover:underline">
+          {open ? 'Show less' : 'Expand'}
+          <ChevronDown className={clsx('h-4 w-4 transition', open && 'rotate-180')} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** A collapsible section starts closed; the header opens it. */
+function Section({ title, aside, collapsible, children }: { title: string; aside?: ReactNode; collapsible?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(!collapsible);
+  const id = useId();
+  const heading = <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{title}</h3>;
+  return (
+    <section className="mt-5 border-t border-slate-100 pt-5 first-of-type:border-t-0 first-of-type:pt-0">
+      <div className={clsx('flex flex-wrap items-center justify-between gap-2', open && 'mb-3')}>
+        {collapsible ? (
+          <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} className="-mx-1 flex items-center gap-1 rounded-md px-1 text-left hover:bg-slate-50">
+            {heading}
+            <ChevronDown className={clsx('h-4 w-4 text-slate-400 transition', !open && '-rotate-90')} />
+          </button>
+        ) : (
+          heading
+        )}
+        {aside}
+      </div>
+      {open && (
+        <dl id={id} className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+          {children}
+        </dl>
+      )}
+    </section>
+  );
+}
+
+/** One label and value; a sparkle shows when the AI read it from a description or brochure. */
+function Fact({ label, source, wide, children }: { label: string; source?: string; wide?: boolean; children: ReactNode }) {
+  return (
+    <div className={clsx('min-w-0', wide && 'col-span-2 sm:col-span-3')}>
+      <dt className="flex items-center gap-1 text-xs text-slate-500">
+        {label}
+        {source && (
+          <span title={`Read from: “${source}”`}>
+            <Sparkles className="h-3 w-3 text-ai-500" aria-label="Filled in by the AI" />
+          </span>
+        )}
+      </dt>
+      <dd className="mt-0.5 break-words text-[15px] font-medium text-slate-900">{children}</dd>
     </div>
   );
 }
@@ -225,10 +328,10 @@ function Gallery({ p, canEdit, onAdd, uploading }: { p: Property; canEdit: boole
       <div
         className={clsx(
           'relative grid overflow-hidden rounded-3xl',
-          maxTiles === 1 && 'h-[280px] grid-cols-1 sm:h-[380px]',
-          maxTiles === 2 && 'h-[260px] grid-cols-[1.4fr_1fr] gap-1 sm:h-[360px] sm:gap-1.5',
-          maxTiles === 3 && 'h-[260px] grid-cols-2 grid-rows-2 gap-1 sm:h-[360px] sm:gap-1.5',
-          maxTiles >= 4 && 'h-[280px] grid-cols-4 grid-rows-2 gap-1 sm:h-[400px] sm:gap-1.5',
+          maxTiles === 1 && 'h-[220px] grid-cols-1 sm:h-[300px]',
+          maxTiles === 2 && 'h-[200px] grid-cols-[1.4fr_1fr] gap-1 sm:h-[280px] sm:gap-1.5',
+          maxTiles === 3 && 'h-[200px] grid-cols-2 grid-rows-2 gap-1 sm:h-[280px] sm:gap-1.5',
+          maxTiles >= 4 && 'h-[220px] grid-cols-4 grid-rows-2 gap-1 sm:h-[300px] sm:gap-1.5',
         )}
       >
         {maxTiles === 1 && tile(0)}
@@ -408,13 +511,13 @@ function ToDo({ p, onEdit, onAddPhotos }: { p: Property; onEdit: () => void; onA
   const pct = propertyCompletion(p);
   const pending = p.projectId ? [] : p.approvals.filter((a) => !a.documentUrl);
   const items: { text: string; required?: boolean; go: () => void }[] = [
-    ...r.missing.map((m) => ({ text: `Add ${m.label.toLowerCase()}`, required: true, go: onEdit })),
+    ...r.missing.map((m) => ({ text: `Add ${inSentence(m.label)}`, required: true, go: onEdit })),
     ...(!p.media.length ? [{ text: 'Add photos', go: onAddPhotos }] : []),
     ...pending.map((a) => ({ text: `Upload the ${a.name} document`, go: onEdit })),
     ...r.suggestions
       .filter((s) => s.key !== 'media' && s.key !== 'approvals')
       .slice(0, 4)
-      .map((s) => ({ text: s.label.startsWith('Add') ? s.label : `Add ${s.label.toLowerCase()}`, go: onEdit })),
+      .map((s) => ({ text: s.label.startsWith('Add') ? s.label : `Add ${inSentence(s.label)}`, go: onEdit })),
   ];
   return (
     <Card className="rounded-3xl p-5">

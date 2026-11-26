@@ -2,11 +2,11 @@ import { useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Archive, ArrowLeft, Building2, CalendarDays, ChevronDown, Compass, MapPin, MoreHorizontal, Pencil, RotateCcw, Ruler, Send, Share2, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react';
+import { Archive, ArrowLeft, Building2, ChevronDown, MapPin, MoreHorizontal, Pencil, RotateCcw, Send, Share2, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react';
 import { PROPERTY_TYPE_LABEL } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { areaLabel, availabilityLabel, priceLabel, type Property } from '../lib/property';
+import { availabilityLabel, priceLabel, type Property } from '../lib/property';
 import { Button, EmptyState, ErrorNote, PageLoader } from '../components/ui';
 import { AvailabilityModal, EditProperty, ShareSheet } from '../components/PropertyActions';
 import { Popover } from '../components/Popover';
@@ -41,7 +41,8 @@ export function PropertyDetail() {
   const toast = useToast();
   const ask = useConfirm();
   const assistant = useAssistant();
-  const [edit, setEdit] = useState(false);
+  // 'ai' opens the editor with the "say what changed" box ready to type in.
+  const [edit, setEdit] = useState<false | 'form' | 'ai'>(false);
   // "?share=1" (from the list's row menu) opens the share sheet straight away.
   const [share, setShare] = useState(() => params.get('share') === '1');
   const [avail, setAvail] = useState(false);
@@ -93,7 +94,6 @@ export function PropertyDetail() {
   const statusText = p.listing === 'live' ? availabilityLabel(p.availability) : p.listing === 'draft' ? 'Draft' : 'Archived';
   const rate = p.price && p.areaSqft && p.purpose === 'sale' ? Math.round(p.price / p.areaSqft) : null;
   const pending = p.projectId ? [] : p.approvals.filter((a) => !a.documentUrl);
-  const facing = p.details.facing ? `${p.details.facing} facing` : null;
 
   return (
     <>
@@ -118,7 +118,7 @@ export function PropertyDetail() {
             <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               {p.title}
               {canEdit && (
-                <button type="button" onClick={() => setEdit(true)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Edit property">
+                <button type="button" onClick={() => setEdit('form')} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Edit property">
                   <Pencil className="h-4 w-4" />
                 </button>
               )}
@@ -131,19 +131,6 @@ export function PropertyDetail() {
                   <MapPin className="h-3.5 w-3.5" /> {[p.locality, p.city].filter(Boolean).join(', ')}
                 </span>
               )}
-              {areaLabel(p) && (
-                <span className="inline-flex items-center gap-1">
-                  <Ruler className="h-3.5 w-3.5" /> {areaLabel(p)}
-                </span>
-              )}
-              {facing && (
-                <span className="inline-flex items-center gap-1">
-                  <Compass className="h-3.5 w-3.5" /> {facing}
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" /> Listed {new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
             </p>
             {(p.approvals.some((a) => a.documentUrl) || pending.length > 0) && (
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -189,7 +176,7 @@ export function PropertyDetail() {
                 </button>
               )}
               {canEdit && (
-                <button type="button" onClick={() => setEdit(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <button type="button" onClick={() => setEdit('form')} className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
                   <Pencil className="h-4 w-4" /> Edit
                 </button>
               )}
@@ -252,7 +239,7 @@ export function PropertyDetail() {
       <Tabs p={p} tab={tab} onTab={goTab} />
 
       <div className="mt-4">
-        {tab === 'overview' && <OverviewTab p={p} canEdit={canEdit} onEdit={() => setEdit(true)} onAddPhotos={() => photoRef.current?.click()} uploading={upload.isPending} goTab={goTab} />}
+        {tab === 'overview' && <OverviewTab p={p} canEdit={canEdit} onEdit={() => setEdit('form')} onEditWithAi={() => setEdit('ai')} onAddPhotos={() => photoRef.current?.click()} uploading={upload.isPending} goTab={goTab} />}
         {tab === 'legal' && <LegalTab p={p} canEdit={canEdit} canVerify={can('property.publish')} />}
         {tab === 'price' && <PriceTab p={p} />}
         {tab === 'matching' && <MatchingTab p={p} />}
@@ -274,7 +261,7 @@ export function PropertyDetail() {
           e.target.value = '';
         }}
       />
-      {edit && <EditProperty property={p} open onClose={() => setEdit(false)} />}
+      {edit && <EditProperty property={p} open aiFirst={edit === 'ai'} onClose={() => setEdit(false)} />}
       <ShareSheet property={p} open={share} onClose={() => setShare(false)} />
       {avail && <AvailabilityModal property={p} open onClose={() => setAvail(false)} />}
     </>

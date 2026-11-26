@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin, ShieldCheck } from 'lucide-react';
-import { AREA_UNIT_LABEL, TYPE_DETAILS, buyerTotal, formatINR, type AreaUnit, type PropertyType } from '@estate/shared';
+import { AREA_UNIT_LABEL, TYPE_DETAILS, buyerTotal, detailValue, formatINR, type AreaUnit, type PropertyType } from '@estate/shared';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/ui';
 import { PropertyCover } from '../components/PropertyCard';
@@ -84,7 +84,7 @@ export function SharePage() {
               return (
                 <div key={f.key}>
                   <dt className="text-xs text-slate-500">{f.label}</dt>
-                  <dd className="font-medium">{typeof v === 'boolean' ? (v ? 'Yes' : 'No') : `${v}${f.unit ? ` ${f.unit}` : ''}`}</dd>
+                  <dd className="font-medium">{detailValue(f, v)}</dd>
                 </div>
               );
             })}

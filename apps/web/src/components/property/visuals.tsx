@@ -2,28 +2,17 @@ import type { ReactNode } from 'react';
 import clsx from 'clsx';
 import {
   ArrowUpDown,
-  Bath,
-  BedDouble,
   Building,
   Car,
   CheckCircle2,
-  Compass,
   Droplets,
   Dumbbell,
   Fence,
   Flower2,
-  Gauge,
-  Layers,
-  LayoutGrid,
-  Leaf,
-  Maximize2,
-  Milestone,
-  MoveHorizontal,
   Phone,
   PlugZap,
   Ruler,
   ShieldCheck,
-  Sofa,
   Sun,
   Trees,
   Video,
@@ -102,34 +91,6 @@ export function StackedBar({ parts }: { parts: { label: string; value: number; t
     </div>
   );
 }
-
-/** An icon for each kind of detail, so the facts read at a glance. */
-export const DETAIL_ICON: Record<string, typeof Ruler> = {
-  bedrooms: BedDouble,
-  bathrooms: Bath,
-  washrooms: Bath,
-  floor: Layers,
-  totalFloors: Building,
-  floors: Building,
-  facing: Compass,
-  parking: Car,
-  furnishing: Sofa,
-  length: Ruler,
-  width: MoveHorizontal,
-  landArea: Maximize2,
-  roadWidth: Milestone,
-  roadAccess: Milestone,
-  cornerPlot: LayoutGrid,
-  approval: ShieldCheck,
-  fencing: Fence,
-  waterSource: Droplets,
-  electricity: Zap,
-  powerKva: PlugZap,
-  clearHeight: ArrowUpDown,
-  frontage: MoveHorizontal,
-  soilType: Leaf,
-  usage: Gauge,
-};
 
 export const AMENITY_ICON: Record<string, typeof Ruler> = {
   'Car parking': Car,

@@ -8,7 +8,7 @@ import { Button, Drawer, ErrorNote, Field, Input, Modal, Textarea } from './ui';
 import { PropertyForm, fromProperty, toPayload, type FormState } from './PropertyForm';
 import { useToast } from './toast';
 
-export function EditProperty({ property, open, onClose }: { property: Property; open: boolean; onClose: () => void }) {
+export function EditProperty({ property, open, onClose, aiFirst }: { property: Property; open: boolean; onClose: () => void; aiFirst?: boolean }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [form, setForm] = useState<FormState>(() => fromProperty(property));
@@ -76,8 +76,9 @@ export function EditProperty({ property, open, onClose }: { property: Property; 
         </>
       }
     >
+      {aiFirst && <p className="mb-2 text-xs text-slate-500">Type the changes in your own words. The AI fills in the form below, and nothing is saved until you press Save.</p>}
       <div className="mb-5 flex gap-2 rounded-2xl border border-ai-100 bg-ai-50/60 p-2">
-        <Input className="border-0 bg-transparent shadow-none focus:ring-0" placeholder='Say what changed: "price is now 58 lakhs, 2 car parks, add gym"' value={change} onChange={(e) => setChange(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && change.trim() && understand.mutate()} />
+        <Input autoFocus={aiFirst} aria-label="Changes in your own words" className="border-0 bg-transparent shadow-none focus:ring-0" placeholder='Say what changed: "price is now 58 lakhs, 2 car parks, add gym"' value={change} onChange={(e) => setChange(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && change.trim() && understand.mutate()} />
         <Button size="sm" variant="ai" icon={<Wand2 className="h-3.5 w-3.5" />} disabled={!change.trim()} loading={understand.isPending} onClick={() => understand.mutate()}>
           Apply
         </Button>

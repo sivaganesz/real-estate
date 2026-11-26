@@ -47,6 +47,21 @@ describe('project layouts', () => {
     expect(view.project.completion.missing).toEqual([]);
   });
 
+  it('writes a description for each new unit, fills empty ones, and keeps ones people wrote', async () => {
+    const id = (await manager.get('/api/projects')).body.items.find((x: { name: string }) => x.name === 'Lotus Heights').id;
+    const units = (await manager.get(`/api/projects/${id}`)).body.units as { id: string; unitNumber: string }[];
+    const get = async (n: string) => (await manager.get(`/api/properties/${units.find((u) => u.unitNumber === n)!.id}`)).body.property;
+    expect((await get('A301')).description).toMatch(/^3 BHK flat A301 on the 3rd floor in Tower A \(3 floors\) at Lotus Heights, Ashok Nagar\. 1,400 sq\.ft, east facing\./);
+
+    const a102 = await get('A102');
+    const a201 = await get('A201');
+    await manager.patch(`/api/properties/${a102.id}`).send({ description: 'Owner-written note for buyers.' });
+    await manager.patch(`/api/properties/${a201.id}`).send({ description: null });
+    await manager.put(`/api/projects/${id}/layout`).send(towers);
+    expect((await get('A102')).description).toBe('Owner-written note for buyers.');
+    expect((await get('A201')).description).toMatch(/^3 BHK flat A201 on the 2nd floor/);
+  });
+
   it('re-prices unsold units, keeps sold prices, and refuses to drop units with a buyer', async () => {
     const id = (await manager.get('/api/projects')).body.items.find((x: { name: string }) => x.name === 'Lotus Heights').id;
     const units = (await manager.get(`/api/projects/${id}`)).body.units;

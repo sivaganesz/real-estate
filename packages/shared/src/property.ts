@@ -40,8 +40,21 @@ export const AVAILABILITY_LABEL: Record<Availability, string> = {
   sold: 'Sold',
 };
 
+/** The broad group a type belongs to, shown next to the type ("Plot · Residential"). */
+export const PROPERTY_CATEGORY: Record<PropertyType, string> = {
+  apartment: 'Residential',
+  villa: 'Residential',
+  plot: 'Residential',
+  commercial: 'Commercial',
+  agricultural: 'Land',
+  industrial: 'Industrial',
+};
+
 export const FACINGS = ['North', 'East', 'South', 'West', 'North-East', 'North-West', 'South-East', 'South-West'] as const;
 export const FURNISHING = ['Unfurnished', 'Semi-furnished', 'Fully furnished'] as const;
+// Option lists from the approved property catalogue v2 (wireframe).
+const WATER_SUPPLY = ['Municipal supply', 'Borewell', 'Municipal + borewell', 'Tanker dependent', 'Not available'] as const;
+const TOPOGRAPHY = ['Level', 'Gentle slope', 'Elevated', 'Low-lying'] as const;
 
 export const AMENITIES = [
   'Car parking', 'Lift', 'Power backup', 'Security', 'CCTV', 'Gym', 'Swimming pool', 'Clubhouse',
@@ -71,6 +84,13 @@ export const TYPE_DETAILS: Record<PropertyType, DetailField[]> = {
     { key: 'facing', label: 'Facing', kind: 'select', options: FACINGS },
     { key: 'furnishing', label: 'Furnishing', kind: 'select', options: FURNISHING },
     { key: 'parking', label: 'Car parks', kind: 'number' },
+    { key: 'carpetArea', label: 'Carpet area', kind: 'number', unit: 'sq.ft' },
+    { key: 'superBuiltUpArea', label: 'Super built-up area', kind: 'number', unit: 'sq.ft' },
+    { key: 'uds', label: 'UDS (undivided share of land)', kind: 'number', unit: 'sq.ft' },
+    { key: 'lifts', label: 'Lifts', kind: 'number' },
+    { key: 'maintenance', label: 'Maintenance', kind: 'number', unit: '₹/month' },
+    { key: 'possession', label: 'Possession', kind: 'select', options: ['Ready to move', 'Under construction'] },
+    { key: 'expectedPossession', label: 'Expected possession', kind: 'text' },
   ],
   villa: [
     { key: 'bedrooms', label: 'Bedrooms', kind: 'number', required: true },
@@ -80,14 +100,30 @@ export const TYPE_DETAILS: Record<PropertyType, DetailField[]> = {
     { key: 'facing', label: 'Facing', kind: 'select', options: FACINGS },
     { key: 'furnishing', label: 'Furnishing', kind: 'select', options: FURNISHING },
     { key: 'parking', label: 'Car parks', kind: 'number' },
+    { key: 'houseType', label: 'House or villa', kind: 'select', options: ['Independent house', 'Villa (gated community)', 'Row house'] },
+    { key: 'constructionYear', label: 'Built in (year)', kind: 'number' },
+    { key: 'constructionQuality', label: 'Construction quality', kind: 'select', options: ['Premium', 'Standard', 'Basic'] },
+    { key: 'condition', label: 'Condition', kind: 'select', options: ['New', 'Good', 'Needs minor repair', 'Needs major repair'] },
+    { key: 'waterSupply', label: 'Water supply', kind: 'select', options: WATER_SUPPLY },
+    { key: 'powerArrangement', label: 'Power', kind: 'select', options: ['EB connection', 'EB + inverter', 'EB + generator backup', 'EB + solar'] },
+    { key: 'garden', label: 'Garden / open space', kind: 'text' },
   ],
   plot: [
     { key: 'length', label: 'Length', kind: 'number', unit: 'ft', required: true },
     { key: 'width', label: 'Width', kind: 'number', unit: 'ft', required: true },
     { key: 'facing', label: 'Facing', kind: 'select', options: FACINGS },
     { key: 'roadWidth', label: 'Road width', kind: 'number', unit: 'ft' },
+    { key: 'roadType', label: 'Road access', kind: 'select', options: ['Public road', 'Layout road', 'Private / pathway access'] },
+    { key: 'roadSurface', label: 'Road surface', kind: 'select', options: ['Tar road', 'Concrete road', 'Gravel road', 'Mud road'] },
     { key: 'cornerPlot', label: 'Corner plot', kind: 'boolean' },
-    { key: 'approval', label: 'Approval (DTCP / CMDA)', kind: 'text' },
+    { key: 'topography', label: 'Topography', kind: 'select', options: TOPOGRAPHY },
+    { key: 'surveyNumber', label: 'Survey number', kind: 'text' },
+    { key: 'subdivision', label: 'Subdivision', kind: 'text' },
+    { key: 'approval', label: 'Layout approval (DTCP / CMDA)', kind: 'text' },
+    { key: 'landUse', label: 'Land use', kind: 'select', options: ['Residential', 'Mixed residential', 'Commercial', 'Agricultural (conversion required)'] },
+    { key: 'waterSupply', label: 'Water supply', kind: 'select', options: WATER_SUPPLY },
+    { key: 'powerSupply', label: 'Electricity', kind: 'select', options: ['Available at site', 'Line nearby, connection to apply', 'Not available'] },
+    { key: 'drainage', label: 'Drainage', kind: 'select', options: ['Underground drainage', 'Open drain', 'Not available'] },
   ],
   commercial: [
     { key: 'usage', label: 'Usage', kind: 'select', options: ['Office', 'Retail / shop', 'Showroom', 'Warehouse', 'Hotel', 'Other'], required: true },
@@ -96,6 +132,11 @@ export const TYPE_DETAILS: Record<PropertyType, DetailField[]> = {
     { key: 'frontage', label: 'Frontage', kind: 'number', unit: 'ft' },
     { key: 'furnishing', label: 'Furnishing', kind: 'select', options: FURNISHING },
     { key: 'parking', label: 'Car parks', kind: 'number' },
+    { key: 'facing', label: 'Facing', kind: 'select', options: FACINGS },
+    { key: 'occupancy', label: 'Occupancy', kind: 'select', options: ['Vacant', 'Tenanted', 'Owner-occupied'] },
+    { key: 'rentalIncome', label: 'Rental income', kind: 'number', unit: '₹/month' },
+    { key: 'maintenance', label: 'Maintenance', kind: 'number', unit: '₹/month' },
+    { key: 'leaseDuration', label: 'Lease duration', kind: 'text' },
   ],
   agricultural: [
     { key: 'waterSource', label: 'Water source', kind: 'select', options: ['Borewell', 'Open well', 'Canal', 'River', 'None'], required: true },
@@ -103,14 +144,29 @@ export const TYPE_DETAILS: Record<PropertyType, DetailField[]> = {
     { key: 'soilType', label: 'Soil type', kind: 'text' },
     { key: 'electricity', label: 'Electricity (EB)', kind: 'boolean' },
     { key: 'fencing', label: 'Fencing', kind: 'boolean' },
+    { key: 'surveyNumber', label: 'Survey number', kind: 'text' },
+    { key: 'topography', label: 'Topography', kind: 'select', options: TOPOGRAPHY },
   ],
   industrial: [
     { key: 'usage', label: 'Usage', kind: 'select', options: ['Factory', 'Warehouse', 'Shed', 'Land'], required: true },
     { key: 'powerKva', label: 'Power', kind: 'number', unit: 'kVA', required: true },
     { key: 'roadWidth', label: 'Road width', kind: 'number', unit: 'ft' },
     { key: 'clearHeight', label: 'Clear height', kind: 'number', unit: 'ft' },
+    { key: 'truckAccess', label: 'Truck access', kind: 'boolean' },
+    { key: 'surveyNumber', label: 'Survey number', kind: 'text' },
   ],
 };
+
+/** A detail as people read it: "Yes", "30 ft", "₹4,500/month", "1,650 sq.ft". */
+export function detailValue(field: Pick<DetailField, 'unit'>, v: string | number | boolean | null | undefined): string {
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  const text = typeof v === 'number' && v >= 10_000 ? v.toLocaleString('en-IN') : String(v);
+  if (!field.unit) return text;
+  // Money units read as "₹4,500/month", not "4500 ₹/month".
+  if (field.unit.startsWith('₹')) return `₹${typeof v === 'number' ? v.toLocaleString('en-IN') : v}${field.unit.slice(1)}`;
+  return `${text} ${field.unit}`;
+}
 
 export const PropertyInput = z.object({
   title: z.string().trim().min(3).max(140).optional(),

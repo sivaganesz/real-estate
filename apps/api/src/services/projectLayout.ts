@@ -32,6 +32,38 @@ function unitFacts(type: PropertyType, u: PlannedUnit, totalFloors?: number) {
   return { details, label };
 }
 
+const ordinal = (n: number) => (n === 0 ? 'ground' : `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th')}`);
+const sqft = (n: number) => `${n.toLocaleString('en-IN')} sq.ft`;
+/** "lift, car parking, CCTV and gym": amenity names read inside a sentence. */
+const amenityList = (names: string[]) => {
+  const words = names.map((a) => (/^[A-Z]{2,}/.test(a) ? a : a.charAt(0).toLowerCase() + a.slice(1)));
+  return words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}` : (words[0] ?? '');
+};
+
+type DescribedProject = { name: string; locality?: string | null; status?: string | null; description?: string | null; amenities?: string[] | null; reraNumber?: string | null; developer?: string | null; possessionDate?: Date | null };
+type DescribedUnit = { type: string; unitNumber?: string | null; area?: number | null; details?: Record<string, unknown> | null; title?: string | null };
+
+/**
+ * A buyer-facing description for a project unit, written only from facts we hold:
+ * the unit's place in the layout (size, floor, facing, corner) and the project's
+ * description, amenities, developer, RERA number and possession date.
+ */
+export function unitDescription(project: DescribedProject, u: DescribedUnit, blockName?: string): string {
+  const d = u.details ?? {};
+  const where = [project.name, project.locality].filter(Boolean).join(', ');
+  const facing = d.facing ? `${String(d.facing).toLowerCase()} facing` : '';
+  const size = u.area ? sqft(u.area) : '';
+  const inBlock = blockName ? ` in ${blockName}` : '';
+  let lead: string;
+  if (u.type === 'apartment') lead = `${d.bedrooms} BHK flat ${u.unitNumber} on the ${ordinal(Number(d.floor))} floor${inBlock}${d.totalFloors ? ` (${d.totalFloors} floors)` : ''} at ${where}. ${[size, facing].filter(Boolean).join(', ')}.`;
+  else if (u.type === 'plot') lead = `${d.width} × ${d.length} ft plot ${u.unitNumber}${size ? ` (${size})` : ''}${facing ? `, ${facing}` : ''}${d.cornerPlot ? ', on a corner' : ''},${inBlock} at ${where}.`;
+  else if (u.type === 'villa') lead = `${d.bedrooms} BHK villa ${u.unitNumber}${size ? ` with ${size} built up` : ''}${d.landArea ? ` on a ${sqft(Number(d.landArea))} plot` : ''}${facing ? `, ${facing}` : ''},${inBlock} at ${where}.`;
+  else lead = `${d.usage ?? 'Unit'} ${u.unitNumber}${d.floor !== undefined ? ` on the ${ordinal(Number(d.floor))} floor` : ''}${inBlock} at ${where}. ${[size, facing].filter(Boolean).join(', ')}.`;
+  const possession = project.status === 'ready' ? 'Ready for registration.' : project.possessionDate ? `Possession expected by ${new Date(project.possessionDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}.` : '';
+  const about = [project.description, project.amenities?.length ? `Amenities: ${amenityList(project.amenities)}.` : '', project.developer ? `Developed by ${project.developer}.` : '', project.reraNumber ? `RERA no. ${project.reraNumber}.` : '', possession].filter(Boolean).join(' ');
+  return about ? `${lead.replace(/\s+\./g, '.')}\n\n${about}` : lead.replace(/\s+\./g, '.');
+}
+
 export type LayoutResult = { created: number; updated: number; removed: number; lost: string[]; total: number };
 
 /**
@@ -62,6 +94,7 @@ export async function applyLayout(projectId: string, raw: unknown, actor: Actor)
   }
 
   const floorsOf = new Map(layout.towers.map((t) => [t.code, t.floors]));
+  const blockNames = new Map([...layout.towers, ...layout.plotBlocks].map((b) => [b.code, b.name]));
   const approvals = (project.approvalBadges ?? []).map((b) => ({ name: b.name, documentUrl: b.documentUrl }));
   const extras = project.reraNumber ? [{ label: 'RERA number', value: project.reraNumber }] : [];
   let created = 0;
@@ -76,6 +109,8 @@ export async function applyLayout(projectId: string, raw: unknown, actor: Actor)
       const unsold = cur.availability === 'available' || cur.availability === 'held';
       cur.set({ title, area: u.area, areaUnit: 'sqft', areaSqft: u.area, details: { ...(cur.details ?? {}), ...details } });
       if (unsold && u.price) cur.price = u.price;
+      // Fill a missing description; one someone wrote or edited is never replaced.
+      if (!cur.description?.trim()) cur.description = unitDescription(project, { type, unitNumber: u.unitNumber, area: u.area, details: cur.details as Record<string, unknown> }, blockNames.get(u.block));
       if (cur.isModified()) {
         await cur.save();
         updated++;
@@ -97,6 +132,7 @@ export async function applyLayout(projectId: string, raw: unknown, actor: Actor)
         locality: project.locality,
         address: project.address,
         details,
+        description: unitDescription(project, { type, unitNumber: u.unitNumber, area: u.area, details }, blockNames.get(u.block)),
         amenities: project.amenities,
         approvals,
         extras,
