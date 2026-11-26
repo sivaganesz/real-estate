@@ -20,7 +20,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -47,6 +46,7 @@ import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bit
 import { isActive } from './lead-list'
 import { STAGE_TONE } from './leads-page'
 import { DoneButton } from './done-button'
+import { RescheduleButton } from './reschedule-button'
 import { dueOf, suggestNext } from './next-step'
 
 const TABS = ['activity', 'matches', 'qualification', 'hni'] as const
@@ -85,15 +85,13 @@ function useLead(l: Lead) {
     consent,
     call: () => toast(t('leads.calling', { name: l.name, phone: l.phone }), { description: t('leads.demoHint') }),
     whatsapp: () => toast(t('leads.whatsapping', { name: l.name }), { description: t('leads.demoHint') }),
-    /** Follow-up done: log it and set the next one (or none). */
-    done: (days: number | null) => {
-      const next = days === null || !consent ? undefined : addDays(today, days)
-      updateLead(l.id, (x) => { x.nextFollowUp = next; x.engagement.responded = true }, next ? t('today.doneNote', { date: fmtDate(next) }) : t('today.doneNoteNone'))
-      toast.success(t('today.doneToast', { name: l.name }), { description: next ? t('today.nextOn', { date: fmtDate(next) }) : undefined })
-    },
+    /**
+     * Plan (or clear) the next follow-up. Planning only changes the Next step card: no timeline entry and no notification
+     * (only ✓ Done notifies, agreed 26 Nov).
+     */
     setFollowUp: (date: string) => {
       if (date && !consent) { toast.error(t('lead.consentFirst')); return }
-      updateLead(l.id, (x) => { x.nextFollowUp = date || undefined }, date ? t('lead.followUpSet', { date: fmtDate(date) }) : t('lead.followUpCleared'))
+      updateLead(l.id, (x) => { x.nextFollowUp = date || undefined })
     },
     move: (s: LeadStage) => {
       if (s === l.stage) return
@@ -185,7 +183,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
         <div className="fixed inset-x-0 bottom-0 z-20 flex gap-2 border-t bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           <Button variant="outline" className="flex-1" onClick={a.call}><Phone /> {t('leads.call')}</Button>
           <Button variant="outline" className="flex-1" onClick={a.whatsapp}><MessageCircle /> {t('leads.whatsappShort')}</Button>
-          <DoneButton onDone={a.done} canSchedule={a.consent} className="flex-1" />
+          <DoneButton lead={l} className="flex-1" />
         </div>
       )}
 
@@ -411,19 +409,8 @@ function NextStep({ l, onBook }: { l: Lead; onBook: (propertyId: string) => void
         </div>
         <div className="flex flex-wrap gap-2 sm:ml-auto">
           {s?.key === 'next.bookVisit' && s.propertyId && <Button size="sm" variant="outline" onClick={() => onBook(s.propertyId!)}><CalendarPlus /> {t('lead.bookVisit')}</Button>}
-          {a.consent ? (
-            <Popover>
-              <PopoverTrigger asChild><Button size="sm" variant="outline"><CalendarClock /> {t('lead.reschedule')}</Button></PopoverTrigger>
-              <PopoverContent align="end" className="w-60 rounded-xl p-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">{t('lead.newDate')}</p>
-                <Input type="date" defaultValue={l.nextFollowUp} min={today} onChange={(e) => e.target.value && a.setFollowUp(e.target.value)} />
-              </PopoverContent>
-            </Popover>
-          ) : (
-            // a disabled button gets no hover events, so the hint sits on a wrapper
-            <span title={t('lead.consentFirst')}><Button size="sm" variant="outline" disabled><CalendarClock /> {t('lead.reschedule')}</Button></span>
-          )}
-          <DoneButton onDone={a.done} canSchedule={a.consent} />
+          <RescheduleButton current={l.nextFollowUp} today={today} canSchedule={a.consent} onPick={a.setFollowUp} />
+          <DoneButton lead={l} />
         </div>
       </div>
     </section>
@@ -445,19 +432,15 @@ function ActivityTab({ l }: { l: Lead }) {
   const { db, today, user, updateLead } = useStore()
   const [type, setType] = useState<LeadActivity['type']>('call')
   const [text, setText] = useState('')
-  const [next, setNext] = useState('')
-  const consent = hasFollowUpConsent(l)
+  // logging only records what happened; the next follow-up is planned in the Next step card (agreed 26 Nov)
   const log = () => {
     if (!text.trim()) return
-    const nextDate = consent ? next : ''
     updateLead(l.id, (x) => {
       x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type, text: text.trim() })
       x.engagement.responded = true
-      if (nextDate) x.nextFollowUp = nextDate
     })
-    toast.success(t('lead.logged'), { description: nextDate ? t('today.nextOn', { date: fmtDate(nextDate) }) : undefined })
+    toast.success(t('lead.logged'))
     setText('')
-    setNext('')
   }
   const entryText = (x: LeadActivity) => {
     if (x.type === 'shared') return <>{t('lead.act.shared', { channel: t(`props.hist.channel.${x.text}`, { defaultValue: x.text }) })} <PropLink id={x.propertyId} /></>
@@ -483,12 +466,7 @@ function ActivityTab({ l }: { l: Lead }) {
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t(`lead.act.placeholder.${type}`)} aria-label={t('lead.act.what')}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); log() } }}
           className="min-h-16 resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0" />
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-sm text-muted-foreground" title={consent ? undefined : t('lead.consentFirst')}>
-            <CalendarClock className="size-3.5" /> {t('lead.act.next')}
-            <Input type="date" value={consent ? next : ''} min={today} onChange={(e) => setNext(e.target.value)} disabled={!consent} className="h-7 w-36 text-sm" />
-          </label>
-          <span className="flex-1" />
+        <div className="mt-2 flex justify-end">
           <Button type="submit" size="sm" disabled={!text.trim()}>{t('lead.act.log')}</Button>
         </div>
       </form>

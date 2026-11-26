@@ -22,9 +22,7 @@ import { CITIES, STAGE_ORDER, TYPE_ORDER } from '@/data/catalogue'
 import type { Lead, LeadStage } from '@/data/types'
 import { useIsPhone } from '@/hooks/use-media-query'
 import { isHni } from '@/lib/classification'
-import { hasFollowUpConsent } from '@/lib/consent'
-import { DoneButton } from './done-button'
-import { addDays, daysBetween, fmtDate, inrShort, num } from '@/lib/format'
+import { daysBetween, fmtDate, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { propertiesForLead } from '@/lib/matching'
 import { BAND_TONE } from '@/lib/readiness'
@@ -32,6 +30,7 @@ import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bits'
 import { isActive, type LeadFilters, type LeadItem, leadItems, matchesLead, parseLeadSentence } from './lead-list'
+import { DoneButton } from './done-button'
 import { STAGE_TONE } from './leads-page'
 
 type View = 'all' | 'hot' | 'investors' | 'hni' | 'closed'
@@ -326,16 +325,9 @@ function LeadRow({ x, selected, onSelect }: { x: LeadItem; selected: boolean; on
   )
 }
 
-/** 📞 Call · 💬 WhatsApp · ✓ Done (logs the follow-up and asks when the next one is). */
+/** 📞 Call · 💬 WhatsApp · ✓ Done (the follow-up is finished — same as on the lead page). */
 function QuickActions({ lead: l, big }: { lead: Lead; big?: boolean }) {
   const { t } = useTranslation()
-  const { today, updateLead } = useStore()
-  const consent = hasFollowUpConsent(l)
-  const done = (days: number | null) => {
-    const next = days === null || !consent ? undefined : addDays(today, days)
-    updateLead(l.id, (x) => { x.nextFollowUp = next }, next ? t('today.doneNote', { date: fmtDate(next) }) : t('today.doneNoteNone'))
-    toast.success(t('today.doneToast', { name: l.name }), { description: next ? t('today.nextOn', { date: fmtDate(next) }) : undefined })
-  }
   const size = big ? 'default' : 'icon-sm'
   return (
     <>
@@ -346,7 +338,7 @@ function QuickActions({ lead: l, big }: { lead: Lead; big?: boolean }) {
         <MessageCircle />{big && t('leads.whatsappShort')}
       </Button>
       {isActive(l) && (
-        <DoneButton onDone={done} canSchedule={consent} size={size} variant={big ? 'default' : 'outline'} label={!!big}
+        <DoneButton lead={l} size={size} variant={big ? 'default' : 'outline'} label={!!big}
           className={cn(big && 'flex-1', !big && 'bg-card')} />
       )}
     </>

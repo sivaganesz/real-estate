@@ -1776,6 +1776,7 @@
     },
     "doneNote": "Follow-up done · next on {{date}}",
     "doneNoteNone": "Follow-up done · nothing more planned",
+    "doneNoteSimple": "Follow-up done",
     "doneToast": "Follow-up with {{name}} logged",
     "nextOn": "Next follow-up {{date}}"
   },
@@ -1836,6 +1837,13 @@
     "followUpIn_other": "Follow-up {{date}} — in {{count}} days",
     "reschedule": "Reschedule",
     "newDate": "New follow-up date",
+    "rescheduleTo": "Move the follow-up to…",
+    "schedule": "Schedule",
+    "scheduleFor": "Plan the next follow-up for…",
+    "rescheduleNow": "Now {{date}}",
+    "pickDate": "Pick a date…",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
     "logged": "Added to the timeline",
     "act": {
       "shared": "Brochure shared ({{channel}}):",
