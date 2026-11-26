@@ -15,6 +15,7 @@ const Out = z.object({
   mustHaves: z.array(z.string()).describe('Specific must-haves the customer stated, short phrases'),
   timeline: z.enum(['immediate', '3_months', '6_months', 'exploring']).nullable(),
   financing: z.enum(['own_funds', 'loan', 'loan_approved', 'unknown']).nullable(),
+  intent: z.enum(['own_use', 'investment']).nullable().describe('Buying to live in (own_use) or as an investment'),
   notes: z.string().nullable().describe('Anything else useful, one line'),
 });
 
@@ -63,6 +64,8 @@ export function requirementFromRules(text: string, places: Awaited<ReturnType<ty
   if (/\bloan (is )?(approved|sanctioned)\b|pre-?approved/.test(t)) r.financing = 'loan_approved';
   else if (/\b(loan|emi|bank finance|home loan)\b/.test(t)) r.financing = 'loan';
   else if (/\b(own funds|cash|no loan|self funded)\b/.test(t)) r.financing = 'own_funds';
+  if (/\b(invest(ment|or|ing)?|rental income|returns|roi|appreciation)\b/.test(t)) r.intent = 'investment';
+  else if (/\b(own use|self use|to live in|for (my|our) family|move in)\b/.test(t)) r.intent = 'own_use';
   const must = AMENITIES.filter((a) => t.includes(a.toLowerCase().split(' ')[0]) && a.length > 3).map(String);
   const facing = t.match(/\b(north|east|south|west)(?:[\s-](east|west))?\s*facing\b/);
   if (facing) must.push(facing[0].replace(/\b\w/g, (c) => c.toUpperCase()));

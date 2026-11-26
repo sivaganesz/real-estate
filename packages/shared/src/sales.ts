@@ -56,6 +56,8 @@ export const Requirement = z.object({
   mustHaves: z.array(z.string()).default([]),
   timeline: z.enum(['immediate', '3_months', '6_months', 'exploring']).nullish(),
   financing: z.enum(['own_funds', 'loan', 'loan_approved', 'unknown']).nullish(),
+  /** Buying to live in or as an investment. */
+  intent: z.enum(['own_use', 'investment']).nullish(),
   notes: z.string().max(2000).nullish(),
 });
 export type Requirement = z.infer<typeof Requirement>;

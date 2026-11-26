@@ -1,6 +1,6 @@
 import { useState, type InputHTMLAttributes } from 'react';
 import clsx from 'clsx';
-import { PROPERTY_TYPES, PROPERTY_TYPE_LABEL, FINANCING_LABEL, TIMELINE_LABEL, type Requirement } from '@estate/shared';
+import { PROPERTY_TYPES, PROPERTY_TYPE_LABEL, FINANCING_LABEL, INTENT_LABEL, TIMELINE_LABEL, type Requirement } from '@estate/shared';
 import { Field, Input, Select } from './ui';
 import { usePlaces } from '../lib/property';
 
@@ -104,6 +104,16 @@ export function RequirementEditor({ value, onChange }: { value: Partial<Requirem
           </Select>
         </Field>
       </div>
+      <Field label="Buying for">
+        <Select value={r.intent ?? ''} onChange={(e) => set('intent', (e.target.value || undefined) as Requirement['intent'])}>
+          <option value="">Not discussed</option>
+          {Object.entries(INTENT_LABEL).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <Field label="Must-haves (comma separated)">
         <DraftInput shown={(r.mustHaves ?? []).join(', ')} onText={(t) => set('mustHaves', list(t))} placeholder="East facing, Gated community, Near a school" />
       </Field>

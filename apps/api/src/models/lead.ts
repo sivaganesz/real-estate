@@ -14,6 +14,7 @@ const requirementSchema = new Schema(
     mustHaves: [String],
     timeline: String,
     financing: String,
+    intent: String,
     notes: String,
   },
   { _id: false },

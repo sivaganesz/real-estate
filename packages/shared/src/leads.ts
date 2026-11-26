@@ -18,6 +18,7 @@ export const FINANCING_LABEL: Record<string, string> = {
   loan_approved: 'Loan approved',
   unknown: 'Not discussed',
 };
+export const INTENT_LABEL: Record<string, string> = { own_use: 'Own use', investment: 'Investment' };
 
 /** "2–3 BHK apartment · ₹60 L–₹80 L · Porur, Valasaravakkam" */
 export function requirementSummary(r: Partial<Requirement> | null | undefined): string {

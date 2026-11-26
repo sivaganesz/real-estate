@@ -7,6 +7,7 @@ import {
   ACTIVITY_LABEL,
   CALL_OUTCOMES,
   FINANCING_LABEL,
+  INTENT_LABEL,
   LEAD_SOURCE_LABEL,
   PROPERTY_TYPE_LABEL,
   STAGE_META,
@@ -161,6 +162,7 @@ export function LeadDetail() {
               {r.bedrooms ? <Row label="Bedrooms" value={`${r.bedrooms} BHK`} /> : null}
               <Row label="When" value={r.timeline ? TIMELINE_LABEL[r.timeline] : '—'} />
               <Row label="Paying by" value={r.financing ? FINANCING_LABEL[r.financing] : '—'} />
+              <Row label="Buying for" value={r.intent ? INTENT_LABEL[r.intent] : '—'} />
               {!!r.mustHaves?.length && <Row label="Must-haves" value={r.mustHaves.join(', ')} />}
               {r.notes && <Row label="Notes" value={r.notes} />}
             </dl>

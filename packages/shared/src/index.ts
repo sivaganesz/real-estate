@@ -5,3 +5,4 @@ export * from './sales';
 export * from './leads';
 export * from './projects';
 export * from './neighbourhood';
+export * from './leadScore';

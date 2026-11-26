@@ -147,6 +147,22 @@ function ScheduleTab({ lead, onDone }: { lead: Lead; onDone: () => void }) {
 }
 
 /** Book a meeting, call or visit from anywhere (the Calendar): pick the customer, what, when. */
+/** The same "Plan next" form, in a dialog: used from the Leads list preview. */
+export function PlanNextDialog({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+  const refresh = useRefresh(lead.id);
+  return (
+    <Modal open onClose={onClose} title={`Plan the next step with ${lead.name}`}>
+      <ScheduleTab
+        lead={lead}
+        onDone={() => {
+          refresh();
+          onClose();
+        }}
+      />
+    </Modal>
+  );
+}
+
 export function NewAppointment({ day, onClose }: { day?: Date; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();

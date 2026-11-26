@@ -1,5 +1,5 @@
 import { relativeDay } from '@estate/shared';
-import type { LeadSource, Requirement, Stage, Temperature } from '@estate/shared';
+import type { BuyerSegment, LeadSource, Requirement, Stage, Temperature } from '@estate/shared';
 import type { Tone } from '../components/ui';
 
 export type Lead = {
@@ -16,6 +16,9 @@ export type Lead = {
   daysInStage: number;
   stale: boolean;
   overdue: boolean;
+  /** How ready to buy, 0 to 100 (see leadScore). */
+  score: number;
+  segment: BuyerSegment;
   temperature: Temperature;
   requirement: Partial<Requirement>;
   summary: string;

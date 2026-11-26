@@ -127,14 +127,15 @@ export function ErrorNote({ error }: { error: unknown }) {
   return <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error instanceof Error ? error.message : String(error)}</p>;
 }
 
-export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+/** Initials in a circle, coloured from the name. `soft`: a pale tint with coloured letters. */
+export function Avatar({ name, size = 'md', soft }: { name: string; size?: 'sm' | 'md' | 'lg'; soft?: boolean }) {
   const initials = name.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const hue = [...name].reduce((h, c) => h + c.charCodeAt(0), 0) % 360;
   return (
     <span
       title={name}
-      className={clsx('inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white', size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-8 w-8 text-xs')}
-      style={/* scan-ok: avatar colour is worked out from the name */ { background: `hsl(${hue} 45% 48%)` }}
+      className={clsx('inline-flex shrink-0 items-center justify-center rounded-full', soft ? 'font-medium ring-1 ring-inset ring-black/5' : 'font-semibold text-white', size === 'sm' ? 'h-6 w-6 text-[10px]' : size === 'lg' ? 'h-12 w-12 text-sm' : soft ? 'h-9 w-9 text-xs' : 'h-8 w-8 text-xs')}
+      style={/* scan-ok: avatar colour is worked out from the name */ soft ? { background: `hsl(${hue} 60% 94%)`, color: `hsl(${hue} 50% 32%)` } : { background: `hsl(${hue} 45% 48%)` }}
     >
       {initials}
     </span>

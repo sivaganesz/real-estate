@@ -2,6 +2,13 @@ import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 /** Signs in with the demo buttons on the login page, like a first-time visitor would. */
+/** Opens a customer from the Leads list. Wide screens show them beside the list first. */
+async function openLead(page: Page, name: RegExp) {
+  await page.getByRole('link', { name }).first().click();
+  const full = page.getByRole('link', { name: /Open full lead page/ });
+  if (await full.isVisible().catch(() => false)) await full.click();
+}
+
 async function signIn(page: Page, who: 'Admin' | 'Sales manager' | 'Sales executive') {
   await page.goto('/login');
   await page.getByRole('button', { name: who, exact: true }).click();
@@ -18,7 +25,7 @@ test.describe('sales executive', () => {
 
     // The phone run follows the desktop run on the same data, so open him via Leads.
     await page.goto('/leads?q=Vignesh');
-    await page.getByRole('link', { name: /Vignesh Babu/ }).first().click();
+    await openLead(page, /Vignesh Babu/);
     await expect(page.getByRole('heading', { name: 'Vignesh Babu' })).toBeVisible();
     await page.getByRole('button', { name: 'Log a call' }).click();
     await page.getByRole('button', { name: 'Interested', exact: true }).first().click();
@@ -33,7 +40,7 @@ test.describe('sales executive', () => {
   test('sees why properties fit a customer and sends two on WhatsApp', async ({ page }) => {
     await signIn(page, 'Sales executive');
     await page.goto('/leads?q=Irfan');
-    await page.getByRole('link', { name: /Mohammed Irfan/ }).first().click();
+    await openLead(page, /Mohammed Irfan/);
     await expect(page.getByText('Strong fit').first()).toBeVisible();
     await expect(page.getByText(/within budget/).first()).toBeVisible();
     const boxes = page.getByRole('button', { name: 'Select' });
@@ -61,7 +68,7 @@ test.describe('sales executive', () => {
   test('can’t open someone else’s customer', async ({ page }) => {
     await signIn(page, 'Sales executive');
     await page.goto('/leads?q=Suresh');
-    await expect(page.getByText('No leads here')).toBeVisible();
+    await expect(page.getByText(/No open leads match/)).toBeVisible();
   });
 });
 
@@ -131,7 +138,7 @@ test.describe('sales manager', () => {
   test('drags nothing: moving a lead without evidence asks for it', async ({ page }) => {
     await signIn(page, 'Sales manager');
     await page.goto('/leads?q=Revathi');
-    await page.getByRole('link', { name: /Revathi Shankar/ }).first().click();
+    await openLead(page, /Revathi Shankar/);
     await page.getByRole('button', { name: 'Move to Contacted' }).click();
     await expect(page.getByText('Log the first conversation before moving on')).toBeVisible();
   });

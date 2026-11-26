@@ -6,12 +6,15 @@ import {
   OPEN_STAGES,
   Requirement,
   STAGE_META,
+  buyerSegment,
   can,
   isQualified,
+  leadScore,
   normalisePhone,
   requirementSummary,
   type ActivityType,
   type Stage,
+  type Temperature,
 } from '@estate/shared';
 import { Activity, Lead, type LeadDoc } from '../models/lead';
 import { User } from '../models/user';
@@ -102,6 +105,8 @@ export function serialiseLead(l: LeadDoc, ownerName?: string) {
   void __v;
   const stage = l.stage as Stage;
   const daysInStage = Math.floor((Date.now() - new Date(l.stageChangedAt ?? l.createdAt).getTime()) / 86_400_000);
+  const overdue = !!l.nextAction?.dueAt && new Date(l.nextAction.dueAt) < new Date();
+  const stale = OPEN_STAGES.includes(stage) && daysInStage >= STAGE_META[stage].staleAfterDays;
   return {
     id: String(_id),
     ...rest,
@@ -110,8 +115,10 @@ export function serialiseLead(l: LeadDoc, ownerName?: string) {
     summary: requirementSummary(l.requirement as never),
     qualified: isQualified(l.requirement as never),
     daysInStage,
-    stale: OPEN_STAGES.includes(stage) && daysInStage >= STAGE_META[stage].staleAfterDays,
-    overdue: !!l.nextAction?.dueAt && new Date(l.nextAction.dueAt) < new Date(),
+    stale,
+    overdue,
+    score: leadScore({ requirement: l.requirement as never, stage, temperature: l.temperature as Temperature, overdue, stale }),
+    segment: buyerSegment(l.requirement as never),
   };
 }
 
