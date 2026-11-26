@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Building2, Home, LandPlot, Search, ShieldCheck, Store } from 'lucide-react';
+import { Building2, Home, LandPlot, ShieldCheck, Store } from 'lucide-react';
 import { PROJECT_STATUS_LABELS, PROPERTY_TYPE_LABEL, formatINR, layoutKind, type PropertyType } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { SearchBar } from '../components/SearchBar';
 import { useProjects, type Project } from '../lib/property';
 import { Badge, Card, EmptyState, PageLoader, Segmented } from '../components/ui';
 import { STATE_STYLE } from '../components/ProjectViews';
@@ -23,15 +24,29 @@ type Movement = { projects: { id: string; slow: boolean; movedInWindow: number; 
  * Projects at a glance: totals across what's on sale, then one card per
  * project with its inventory bar. The counts open the layout filtered.
  */
-export function Projects() {
+export function Projects({ switcher }: { switcher?: React.ReactNode }) {
   const { can } = useAuth();
   const projects = useProjects();
   const movement = useQuery({ queryKey: ['movement'], queryFn: () => api.get<Movement>('/insights/movement') });
   const [tab, setTab] = useState<'all' | 'draft' | 'live'>('all');
   const [q, setQ] = useState('');
-  if (projects.isLoading) return <PageLoader />;
+  // The switch stays reachable while loading and when there are no projects yet.
+  const top = switcher && <div className="mb-4">{switcher}</div>;
+  if (projects.isLoading)
+    return (
+      <>
+        {top}
+        <PageLoader />
+      </>
+    );
   const list = projects.data ?? [];
-  if (!list.length) return <EmptyState icon={<Building2 className="h-5 w-5" />} title="No projects yet" body="A project groups the units of one development — towers, a plotted layout or a villa community." action={can('project.manage') && <Link to="/projects/new" className="link">Add a project</Link>} />;
+  if (!list.length)
+    return (
+      <>
+        {top}
+        <EmptyState icon={<Building2 className="h-5 w-5" />} title="No projects yet" body="A project groups the units of one development — towers, a plotted layout or a villa community." action={can('project.manage') && <Link to="/projects/new" className="link">Add a project</Link>} />
+      </>
+    );
 
   const live = list.filter((p) => p.published);
   const sum = (k: 'total' | 'available' | 'held' | 'booked' | 'sold') => live.reduce((s, p) => s + (p.inventory?.[k] ?? 0), 0);
@@ -41,6 +56,11 @@ export function Projects() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        {switcher}
+        {/* Filters as you type; Search just confirms it. */}
+        <SearchBar label="Search projects" value={q} onChange={setQ} onSearch={setQ} onClear={() => setQ('')} placeholder="Search projects by name, locality or city" />
+      </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           { label: 'Total units', n: total, sub: `${live.length} published projects`, dot: '#2a978a' },
@@ -72,10 +92,6 @@ export function Projects() {
         ) : (
           <span />
         )}
-        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
-          <Search className="h-4 w-4 text-slate-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or locality" className="bg-transparent outline-none" />
-        </label>
       </div>
 
       {!shown.length && <p className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">No projects match.</p>}

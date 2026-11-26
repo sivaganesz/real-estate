@@ -24,6 +24,20 @@ export function Properties() {
       : ['Find 2 BHK apartments under 70 lakhs in Chennai', 'Show available plots in Sunrise Enclave', 'Which ready-to-move homes are under 1 crore?'],
   });
 
+  // All properties / Projects: the first thing on each tab's search row.
+  const switcher = (
+    <Segmented
+      size="lg"
+      className="shrink-0 self-stretch"
+      value={tab}
+      onChange={(v) => setParams(v === 'units' ? {} : { tab: v })}
+      options={[
+        { value: 'units', label: 'All properties' },
+        { value: 'projects', label: 'Projects' },
+      ]}
+    />
+  );
+
   return (
     <>
       <PageHeader
@@ -33,7 +47,9 @@ export function Properties() {
           can('property.create') && (
             <>
               <Link to="/properties/import">
-                <Button icon={<Upload className="h-4 w-4" />}>Import</Button>
+                <Button icon={<Upload className="h-4 w-4" />} title="Bring in many properties at once from a spreadsheet">
+                  Bulk import
+                </Button>
               </Link>
               {tab === 'projects' ? (
                 <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/projects/new')}>
@@ -48,16 +64,7 @@ export function Properties() {
           )
         }
       />
-      <Segmented
-        className="mb-4"
-        value={tab}
-        onChange={(v) => setParams(v === 'units' ? {} : { tab: v })}
-        options={[
-          { value: 'units', label: 'All properties' },
-          { value: 'projects', label: 'Projects' },
-        ]}
-      />
-      {tab === 'units' ? <PropertyList /> : <Projects />}
+      {tab === 'units' ? <PropertyList switcher={switcher} /> : <Projects switcher={switcher} />}
       <AddProperty open={adding} onClose={() => setAdding(false)} />
     </>
   );

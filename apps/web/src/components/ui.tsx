@@ -194,14 +194,22 @@ function useEscape(active: boolean, onClose: () => void) {
   }, [active, onClose]);
 }
 
-export function Segmented<T extends string>({ value, onChange, options, className }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; className?: string }) {
+/** Two or three choices side by side. `lg` matches a full-height search bar beside it. */
+export function Segmented<T extends string>({ value, onChange, options, className, size = 'sm' }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; className?: string; size?: 'sm' | 'lg' }) {
   return (
-    <div className={clsx('inline-flex rounded-xl bg-slate-100 p-0.5', className)}>
+    // lg: a white box with a light border like a search bar; the chosen option is a solid green pill that nearly fills it.
+    <div className={clsx('inline-flex', size === 'lg' ? 'items-stretch gap-0.5 rounded-2xl border border-slate-200 bg-white p-[3px] shadow-sm' : 'rounded-xl bg-slate-100 p-0.5', className)}>
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={clsx('rounded-[10px] px-3 py-1.5 text-xs font-medium transition', value === o.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+          aria-pressed={value === o.value}
+          className={clsx(
+            'font-medium transition',
+            size === 'lg'
+              ? clsx('flex items-center rounded-xl px-5 py-1 text-sm', value === o.value ? 'bg-brand-700 font-semibold text-white shadow-sm' : 'text-slate-500 hover:bg-brand-50 hover:text-brand-800')
+              : clsx('rounded-[10px] px-3 py-1.5 text-xs', value === o.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'),
+          )}
         >
           {o.label}
         </button>

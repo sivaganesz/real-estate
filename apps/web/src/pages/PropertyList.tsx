@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ChevronDown, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Users, X } from 'lucide-react';
+import { Bath, BedDouble, ChevronDown, LayoutGrid, List, MoreHorizontal, Ruler, Search, Sparkles, Users, X } from 'lucide-react';
 import { PROPERTY_TYPES, PROPERTY_TYPE_LABEL, formatINR, propertyCompletion, type Availability, type PropertyType } from '@estate/shared';
 import { api, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -10,6 +10,7 @@ import { AVAILABILITY_TONE, areaLabel, availabilityLabel, priceLabel, usePlaces,
 import { Badge, Button, Card, EmptyState, PageLoader, Segmented } from '../components/ui';
 import { PropertyCard, PropertyCover } from '../components/PropertyCard';
 import { Popover } from '../components/Popover';
+import { SearchBar } from '../components/SearchBar';
 import { useConfirm } from '../components/confirm';
 import { useToast } from '../components/toast';
 import { rateIn } from '../components/property/data';
@@ -46,7 +47,7 @@ const LAKH = 100_000;
 const rate = (p: Property) => (p.price && p.areaSqft ? p.price / p.areaSqft : null);
 
 /** The list page: search, filters, status tabs, a table or cards, and a pager. */
-export function PropertyList() {
+export function PropertyList({ switcher }: { switcher?: React.ReactNode }) {
   const { can } = useAuth();
   const editor = can('property.edit');
   const [params, setParams] = useSearchParams();
@@ -122,39 +123,22 @@ export function PropertyList() {
 
   return (
     <>
-      {/* Search in plain words; the same reader the assistant uses. */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          update({ q: draft.trim() || null });
-        }}
-        className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100"
-      >
-        <Sparkles className="h-4 w-4 shrink-0 text-ai-600" />
-        <input
-          aria-label="Search properties"
+      {/* The All properties / Projects switch, then search in plain words (the same reader the assistant uses). */}
+      <div className="flex flex-wrap items-center gap-3">
+        {switcher}
+        <SearchBar
+          ai
+          label="Search properties"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={setDraft}
+          onSearch={(v) => update({ q: v || null })}
+          onClear={() => {
+            setDraft('');
+            update({ q: null });
+          }}
           placeholder='Search in your own words: "3 bhk villa under 1.5 cr in Medavakkam", a code or a locality'
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none"
         />
-        {q && (
-          <button
-            type="button"
-            aria-label="Clear search"
-            onClick={() => {
-              setDraft('');
-              update({ q: null });
-            }}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-        <Button type="submit" size="sm" variant="primary" className="rounded-full">
-          Search
-        </Button>
-      </form>
+      </div>
       {res.data?.understood.length ? (
         <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
           <Sparkles className="h-3.5 w-3.5 text-ai-600" /> Understood as
@@ -185,8 +169,27 @@ export function PropertyList() {
         )
       )}
 
-      {/* Filters, sort and view. */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      {/* Status tabs with counts; empty ones are hidden. */}
+      {/* From 1280px: status tabs left, filters/sort/view right, one shared line under both.
+          Narrower: the controls sit on their own line above the tabs. */}
+      <div className="mt-4 flex flex-wrap items-end">
+      <div className="order-2 flex w-full min-w-0 flex-wrap items-end gap-1 border-b border-slate-200 xl:order-1 xl:w-auto xl:flex-1" role="tablist" aria-label="Status">
+        {STATUS_TABS.filter((t) => (!t.editors || editor) && (t.key === 'all' || t.key === status || (res.data?.counts?.[t.key] ?? 0) > 0)).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={status === t.key}
+            onClick={() => update({ status: t.key === 'all' ? null : t.key, listing: null, availability: null })}
+            className={clsx('-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition', status === t.key ? 'border-brand-600 font-semibold text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800')}
+          >
+            {t.label}
+            <span className={clsx('rounded-full px-1.5 text-[11px]', status === t.key ? 'bg-brand-50 text-brand-800' : 'bg-slate-100 text-slate-500')}>{res.data?.counts?.[t.key] ?? '–'}</span>
+          </button>
+        ))}
+      </div>
+        {/* Filters, sort and view. */}
+        <div className="order-1 mb-3 flex w-full flex-wrap items-center gap-2 xl:order-2 xl:mb-0 xl:w-auto xl:border-b xl:border-slate-200 xl:pb-2 xl:pl-4">
         <Filters types={types} city={city} localities={localities} bmin={bmin} bmax={bmax} amin={amin} amax={amax} purpose={purpose} beds={beds} withUnits={get('units') === '1'} update={update} />
         {activeFilters > 0 && (
           <button type="button" onClick={clearAll} className="text-xs font-medium text-brand-700 hover:underline">
@@ -240,23 +243,7 @@ export function PropertyList() {
             ]}
           />
         </div>
-      </div>
-
-      {/* Status tabs with counts; empty ones are hidden. */}
-      <div className="mt-4 flex flex-wrap items-end gap-1 border-b border-slate-200" role="tablist" aria-label="Status">
-        {STATUS_TABS.filter((t) => (!t.editors || editor) && (t.key === 'all' || t.key === status || (res.data?.counts?.[t.key] ?? 0) > 0)).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={status === t.key}
-            onClick={() => update({ status: t.key === 'all' ? null : t.key, listing: null, availability: null })}
-            className={clsx('-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition', status === t.key ? 'border-brand-600 font-semibold text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800')}
-          >
-            {t.label}
-            <span className={clsx('rounded-full px-1.5 text-[11px]', status === t.key ? 'bg-brand-50 text-brand-800' : 'bg-slate-100 text-slate-500')}>{res.data?.counts?.[t.key] ?? '–'}</span>
-          </button>
-        ))}
+        </div>
       </div>
 
       <div className="mt-3">
@@ -584,7 +571,7 @@ function PropertyTable({ rows }: { rows: Row[] }) {
             <th className="px-4 py-2.5">Property</th>
             <th className="hidden px-2 py-2.5 xl:table-cell">Location</th>
             <th className="hidden px-2 py-2.5 text-right md:table-cell">Area</th>
-            <th className="hidden px-2 py-2.5 text-right sm:table-cell">Asking price</th>
+            <th className="hidden px-2 py-2.5 text-right sm:table-cell">Price</th>
             <th className="hidden px-2 py-2.5 sm:table-cell">Status</th>
             <th className="hidden px-2 py-2.5 md:table-cell">Leads</th>
             <th className="hidden px-2 py-2.5 lg:table-cell">Complete</th>
@@ -621,7 +608,10 @@ function PropertyTable({ rows }: { rows: Row[] }) {
                 <span className="block text-slate-800">{p.locality || '—'}</span>
                 <span className="block text-xs text-slate-500">{p.city}</span>
               </td>
-              <td className="hidden whitespace-nowrap px-2 py-2.5 text-right text-slate-700 md:table-cell">{areaLabel(p) ?? '—'}</td>
+              <td className="hidden whitespace-nowrap px-2 py-2.5 text-right md:table-cell">
+                <span className="block text-slate-800">{areaLabel(p) ?? '—'}</span>
+                <Specs p={p} />
+              </td>
               <td className="hidden whitespace-nowrap px-2 py-2.5 text-right sm:table-cell">
                 <span className="block font-semibold text-slate-900">{priceLabel(p)}</span>
                 {rate(p) && <span className="block text-[11px] text-slate-400">{rateIn(p).format(rate(p)!)}/{rateIn(p).unit}</span>}
@@ -644,6 +634,47 @@ function PropertyTable({ rows }: { rows: Row[] }) {
       </table>
     </Card>
   );
+}
+
+/** The key size facts under the area, with icons: beds and toilets for homes, length × width for plots. */
+function Specs({ p }: { p: Row }) {
+  const d = p.details ?? {};
+  const n = (k: string) => {
+    const v = Number(d[k]);
+    return d[k] != null && d[k] !== '' && Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const item = 'inline-flex items-center gap-1';
+  if (p.type === 'apartment' || p.type === 'villa') {
+    const beds = n('bedrooms');
+    const baths = n('bathrooms');
+    if (!beds && !baths) return null;
+    return (
+      <span className="mt-0.5 flex items-center justify-end gap-1.5 text-[11px] text-slate-500">
+        {beds && (
+          <span className={item} title={`${beds} bedroom${beds === 1 ? '' : 's'}`}>
+            <BedDouble className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {beds}<span className="sr-only"> bedroom{beds === 1 ? '' : 's'}</span>
+          </span>
+        )}
+        {beds && baths && <span className="text-slate-300">·</span>}
+        {baths && (
+          <span className={item} title={`${baths} bathroom${baths === 1 ? '' : 's'}`}>
+            <Bath className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {baths}<span className="sr-only"> bathroom{baths === 1 ? '' : 's'}</span>
+          </span>
+        )}
+      </span>
+    );
+  }
+  if (p.type === 'plot') {
+    const length = n('length');
+    const width = n('width');
+    if (!length || !width) return null;
+    return (
+      <span className="mt-0.5 flex items-center justify-end gap-1 text-[11px] text-slate-500" title={`${length} ft long, ${width} ft wide`}>
+        <Ruler className="h-3.5 w-3.5 text-slate-400" /> {length} × {width}
+      </span>
+    );
+  }
+  return null;
 }
 
 /** ⋯ on each row: open, share, archive or restore. */
