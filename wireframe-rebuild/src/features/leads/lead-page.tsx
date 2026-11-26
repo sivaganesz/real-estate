@@ -8,7 +8,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
-  ArrowLeft, CalendarClock, CalendarPlus, Check, ChevronRight, Handshake, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, Pencil,
+  ArrowLeft, CalendarClock, CalendarPlus, Check, Handshake, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, Pencil,
   Phone, RotateCcw, Share2, ShieldCheck, Sparkles, StickyNote, ThumbsUp, UserRound, Users, Wallet, X, type LucideIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -147,7 +147,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
         <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground"><Link to="/leads"><ArrowLeft /> {t('lead.back')}</Link></Button>
       </div>
       <div className="grid items-start gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
-        <Profile l={l} onLose={() => setLosing(true)} onBook={() => setBooking(matches[0]?.property.id ?? '')} />
+        <Profile l={l} top={matches[0]} onLose={() => setLosing(true)} onBook={() => setBooking(matches[0]?.property.id ?? '')} />
 
         <div className="flex min-w-0 flex-col gap-4">
           {l.stage === 'lost' ? (
@@ -196,7 +196,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
 
 /* ---------- left: the profile ---------- */
 
-function Ring({ score, tone, size = 72 }: { score: number; tone: Tone; size?: number }) {
+function Ring({ score, tone, size = 72, className = 'text-xl' }: { score: number; tone: Tone; size?: number; className?: string }) {
   const r = 26, c = 2 * Math.PI * r
   return (
     <span className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
@@ -204,19 +204,90 @@ function Ring({ score, tone, size = 72 }: { score: number; tone: Tone; size?: nu
         <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" className="stroke-muted" />
         <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} className={STROKE[tone]} />
       </svg>
-      <span className="text-xl font-semibold tabular-nums">{score}</span>
+      <span className={cn('font-semibold tabular-nums', className)}>{score}</span>
     </span>
   )
 }
 
-function Profile({ l, onLose, onBook }: { l: Lead; onLose: () => void; onBook: () => void }) {
+const HNI_TONE: Record<HniStatus, Tone> = {
+  notDetermined: 'neutral', notVerified: 'neutral', potential: 'violet', consentInProgress: 'info', verified: 'success', declined: 'neutral',
+}
+
+/**
+ * The spec's three independent assessments, side by side and never combined (Module C):
+ * property fit (best match out of 100) · ready to buy (out of 100) · HNI status (a status, never a score; managers only).
+ */
+function Assessments({ l, top, why, onWhy }: { l: Lead; top?: Match; why: boolean; onWhy: () => void }) {
+  const { t } = useTranslation()
+  const { db } = useStore()
+  const can = useCan()
+  const manager = can('lead.seeAll')
+  const ready = readiness(l, db)
+  const hni = l.hni?.status ?? 'notDetermined'
+  const tile = 'flex min-w-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2.5 text-center transition-colors'
+  const link = 'hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none'
+  // room for two lines on every label, so the rings line up even when one label wraps (Tamil labels are longer)
+  const label = (s: string) => <span className="flex min-h-[2lh] max-w-full items-center text-caption [overflow-wrap:anywhere] leading-tight font-semibold tracking-wide text-muted-foreground uppercase">{s}</span>
+  // long single words (Tamil) wrap inside the tile instead of running out of it
+  const value = (s: string, tone: Tone) => <span className={cn('line-clamp-3 max-w-full text-sm leading-tight font-semibold [overflow-wrap:anywhere]', toneText[tone])}>{s}</span>
+  const circle = (icon: LucideIcon, tone: Tone) => {
+    const Icon = icon
+    return <span className={cn('grid size-13 shrink-0 place-items-center rounded-full', toneSoft[tone])}><Icon className="size-5" /></span>
+  }
+  return (
+    <div className="px-5 pt-4">
+      <div className="grid grid-cols-3 gap-2">
+        {/* 1 · property fit */}
+        <Link to={`/leads/${l.id}/matches`} className={cn(tile, link)}
+          title={top ? t('lead.assess.fitHint', { id: top.property.id, title: top.property.title }) : t('lead.assess.noFitHint')}>
+          {label(t('lead.assess.fit'))}
+          {top ? <Ring score={top.score} tone={MATCH_TONE[top.label]} size={52} className="text-base" /> : circle(X, 'neutral')}
+          {top ? value(t(`match.${top.label}`), MATCH_TONE[top.label]) : value(t('lead.assess.noFit'), 'neutral')}
+        </Link>
+        {/* 2 · ready to buy */}
+        <button type="button" onClick={onWhy} aria-expanded={why} className={cn(tile, link, why && 'border-primary/40 bg-muted/50')} title={t('lead.assess.readyHint')}>
+          {label(t('lead.assess.ready'))}
+          <Ring score={ready.total} tone={BAND_TONE[ready.band]} size={52} className="text-base" />
+          {value(t(`lead.assess.band.${ready.band}`), BAND_TONE[ready.band])}
+        </button>
+        {/* 3 · HNI status: a status, never a number */}
+        {manager ? (
+          <Link to={`/leads/${l.id}/hni`} className={cn(tile, link)} title={t('lead.assess.hniHint')}>
+            {label(t('lead.assess.hni'))}
+            {circle(ShieldCheck, HNI_TONE[hni])}
+            {value(t(`lead.assess.hniShort.${hni}`), HNI_TONE[hni])}
+          </Link>
+        ) : (
+          <div className={cn(tile, 'bg-muted/30')} title={t('hniTab.restrictedHint')}>
+            {label(t('lead.assess.hni'))}
+            {circle(Lock, 'neutral')}
+            {value(t('lead.assess.hniLocked'), 'neutral')}
+          </div>
+        )}
+      </div>
+      <p className="mt-1.5 text-center text-caption text-muted-foreground">{t('lead.assess.title')}</p>
+      {why && (
+        <ul className="mt-3 flex flex-col gap-1.5 text-sm">
+          {ready.rows.map((row) => (
+            <li key={row.key} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate" title={t(`qual.answer.${row.key}.${row.answer}`, { defaultValue: '' })}>{t(`qual.row.${row.key}`)}</span>
+              <span className="h-1.5 w-12 overflow-hidden rounded-full bg-muted"><span className={cn('block h-full rounded-full', toneFill[BAND_TONE[ready.band]])} style={{ width: `${(row.points / row.max) * 100}%` }} /></span>
+              <span className="w-11 text-right tabular-nums text-muted-foreground"><b className="text-foreground">{row.points}</b>/{row.max}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () => void; onBook: () => void }) {
   const { t } = useTranslation()
   const L = useLabels()
   const { db } = useStore()
   const can = useCan()
   const manager = can('lead.seeAll')
   const a = useLead(l)
-  const ready = readiness(l, db)
   const cls = classificationOf(l, db)
   const hniHidden = isHni(cls) && !manager
   const [why, setWhy] = useState(false)
@@ -250,6 +321,7 @@ function Profile({ l, onLose, onBook }: { l: Lead; onLose: () => void; onBook: (
           <p className="mt-0.5 font-mono text-xs text-muted-foreground">{l.id} · {l.source} · {fmtDate(l.enquiryDate)}</p>
         </div>
       </div>
+      <Assessments l={l} top={top} why={why} onWhy={() => setWhy(!why)} />
       <div className="flex flex-col gap-1.5 px-5 pt-3 text-sm">
         <p className="flex items-center gap-2"><Phone className="size-3.5 text-muted-foreground" /> {l.phone} <span className="text-muted-foreground">· {t('lead.prefers', { how: t(`lead.pref.${l.contactPref ?? 'call'}`) })}</span></p>
         {l.email && <p className="flex items-center gap-2"><Mail className="size-3.5 text-muted-foreground" /> <span className="truncate">{l.email}</span></p>}
@@ -283,30 +355,6 @@ function Profile({ l, onLose, onBook }: { l: Lead; onLose: () => void; onBook: (
         </DropdownMenu>
       </div>
 
-      {/* how ready they are, with why */}
-      <div className="border-t px-5 py-4">
-        <div className="flex items-center gap-4">
-          <Ring score={ready.total} tone={BAND_TONE[ready.band]} />
-          <div className="min-w-0">
-            <p className={cn('font-semibold', toneText[BAND_TONE[ready.band]])}>{t(`readiness.${ready.band}`)}</p>
-            <p className="text-sm text-muted-foreground first-letter:uppercase">{t('props.match.readyToBuy')}</p>
-            <button type="button" onClick={() => setWhy(!why)} aria-expanded={why} className="mt-0.5 flex items-center gap-0.5 text-sm font-medium text-primary hover:underline">
-              {t('lead.why', { score: ready.total })} <ChevronRight className={cn('size-3.5 transition-transform', why && 'rotate-90')} />
-            </button>
-          </div>
-        </div>
-        {why && (
-          <ul className="mt-3 flex flex-col gap-1.5 text-sm">
-            {ready.rows.map((row) => (
-              <li key={row.key} className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate" title={t(`qual.answer.${row.key}.${row.answer}`, { defaultValue: '' })}>{t(`qual.row.${row.key}`)}</span>
-                <span className="h-1.5 w-12 overflow-hidden rounded-full bg-muted"><span className={cn('block h-full rounded-full', toneFill[BAND_TONE[ready.band]])} style={{ width: `${(row.points / row.max) * 100}%` }} /></span>
-                <span className="w-11 text-right tabular-nums text-muted-foreground"><b className="text-foreground">{row.points}</b>/{row.max}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
 
       {section(t('today.wants'), MapPin, (
         <div className="text-sm">
