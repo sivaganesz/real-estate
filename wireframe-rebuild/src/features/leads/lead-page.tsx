@@ -1,14 +1,15 @@
 /**
- * The lead page (design agreed 26 Nov, after Attio's record page): the person on the left — profile, readiness ring,
- * what they want, budget, owner, follow-up, visits, negotiation — and the work on the right: the stage track, the next step
- * with ✨ a suggestion, and tabs Activity (default, log in place) · Matches · Qualification · HNI (managers).
+ * The lead page (design agreed 26 Nov, after Attio's record page; columns swapped 26 Nov, option B): the work on the left —
+ * the stage track, the next step with ✨ a suggestion, and tabs Activity (default, log in place) · Matches · Qualification ·
+ * HNI (managers) — and the person on the right, staying in view: name and labels, contact and consent, the three
+ * assessments, then one compact list (wants, where, budget, funding, owner, visits, offer). On a phone the person comes first.
  * Same rules as the old wireframe (views-customers.js): readiness and classification are separate; HNI is a status,
  * never a score, and is shown to Admins and Sales managers only; marking a lead Lost needs a reason.
  */
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
-  ArrowLeft, CalendarClock, CalendarPlus, Check, Handshake, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, Pencil,
+  ArrowLeft, CalendarClock, CalendarPlus, Check, ChevronDown, Handshake, Home, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, Pencil,
   Phone, RotateCcw, Share2, ShieldCheck, Sparkles, StickyNote, ThumbsUp, UserRound, Users, Wallet, X, type LucideIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -17,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -36,7 +37,7 @@ import type { Classification, HniStatus, Lead, LeadActivity, LeadStage, LostReas
 import { useIsPhone } from '@/hooks/use-media-query'
 import { CLASSIFICATIONS, classificationOf, isHni, suggestedClassification } from '@/lib/classification'
 import { hasFollowUpConsent } from '@/lib/consent'
-import { addDays, fmtDate, inr, inrShort, num } from '@/lib/format'
+import { addDays, daysBetween, fmtDate, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { type Match, propertiesForLead } from '@/lib/matching'
 import { BAND_TONE, readiness } from '@/lib/readiness'
@@ -44,7 +45,7 @@ import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bits'
 import { isActive } from './lead-list'
-import { STAGE_TONE } from './leads-page'
+import { ConsentControl } from './consent-control'
 import { DoneButton } from './done-button'
 import { RescheduleButton } from './reschedule-button'
 import { dueOf, suggestNext } from './next-step'
@@ -146,10 +147,10 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
       <div className="mb-4 flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground"><Link to="/leads"><ArrowLeft /> {t('lead.back')}</Link></Button>
       </div>
-      <div className="grid items-start gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <Profile l={l} top={matches[0]} onLose={() => setLosing(true)} onBook={() => setBooking(matches[0]?.property.id ?? '')} />
 
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 lg:order-1">
           {l.stage === 'lost' ? (
             <Callout tone="danger" title={t('lost.banner', { reason: l.lost ? t(`lost.reason.${l.lost.reason}`) : '—' })}
               action={<Button size="sm" variant="outline" onClick={a.reopen}><RotateCcw /> {t('lost.reopen')}</Button>}>
@@ -194,7 +195,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
   )
 }
 
-/* ---------- left: the profile ---------- */
+/* ---------- right (left on a phone, first): the profile ---------- */
 
 function Ring({ score, tone, size = 72, className = 'text-xl' }: { score: number; tone: Tone; size?: number; className?: string }) {
   const r = 26, c = 2 * Math.PI * r
@@ -224,30 +225,30 @@ function Assessments({ l, top, why, onWhy }: { l: Lead; top?: Match; why: boolea
   const manager = can('lead.seeAll')
   const ready = readiness(l, db)
   const hni = l.hni?.status ?? 'notDetermined'
-  const tile = 'flex min-w-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2.5 text-center transition-colors'
+  const tile = 'flex min-w-0 flex-col items-center gap-0.5 rounded-xl border px-1.5 py-2 text-center transition-colors'
   const link = 'hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none'
   // room for two lines on every label, so the rings line up even when one label wraps (Tamil labels are longer)
   const label = (s: string) => <span className="flex min-h-[2lh] max-w-full items-center text-caption [overflow-wrap:anywhere] leading-tight font-semibold tracking-wide text-muted-foreground uppercase">{s}</span>
   // long single words (Tamil) wrap inside the tile instead of running out of it
-  const value = (s: string, tone: Tone) => <span className={cn('line-clamp-3 max-w-full text-sm leading-tight font-semibold [overflow-wrap:anywhere]', toneText[tone])}>{s}</span>
+  const value = (s: string, tone: Tone) => <span className={cn('line-clamp-3 max-w-full text-xs leading-tight font-semibold [overflow-wrap:anywhere]', toneText[tone])}>{s}</span>
   const circle = (icon: LucideIcon, tone: Tone) => {
     const Icon = icon
-    return <span className={cn('grid size-13 shrink-0 place-items-center rounded-full', toneSoft[tone])}><Icon className="size-5" /></span>
+    return <span className={cn('grid size-11 shrink-0 place-items-center rounded-full', toneSoft[tone])}><Icon className="size-5" /></span>
   }
   return (
-    <div className="px-5 pt-4">
-      <div className="grid grid-cols-3 gap-2">
+    <div className="px-4 pt-4">
+      <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('lead.assess.title')} title={t('lead.assess.title')}>
         {/* 1 · property fit */}
         <Link to={`/leads/${l.id}/matches`} className={cn(tile, link)}
           title={top ? t('lead.assess.fitHint', { id: top.property.id, title: top.property.title }) : t('lead.assess.noFitHint')}>
           {label(t('lead.assess.fit'))}
-          {top ? <Ring score={top.score} tone={MATCH_TONE[top.label]} size={52} className="text-base" /> : circle(X, 'neutral')}
+          {top ? <Ring score={top.score} tone={MATCH_TONE[top.label]} size={44} className="text-sm" /> : circle(X, 'neutral')}
           {top ? value(t(`match.${top.label}`), MATCH_TONE[top.label]) : value(t('lead.assess.noFit'), 'neutral')}
         </Link>
         {/* 2 · ready to buy */}
         <button type="button" onClick={onWhy} aria-expanded={why} className={cn(tile, link, why && 'border-primary/40 bg-muted/50')} title={t('lead.assess.readyHint')}>
           {label(t('lead.assess.ready'))}
-          <Ring score={ready.total} tone={BAND_TONE[ready.band]} size={52} className="text-base" />
+          <Ring score={ready.total} tone={BAND_TONE[ready.band]} size={44} className="text-sm" />
           {value(t(`lead.assess.band.${ready.band}`), BAND_TONE[ready.band])}
         </button>
         {/* 3 · HNI status: a status, never a number */}
@@ -265,7 +266,6 @@ function Assessments({ l, top, why, onWhy }: { l: Lead; top?: Match; why: boolea
           </div>
         )}
       </div>
-      <p className="mt-1.5 text-center text-caption text-muted-foreground">{t('lead.assess.title')}</p>
       {why && (
         <ul className="mt-3 flex flex-col gap-1.5 text-sm">
           {ready.rows.map((row) => (
@@ -297,54 +297,60 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
   const wantsList = [L.type(r.type), r.bhk, r.bedrooms && t('lead.bedrooms', { n: r.bedrooms }), r.sizeSqft && `${num(r.sizeSqft)} sq.ft.`, r.commCategory].filter(Boolean).join(' · ')
   const place = [...r.localities, ...(r.localities.length ? [] : r.cities)].join(', ') + (r.localities.length ? ` · ${r.cities.join(', ')}` : '')
   const extras = [...r.amenities.map((x) => t(`amenity.${x}`, { defaultValue: x })), r.possession && r.possession !== 'any' && t(`lead.possession.${r.possession}`), r.parking === 'required' && t('lead.parkingNeeded'), r.facing && L.facing(r.facing)].filter(Boolean) as string[]
-  const consentOk = a.consent
-  const section = (label: string, icon: LucideIcon, children: ReactNode, action?: ReactNode) => {
+  const visits = [...l.visits].sort((x, y) => y.date.localeCompare(x.date))
+  const owner = userName(db, l.ownerId) || t('leads.unassigned')
+  // short groups with an icon heading, written as plain sentences (redesign 26 Nov, version 2)
+  const group = (icon: LucideIcon, title: ReactNode, children: ReactNode, action?: ReactNode) => {
     const Icon = icon
     return (
-      <div className="border-t px-5 py-3.5">
-        <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          <Icon className="size-3.5" /> <span className="flex-1">{label}</span>{action}
-        </div>
+      <section className="border-t px-4 py-3.5">
+        <h2 className="mb-1.5 flex items-center gap-1.5 text-caption font-semibold tracking-wide text-muted-foreground uppercase">
+          <Icon className="size-3.5 shrink-0" /> <span className="min-w-0 flex-1">{title}</span>
+          {action}
+        </h2>
         {children}
-      </div>
+      </section>
     )
   }
+  const headerLink = 'text-xs font-medium tracking-normal normal-case text-primary hover:underline'
   return (
-    <aside className="overflow-hidden rounded-2xl border bg-card shadow-card lg:sticky lg:top-[calc(3rem+1px+1.25rem)]">
-      <div className="flex items-start gap-3 px-5 pt-5">
+    <aside className="overflow-hidden rounded-2xl border bg-card shadow-card lg:sticky lg:top-[calc(3rem+1px+1.25rem)] lg:order-2">
+      {/* who: name, owner, contact, consent, and the everyday actions */}
+      <div className="flex items-start gap-3 px-4 pt-4">
         <UserAvatar name={l.name} size="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-lg leading-tight font-semibold">{l.name}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {l.purpose ? t(`purpose.buyer.${l.purpose}`) : '—'} · {hniHidden ? <span title={t('leads.restrictedHint')}>🔒 {t('leads.restricted')}</span> : t(`class.${cls}`)}
           </p>
-          <p className="mt-0.5 font-mono text-xs text-muted-foreground">{l.id} · {l.source} · {fmtDate(l.enquiryDate)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{l.id} · {l.source} · {fmtDate(l.enquiryDate)}</p>
+          {/* the owner as a small chip; managers click it to reassign */}
+          {manager ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-muted py-0.5 pr-2 pl-0.5 text-xs hover:bg-muted/70" title={t('lead.ownerReassign')} aria-label={`${t('leads.col.owner')}: ${owner}`}>
+                  <UserAvatar name={owner} size="xs" className="size-5" /> {owner} <ChevronDown className="size-3 opacity-60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-44">
+                {db.users.filter((u) => u.role === 'executive').map((u) => (
+                  <DropdownMenuItem key={u.id} disabled={u.id === l.ownerId} onClick={() => a.reassign(u.id)}>
+                    {u.name}{u.id === l.ownerId && <Check className="ml-auto" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-muted py-0.5 pr-2 pl-0.5 text-xs" title={t('leads.col.owner')}>
+              <UserAvatar name={owner} size="xs" className="size-5" /> {owner}
+            </span>
+          )}
         </div>
-      </div>
-      <Assessments l={l} top={top} why={why} onWhy={() => setWhy(!why)} />
-      <div className="flex flex-col gap-1.5 px-5 pt-3 text-sm">
-        <p className="flex items-center gap-2"><Phone className="size-3.5 text-muted-foreground" /> {l.phone} <span className="text-muted-foreground">· {t('lead.prefers', { how: t(`lead.pref.${l.contactPref ?? 'call'}`) })}</span></p>
-        {l.email && <p className="flex items-center gap-2"><Mail className="size-3.5 text-muted-foreground" /> <span className="truncate">{l.email}</span></p>}
-        <p className={cn('flex items-center gap-2', consentOk ? 'text-success' : 'text-danger')} title={l.consent ? t('lead.consentHint', { date: fmtDate(l.consent.at), how: l.consent.how }) : undefined}>
-          <ShieldCheck className="size-3.5" /> {consentOk ? t('lead.consentOk') : t('lead.consentNo')}
-        </p>
-      </div>
-      <div className="flex gap-2 px-5 py-4">
-        <Button size="sm" variant="outline" className="flex-1" onClick={a.call}><Phone /> {t('leads.call')}</Button>
-        <Button size="sm" variant="outline" className="flex-1" onClick={a.whatsapp}><MessageCircle /> {t('leads.whatsappShort')}</Button>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button size="icon-sm" variant="outline" className="size-8" aria-label={t('props.more')}><MoreHorizontal /></Button></DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" className="-mt-1 -mr-1 size-8 shrink-0" aria-label={t('props.more')}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
             <DropdownMenuItem onClick={() => toast(t('property.comingNext', { what: t('lead.editModule') }))}><Pencil /> {t('lead.edit')}</DropdownMenuItem>
             {isActive(l) && <DropdownMenuItem onClick={onBook}><CalendarPlus /> {t('lead.bookVisit')}</DropdownMenuItem>}
-            {manager && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger><Users /> {t('leads.reassign')}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {db.users.filter((u) => u.role === 'executive').map((u) => <DropdownMenuItem key={u.id} disabled={u.id === l.ownerId} onClick={() => a.reassign(u.id)}>{u.name}</DropdownMenuItem>)}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            )}
             {isActive(l) && (
               <>
                 <DropdownMenuSeparator />
@@ -354,78 +360,150 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div className="flex flex-col gap-1 px-4 pt-3 text-sm">
+        <p className="flex items-center gap-2">
+          <Phone className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate">{l.phone} <span className="text-muted-foreground">· {t('lead.prefers', { how: t(`lead.pref.${l.contactPref ?? 'call'}`) })}</span></span>
+          <span className="ml-auto flex shrink-0 gap-1">
+            <Button size="icon-sm" variant="outline" className="size-7" onClick={a.call} aria-label={t('leads.call')} title={t('leads.call')}><Phone /></Button>
+            <Button size="icon-sm" variant="outline" className="size-7" onClick={a.whatsapp} aria-label={t('leads.whatsappShort')} title={t('leads.whatsappShort')}><MessageCircle /></Button>
+          </span>
+        </p>
+        {l.email && <p className="flex items-center gap-2"><Mail className="size-3.5 shrink-0 text-muted-foreground" /> <span className="truncate">{l.email}</span></p>}
+        <ConsentControl lead={l} />
+      </div>
 
+      <Assessments l={l} top={top} why={why} onWhy={() => setWhy(!why)} />
 
-      {section(t('today.wants'), MapPin, (
-        <div className="text-sm">
-          <p className="font-medium">{wantsList}</p>
-          <p className="text-muted-foreground">{place}</p>
-          {extras.length > 0 && <p className="mt-1 flex flex-wrap gap-1">{extras.map((x) => <span key={x} className="rounded-full bg-muted px-2 py-0.5 text-xs">{x}</span>)}</p>}
-        </div>
-      ))}
-      {section(t('lead.budget'), Wallet, (
-        <div className="text-sm">
-          <p className="font-medium">{inrShort(b.min)} – {inrShort(b.max)} <span className="font-normal text-muted-foreground">· {t('lead.preferred', { amount: inrShort(b.preferred) })}</span></p>
-          {b.flexPct > 0 && <p className="text-muted-foreground">{t('lead.flex', { pct: b.flexPct, ceiling: inr(ceiling) })}</p>}
-          <p className="text-muted-foreground">{t(`qual.answer.fundingType.${l.qualification.funding}`)} · {t(`qual.answer.funding.${l.qualification.fundingReady}`)}</p>
-        </div>
-      ))}
-      {section(t('leads.col.owner'), UserRound, manager ? (
-        <Select value={l.ownerId ?? ''} onValueChange={a.reassign}>
-          <SelectTrigger size="sm" className="w-full" aria-label={t('leads.col.owner')}><SelectValue placeholder={t('leads.unassigned')} /></SelectTrigger>
-          <SelectContent>{db.users.filter((u) => u.role === 'executive').map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
-        </Select>
-      ) : <p className="text-sm">{userName(db, l.ownerId) || t('leads.unassigned')}</p>)}
-      {isActive(l) && section(t('leads.col.followUp'), CalendarClock, (
-        <Input type="date" value={l.nextFollowUp ?? ''} onChange={(e) => a.setFollowUp(e.target.value)} disabled={!consentOk} aria-label={t('leads.col.followUp')}
-          title={consentOk ? undefined : t('lead.consentFirst')} className="h-8" />
-      ))}
-      {section(t('lead.visits'), CalendarPlus, l.visits.length ? (
-        <ul className="flex flex-col gap-1.5 text-sm">
-          {[...l.visits].sort((x, y) => y.date.localeCompare(x.date)).map((v) => (
-            <li key={v.id} className="flex items-start gap-2">
-              <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', v.status === 'scheduled' ? 'bg-info' : v.status === 'completed' ? 'bg-success' : 'bg-muted-foreground')} />
-              <span className="min-w-0 flex-1">
-                <Link to={`/properties/${v.propertyId}`} className="font-medium text-primary hover:underline">{v.propertyId}</Link> · {fmtDate(v.date)}{v.time ? ` ${v.time}` : ''}
-                <span className="block text-xs text-muted-foreground">{t(`lead.visitStatus.${v.status}`)}{v.feedback ? ` — ${v.feedback}` : ''}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : <p className="text-sm text-muted-foreground">{t('lead.noVisits')}</p>,
-      isActive(l) && <button type="button" onClick={onBook} className="text-xs font-medium normal-case tracking-normal text-primary hover:underline">＋ {t('lead.bookVisit')}</button>)}
-      {l.negotiation && section(t('lead.negotiation'), Handshake, (
-        <div className="text-sm">
-          <p><Link to={`/properties/${l.negotiation.propertyId}`} className="font-medium text-primary hover:underline">{l.negotiation.propertyId}</Link></p>
-          <p className="text-muted-foreground">{t('lead.offer', { offer: l.negotiation.offered ? inrShort(l.negotiation.offered) : '—', counter: l.negotiation.counter ? inrShort(l.negotiation.counter) : '—' })}</p>
-          {l.negotiation.notes && <p className="mt-0.5 text-xs text-muted-foreground">{l.negotiation.notes}</p>}
-        </div>
-      ))}
+      <div className="mt-4">
+        {group(Home, t('lead.group.lookingFor'), (
+          <div className="text-sm">
+            <p className="font-medium">{wantsList}</p>
+            <p className="text-muted-foreground">{place}</p>
+            {extras.length > 0 && <p className="mt-0.5 text-xs text-muted-foreground">{extras.join(' · ')}</p>}
+          </div>
+        ))}
+        {group(Wallet, t('lead.group.money'), (
+          <div className="text-sm">
+            <p><b className="font-semibold">{inrShort(b.min)} – {inrShort(b.max)}</b> <span className="text-muted-foreground">· {t('lead.preferred', { amount: inrShort(b.preferred) })}</span></p>
+            <p className="text-muted-foreground">
+              {b.flexPct > 0 && <>{t('lead.flex', { pct: b.flexPct, ceiling: inrShort(ceiling) })} · </>}
+              {t(`qual.answer.fundingType.${l.qualification.funding}`)} · <span className={cn(l.qualification.fundingReady === 'ready' && 'font-medium text-success')}>{t(`qual.answer.funding.${l.qualification.fundingReady}`)}</span>
+            </p>
+          </div>
+        ))}
+        {l.negotiation && group(Handshake, <>{t('lead.group.negotiating')} · <Link to={`/properties/${l.negotiation.propertyId}`} className="text-primary normal-case hover:underline">{l.negotiation.propertyId}</Link></>, (
+          <OfferScale offered={l.negotiation.offered} counter={l.negotiation.counter} asking={db.properties.find((p) => p.id === l.negotiation!.propertyId)?.price} notes={l.negotiation.notes} />
+        ))}
+        {group(CalendarPlus, t('lead.visits'), visits.length ? (
+          <ul className="flex flex-col gap-2 text-sm">
+            {visits.map((v) => (
+              <li key={v.id}>
+                <p className="flex items-center gap-2">
+                  <span className={cn('size-1.5 shrink-0 rounded-full', v.status === 'scheduled' ? 'bg-info' : v.status === 'completed' ? 'bg-success' : 'bg-muted-foreground')} />
+                  <span className="min-w-0">
+                    <Link to={`/properties/${v.propertyId}`} className="font-medium text-primary hover:underline">{v.propertyId}</Link>
+                    <span className="text-muted-foreground"> · {fmtDate(v.date)}{v.time ? ` ${v.time}` : ''} · {t(`lead.visitStatus.${v.status}`)}</span>
+                  </span>
+                </p>
+                {v.feedback && <p className="mt-0.5 pl-3.5 text-xs text-muted-foreground">“{v.feedback}”</p>}
+              </li>
+            ))}
+          </ul>
+        ) : <p className="text-sm text-muted-foreground">{t('lead.noVisits')}</p>,
+        isActive(l) && <button type="button" onClick={onBook} className={headerLink}>＋ {t('lead.bookShort')}</button>)}
+      </div>
     </aside>
   )
 }
 
-/* ---------- right: stage track and next step ---------- */
-
-function StageTrack({ l, onMove, onLose }: { l: Lead; onMove: (s: LeadStage) => void; onLose: () => void }) {
+/**
+ * The negotiation as a small price scale: the buyer's offer, the seller's counter and the asking price on one line,
+ * so the gap shows at a glance. Any value that isn't recorded yet is left off.
+ */
+function OfferScale({ offered, counter, asking, notes }: { offered?: number; counter?: number; asking?: number; notes?: string }) {
   const { t } = useTranslation()
-  const at = STAGE_ORDER.indexOf(l.stage)
+  const points = [
+    { key: 'offer', v: offered, dot: 'bg-primary', text: 'text-primary' },
+    { key: 'counter', v: counter, dot: 'bg-warning', text: 'text-warning' },
+    { key: 'asking', v: asking, dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
+  ].filter((p): p is typeof p & { v: number } => typeof p.v === 'number' && p.v > 0)
+  const lo = Math.min(...points.map((p) => p.v)), hi = Math.max(...points.map((p) => p.v))
+  // 4 %…96 % so the end dots stay inside the bar
+  const at = (v: number) => (hi === lo ? 50 : 4 + ((v - lo) / (hi - lo)) * 92)
+  const gapFrom = offered && counter ? at(Math.min(offered, counter)) : null, gapTo = offered && counter ? at(Math.max(offered, counter)) : null
   return (
-    <nav aria-label={t('lead.stages')} className="flex items-center gap-1 overflow-x-auto rounded-2xl border bg-card p-1.5 shadow-card [scrollbar-width:none] sm:flex-wrap">
-      {STAGE_ORDER.map((s, i) => {
-        const done = i < at, now = i === at
-        return (
-          <button key={s} type="button" onClick={() => onMove(s)} aria-current={now ? 'step' : undefined} title={now ? t('lead.stageSince') : t('lead.moveTo', { stage: t(`stage.${s}`) })}
-            className={cn('flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-center text-sm whitespace-nowrap transition-colors',
-              now ? cn(toneSoft[STAGE_TONE[s]], 'font-semibold') : done ? 'text-foreground hover:bg-muted' : 'text-muted-foreground hover:bg-muted')}>
-            {done ? <Check className="size-3.5 shrink-0 text-success" /> : <span className={cn('size-2 shrink-0 rounded-full', now ? toneFill[STAGE_TONE[s]] : 'border border-muted-foreground/40')} />}
-            {t(`stage.${s}`)}
-          </button>
-        )
-      })}
-      <button type="button" onClick={onLose} className="flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2 text-sm whitespace-nowrap text-muted-foreground hover:bg-danger-soft hover:text-danger" title={t('lost.mark')}>
-        <X className="size-3.5 shrink-0" /> {t('stage.lost')}
-      </button>
+    <div className="text-sm">
+      {points.length > 0 && (
+        <>
+          <div className="relative my-2 h-1.5 rounded-full bg-muted" aria-hidden>
+            {gapFrom !== null && gapTo !== null && <span className="absolute inset-y-0 rounded-full bg-warning/40" style={{ left: `${gapFrom}%`, right: `${100 - gapTo}%` }} />}
+            {points.map((p) => <span key={p.key} className={cn('absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card', p.dot)} style={{ left: `${at(p.v)}%` }} />)}
+          </div>
+          <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {points.map((p) => <span key={p.key}><b className={cn('font-semibold', p.text)}>{inrShort(p.v)}</b> {t(`lead.scale.${p.key}`)}</span>)}
+          </p>
+        </>
+      )}
+      {notes && <p className="mt-1.5 text-xs text-muted-foreground">{notes}</p>}
+    </div>
+  )
+}
+
+
+/* ---------- left: stage track and next step ---------- */
+
+const CHEVRON_FIRST = 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)'
+const CHEVRON = 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)'
+const CHEVRON_LAST = 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)'
+
+/**
+ * The sales stage (redesign 26 Nov): one row of seven arrow steps — soft with a tick done, solid current, grey ahead. The heading says the current stage and how long the lead has been in it; "Mark as lost" is its own button,
+ * not an eighth stage. Click a step to move there. On a phone the row scrolls sideways.
+ */
+function StageTrack({ l, onMove, onLose }: { l: Lead; onMove: (s: LeadStage) => void; onLose: () => void }) {
+  const { t, i18n } = useTranslation()
+  const { today } = useStore()
+  const at = STAGE_ORDER.indexOf(l.stage)
+  const days = l.stageSince ? daysBetween(l.stageSince, today) : null
+  return (
+    <nav aria-label={t('lead.stages')} className="@container rounded-2xl border bg-card px-4 pt-3.5 pb-4 shadow-card sm:px-5">
+      <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t('lead.stages')}</span>
+        <span className="text-sm">
+          <b className="font-semibold text-primary">{t(`stage.${l.stage}`)}</b>
+          {days !== null && <span className="text-muted-foreground"> · {days > 0 ? t('lead.inStageSince', { date: fmtDate(l.stageSince, i18n.language), count: days }) : t('lead.inStageToday')}</span>}
+        </span>
+        <Button size="sm" variant="outline" onClick={onLose} className="ml-auto h-7 text-muted-foreground hover:border-danger/30 hover:bg-danger-soft hover:text-danger">
+          <X /> {t('lost.mark')}
+        </Button>
+      </div>
+      {/* arrow steps (chevrons): done = soft with a tick, current = solid, ahead = grey. Each arrow tucks into the
+          next one's notch, leaving a thin gap. */}
+      <ol className="flex overflow-x-auto [scrollbar-width:none]">
+        {STAGE_ORDER.map((s, i) => {
+          const done = i < at, now = i === at
+          const first = i === 0, last = i === STAGE_ORDER.length - 1
+          const shape = first ? CHEVRON_FIRST : last ? CHEVRON_LAST : CHEVRON
+          return (
+            <li key={s} className={cn(!first && '-ml-2', now ? 'min-w-0 flex-auto' : 'w-12 flex-none @3xl:w-auto @3xl:flex-auto')}>
+              {/* a one-word name on one line; the full stage name is the tooltip and the accessible name.
+                  When the track is narrower than 48rem only the current stage keeps its name: done stages show ✓,
+                  stages ahead their number. */}
+              <button type="button" onClick={() => onMove(s)} aria-current={now ? 'step' : undefined} aria-label={t(`stage.${s}`)}
+                title={now ? `${t(`stage.${s}`)} · ${t('lead.stageSince')}` : t('lead.moveTo', { stage: t(`stage.${s}`) })}
+                style={{ clipPath: shape }}
+                className={cn('flex h-10 w-full items-center justify-center gap-1 pr-3 pl-4.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:brightness-95',
+                  first && 'rounded-l-lg pl-3', last && 'rounded-r-lg pr-2',
+                  now ? 'bg-primary font-semibold text-primary-foreground' : done ? 'bg-primary/12 font-medium text-primary hover:bg-primary/20' : 'bg-muted text-muted-foreground hover:bg-primary/8 hover:text-foreground')}>
+                {done && <Check className="size-3.5 shrink-0" strokeWidth={2.5} />}
+                {!done && !now && <span className="tabular-nums @3xl:hidden">{i + 1}</span>}
+                <span className={cn('min-w-0 truncate', !now && 'hidden @3xl:inline')}>{t(`stageShort.${s}`)}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
     </nav>
   )
 }

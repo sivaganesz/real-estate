@@ -404,8 +404,9 @@ export function seedLeads(): Lead[] {
       engagement: { responded: false, docsRequested: false, siteVisited: false }, purposeNote: 'Rental income',
       budget: budget(8000000, 9000000, 10000000),
       requirement: req({ type: 'flat', cities: ['Chennai'], sizeSqft: 1200, bhk: '2 BHK', parking: 'preferred', possession: 'any' }),
-      stage: 'new', stageSince: '2026-11-14', nextFollowUp: '2026-11-15',
-      activity: [act('2026-11-14', 'note', 'Instagram lead form.', 'system')] }),
+      // no consent to follow up (the form's consent box was left unticked), so no follow-up can be planned until it's recorded
+      stage: 'new', stageSince: '2026-11-14', consent: undefined,
+      activity: [act('2026-11-14', 'note', 'Instagram lead form. The consent box was not ticked.', 'system')] }),
     L({ id: 'LEAD-1015', name: 'Karthik Subramanian', phone: '+91 98xxxxxx15', source: 'Website', enquiryDate: '2026-11-12', ownerId: 'u-ex01', purpose: 'investment',
       qualification: { need: 'exploring', timeline: 'undecided', authority: 'unknown', funding: 'combination', fundingReady: 'undecided' },
       engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'Investment',
