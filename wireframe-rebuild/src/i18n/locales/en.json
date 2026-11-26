@@ -1949,6 +1949,18 @@
       "enquiry": "Enquired via {{source}}",
       "none": "Nothing logged yet."
     },
+    "matches": {
+      "lead_one": "{{count}} property fits — best first. Open “Why” to see how the score is made.",
+      "lead_other": "{{count}} properties fit — best first. Open “Why” to see how the score is made.",
+      "breakdown": "How the score is made",
+      "part": { "budget": "Budget", "location": "Location", "size": "Size", "amenities": "Amenities", "preferences": "Preferences" },
+      "total": "Match score",
+      "notShown_one": "{{count}} property not shown",
+      "notShown_other": "{{count}} properties not shown",
+      "notShownHint": "Listed properties the hard filters left out. Those that miss only on price come first — worth a word about the gap.",
+      "overBy": "{{amount}} over what they’ll pay (+{{pct}}%)",
+      "rule": "Hard filters: available, the type and a city {{name}} wants, and the price within their maximum budget plus flexibility."
+    },
     "noMatches": "No property fits yet",
     "noMatchesHint": "When a property meets their type, city and budget it shows here.",
     "shareBrochure": "Share brochure",

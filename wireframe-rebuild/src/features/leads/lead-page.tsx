@@ -43,9 +43,10 @@ import { type Match, propertiesForLead } from '@/lib/matching'
 import { BAND_TONE, readiness } from '@/lib/readiness'
 import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
-import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bits'
+import { MATCH_TONE } from '../properties/components/property-bits'
 import { isActive } from './lead-list'
 import { ConsentControl } from './consent-control'
+import { MatchesTab } from './matches-tab'
 import { DoneButton } from './done-button'
 import { OfferDialog } from './offer-dialog'
 import { RescheduleButton } from './reschedule-button'
@@ -650,55 +651,6 @@ function PropLink({ id }: { id?: string }) {
   if (!id) return null
   const p = db.properties.find((x) => x.id === id)
   return <Link to={`/properties/${id}`} className="font-medium text-primary hover:underline">{p ? p.title : id}</Link>
-}
-
-/* ---------- Matches ---------- */
-
-function MatchesTab({ l, matches, onBook }: { l: Lead; matches: Match[]; onBook: (propertyId: string) => void }) {
-  const { t } = useTranslation()
-  const L = useLabels()
-  const { recommendProperty } = useStore()
-  const [open, setOpen] = useState<string | null>(null)
-  if (!matches.length) return <EmptyState title={t('lead.noMatches')}>{t('lead.noMatchesHint')}</EmptyState>
-  return (
-    <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-      {matches.slice(0, 9).map((m) => {
-        const p = m.property
-        const rec = l.recommendedPropertyIds.includes(p.id)
-        return (
-          <li key={p.id} className="flex flex-col overflow-hidden rounded-xl border bg-card">
-            <Link to={`/properties/${p.id}`} className="relative block h-32 overflow-hidden bg-muted">
-              <PropertyPhoto type={p.type} media={p.media.find((x) => x.isCover) ?? p.media[0]} alt={p.title} className="size-full" />
-              <span className="absolute top-2 right-2 rounded-full bg-card/95 px-2 py-0.5 text-sm font-semibold shadow-sm">
-                <span className={toneText[MATCH_TONE[m.label]]}>{m.score}</span> <span className="text-xs font-normal text-muted-foreground">{t(`match.${m.label}`)}</span>
-              </span>
-            </Link>
-            <div className="flex flex-1 flex-col gap-1 p-3 text-sm">
-              <Link to={`/properties/${p.id}`} className="truncate font-semibold hover:underline">{p.title}</Link>
-              <p className="truncate text-muted-foreground">{inrShort(p.price)} · {L.type(p.type)} · {p.location.locality}</p>
-              <button type="button" onClick={() => setOpen(open === p.id ? null : p.id)} className="self-start text-xs font-medium text-primary hover:underline">
-                {open === p.id ? t('props.match.hideWhy') : t('props.match.why', { score: m.score })}
-              </button>
-              {open === p.id && (
-                <ul className="flex flex-wrap gap-1">
-                  {m.reasons.filter((r) => r.ok !== null).map((r, i) => (
-                    <li key={i}><StatusChip tone={r.ok ? 'success' : 'danger'} icon={r.ok ? <Check /> : <X />} className="h-auto py-0.5 whitespace-normal">{t(`reason.${r.key}`, { ...r.values })}</StatusChip></li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="flex gap-1.5 border-t p-2.5">
-              <Button size="sm" variant={rec ? 'secondary' : 'outline'} className="flex-1" onClick={() => { recommendProperty(p.id, l.id, !rec); toast.success(t(rec ? 'props.match.unrecommended' : 'props.match.recommended', { name: l.name })) }}>
-                <Check /> {rec ? t('props.match.isRecommended') : t('props.match.recommend')}
-              </Button>
-              <Button size="icon-sm" variant="outline" className="size-8" asChild title={t('lead.shareBrochure')}><Link to={`/properties/${p.id}/share?lead=${l.id}`}><Share2 /></Link></Button>
-              <Button size="icon-sm" variant="outline" className="size-8" title={t('lead.bookVisit')} onClick={() => onBook(p.id)}><CalendarPlus /></Button>
-            </div>
-          </li>
-        )
-      })}
-    </ul>
-  )
 }
 
 /* ---------- Qualification: the questions, one tap each; the 100-point table updates as you answer ---------- */

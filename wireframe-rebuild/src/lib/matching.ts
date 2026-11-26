@@ -7,6 +7,10 @@
 import type { Lead, Property, Settings } from '@/data/types'
 import { isOnOffer, pendingApprovals } from './property'
 
+export type MatchPart = 'budget' | 'location' | 'size' | 'amenities' | 'preferences'
+/** The order the score's parts are shown in, with the formula M = 0.30B + 0.25L + 0.20S + 0.15A + 0.10P. */
+export const MATCH_PARTS: MatchPart[] = ['budget', 'location', 'size', 'amenities', 'preferences']
+
 export type MatchLabel = 'strong' | 'good' | 'weak' | 'conditional' | 'budgetMismatch' | 'excluded'
 
 export type Reason = { ok: boolean | null; key: string; values?: Record<string, string | number> }
@@ -18,6 +22,8 @@ export type Match = {
   label: MatchLabel
   excluded: boolean
   reasons: Reason[]
+  /** The five parts of the score, each 0–100, before the weights (Settings → match weights). */
+  parts: Record<MatchPart, number>
   /** The most the lead will pay: maximum budget plus their flexibility. */
   ceiling: number
 }
@@ -104,7 +110,8 @@ export function matchScore(lead: Lead, p: Property, settings: Settings): Match {
   } else {
     failed.forEach((f) => reasons.push({ ok: false, key: 'fail_' + f.key }))
   }
-  return { property: p, lead, score, label, excluded: failed.length > 0, reasons, ceiling }
+  const parts = { budget: Math.round(B), location: Math.round(L), size: Math.round(S), amenities: Math.round(A), preferences: Math.round(P) }
+  return { property: p, lead, score, label, excluded: failed.length > 0, reasons, ceiling, parts }
 }
 
 const isActiveLead = (l: Lead) => l.stage !== 'lost' && l.stage !== 'closed'
@@ -135,4 +142,16 @@ export function closeOnBudget(p: Property, leads: Lead[], settings: Settings): M
     .map((l) => matchScore(l, p, settings))
     .filter((m) => m.label === 'budgetMismatch' && p.price <= m.ceiling * 1.15)
     .sort((a, b) => b.ceiling - a.ceiling)
+}
+
+/**
+ * Properties left out for a lead, and why: every listed property (not drafts or archived ones) that fails a hard filter.
+ * Those that fail on price alone come first, closest to the budget first — they are worth a conversation.
+ */
+export function excludedForLead(lead: Lead, properties: Property[], settings: Settings): Match[] {
+  return properties
+    .filter((p) => p.status !== 'draft' && !p.archived)
+    .map((p) => matchScore(lead, p, settings))
+    .filter((m) => m.excluded)
+    .sort((a, b) => Number(b.label === 'budgetMismatch') - Number(a.label === 'budgetMismatch') || a.property.price - b.property.price)
 }
