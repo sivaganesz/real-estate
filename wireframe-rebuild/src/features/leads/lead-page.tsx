@@ -47,6 +47,7 @@ import { MATCH_TONE } from '../properties/components/property-bits'
 import { isActive } from './lead-list'
 import { ConsentControl } from './consent-control'
 import { MatchesTab } from './matches-tab'
+import { AssistantBox } from '../assistant/assistant-box'
 import { DoneButton } from './done-button'
 import { OfferDialog } from './offer-dialog'
 import { RescheduleButton } from './reschedule-button'
@@ -150,10 +151,12 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
       <div className="mb-4 flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground"><Link to="/leads"><ArrowLeft /> {t('lead.back')}</Link></Button>
       </div>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      {/* wide screens: the work column is never taller than the profile — the tabs card grows with its content up to the
+          profile's bottom, then its content scrolls inside (agreed 27 Nov). A short log keeps its natural height. */}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
         <Profile l={l} top={matches[0]} onLose={() => setLosing(true)} onBook={() => setBooking(matches[0]?.property.id ?? '')} />
 
-        <div className="flex min-w-0 flex-col gap-4 lg:order-1">
+        <div className="flex min-w-0 flex-col gap-4 lg:order-1 lg:h-0 lg:min-h-full">
           {l.stage === 'lost' ? (
             <Callout tone="danger" title={t('lost.banner', { reason: l.lost ? t(`lost.reason.${l.lost.reason}`) : '—' })}
               action={<Button size="sm" variant="outline" onClick={a.reopen}><RotateCcw /> {t('lost.reopen')}</Button>}>
@@ -162,8 +165,8 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
           ) : <StageTrack l={l} onMove={a.move} onLose={() => setLosing(true)} />}
           {isActive(l) && <NextStep l={l} onBook={(pid) => setBooking(pid)} />}
 
-          <section className="rounded-2xl border bg-card shadow-card">
-            <div className="border-b px-4 pt-2 sm:px-5">
+          <section className="flex flex-col rounded-2xl border bg-card shadow-card lg:min-h-80 lg:shrink">
+            <div className="shrink-0 border-b px-4 pt-2 sm:px-5">
               <Segmented label={t('lead.sections')} value={tab} onChange={(v) => navigate(`/leads/${l.id}${v === 'activity' ? '' : '/' + v}`, { replace: true })}
                 segments={[
                   { value: 'activity', label: t('lead.tab.activity'), count: l.activity.length },
@@ -172,7 +175,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
                   { value: 'hni', label: <span className="flex items-center gap-1">{t('lead.tab.hni')}{!manager && <Lock className="size-3" />}</span> },
                 ]} />
             </div>
-            <div className="p-4 sm:p-5">
+            <div className={cn('p-4 sm:p-5 lg:min-h-0', tab === 'activity' ? 'lg:flex lg:flex-col' : 'lg:overflow-y-auto')}>
               {tab === 'activity' && <ActivityTab l={l} />}
               {tab === 'matches' && <MatchesTab l={l} matches={matches} onBook={(pid) => setBooking(pid)} />}
               {tab === 'qualification' && <QualificationTab l={l} />}
@@ -319,7 +322,7 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
   }
   const headerLink = 'text-xs font-medium tracking-normal normal-case text-primary hover:underline'
   return (
-    <aside className="overflow-hidden rounded-2xl border bg-card shadow-card lg:sticky lg:top-[calc(3rem+1px+1.25rem)] lg:order-2">
+    <aside className="self-start overflow-hidden rounded-2xl border bg-card shadow-card lg:sticky lg:top-[calc(3rem+1px+1.25rem)] lg:order-2">
       {/* who: name, owner, contact, consent, and the everyday actions */}
       <div className="flex items-start gap-3 px-4 pt-4">
         <UserAvatar name={l.name} size="lg" />
@@ -563,7 +566,7 @@ function NextStep({ l, onBook }: { l: Lead; onBook: (propertyId: string) => void
   )
 }
 
-/* ---------- Activity: log in place, then the timeline ---------- */
+/* ---------- Activity: the assistant composer, then the timeline ---------- */
 
 const ACT_ICON: Record<LeadActivity['type'], LucideIcon> = {
   call: Phone, whatsapp: MessageCircle, email: Mail, meeting: Users, visit: MapPin, note: StickyNote, shared: Share2, recommended: ThumbsUp,
@@ -571,25 +574,18 @@ const ACT_ICON: Record<LeadActivity['type'], LucideIcon> = {
 const ACT_TONE: Record<LeadActivity['type'], Tone> = {
   call: 'primary', whatsapp: 'success', email: 'info', meeting: 'violet', visit: 'warning', note: 'neutral', shared: 'info', recommended: 'violet',
 }
-const LOGGABLE: LeadActivity['type'][] = ['call', 'whatsapp', 'visit', 'note']
 
+/**
+ * The top of the Activity tab is the assistant (option B, agreed 27 Nov): say what happened, check the changes it
+ * proposes (log, visit, follow-up, budget, offer…) and apply them; they land on the timeline right below.
+ * "Just add a note" saves the text as written. Whether they responded is read from the message ("no answer" → not).
+ */
 function ActivityTab({ l }: { l: Lead }) {
   const { t, i18n } = useTranslation()
   const { db, today, user, updateLead } = useStore()
-  const [type, setType] = useState<LeadActivity['type']>('call')
-  const [text, setText] = useState('')
-  const [replied, setReplied] = useState(false)
-  // logging only records what happened; the next follow-up is planned in the Next step card (agreed 26 Nov).
-  // A call made or a message sent doesn't mean they answered, so "Responded" is ticked only when you say so.
-  const log = () => {
-    if (!text.trim()) return
-    updateLead(l.id, (x) => {
-      x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type, text: text.trim() })
-      if (replied) x.engagement.responded = true
-    })
+  const note = (text: string) => {
+    updateLead(l.id, (x) => { x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type: 'note', text }) })
     toast.success(t('lead.logged'))
-    setText('')
-    setReplied(false)
   }
   const entryText = (x: LeadActivity) => {
     if (x.type === 'shared') return <>{t('lead.act.shared', { channel: t(`props.hist.channel.${x.text}`, { defaultValue: x.text }) })} <PropLink id={x.propertyId} /></>
@@ -599,34 +595,17 @@ function ActivityTab({ l }: { l: Lead }) {
   // newest first, with a date heading above each day
   const items = [...l.activity].sort((p, q) => q.at.localeCompare(p.at))
   return (
-    <div className="flex flex-col gap-5">
-      <form onSubmit={(e) => { e.preventDefault(); log() }} className="rounded-xl border bg-background p-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">
-        <div className="mb-2 flex flex-wrap gap-1">
-          {LOGGABLE.map((k) => {
-            const Icon = ACT_ICON[k]
-            return (
-              <button key={k} type="button" onClick={() => setType(k)} aria-pressed={type === k}
-                className={cn('inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-sm', type === k ? cn(toneSoft[ACT_TONE[k]], 'font-medium') : 'text-muted-foreground hover:bg-muted')}>
-                <Icon className="size-3.5" /> {t(`lead.act.type.${k}`)}
-              </button>
-            )
-          })}
-        </div>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t(`lead.act.placeholder.${type}`)} aria-label={t('lead.act.what')}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); log() } }}
-          className="min-h-16 resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0" />
-        <div className="mt-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-          {/* once they have responded, it stays ticked (Qualification tab can undo it) */}
-          {!l.engagement.responded && (
-            <label className="mr-auto flex items-center gap-2 text-sm text-muted-foreground" title={t('lead.act.repliedHint')}>
-              <Checkbox checked={replied} onCheckedChange={(v) => setReplied(!!v)} /> {t('lead.act.replied')}
-            </label>
-          )}
-          <Button type="submit" size="sm" disabled={!text.trim()}>{t('lead.act.log')}</Button>
-        </div>
-      </form>
+    // wide screens: the composer and its suggestions stay put; only the log below scrolls (agreed 27 Nov)
+    <div className="flex flex-col gap-5 lg:min-h-0 lg:flex-1">
+      {/* an open proposal can be tall: on a short page it scrolls on its own rather than pushing the log out */}
+      <div className="-m-1 shrink-0 p-1 lg:max-h-[70%] lg:overflow-y-auto">
+      <AssistantBox key={l.id} mode="lead" leadId={l.id} composer onPlainNote={note}
+        placeholder={t('ai.composerPlaceholder', { name: l.name.split(' ')[0] })}
+        examples={[t('ai.ex.short1'), t('ai.ex.short2')]} />
+      </div>
 
       {items.length ? (
+        <div className="lg:-mr-2 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
         <ol className="relative flex flex-col">
           <span aria-hidden className="absolute top-2 bottom-2 left-[0.9375rem] w-px bg-border" />
           {items.map((x, i) => {
@@ -638,7 +617,7 @@ function ActivityTab({ l }: { l: Lead }) {
                 <div className="min-w-0 flex-1 pb-3">
                   <p className="text-xs text-muted-foreground">
                     {day && <b className="mr-1 font-semibold text-foreground">{fmtDate(x.at, i18n.language)}</b>}
-                    {t(`lead.act.type.${x.type}`)} · {userName(db, x.by) || t('history.you')}
+                    {t(`lead.act.type.${x.type}`)} · {userName(db, x.by) || t('history.you')}{x.ai && <span className="text-violet" title={t('ai.byAssistantHint')}> · ✨ {t('ai.byAssistant')}</span>}
                   </p>
                   <p className="text-sm">{entryText(x)}</p>
                 </div>
@@ -650,6 +629,7 @@ function ActivityTab({ l }: { l: Lead }) {
             <p className="pt-1.5 text-sm text-muted-foreground"><b className="font-semibold text-foreground">{fmtDate(l.enquiryDate)}</b> · {t('lead.act.enquiry', { source: l.source })}</p>
           </li>
         </ol>
+        </div>
       ) : <p className="text-sm text-muted-foreground">{t('lead.act.none')}</p>}
     </div>
   )

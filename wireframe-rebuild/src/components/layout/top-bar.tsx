@@ -6,17 +6,19 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useStore } from '@/store/db'
 import type { Role } from '@/data/types'
 import { DEMO_TODAY } from '@/data/seed'
 import { fmtDate } from '@/lib/format'
+import { AskBar } from '@/features/assistant/ask-bar'
 import { useCrumbsValue } from './crumbs'
 import { Brand, SidebarNav } from './sidebar'
 
 const ROLES: Role[] = ['admin', 'manager', 'executive']
 
 /**
- * The top bar, as in spec-system-wireframe: breadcrumbs on the left; 📝 Public enquiry, ＋ Lead, ＋ Property and
+ * The top bar, as in spec-system-wireframe: breadcrumbs on the left; the Ask bar, ＋ Lead, ＋ Property and
  * "Viewing as" on the right, then "Reset demo data" (it was in the dark WIREFRAME ribbon, removed 26 Nov).
  * (Added for the rebuild: the menu button on phone and tablet. Theme and language are in Settings.)
  */
@@ -41,9 +43,9 @@ export function TopBar() {
         ))}
       </nav>
       <span className="flex-1" />
+      <AskBar />
       <div className="flex flex-wrap items-center gap-2">
-        <Button asChild variant="outline" size="sm" className="max-md:hidden"><Link to="/enquiry">📝 {t('shell.publicEnquiry')}</Link></Button>
-        <Button asChild variant="outline" size="sm"><Link to="/leads">＋ {t('shell.lead')}</Link></Button>
+        <Button asChild variant="outline" size="sm"><Link to="/leads/new">＋ {t('shell.lead')}</Link></Button>
         <Button asChild variant="outline" size="sm"><Link to="/properties/new">＋ {t('shell.property')}</Link></Button>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="max-sm:hidden">{t('shell.viewingAs')}</span>
@@ -53,7 +55,18 @@ export function TopBar() {
           </Select>
         </label>
         {/* the demo's sample data back as it was (the hint says what the demo is and its date); on a phone it's in the ☰ menu */}
-        <Button variant="outline" size="sm" className="max-sm:hidden" title={resetHint} onClick={reset}><RotateCcw /> {t('demo.reset')}</Button>
+        {/* icon only, to keep the bar compact; the tooltip (and the button's name) say what it does */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon-sm" className="size-8 max-sm:hidden" aria-label={`${t('demo.reset')} — ${resetHint}`} onClick={reset}><RotateCcw /></Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="end" className="max-w-64">
+            <span className="flex flex-col gap-0.5 text-left">
+              <b className="font-semibold">{t('demo.reset')}</b>
+              <span className="opacity-80">{resetHint}</span>
+            </span>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>

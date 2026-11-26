@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Check, ChevronUp, Lock, SearchX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -277,6 +277,10 @@ function Assistant({ record, editing, drawer }: { record?: Property; editing: bo
     advance(d, facts.length ? said(chat, { from: 'ai', kind: 'read', facts }) : chat, { pending: addCards(cards), history: facts.length ? filledText(facts, d) : '' })
   }
 
+  // the Ask bar hands "add a property …" over as ?say=… : it becomes the first message, once
+  const [params, setParams] = useSearchParams()
+  const said0 = params.get('say')
+  useEffect(() => { if (said0 && !editing) { setParams({}, { replace: true }); onSend(said0) } }, [said0]) // eslint-disable-line react-hooks/exhaustive-deps
   const onAnswer = (q: Question, value: string | number, label: string) => {
     const facts: Fact[] = [{ key: q.key, value }]
     const d = applyFacts(draft, facts)

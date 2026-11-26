@@ -192,6 +192,8 @@ export type LeadActivity = {
   type: 'call' | 'whatsapp' | 'email' | 'meeting' | 'visit' | 'note' | 'shared' | 'recommended'
   text: string
   propertyId?: string
+  /** Written by the assistant (✨ on the timeline); a person applied it. */
+  ai?: boolean
 }
 
 export type SiteVisit = {

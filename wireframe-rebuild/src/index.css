@@ -169,9 +169,9 @@
   --chart-3: #995400;
   --chart-4: #6a3fc4;
   --chart-5: #b42318;
-  --scrollbar: #c3c9d4;
-  --scrollbar-soft: #d3d8e0;
-  --scrollbar-hover: #a5adbb;
+  --scrollbar: #d5dae2;
+  --scrollbar-soft: #e1e4ea;
+  --scrollbar-hover: #b3bac7;
 }
 
 /* The original v1 dark theme (kept by decision, 16 Nov): warm near-black surfaces, orange accent. On with Settings → Theme. */
@@ -236,8 +236,8 @@
   --chart-3: #f0a94b;
   --chart-4: #b39af0;
   --chart-5: #f2706a;
-  --scrollbar: #3a3540;
-  --scrollbar-soft: #332e39;
+  --scrollbar: #36313c;
+  --scrollbar-soft: #2f2a35;
   --scrollbar-hover: #4d4755;
 }
 
@@ -275,7 +275,17 @@ html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 .side-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-soft); border-radius: 99px; }
 .side-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 
+/* Thin, light scrollbars everywhere (27 Nov: the inner ones — the lead's log, proposals, tabs, dialogs — were the
+   browser's thick default): 6px, a soft grey that darkens on hover, no track. The page keeps its own rule above.
+   Chrome/Edge ignore ::-webkit-scrollbar once scrollbar-width is set, so the standard properties are for Firefox only. */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar-soft); border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
 @supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-soft) transparent; }
   html { scrollbar-width: thin; scrollbar-color: var(--scrollbar) transparent; }
   .side-scroll { scrollbar-width: thin; scrollbar-color: var(--scrollbar-soft) transparent; }
 }

@@ -31,7 +31,7 @@ function persist(key: string, value: unknown) {
 
 export type ShareChannel = 'whatsapp' | 'link' | 'pdf'
 
-type Store = {
+export type Store = {
   db: Database
   today: string
   user: User
@@ -48,7 +48,10 @@ type Store = {
   /** PATCH /api/leads/:id — e.g. move stage or reassign; `note` goes on the lead's timeline. */
   updateLead: (id: string, change: (l: Lead) => void, note?: string) => void
   /** POST /api/leads — returns the new id (LEAD-<next number>); `note` starts the lead's timeline. */
-  addLead: (build: (id: string) => Lead, note: string) => string
+  addLead: (build: (id: string) => Lead, note: string, ai?: boolean) => string
+  /** Undo for the assistant: the data as it is now, and putting it back (a real backend would revert the change set). */
+  checkpoint: () => Database
+  restore: (snapshot: Database) => void
   /** POST /api/leads/:id/activity — a note on each lead's timeline about a property (e.g. "PROP-1005 was archived"). */
   noteOnLeads: (leadIds: string[], propertyId: string, text: string) => void
   /**
@@ -158,11 +161,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [user.id])
 
-  const addLead = useCallback<Store['addLead']>((build, note) => {
+  const addLead = useCallback<Store['addLead']>((build, note, ai) => {
     const max = Math.max(1000, ...db.leads.map((l) => Number(l.id.replace(/\D/g, '')) || 0))
     const id = `LEAD-${max + 1}`
     const l = build(id)
-    l.activity = [{ id: `${id}-a1`, at: DEMO_TODAY, by: user.id, type: 'note', text: note }, ...l.activity]
+    l.activity = [{ id: `${id}-a1`, at: DEMO_TODAY, by: user.id, type: 'note', text: note, ...(ai ? { ai } : {}) }, ...l.activity]
     setDb((prev) => ({ ...prev, leads: [l, ...prev.leads] }))
     return id
   }, [db.leads, user.id])
@@ -204,10 +207,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
+  const checkpoint = useCallback(() => db, [db])
+  const restore = useCallback((snapshot: Database) => setDb(snapshot), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo, checkpoint, restore }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo, checkpoint, restore],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

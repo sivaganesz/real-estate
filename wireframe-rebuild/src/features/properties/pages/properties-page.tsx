@@ -10,7 +10,7 @@ import { Chip } from '@/components/app/chip'
 import { EmptyState } from '@/components/app/empty-state'
 import { Segmented } from '@/components/app/segmented'
 import { leadsForProperty } from '@/lib/matching'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -149,6 +149,10 @@ export function PropertiesPage() {
     setF(got ? { ...p, aiText: text, aiRan: text } : { aiText: text, aiRan: text, aiMiss: true })
     setOpen(null)
   }
+  // the Ask bar hands a property question over as ?ask=… : run it as the sentence search, once
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('ask')
+  useEffect(() => { if (asked) { ask(asked); setParams({}, { replace: true }) } }, [asked]) // eslint-disable-line react-hooks/exhaustive-deps
   const voice = () => {
     if (listening) { if (voiceTimer.current) window.clearInterval(voiceTimer.current); setListening(false); return }
     // the wireframe "hears" a sample phrase so the flow can be shown without a microphone

@@ -7,7 +7,7 @@
  * - Editing changes the details only: the stage, consent, visits and timeline are changed on the lead page.
  */
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Check, Lock, ShieldCheck, ShieldX, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -29,6 +29,8 @@ import { addDays, fmtDate, inrShort } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
+import type { NewLeadFields } from '@/lib/ai/understand'
+import { AssistantBox } from '../assistant/assistant-box'
 import { isActive } from './lead-list'
 
 const PURPOSES: BuyerPurpose[] = ['ownUse', 'investment', 'rentalIncome', 'businessUse', 'secondHome', 'other']
@@ -84,12 +86,28 @@ const draftOf = (l: Lead | undefined, today: string, ownerId: string): Draft => 
   }
 }
 
+/** What the assistant read from a message, filled into the form ("Review all details"); the rest keeps its defaults. */
+const withPrefill = (d: Draft, p: NewLeadFields): Draft => {
+  const unit = p.max && p.max >= 1e7 ? 'Cr' : 'L'
+  return {
+    ...d,
+    name: p.name ?? d.name, phone: p.phone ?? d.phone, email: p.email ?? d.email, contactPref: p.contactPref ?? d.contactPref, source: p.source ?? d.source,
+    purpose: p.purpose ?? d.purpose, type: p.type ?? d.type, bhk: p.bhk ?? d.bhk, cities: p.cities.length ? p.cities : d.cities,
+    localities: p.localities.length ? p.localities : d.localities, sizeSqft: p.sizeSqft ? String(p.sizeSqft) : d.sizeSqft,
+    min: p.min ? toAmountField(p.min, unit) : d.min, max: p.max ? toAmountField(p.max, unit) : d.max,
+    consent: p.consent ?? d.consent, consentVia: p.contactPref === 'whatsapp' ? 'whatsapp' : d.consentVia,
+  }
+}
+
 export function LeadFormPage() {
   const { id } = useParams()
   const { t } = useTranslation()
   const { db } = useStore()
   const visible = useVisibleLeads()
   const lead = id ? db.leads.find((l) => l.id === id) : undefined
+  const location = useLocation()
+  const prefill = (location.state as { prefill?: NewLeadFields } | null)?.prefill
+  const [manual, setManual] = useState(false)
   useCrumbs([{ label: t('nav.group.specData') }, { label: t('nav.leads'), to: '/leads' }, ...(lead ? [{ label: lead.id, to: `/leads/${lead.id}` }] : []), { label: id ? t('leadForm.editCrumb') : t('leadForm.addCrumb') }])
   if (id && (!lead || !visible.some((l) => l.id === id))) {
     return (
@@ -99,10 +117,28 @@ export function LeadFormPage() {
       </Page>
     )
   }
-  return <LeadForm key={id ?? 'new'} base={lead} />
+  // a new lead starts with the assistant (decision 3, 26 Nov); "Review all details" or "Fill in the form" opens the form
+  if (!id && !prefill && !manual) return <NewLeadAssistant onForm={() => setManual(true)} />
+  return <LeadForm key={`${id ?? 'new'}-${location.key}`} base={lead} prefill={prefill} />
 }
 
-function LeadForm({ base }: { base?: Lead }) {
+/** Add lead, chat first: describe the lead in a message; the assistant fills what it can and asks for the rest. */
+function NewLeadAssistant({ onForm }: { onForm: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Page className="max-w-3xl">
+      <PageHeader back={{ to: '/leads', label: t('nav.leads') }} title={t('leadForm.addTitle')} description={t('ai.newLeadIntro')}
+        actions={<Button variant="outline" onClick={onForm}>{t('ai.fillForm')}</Button>} />
+      <SectionCard>
+        <AssistantBox mode="newLead" autoFocus placeholder={t('ai.newLeadPlaceholder')}
+          examples={[t('ai.ex.newLead'), t('ai.ex.newLead2')]} />
+      </SectionCard>
+      <p className="mt-3 text-sm text-muted-foreground">{t('ai.newLeadRules')}</p>
+    </Page>
+  )
+}
+
+function LeadForm({ base, prefill }: { base?: Lead; prefill?: NewLeadFields }) {
   const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
@@ -110,7 +146,7 @@ function LeadForm({ base }: { base?: Lead }) {
   const can = useCan()
   const manager = can('lead.seeAll')
   const executives = db.users.filter((u) => u.role === 'executive')
-  const [d, setD] = useState<Draft>(() => draftOf(base, today, manager ? '' : user.id))
+  const [d, setD] = useState<Draft>(() => { const x = draftOf(base, today, manager ? '' : user.id); return prefill ? withPrefill(x, prefill) : x })
   const [tried, setTried] = useState(false)
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }))
   const setQ = (k: keyof Lead['qualification'], v: string) => setD((x) => ({ ...x, q: { ...x.q, [k]: v } }))
@@ -194,6 +230,7 @@ function LeadForm({ base }: { base?: Lead }) {
         title={base ? t('leadForm.editTitle', { name: base.name }) : t('leadForm.addTitle')}
         description={t('leadForm.intro')} />
 
+      {prefill && !tried && <Callout tone="violet" title={t('ai.prefilledTitle')} className="mb-4">{t('ai.prefilled')}</Callout>}
       {tried && invalid && (
         <Callout tone="danger" title={t('leadForm.fixTitle')} className="mb-4">
           {[errors.name && t('leadForm.err.name'), errors.phone && t('leadForm.err.phone'), errors.purpose && t('leadForm.err.purpose'),
