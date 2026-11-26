@@ -136,6 +136,36 @@ test.describe('sales manager', () => {
     await expect(page.getByText(/Your move:/).first()).toBeVisible();
   });
 
+  test('moves a lead on the pipeline by menu or by drag, and is asked for what is missing', async ({ page }) => {
+    await signIn(page, 'Sales manager');
+    await page.goto('/leads?view=board');
+    await expect(page.getByRole('heading', { name: 'How leads flow' })).toBeVisible();
+    await page.getByLabel('Move Revathi Shankar to another stage').selectOption('contacted');
+    await expect(page.getByText('Log the first conversation before moving on')).toBeVisible();
+    await page.keyboard.press('Escape');
+    // A real, slow drag: HTML5 drag-and-drop needs the mouse to travel.
+    await page.locator('article', { hasText: 'Revathi Shankar' }).scrollIntoViewIfNeeded();
+    await page.getByRole('region', { name: /^New,/ }).evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    const card = (await page.locator('article', { hasText: 'Revathi Shankar' }).boundingBox())!;
+    const lane = (await page.getByRole('region', { name: /^Contacted,/ }).boundingBox())!;
+    await page.mouse.move(card.x + 40, card.y + 70);
+    await page.mouse.down();
+    await page.mouse.move(card.x + 60, card.y + 90, { steps: 5 });
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + 60, { steps: 20 });
+    await page.mouse.up();
+    await expect(page.getByText('Log the first conversation before moving on')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // While dragging, the drop bar offers "Close as lost", which asks why.
+    await page.mouse.move(card.x + 40, card.y + 70);
+    await page.mouse.down();
+    await page.mouse.move(card.x + 60, card.y + 90, { steps: 5 });
+    const bar = (await page.locator('[data-drop="lost"]').boundingBox())!;
+    await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2, { steps: 20 });
+    await page.mouse.up();
+    await expect(page.getByRole('heading', { name: 'Close Revathi Shankar as lost' })).toBeVisible();
+  });
+
   test('drags nothing: moving a lead without evidence asks for it', async ({ page }) => {
     await signIn(page, 'Sales manager');
     await page.goto('/leads?q=Revathi');

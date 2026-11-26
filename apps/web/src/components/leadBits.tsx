@@ -54,16 +54,16 @@ export const BAND_STYLE: Record<ScoreBand, { text: string; stroke: string }> = {
 };
 
 /** A score out of 100 as a ring, like a progress dial. */
-export function ScoreRing({ score, band, size = 'md', label = 'Lead score' }: { score: number; band: ScoreBand; size?: 'sm' | 'md'; label?: string }) {
+export function ScoreRing({ score, band, size = 'md', label = 'Lead score' }: { score: number; band: ScoreBand; size?: 'xs' | 'sm' | 'md'; label?: string }) {
   const r = 27;
   const c = 2 * Math.PI * r;
   return (
-    <span className={clsx('relative inline-flex shrink-0 items-center justify-center', size === 'sm' ? 'h-12 w-12' : 'h-14 w-14')} role="img" aria-label={`${label} ${score} of 100`} title={`${label}, out of 100`}>
+    <span className={clsx('relative inline-flex shrink-0 items-center justify-center', size === 'xs' ? 'h-8 w-8' : size === 'sm' ? 'h-12 w-12' : 'h-14 w-14')} role="img" aria-label={`${label} ${score} of 100`} title={`${label}, out of 100`}>
       <svg viewBox="0 0 64 64" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" className="stroke-slate-200/70" />
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" strokeLinecap="round" className={BAND_STYLE[band].stroke} strokeDasharray={`${(c * score) / 100} ${c}`} />
+        <circle cx="32" cy="32" r={r} fill="none" strokeWidth={size === 'xs' ? 7 : 6} className="stroke-slate-200/70" />
+        <circle cx="32" cy="32" r={r} fill="none" strokeWidth={size === 'xs' ? 7 : 6} strokeLinecap="round" className={BAND_STYLE[band].stroke} strokeDasharray={`${(c * score) / 100} ${c}`} />
       </svg>
-      <span className={clsx('font-semibold text-slate-900', size === 'sm' ? 'text-base' : 'text-lg')}>{score}</span>
+      <span className={clsx('font-semibold text-slate-900', size === 'xs' ? 'text-[11px]' : size === 'sm' ? 'text-base' : 'text-lg')}>{score}</span>
     </span>
   );
 }
