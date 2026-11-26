@@ -41,7 +41,7 @@ const isHot = (l: Lead) => l.score >= HOT_SCORE;
 
 /** The tabs over the list. "Closed / Lost" loads separately; the rest slice the open leads. */
 const TABS: { key: Tab; label: string; test?: (l: Lead) => boolean }[] = [
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'Active' },
   { key: 'hot', label: 'Hot leads', test: isHot },
   { key: 'investors', label: 'Investors', test: (l) => l.requirement.intent === 'investment' },
   { key: 'hni', label: 'HNI', test: (l) => l.segment === 'hni' },
@@ -89,6 +89,9 @@ export function Leads() {
     queryFn: () => api.get<{ items: Lead[]; total: number }>(`/leads${qs({ q, ownerId, stages: ['booked', 'lost'], limit: 300 })}`),
     enabled: tab === 'closed',
   });
+  const countOf = (stage: Stage) => ({ queryKey: ['leads', 'count', stage, { q, owner }], queryFn: () => api.get<{ total: number }>(`/leads${qs({ q, ownerId, stages: [stage], limit: 1 })}`) });
+  const bookedCount = useQuery(countOf('booked')).data?.total;
+  const lostCount = useQuery(countOf('lost')).data?.total;
   const closedCount = useQuery({ queryKey: ['leads', 'count', 'closed', { q, owner }], queryFn: () => api.get<{ total: number }>(`/leads${qs({ q, ownerId, stages: ['booked', 'lost'], limit: 1 })}`) }).data?.total;
 
   const openItems = open.data?.items ?? [];
@@ -130,6 +133,8 @@ export function Leads() {
           <>
             {BoardView && (
               <Segmented
+                size="lg"
+                className="h-10"
                 value={view}
                 onChange={(v) => update({ view: v === 'list' ? null : v })}
                 options={[
@@ -160,7 +165,8 @@ export function Leads() {
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <ActiveTile active={open.data?.total} booked={bookedCount} lost={lostCount} onClick={() => update({ tab: null, focus: null })} />
             {(Object.keys(FOCUS) as FocusKey[]).map((k) => {
               const on = k === 'hot' ? tab === 'hot' : tab !== 'closed' && focus === k;
               return (
@@ -323,6 +329,40 @@ const FOCUS: Record<FocusKey, { label: string; hint: string; mark: ReactNode; te
   hot: { label: 'Hot leads', hint: `Ready to buy (${HOT_SCORE}+)`, mark: <Flame className="h-4 w-4" />, text: 'text-emerald-700', glow: 'bg-emerald-100/60', ring: 'ring-emerald-300', test: isHot },
   new: { label: 'New this week', hint: 'Enquired in the last 7 days', mark: <Sparkles className="h-4 w-4" />, text: 'text-ai-600', glow: 'bg-ai-100/60', ring: 'ring-ai-300', test: isNew },
 };
+
+/** Active leads out of all leads, with the split into active, booked and lost. Clicking it shows every active lead. */
+function ActiveTile({ active, booked, lost, onClick }: { active?: number; booked?: number; lost?: number; onClick: () => void }) {
+  const known = active != null && booked != null && lost != null;
+  const total = known ? active + booked + lost : null;
+  const pct = (n: number) => (total ? `${(n / total) * 100}%` : '0%');
+  return (
+    <button onClick={onClick} title="Show every active lead" className="relative col-span-2 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-card transition hover:border-slate-300 lg:col-span-1">
+      <span className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-brand-100/60" />
+      <span className="relative flex items-center gap-1.5 text-sm font-medium text-brand-700">
+        <Users className="h-4 w-4" />
+        Active leads
+      </span>
+      <span className="relative mt-1 flex items-baseline gap-1.5">
+        <span className="text-3xl font-semibold tracking-tight text-slate-900">{active ?? '–'}</span>
+        {total != null && <span className="text-xs text-slate-500">of {total} total</span>}
+      </span>
+      {known && total ? (
+        <>
+          <span className="relative mt-2 flex h-1.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${active} active, ${booked} booked, ${lost} lost`}>
+            <span className="h-full bg-brand-500" style={/* scan-ok: share active */ { width: pct(active) }} />
+            <span className="h-full bg-emerald-400" style={/* scan-ok: share booked */ { width: pct(booked) }} />
+            <span className="h-full bg-rose-400" style={/* scan-ok: share lost */ { width: pct(lost) }} />
+          </span>
+          <span className="relative mt-1.5 block truncate text-[11px] text-slate-500">
+            {booked} booked · {lost} lost
+          </span>
+        </>
+      ) : (
+        <span className="relative mt-0.5 block text-xs text-slate-500">&nbsp;</span>
+      )}
+    </button>
+  );
+}
 
 function FocusTile({ k, n, on, onClick }: { k: FocusKey; n: number | null; on: boolean; onClick: () => void }) {
   const f = FOCUS[k];

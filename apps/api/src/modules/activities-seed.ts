@@ -43,7 +43,8 @@ registerSeeder('activities', async () => {
     ['Ramesh Krishnan', 'meeting', dayAt(-2, 15), 'Walk through the Green Meadows clubhouse', undefined, 'Liked the amenities; still wants ₹1.5 L off.'],
     // Priya's week: meetings with her customers.
     ['Abdul Rahman', 'meeting', todayAt(13, 0, 0.45), 'Explain the payment plan to his family'],
-    ['Abdul Rahman', 'meeting', dayAt(1, 11), 'Collect the agreement-for-sale cheque'],
+    // 9:30, so it never meets Lakshmi's Saturday 11:00 visit when today is a Friday.
+    ['Abdul Rahman', 'meeting', dayAt(1, 9, 30), 'Collect the agreement-for-sale cheque'],
     ['Ramesh Krishnan', 'meeting', dayAt(1, 16), 'Second look at B904 with his wife'],
     ['Lakshmi Narayanan', 'meeting', dayAt(3, 11), 'Compare Palm Grove villa floor plans'],
     ['Abdul Rahman', 'meeting', dayAt(3, 17), 'Go through the registration documents'],
@@ -75,6 +76,13 @@ registerSeeder('activities', async () => {
     ['Karthik Subramanian', 'meeting', dayAt(5, 15), 'Office space walkthrough with his partners'],
     ['Kavya Prakash', 'task', dayAt(5, 10), 'Collect agreement-for-sale instalment'],
     ['Lakshmi Narayanan', 'site_visit', nextSaturday(), undefined, () => prop({ title: /Palm Grove/ }, 2)],
+    // The four added leads.
+    ['Vikram Sethi', 'site_visit', dayAt(2, 11), undefined, () => prop({ locality: 'Uthandi' })],
+    ['Kavitha Murali', 'call', dayAt(1, 18), 'Share Velachery 2 BHK options'],
+    ['Rajesh Pillai', 'call', todayAt(15, 0, 0.55), 'First call: plot size and budget'],
+    ['Nandini Krishnan', 'call', dayAt(-1, 15), 'Price talk on the Anna Nagar 3 BHK'],
+    ['Sanjay Reddy', 'meeting', dayAt(3, 11, 30), 'Rental yield on Perungudi office floors'],
+    ['Meera Iyer', 'call', dayAt(2, 17), 'Shortlist Adyar rentals'],
   ];
   for (const [name, type, at, title, props, done] of plan) {
     const lead = await Lead.findOne({ name }).lean();
