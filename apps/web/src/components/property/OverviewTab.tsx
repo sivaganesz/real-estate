@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import { ArrowRight, Camera, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Images, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, CalendarDays, Camera, CheckCircle2, ChevronDown, ChevronLeft, CircleCheck, Compass, DoorOpen, Hash, Home, IndianRupee, MapPin, MapPinned, Ruler, Tag, type LucideIcon, ChevronRight, CircleAlert, Images, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
 import { PROPERTY_CATEGORY, PROPERTY_TYPE_LABEL, TYPE_DETAILS, detailValue, formatINR, propertyCompletion } from '@estate/shared';
 import { TEMP_DOT } from '../../lib/leads';
 import { AVAILABILITY_TONE, areaLabel, availabilityLabel, priceLabel, type Property } from '../../lib/property';
@@ -10,7 +10,7 @@ import { Badge, Button, Card } from '../ui';
 import { FIT, Reasons } from '../../features/matching';
 import { slots } from '../../slots';
 import { RangeBar, Ring, amenityIcon } from './visuals';
-import { VERDICT, canMatch, perSqft, useBuyers, useComparables } from './data';
+import { VERDICT, canMatch, rateIn, useBuyers, useComparables } from './data';
 import { LocationCard } from './LocationCard';
 
 type Tab = 'overview' | 'legal' | 'price' | 'matching' | 'history';
@@ -86,7 +86,7 @@ function DetailsCard({ p, canEdit, onEdit, onEditWithAi }: { p: Property; canEdi
   const specs = fields.filter((f) => f.key !== 'facing');
   const known = fields.filter((f) => filled(p.details[f.key])).length;
   const facing = fields.find((f) => f.key === 'facing');
-  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? Math.round(p.price / p.areaSqft) : null;
+  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? p.price / p.areaSqft : null;
   const status = p.listing === 'live' ? { text: availabilityLabel(p.availability), tone: AVAILABILITY_TONE[p.availability] } : p.listing === 'draft' ? { text: 'Draft', tone: 'amber' as const } : { text: 'Archived', tone: 'slate' as const };
   const missing = canEdit ? (
     <button type="button" onClick={onEdit} className="text-sm font-medium text-brand-700 hover:underline">
@@ -118,32 +118,32 @@ function DetailsCard({ p, canEdit, onEdit, onEditWithAi }: { p: Property; canEdi
       )}
 
       <Section title="Main information">
-        <Fact label="Property ID">
+        <Fact icon={Hash} label="Property ID">
           <span className="font-mono text-[13px] tracking-tight">{p.code}</span>
         </Fact>
-        <Fact label="Type">
+        <Fact icon={Home} label="Type">
           {PROPERTY_TYPE_LABEL[p.type]}
           {PROPERTY_CATEGORY[p.type] !== PROPERTY_TYPE_LABEL[p.type] && <span className="text-xs font-normal text-slate-400"> · {PROPERTY_CATEGORY[p.type]}</span>}
         </Fact>
-        <Fact label="Purpose">{PURPOSE_TEXT[p.purpose]}</Fact>
-        <Fact label={p.purpose === 'sale' ? 'Asking price' : 'Rent'}>
+        <Fact icon={Tag} label="Purpose">{PURPOSE_TEXT[p.purpose]}</Fact>
+        <Fact icon={IndianRupee} label={p.purpose === 'sale' ? 'Asking price' : 'Rent'}>
           {/* The exact amount here; the header shows the short form (₹54 L). */}
           {p.price ? (p.purpose === 'sale' ? formatINR(p.price, { short: false }) : priceLabel(p)) : missing}
           {p.price && p.priceNegotiable ? <span className="text-xs font-normal text-slate-400"> · Negotiable</span> : null}
         </Fact>
-        <Fact label="Area">
+        <Fact icon={Ruler} label="Area">
           {areaLabel(p) ?? missing}
-          {rate ? <span className="text-xs font-normal text-slate-400"> · {perSqft(rate)}/sq.ft</span> : null}
+          {rate ? <span className="text-xs font-normal text-slate-400"> · {rateIn(p).format(rate)}/{rateIn(p).unit}</span> : null}
         </Fact>
-        <Fact label="Location">{[p.locality, p.city].filter(Boolean).join(', ') || missing}</Fact>
-        {facing && <Fact label="Facing" source={p.sources?.['details.facing']}>{filled(p.details.facing) ? String(p.details.facing) : missing}</Fact>}
-        <Fact label="Status">
+        <Fact icon={MapPin} label="Location">{[p.locality, p.city].filter(Boolean).join(', ') || missing}</Fact>
+        {facing && <Fact icon={Compass} label="Facing" source={p.sources?.['details.facing']}>{filled(p.details.facing) ? String(p.details.facing) : missing}</Fact>}
+        <Fact icon={CircleCheck} label="Status">
           <Badge tone={status.tone}>{status.text}</Badge>
         </Fact>
-        <Fact label="Listed on">{new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Fact>
-        {p.unitNumber && <Fact label="Unit">{`${p.block ? `${p.block}-` : ''}${p.unitNumber}`}</Fact>}
+        <Fact icon={CalendarDays} label="Listed on">{new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Fact>
+        {p.unitNumber && <Fact icon={DoorOpen} label="Unit">{`${p.block ? `${p.block}-` : ''}${p.unitNumber}`}</Fact>}
         {p.address && (
-          <Fact label="Address" wide>
+          <Fact icon={MapPinned} label="Address" wide>
             {`${p.address}${p.pincode ? ` – ${p.pincode}` : ''}`}
           </Fact>
         )}
@@ -253,10 +253,16 @@ function Section({ title, aside, collapsible, children }: { title: string; aside
 }
 
 /** One label and value; a sparkle shows when the AI read it from a description or brochure. */
-function Fact({ label, source, wide, children }: { label: string; source?: string; wide?: boolean; children: ReactNode }) {
+function Fact({ icon: Icon, label, source, wide, children }: { icon?: LucideIcon; label: string; source?: string; wide?: boolean; children: ReactNode }) {
   return (
-    <div className={clsx('min-w-0', wide && 'col-span-2 sm:col-span-3')}>
+    // The icon sits inside <dt> (positioned to the left) so the list stays valid dt/dd markup.
+    <div className={clsx('relative min-w-0', Icon && 'pl-12', wide && 'col-span-2 sm:col-span-3')}>
       <dt className="flex items-center gap-1 text-xs text-slate-500">
+        {Icon && (
+          <span className="absolute left-0 top-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-brand-700 ring-1 ring-inset ring-slate-100">
+            <Icon className="h-4 w-4" aria-hidden />
+          </span>
+        )}
         {label}
         {source && (
           <span title={`Read from: “${source}”`}>
@@ -440,8 +446,8 @@ function PriceCheck({ p, onMore }: { p: Property; onMore: () => void }) {
       </div>
       {d?.rate && (
         <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-          {perSqft(d.rate)}
-          <span className="text-sm font-normal text-slate-400">/sq.ft</span>
+          {rateIn(p).format(d.rate)}
+          <span className="text-sm font-normal text-slate-400">/{rateIn(p).unit}</span>
         </p>
       )}
       {!d ? (
@@ -449,9 +455,9 @@ function PriceCheck({ p, onMore }: { p: Property; onMore: () => void }) {
       ) : d.stats ? (
         <>
           {d.verdict && <span className={clsx('mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium', VERDICT[d.verdict].tone)}>{VERDICT[d.verdict].label}</span>}
-          <RangeBar min={d.stats.min} max={d.stats.max} value={d.rate} format={perSqft} className="mt-2" />
+          <RangeBar min={d.stats.min} max={d.stats.max} value={d.rate} format={rateIn(p).format} className="mt-2" />
           <p className="mt-1 text-[11px] text-slate-400">
-            Range of {d.stats.count} similar {d.stats.count === 1 ? 'property' : 'properties'} in our records, per sq.ft.
+            Range of {d.stats.count} similar {d.stats.count === 1 ? 'property' : 'properties'} in our records, per {rateIn(p).unit}.
           </p>
         </>
       ) : (

@@ -2,11 +2,11 @@ import { useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Archive, ArrowLeft, Building2, ChevronDown, MapPin, MoreHorizontal, Pencil, RotateCcw, Send, Share2, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react';
+import { Archive, ArrowLeft, ArrowUpDown, BedDouble, Briefcase, Building2, ChevronDown, Compass, Droplets, Factory, Layers, MapPin, Maximize2, Milestone, MoreHorizontal, Pencil, RotateCcw, Ruler, Send, Share2, ShieldAlert, ShieldCheck, Sparkles, Sprout, Zap, type LucideIcon } from 'lucide-react';
 import { PROPERTY_TYPE_LABEL } from '@estate/shared';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { availabilityLabel, priceLabel, type Property } from '../lib/property';
+import { areaLabel, availabilityLabel, priceLabel, type Property } from '../lib/property';
 import { Button, EmptyState, ErrorNote, PageLoader } from '../components/ui';
 import { AvailabilityModal, EditProperty, ShareSheet } from '../components/PropertyActions';
 import { Popover } from '../components/Popover';
@@ -18,7 +18,7 @@ import { LegalTab } from '../components/property/LegalTab';
 import { PriceTab } from '../components/property/PriceTab';
 import { MatchingTab } from '../components/property/MatchingTab';
 import { HistoryTab } from '../components/property/HistoryTab';
-import { canMatch, perSqft, useBuyers } from '../components/property/data';
+import { canMatch, rateIn, useBuyers } from '../components/property/data';
 
 const TABS = ['overview', 'legal', 'price', 'matching', 'history'] as const;
 type Tab = (typeof TABS)[number];
@@ -92,7 +92,7 @@ export function PropertyDetail() {
   const canEdit = can('property.edit');
   const status = p.listing === 'live' ? p.availability : p.listing;
   const statusText = p.listing === 'live' ? availabilityLabel(p.availability) : p.listing === 'draft' ? 'Draft' : 'Archived';
-  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? Math.round(p.price / p.areaSqft) : null;
+  const rate = p.price && p.areaSqft && p.purpose === 'sale' ? p.price / p.areaSqft : null;
   const pending = p.projectId ? [] : p.approvals.filter((a) => !a.documentUrl);
 
   return (
@@ -132,6 +132,7 @@ export function PropertyDetail() {
                 </span>
               )}
             </p>
+            <HeaderFacts p={p} />
             {(p.approvals.some((a) => a.documentUrl) || pending.length > 0) && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {p.approvals
@@ -155,7 +156,7 @@ export function PropertyDetail() {
             <div className="sm:text-right">
               <p className="text-3xl font-semibold tracking-tight text-slate-900">{priceLabel(p)}</p>
               <p className="text-sm text-slate-500">
-                {rate ? `${perSqft(rate)}/sq.ft` : ''}
+                {rate ? `${rateIn(p).format(rate)}/${rateIn(p).unit}` : ''}
                 {p.priceNegotiable && `${rate ? ' · ' : ''}Negotiable`}
               </p>
             </div>
@@ -296,6 +297,47 @@ function Tabs({ p, tab, onTab }: { p: Property; tab: Tab; onTab: (t: Tab) => voi
         ))}
       </div>
     </div>
+  );
+}
+
+type HeaderFact = { icon: LucideIcon; label: string; value: string };
+
+/** The four facts a buyer asks first, by type, so the header says what the property is at a glance. */
+function headerFacts(p: Property): HeaderFact[] {
+  const d = p.details;
+  const has = (v: unknown) => v !== null && v !== undefined && v !== '';
+  const area = areaLabel(p);
+  const facing: HeaderFact | null = has(d.facing) ? { icon: Compass, label: 'Facing', value: String(d.facing) } : null;
+  const floor: HeaderFact | null = has(d.floor) ? { icon: Layers, label: 'Floor', value: d.floor === 0 ? 'Ground' : `${d.floor}${has(d.totalFloors) ? ` of ${d.totalFloors}` : ''}` } : null;
+  const areaFact = (label: string): HeaderFact | null => (area ? { icon: Ruler, label, value: area } : null);
+  const facts: (HeaderFact | null)[] = {
+    apartment: [has(d.bedrooms) ? { icon: BedDouble, label: 'Bedrooms', value: `${d.bedrooms} BHK` } : null, areaFact('Area'), floor, facing],
+    villa: [has(d.bedrooms) ? { icon: BedDouble, label: 'Bedrooms', value: `${d.bedrooms} BHK` } : null, areaFact('Built-up'), has(d.landArea) ? { icon: Maximize2, label: 'Land', value: `${Number(d.landArea).toLocaleString('en-IN')} sq.ft` } : null, facing],
+    plot: [has(d.width) && has(d.length) ? { icon: Maximize2, label: 'Size', value: `${d.width} × ${d.length} ft` } : null, areaFact('Area'), facing, has(d.roadWidth) ? { icon: Milestone, label: 'Road', value: `${d.roadWidth} ft wide` } : null],
+    commercial: [has(d.usage) ? { icon: Briefcase, label: 'Use', value: String(d.usage) } : null, areaFact('Area'), floor, facing],
+    agricultural: [areaFact('Area'), has(d.waterSource) ? { icon: Droplets, label: 'Water', value: String(d.waterSource) } : null, has(d.soilType) ? { icon: Sprout, label: 'Soil', value: String(d.soilType) } : null, has(d.roadAccess) ? { icon: Milestone, label: 'Road access', value: d.roadAccess ? 'Yes' : 'No' } : null],
+    industrial: [has(d.usage) ? { icon: Factory, label: 'Use', value: String(d.usage) } : null, areaFact('Area'), has(d.powerKva) ? { icon: Zap, label: 'Power', value: `${d.powerKva} kVA` } : null, has(d.clearHeight) ? { icon: ArrowUpDown, label: 'Clear height', value: `${d.clearHeight} ft` } : null],
+  }[p.type];
+  return facts.filter((f): f is HeaderFact => f !== null);
+}
+
+function HeaderFacts({ p }: { p: Property }) {
+  const facts = headerFacts(p);
+  if (!facts.length) return null;
+  return (
+    <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-slate-100 pt-4 sm:flex sm:flex-wrap sm:gap-x-8">
+      {facts.map(({ icon: Icon, label, value }) => (
+        <div key={label} className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+            <Icon className="h-4 w-4" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <dt className="text-[11px] text-slate-500">{label}</dt>
+            <dd className="truncate text-sm font-semibold text-slate-900">{value}</dd>
+          </div>
+        </div>
+      ))}
+    </dl>
   );
 }
 

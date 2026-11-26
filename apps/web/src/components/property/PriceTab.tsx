@@ -5,7 +5,7 @@ import { AVAILABILITY_LABEL, buyerTotal, formatINR, type Availability } from '@e
 import { priceLabel, type Property } from '../../lib/property';
 import { Card } from '../ui';
 import { RangeBar, StackedBar } from './visuals';
-import { VERDICT, perSqft, useComparables } from './data';
+import { VERDICT, rateIn, useComparables } from './data';
 
 /** The asking price, what the buyer really pays, and how it compares. */
 export function PriceTab({ p }: { p: Property }) {
@@ -24,7 +24,7 @@ export function PriceTab({ p }: { p: Property }) {
         <Card className="rounded-3xl p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Asking price</p>
           <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{priceLabel(p)}</p>
-          {rate && p.purpose === 'sale' && <p className="text-sm text-slate-500">{perSqft(rate)} per sq.ft</p>}
+          {rate && p.purpose === 'sale' && <p className="text-sm text-slate-500">{rateIn(p).format(rate)} per {rateIn(p).unit}</p>}
           {p.priceNegotiable && <span className="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">Negotiable</span>}
         </Card>
 
@@ -54,8 +54,8 @@ export function PriceTab({ p }: { p: Property }) {
           ) : d.stats ? (
             <>
               <p className="mt-1 text-lg font-semibold text-slate-900">{d.verdict ? VERDICT[d.verdict].label : 'Not enough to compare'}</p>
-              <RangeBar min={d.stats.min} max={d.stats.max} value={rate} format={perSqft} className="mt-1" />
-              <p className="text-[11px] text-slate-500">Typical: {perSqft(d.stats.median)}/sq.ft</p>
+              <RangeBar min={d.stats.min} max={d.stats.max} value={rate} format={rateIn(p).format} className="mt-1" />
+              <p className="text-[11px] text-slate-500">Typical: {rateIn(p).format(d.stats.median)}/{rateIn(p).unit}</p>
             </>
           ) : (
             <p className="mt-2 text-sm text-slate-500">{p.purpose === 'sale' ? 'No similar properties in our records yet.' : 'Market check is for properties for sale.'}</p>
@@ -86,7 +86,7 @@ export function PriceTab({ p }: { p: Property }) {
                 <span className="order-3 col-span-2 h-2.5 overflow-hidden rounded-full bg-slate-100 sm:order-none sm:col-span-1">
                   <span className={clsx('block h-full rounded-full', b.mine ? 'bg-brand-600' : 'bg-slate-300')} style={{ width: `${(b.rate / top) * 100}%` }} />
                 </span>
-                <span className={clsx('text-right text-sm tabular-nums', b.mine ? 'font-semibold text-slate-900' : 'text-slate-600')}>{perSqft(b.rate)}</span>
+                <span className={clsx('text-right text-sm tabular-nums', b.mine ? 'font-semibold text-slate-900' : 'text-slate-600')}>{rateIn(p).format(b.rate)}</span>
               </li>
             ))}
           </ul>

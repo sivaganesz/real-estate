@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Stage } from '@estate/shared';
+import { AREA_UNIT_LABEL, formatINR, toSqft, type AreaUnit, type Stage } from '@estate/shared';
 import { api } from '../../lib/api';
 import type { Property } from '../../lib/property';
 import type { Fit, Reason } from '../../features/matching';
@@ -35,4 +35,19 @@ export const VERDICT: Record<NonNullable<Comparables['verdict']>, { label: strin
   below: { label: 'Below similar properties', tone: 'bg-sky-50 text-sky-700' },
 };
 
-export const perSqft = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+/** A per-sq.ft rate in whole rupees (the API can send 4705.88). */
+export const perSqft = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+
+const LAND_UNITS: readonly AreaUnit[] = ['acre', 'cent', 'ground'];
+
+/**
+ * How to show a rate for this property. Rates come from the API per sq.ft;
+ * land sold by the acre, cent or ground reads in that unit ("₹34 L/acre").
+ */
+export function rateIn(p: Pick<Property, 'areaUnit'>): { unit: string; format: (perSqftRate: number) => string } {
+  if (LAND_UNITS.includes(p.areaUnit)) {
+    const sqftPerUnit = toSqft(1, p.areaUnit);
+    return { unit: AREA_UNIT_LABEL[p.areaUnit], format: (n) => formatINR(Math.round(n * sqftPerUnit)) };
+  }
+  return { unit: 'sq.ft', format: perSqft };
+}

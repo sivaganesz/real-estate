@@ -5,9 +5,40 @@ import { createProject } from '../../services/projects';
 import { applyLayout, setProjectPublished } from '../../services/projectLayout';
 import { createProperty, setListing } from '../../services/properties';
 import type { Actor } from '../../lib/auth';
+import { distanceKm, estimateMinutes, mapPoint, type PlaceKind } from '@estate/shared';
 
 const L = 100_000;
 const CR = 10_000_000;
+
+/** title → [name, kind, lat, lng, route checked, OK to advertise] */
+export const DEMO_NEARBY: Record<string, [string, PlaceKind, number, number, boolean, boolean][]> = {
+  '2,400 sq.ft plot in Tambaram': [
+    ['Tambaram railway station', 'train', 12.9249, 80.117, true, true],
+    ['Tambaram bus terminus', 'bus', 12.923, 80.113, true, true],
+    ['GST Road (NH 32)', 'road', 12.93, 80.118, true, true],
+    ['Madras Christian College', 'college', 12.922, 80.121, true, true],
+    ['Hindu Mission Hospital', 'hospital', 12.933, 80.116, true, true],
+    ['Reliance Smart, Tambaram', 'shop', 12.9265, 80.105, false, false],
+  ],
+  '3 BHK apartment in Anna Nagar West': [
+    ['Thirumangalam metro station', 'metro', 13.085, 80.2016, true, true],
+    ['Anna Nagar Roundtana bus stop', 'bus', 13.087, 80.217, true, true],
+    ['SBOA School', 'school', 13.087, 80.195, true, true],
+    ['Sundaram Medical Foundation', 'hospital', 13.082, 80.207, true, true],
+    ['VR Chennai', 'mall', 13.08, 80.198, true, true],
+    ['Chintamani supermarket', 'shop', 13.088, 80.211, false, false],
+  ],
+  '2 BHK near Velachery MRTS': [
+    ['Velachery MRTS station', 'train', 12.979, 80.221, true, true],
+    ['Velachery bus terminus', 'bus', 12.9795, 80.219, true, true],
+    ['Phoenix Marketcity', 'mall', 12.991, 80.217, true, true],
+  ],
+  'Office space in Guindy': [
+    ['Guindy railway and metro station', 'train', 13.009, 80.213, true, true],
+    ['Anna University', 'college', 13.011, 80.235, true, true],
+    ['Government Hospital, Guindy', 'hospital', 13.011, 80.212, false, false],
+  ],
+};
 
 registerSeeder('properties', async ({ users }) => {
   const actor: Actor = { id: String(users.manager._id), name: users.manager.name, role: 'manager' };
@@ -149,6 +180,22 @@ registerSeeder('properties', async ({ users }) => {
     await setListing(String(p._id), 'live', actor);
     await Property.updateOne({ _id: p._id }, { enquiries: enquiries[i] ?? 0 });
   }
+  // Places nearby for a few listings: landmarks at approximate coordinates; a couple left unchecked
+  // so the team view has something to review.
+  for (const [title, places] of Object.entries(DEMO_NEARBY)) {
+    const p = await Property.findOne({ title, projectId: null });
+    const from = p && mapPoint(p.toObject() as never);
+    if (!p || !from) continue;
+    p.set(
+      'nearby',
+      places.map(([name, kind, lat, lng, routeChecked, advertise]) => {
+        const km = Math.round(distanceKm(from, { lat, lng }) * 10) / 10;
+        return { name, kind, lat, lng, distanceKm: km, minutes: estimateMinutes(km), routeChecked, advertise, source: 'team' };
+      }),
+    );
+    await p.save();
+  }
+
   // Two drafts still being completed, so the to-do flow has something to show.
   await createProperty({ type: 'villa', title: 'Villa in ECR, Uthandi', description: "4-bedroom villa in Uthandi on ECR, 3,200 sq.ft.", city: 'Chennai', locality: 'Uthandi', area: 3200, details: { bedrooms: 4 }, extras: [{ label: 'Owner remark', value: 'Wants quick sale, call after 6 pm', internal: true }] }, actor);
   await createProperty({ type: 'apartment', city: 'Chennai', locality: 'Perungudi', description: "3 BHK apartment in Perungudi, 1,250 sq.ft.", price: 88 * L, area: 1250, details: { bedrooms: 3 } }, actor);

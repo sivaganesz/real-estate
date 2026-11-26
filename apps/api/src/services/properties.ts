@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import mongoose, { type FilterQuery } from 'mongoose';
+import { advertisedPlaces, serialisePlace } from './neighbourhood';
 import {
   AVAILABILITY_LABEL,
   LISTING_LABEL,
@@ -49,7 +50,7 @@ export function serialiseProperty(p: Record<string, any>): Record<string, any> &
   void __v;
   void shareToken;
   const readiness = propertyReadiness(rest as Parameters<typeof propertyReadiness>[0]);
-  return { id: String(_id), ...rest, projectId: rest.projectId ? String(rest.projectId) : null, readiness };
+  return { id: String(_id), ...rest, projectId: rest.projectId ? String(rest.projectId) : null, nearby: (rest.nearby ?? []).map(serialisePlace), readiness };
 }
 
 export function propertyRef(p: { _id: unknown; title: string; price?: number | null; locality?: string | null; availability?: string | null; code?: string | null }): RecordRef {
@@ -272,6 +273,7 @@ export async function publicProperty(token: string) {
     media: p.media,
     approvals: (p.approvals ?? []).filter((a) => a.documentUrl).map((a) => ({ name: a.name, verified: !!a.verified })),
     availability: p.availability === 'available' ? 'available' : 'unavailable',
+    nearby: advertisedPlaces(p.nearby),
   };
 }
 

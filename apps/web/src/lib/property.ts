@@ -7,6 +7,7 @@ import {
   type AreaUnit,
   type Availability,
   type ListingState,
+  type NearbyPlace,
   type PropertyType,
   type Purpose,
   type Readiness,
@@ -41,6 +42,8 @@ export type Property = {
   documents: { name: string; url: string; uploadedAt: string }[];
   approvals: { name: string; documentUrl?: string | null; verified?: boolean }[];
   location?: { lat: number; lng: number } | null;
+  /** Places nearby; buyers only see the ones marked OK to advertise. */
+  nearby: NearbyPlace[];
   listing: ListingState;
   availability: Availability;
   heldUntil?: string | null;

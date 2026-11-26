@@ -1,7 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin, ShieldCheck } from 'lucide-react';
-import { AREA_UNIT_LABEL, TYPE_DETAILS, buyerTotal, detailValue, formatINR, type AreaUnit, type PropertyType } from '@estate/shared';
+import { AREA_UNIT_LABEL, PLACE_CATEGORIES, PLACE_CATEGORY_LABEL, PLACE_KIND_CATEGORY, TYPE_DETAILS, buyerTotal, detailValue, formatINR, type AreaUnit, type PlaceKind, type PropertyType } from '@estate/shared';
+import { KIND_ICON } from '../components/property/placeIcons';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/ui';
 import { PropertyCover } from '../components/PropertyCard';
@@ -25,6 +26,8 @@ type PublicProperty = {
   media: { url: string; kind: string }[];
   approvals: { name: string; verified: boolean }[];
   availability: 'available' | 'unavailable';
+  /** Only places the team marked OK to advertise, nearest first. */
+  nearby: { name: string; kind: PlaceKind; distanceKm: number; minutes: number }[];
 };
 
 /** What the buyer opens from WhatsApp. No sign-in, no internal data. */
@@ -119,6 +122,36 @@ export function SharePage() {
                     {a}
                   </span>
                 ))}
+              </div>
+            </>
+          )}
+          {p.nearby.length > 0 && (
+            <>
+              <h2 className="mt-6 font-semibold">Nearby</h2>
+              <div className="mt-2 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                {PLACE_CATEGORIES.map((c) => {
+                  const items = p.nearby.filter((n) => PLACE_KIND_CATEGORY[n.kind] === c);
+                  if (!items.length) return null;
+                  return (
+                    <div key={c}>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{PLACE_CATEGORY_LABEL[c]}</p>
+                      <ul className="mt-1 space-y-1.5">
+                        {items.map((n) => {
+                          const Icon = KIND_ICON[n.kind];
+                          return (
+                            <li key={n.name} className="flex items-center gap-2 text-sm text-slate-700">
+                              <Icon className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+                              <span className="flex-1">{n.name}</span>
+                              <span className="whitespace-nowrap text-xs text-slate-500">
+                                {n.distanceKm.toLocaleString('en-IN', { maximumFractionDigits: 1 })} km · {n.minutes} min
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

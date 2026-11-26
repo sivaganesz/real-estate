@@ -163,13 +163,13 @@ export function Drawer({ open, onClose, title, children, footer, width = 'max-w-
   );
 }
 
-export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean | 'xl' }) {
   useEscape(open, onClose);
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <div className="absolute inset-0 bg-slate-900/30" onClick={onClose} aria-hidden="true" />
-      <div className={clsx('relative max-h-[92vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-pop sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}>
+      <div className={clsx('relative max-h-[92vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-pop sm:rounded-2xl', wide === 'xl' ? 'sm:max-w-6xl' : wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}>
         <div className="flex items-center justify-between px-5 pt-4">
           <h3 className="text-base font-semibold text-slate-900">{title}</h3>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Close">

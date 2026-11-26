@@ -28,6 +28,7 @@ import { Project } from '../../models/property';
 import { extractProperties } from '../../ai/extract';
 import { knownPlaces, parseSearchText } from '../../ai/rules';
 import { audit } from '../../lib/auth';
+import { addPlace, discoverPlaces, removePlace, updatePlace } from '../../services/neighbourhood';
 
 export const propertiesRouter = Router();
 export const projectsRouter = Router();
@@ -264,4 +265,22 @@ projectsRouter.post('/:id/approvals/:name/document', requirePermission('project.
   await syncApprovals(p._id);
   await audit(req.actor, 'project', p._id, 'document', `Uploaded the ${badge.name} document`);
   res.json({ ok: true });
+});
+
+// Places nearby: the team adds, checks and finds them; buyers see only the ones marked OK to advertise.
+propertiesRouter.post('/:id/nearby', requirePermission('property.edit'), async (req, res) => {
+  res.status(201).json({ property: serialiseProperty(await addPlace(String(req.params.id), req.body, req.actor)) });
+});
+
+propertiesRouter.post('/:id/nearby/discover', requirePermission('property.edit'), async (req, res) => {
+  const { added, approximate, property } = await discoverPlaces(String(req.params.id), req.actor);
+  res.json({ added, approximate, property: serialiseProperty(property) });
+});
+
+propertiesRouter.patch('/:id/nearby/:placeId', requirePermission('property.edit'), async (req, res) => {
+  res.json({ property: serialiseProperty(await updatePlace(String(req.params.id), String(req.params.placeId), req.body, req.actor)) });
+});
+
+propertiesRouter.delete('/:id/nearby/:placeId', requirePermission('property.edit'), async (req, res) => {
+  res.json({ property: serialiseProperty(await removePlace(String(req.params.id), String(req.params.placeId), req.actor)) });
 });

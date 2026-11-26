@@ -12,6 +12,7 @@ import { PropertyCard, PropertyCover } from '../components/PropertyCard';
 import { Popover } from '../components/Popover';
 import { useConfirm } from '../components/confirm';
 import { useToast } from '../components/toast';
+import { rateIn } from '../components/property/data';
 
 type Row = Property & { fitCount?: number };
 type Status = 'all' | Availability | 'draft' | 'archived';
@@ -41,8 +42,8 @@ const EXAMPLES = ['2 BHK under 70 L in Porur', 'Plot in Guduvanchery', 'Villa ab
 const PER_PAGE = [10, 25, 50] as const;
 const LAKH = 100_000;
 
-/** ₹/sq.ft., when both are known. */
-const rate = (p: Property) => (p.price && p.areaSqft ? Math.round(p.price / p.areaSqft) : null);
+/** Price per sq.ft, when both are known (shown per acre for land; see rateIn). */
+const rate = (p: Property) => (p.price && p.areaSqft ? p.price / p.areaSqft : null);
 
 /** The list page: search, filters, status tabs, a table or cards, and a pager. */
 export function PropertyList() {
@@ -623,7 +624,7 @@ function PropertyTable({ rows }: { rows: Row[] }) {
               <td className="hidden whitespace-nowrap px-2 py-2.5 text-right text-slate-700 md:table-cell">{areaLabel(p) ?? '—'}</td>
               <td className="hidden whitespace-nowrap px-2 py-2.5 text-right sm:table-cell">
                 <span className="block font-semibold text-slate-900">{priceLabel(p)}</span>
-                {rate(p) && <span className="block text-[11px] text-slate-400">₹{rate(p)!.toLocaleString('en-IN')}/sq.ft</span>}
+                {rate(p) && <span className="block text-[11px] text-slate-400">{rateIn(p).format(rate(p)!)}/{rateIn(p).unit}</span>}
               </td>
               <td className="hidden px-2 py-2.5 sm:table-cell">
                 <StatusBadge p={p} />

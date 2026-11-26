@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ArrowUpRight, Crosshair, MapPin, Navigation, Pencil } from 'lucide-react';
+import { ArrowUpRight, Crosshair, MapPin, Maximize2, Navigation, Pencil } from 'lucide-react';
 import { mapPoint } from '@estate/shared';
 import { api } from '../../lib/api';
 import type { Property } from '../../lib/property';
 import { Button, Card, ErrorNote, Input, Modal } from '../ui';
 import { useToast } from '../toast';
+import { Neighbourhood } from './Neighbourhood';
 
 /** How much of the map to show around the point: close for an exact spot, wider for an area. */
 const SPAN = { exact: 0.006, locality: 0.025, city: 0.12 } as const;
@@ -35,6 +36,8 @@ export function parseLocation(text: string): { lat: number; lng: number } | null
 /** A map of where the property is, with links to Google Maps; managers can set the exact spot. */
 export function LocationCard({ p, canEdit, className }: { p: Property; canEdit: boolean; className?: string }) {
   const [editing, setEditing] = useState(false);
+  const [exploring, setExploring] = useState(false);
+  const advertised = p.nearby.filter((n) => n.advertise).length;
   const point = mapPoint(p);
   const address = [p.address, p.locality, p.city, p.pincode].filter(Boolean).join(', ');
 
@@ -51,16 +54,21 @@ export function LocationCard({ p, canEdit, className }: { p: Property; canEdit: 
           </p>
           {point && point.level !== 'exact' && <p className="text-[11px] text-amber-700">Pin is the centre of {point.level === 'locality' ? p.locality : p.city}.</p>}
         </div>
-        {canEdit && (
-          <button type="button" onClick={() => setEditing(true)} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-slate-200 px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-            <Pencil className="h-3 w-3" /> {p.location ? 'Change' : 'Set exact spot'}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {canEdit && (
+            <button type="button" onClick={() => setEditing(true)} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-slate-200 px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+              <Pencil className="h-3 w-3" /> {p.location ? 'Change' : 'Set exact spot'}
+            </button>
+          )}
+          <button type="button" onClick={() => setExploring(true)} title="Explore the neighbourhood" aria-label="Explore the neighbourhood" className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+            <Maximize2 className="h-3.5 w-3.5" />
           </button>
-        )}
+        </div>
       </div>
 
       {point ? (
         <>
-          <div className="relative min-h-[180px] flex-1 bg-slate-100">
+          <div className="relative min-h-[260px] flex-1 bg-slate-100">
             <iframe
               title={`Map of ${p.title}`}
               loading="lazy"
@@ -68,6 +76,20 @@ export function LocationCard({ p, canEdit, className }: { p: Property; canEdit: 
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${point.lng - SPAN[point.level]},${point.lat - SPAN[point.level] * 0.7},${point.lng + SPAN[point.level]},${point.lat + SPAN[point.level] * 0.7}&layer=mapnik&marker=${point.lat},${point.lng}`}
             />
           </div>
+          <button type="button" onClick={() => setExploring(true)} className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5 text-left text-xs text-slate-600 hover:bg-slate-50">
+            <span>
+              {p.nearby.length ? (
+                <>
+                  <b className="font-semibold text-slate-900">{p.nearby.length}</b> place{p.nearby.length === 1 ? '' : 's'} nearby{canEdit ? ` · ${advertised} OK to advertise` : ''}
+                </>
+              ) : (
+                'Schools, hospitals, shops and transport nearby'
+              )}
+            </span>
+            <span className="inline-flex items-center gap-1 font-medium text-brand-700">
+              Explore <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
+          </button>
           <div className="flex gap-2 p-3">
             <a href={googleMaps(point.lat, point.lng)} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-full border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50">
               Open in Google Maps <ArrowUpRight className="h-3.5 w-3.5" />
@@ -89,6 +111,18 @@ export function LocationCard({ p, canEdit, className }: { p: Property; canEdit: 
         </div>
       )}
       {editing && <SetLocation p={p} onClose={() => setEditing(false)} />}
+      {exploring && (
+        <Neighbourhood
+          p={p}
+          canEdit={canEdit}
+          open
+          onClose={() => setExploring(false)}
+          onChangeLocation={() => {
+            setExploring(false);
+            setEditing(true);
+          }}
+        />
+      )}
     </Card>
   );
 }

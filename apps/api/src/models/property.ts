@@ -1,5 +1,5 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose';
-import { AREA_UNITS, AVAILABILITY, LISTING_STATES, PROJECT_STATUSES, PROPERTY_TYPES, PURPOSES } from '@estate/shared';
+import { AREA_UNITS, AVAILABILITY, LISTING_STATES, PLACE_KINDS, PROJECT_STATUSES, PROPERTY_TYPES, PURPOSES } from '@estate/shared';
 
 const counterSchema = new Schema({ _id: String, seq: { type: Number, default: 0 } }, { versionKey: false });
 export const Counter = mongoose.model('Counter', counterSchema);
@@ -72,6 +72,22 @@ const propertySchema = new Schema(
     documents: [{ name: String, url: String, uploadedAt: Date }],
     approvals: [{ _id: false, name: String, documentUrl: String, verified: Boolean }],
     location: { type: new Schema({ lat: Number, lng: Number }, { _id: false }), default: undefined },
+    /** Places nearby: found on OpenStreetMap or added by the team. Only `advertise` ones reach buyers. */
+    nearby: [
+      {
+        name: { type: String, required: true },
+        kind: { type: String, enum: PLACE_KINDS, required: true },
+        distanceKm: Number,
+        minutes: Number,
+        lat: Number,
+        lng: Number,
+        routeChecked: { type: Boolean, default: false },
+        advertise: { type: Boolean, default: false },
+        source: { type: String, enum: ['osm', 'team'], default: 'team' },
+        /** OpenStreetMap id, so "Find more places" never adds the same place twice. */
+        osmId: String,
+      },
+    ],
 
     listing: { type: String, enum: LISTING_STATES, default: 'draft', index: true },
     availability: { type: String, enum: AVAILABILITY, default: 'available', index: true },
