@@ -5,9 +5,9 @@
  * beside the list (a sheet on a phone). The same rules as the current Leads list (lead-list.ts).
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import {
-  ArrowRight, Building2, Check, Flame, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, UserRound, Users, X,
+  ArrowRight, ArrowUpRight, Building2, Check, Flame, List, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, Table2, Users, X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -32,6 +32,10 @@ import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bit
 import { isActive, type LeadFilters, type LeadItem, leadItems, matchesLead, parseLeadSentence } from './lead-list'
 import { DoneButton } from './done-button'
 import { STAGE_TONE } from './leads-page'
+import { suggestNext } from './next-step'
+import { AddLeadSheet } from './add-lead-sheet'
+import { AssistantBox } from '../assistant/assistant-box'
+import { StatusChip } from '@/components/app/status-chip'
 
 type View = 'all' | 'hot' | 'investors' | 'hni' | 'closed'
 type Tile = 'overdue' | 'today' | 'hot' | 'new'
@@ -69,6 +73,7 @@ export function LeadsToday() {
   const [ask, setAskState] = useState(saved.ask)
   const [sel, setSelState] = useState<string | null>(saved.sel)
   const [sheet, setSheet] = useState(false)
+  const [adding, setAdding] = useState(false)
   useEffect(() => { saved = { view, tile, f, ask, sel } }, [view, tile, f, ask, sel])
   const setView = (v: View) => { setViewState(v); setTileState(null) }
   const setTile = setTileState
@@ -105,6 +110,32 @@ export function LeadsToday() {
     ...(manager ? [{ v: 'hni' as View, n: items.filter((x) => isActive(x.lead) && isHni(x.cls)).length }] : []),
     { v: 'closed', n: items.filter((x) => !isActive(x.lead)).length },
   ]
+  // the Filter panel's picks, as removable chips
+  const pickLabel = (s: Section, v: string) =>
+    s.arr === 'stages' ? t(`stageShort.${v}`) : s.arr === 'types' ? t(`typeShort.${v}`) : s.arr === 'owners' ? userName(db, v) || t('leads.unassigned') : v
+  const picked = SECTIONS.flatMap((s) => chosen(f, s).map((v) => ({ s, v, label: pickLabel(s, v) })))
+
+  // keyboard (wide screens): ↑ ↓ move, Enter opens, C call, W WhatsApp, D done, N new lead — not while typing
+  const navigate = useNavigate()
+  const flat = groups.flatMap((x) => x.rows)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      if (e.ctrlKey || e.metaKey || e.altKey || adding || (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)))) return
+      if (document.querySelector('[role="dialog"], [data-slot="popover-content"], [role="menu"]')) return
+      const i = flat.findIndex((x) => x.lead.id === current?.lead.id)
+      const k = e.key.toLowerCase()
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const next = flat[Math.min(flat.length - 1, Math.max(0, i + (e.key === 'ArrowDown' ? 1 : -1)))]
+        if (next) { e.preventDefault(); setSelState(next.lead.id); document.getElementById(`row-${next.lead.id}`)?.scrollIntoView({ block: 'nearest' }) }
+      } else if (e.key === 'Enter' && current) navigate(`/leads/${current.lead.id}`)
+      else if (k === 'n') { e.preventDefault(); setAdding(true) }
+      else if (['c', 'w', 'd'].includes(k) && current) (document.querySelector(`[data-key="${k}"] button, button[data-key="${k}"]`) as HTMLButtonElement | null)?.click()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const runAsk = (text: string) => {
     const p = parseLeadSentence(text)
     setF({ ...p, aiText: text, aiRan: text })
@@ -117,10 +148,14 @@ export function LeadsToday() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t('leads.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('today.subtitle', { date: fmtDate(today) })}</p>
+          <p className="text-sm text-muted-foreground">{t('today.subtitle', { date: fmtDate(today) })} · {t('today.toCall', { count: counts.overdue + counts.today })}</p>
         </div>
-        <Link to="/leads" className="text-sm text-muted-foreground hover:text-foreground">{t('today.backToTable')}</Link>
-        <Button asChild><Link to="/leads/new">＋ {t('leads.add')}</Link></Button>
+        {/* Focus (this page) · Table (the current Leads list, unchanged) */}
+        <nav aria-label={t('today.layout')} className="inline-flex rounded-lg bg-muted p-0.5">
+          <span aria-current="page" className="inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-sm font-medium shadow-sm"><List className="size-3.5" /> {t('today.focus')}</span>
+          <Link to="/leads" className="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground hover:text-foreground"><Table2 className="size-3.5" /> {t('today.table')}</Link>
+        </nav>
+        <Button onClick={() => setAdding(true)} title={t('today.addHint')}>＋ {t('leads.add')} <kbd className="rounded border border-primary-foreground/30 px-1 font-sans text-xs opacity-80">N</kbd></Button>
       </div>
 
       {/* summary tiles: today at a glance; each filters the list */}
@@ -149,10 +184,12 @@ export function LeadsToday() {
             <FilterButton f={f} onChange={setF} manager={manager} base={base} shown={list.length} />
           </div>
 
-          {(tile || f.aiRan) && (
+          {(tile || f.aiRan || picked.length > 0) && (
             <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-4 py-2 text-sm">
               {tile && <Pill onClear={() => setTile(null)}>{t(`today.tile.${tile}`)}</Pill>}
               {f.aiRan && <Pill onClear={() => setF({})}><Sparkles className="size-3.5 text-violet" /> “{f.aiRan}”</Pill>}
+              {/* each pick from the Filter panel, removable on its own */}
+              {picked.map((p) => <Pill key={`${p.s.arr}-${p.v}`} onClear={() => setF(withSection(f, p.s, chosen(f, p.s).filter((x) => x !== p.v)))}>{p.label}</Pill>)}
               <span className="text-muted-foreground">{t('today.showing', { count: list.length })}</span>
             </div>
           )}
@@ -184,6 +221,8 @@ export function LeadsToday() {
           </aside>
         )}
       </div>
+
+      <AddLeadSheet open={adding} onOpenChange={setAdding} onCreated={(id) => { setViewState('all'); setTileState(null); setFState({}); setSelState(id) }} />
 
       {phone && (
         <SidePanel open={sheet && !!current} onOpenChange={setSheet} title={current?.lead.name ?? ''}>
@@ -378,7 +417,7 @@ function LeadRow({ x, selected, onSelect }: { x: LeadItem; selected: boolean; on
     : g === 'today' ? t('leads.today')
       : new Date(l.nextFollowUp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
   return (
-    <li className="group relative">
+    <li id={`row-${l.id}`} className="group relative">
       <button type="button" onClick={onSelect} aria-current={selected ? 'true' : undefined}
         className={cn('flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0',
           selected ? 'bg-accent/70' : 'hover:bg-muted/50')}>
@@ -398,9 +437,11 @@ function LeadRow({ x, selected, onSelect }: { x: LeadItem; selected: boolean; on
             {when && <span className={cn('tabular-nums', g === 'overdue' ? 'font-medium text-danger' : g === 'today' ? 'font-medium text-warning' : 'text-muted-foreground')}>· {when}</span>}
           </span>
         </span>
-        <span className="flex shrink-0 flex-col items-end gap-0.5 text-sm transition-opacity group-hover:opacity-0 max-sm:hidden">
-          <span className="flex items-center gap-1.5 text-muted-foreground"><span className={cn('size-2 rounded-full', toneFill[STAGE_TONE[l.stage]])} />{t(`stage.${l.stage}`)}</span>
-          {when && <span className={cn('tabular-nums', g === 'overdue' ? 'font-medium text-danger' : g === 'today' ? 'font-medium text-warning' : 'text-muted-foreground')}>{g === 'overdue' ? `⚠ ${when}` : when}</span>}
+        {/* ready ring · stage · follow-up, on one line; they give way to the actions on hover */}
+        <span className="flex shrink-0 items-center gap-1.5 transition-opacity group-hover:opacity-0 max-sm:hidden">
+          <MiniRing score={x.ready.total} tone={BAND_TONE[x.ready.band]} label={t('props.match.readyToBuy')} />
+          <StatusChip tone={STAGE_TONE[l.stage]} title={t(`stage.${l.stage}`)}>{t(`stageShort.${l.stage}`)}</StatusChip>
+          {when && <StatusChip tone={g === 'overdue' ? 'danger' : g === 'today' ? 'warning' : 'neutral'} variant={g === 'overdue' || g === 'today' ? 'soft' : 'outline'} className="tabular-nums">{when}</StatusChip>}
         </span>
       </button>
       {/* actions on hover (desktop) */}
@@ -411,120 +452,119 @@ function LeadRow({ x, selected, onSelect }: { x: LeadItem; selected: boolean; on
   )
 }
 
-/** 📞 Call · 💬 WhatsApp · ✓ Done (the follow-up is finished — same as on the lead page). */
-function QuickActions({ lead: l, big }: { lead: Lead; big?: boolean }) {
+/**
+ * 📞 Call · 💬 WhatsApp · ✓ Done (the follow-up is finished — same as on the lead page).
+ * `keys`: this set (the preview's) answers the C / W / D keys.
+ */
+function QuickActions({ lead: l, big, keys }: { lead: Lead; big?: boolean; keys?: boolean }) {
   const { t } = useTranslation()
   const size = big ? 'default' : 'icon-sm'
+  const done = <DoneButton lead={l} size={size} variant={big ? 'default' : 'outline'} label={!!big} className={cn(big && 'flex-1', !big && 'bg-card')} />
   return (
     <>
-      <Button size={size} variant="outline" className={cn(big && 'flex-1', 'bg-card')} title={t('leads.call')} onClick={() => toast(t('leads.calling', { name: l.name, phone: l.phone }), { description: t('leads.demoHint') })}>
+      <Button size={size} variant="outline" data-key={keys ? 'c' : undefined} className={cn(big && 'flex-1', 'bg-card')} title={t('leads.call')} onClick={() => toast(t('leads.calling', { name: l.name, phone: l.phone }), { description: t('leads.demoHint') })}>
         <Phone />{big && t('leads.call')}
       </Button>
-      <Button size={size} variant="outline" className={cn(big && 'flex-1', 'bg-card')} title={t('leads.whatsapp')} onClick={() => toast(t('leads.whatsapping', { name: l.name }), { description: t('leads.demoHint') })}>
+      <Button size={size} variant="outline" data-key={keys ? 'w' : undefined} className={cn(big && 'flex-1', 'bg-card')} title={t('leads.whatsapp')} onClick={() => toast(t('leads.whatsapping', { name: l.name }), { description: t('leads.demoHint') })}>
         <MessageCircle />{big && t('leads.whatsappShort')}
       </Button>
-      {isActive(l) && (
-        <DoneButton lead={l} size={size} variant={big ? 'default' : 'outline'} label={!!big}
-          className={cn(big && 'flex-1', !big && 'bg-card')} />
-      )}
+      {isActive(l) && (keys ? <span data-key="d" className="contents">{done}</span> : done)}
     </>
   )
 }
 
-/** A ring for the 100-point "ready to buy" score. */
-function ReadyRing({ score, tone }: { score: number; tone: Tone }) {
-  const r = 26, c = 2 * Math.PI * r
+/** A small ring for a row: the ready-to-buy score at a glance. */
+function MiniRing({ score, tone, label }: { score: number; tone: Tone; label: string }) {
+  const r = 12, c = 2 * Math.PI * r
   return (
-    <span className="relative grid size-16 shrink-0 place-items-center">
-      <svg viewBox="0 0 64 64" className="absolute inset-0 -rotate-90">
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" className="stroke-muted" />
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)}
-          className={STROKE[tone]} />
+    <span className="relative grid size-8 shrink-0 place-items-center" title={`${label}: ${score}`} aria-label={`${label}: ${score}`}>
+      <svg viewBox="0 0 32 32" className="absolute inset-0 -rotate-90" aria-hidden>
+        <circle cx="16" cy="16" r={r} fill="none" strokeWidth="3.5" className="stroke-muted" />
+        <circle cx="16" cy="16" r={r} fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} className={STROKE[tone]} />
       </svg>
-      <span className="text-lg font-semibold tabular-nums">{score}</span>
+      <span className="text-caption font-bold tabular-nums" aria-hidden>{score}</span>
     </span>
   )
 }
 
-/** The preview beside the list: how ready, what they want, the next step, their best properties, the last contact. */
+/**
+ * The preview beside the list (concept A, agreed 27 Nov): who, with Open; Call · WhatsApp · Done on top; the next step
+ * with ✨ a suggestion; four key facts; the best properties; and the assistant, so a call can be logged without leaving.
+ */
 function Preview({ x, bare }: { x: LeadItem; bare?: boolean }) {
   const { t } = useTranslation()
   const L = useLabels()
   const { db, today } = useStore()
   const can = useCan()
-  const wants = useWants()
   const l = x.lead
   const tone = BAND_TONE[x.ready.band]
   const best = propertiesForLead(l, db.properties.filter((p) => p.status === 'available' && !p.archived), db.settings).slice(0, 3)
-  const last = l.activity[0]
   const g = groupOf(l, today)
   const hniHidden = isHni(x.cls) && !can('lead.seeAll')
-  const block = (label: string, children: ReactNode) => (
-    <div className="border-t px-5 py-4"><p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>{children}</div>
+  const s = suggestNext(l, db, today)
+  const sv = s?.values ? { ...s.values, ...(s.values.date ? { date: fmtDate(String(s.values.date)) } : {}) } : {}
+  const r = l.requirement
+  const nextTone = g === 'overdue' ? 'border-danger/25 bg-danger-soft/60' : g === 'today' ? 'border-warning/25 bg-warning-soft/70' : 'bg-muted/40'
+  const fact = (label: string, value: ReactNode, cls?: string) => (
+    <div className="rounded-xl border bg-card px-3 py-2"><p className="text-xs text-muted-foreground">{label}</p><p className={cn('truncate text-sm font-semibold', cls)}>{value}</p></div>
   )
   return (
-    <section className={cn('overflow-hidden rounded-2xl border bg-card shadow-card', bare && 'rounded-none')}>
+    <section className={cn('flex flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-4 shadow-card sm:p-5', bare && 'rounded-none')}>
       {!bare && (
-        <div className="flex items-center gap-3 px-5 pt-5">
+        <div className="flex items-center gap-3">
           <UserAvatar name={l.name} size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-semibold">{l.name}</p>
-            <p className="truncate text-sm text-muted-foreground"><span className="font-mono">{l.id}</span> · {l.source}</p>
+            <p className="truncate text-lg leading-tight font-semibold">{l.name}</p>
+            <p className="truncate text-sm text-muted-foreground">
+              {l.purpose ? t(`purpose.buyer.${l.purpose}`) : '—'} · {hniHidden ? t('leads.restricted') : t(`class.${x.cls}`)}{can('lead.seeAll') && ` · ${userName(db, l.ownerId) || t('leads.unassigned')}`}
+            </p>
           </div>
+          <Button asChild size="sm" variant="outline"><Link to={`/leads/${l.id}`} title={t('today.openFull')}>{t('today.open')} <ArrowUpRight /></Link></Button>
         </div>
       )}
-      <div className="flex items-center gap-4 px-5 py-4">
-        <ReadyRing score={x.ready.total} tone={tone} />
-        <div className="min-w-0">
-          <p className={cn('font-medium', toneText[tone])}>{t(`readiness.${x.ready.band}`)}</p>
-          <p className="text-sm text-muted-foreground">{t('props.match.readyToBuy')} · {hniHidden ? t('leads.restricted') : t(`class.${x.cls}`)}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm"><span className={cn('size-2 rounded-full', toneFill[STAGE_TONE[l.stage]])} />{t(`stage.${l.stage}`)}</p>
+      <div className="flex gap-2"><QuickActions lead={l} big keys={!bare} /></div>
+
+      {isActive(l) && (
+        <div className={cn('rounded-xl border px-3 py-2.5', nextTone)}>
+          <p className={cn('text-xs font-semibold', g === 'overdue' ? 'text-danger' : g === 'today' ? 'text-warning' : 'text-muted-foreground')}>
+            {t('today.next')} · {!l.nextFollowUp ? t('today.noNext') : g === 'overdue' ? t('today.overdueSince', { date: fmtDate(l.nextFollowUp), days: daysBetween(l.nextFollowUp, today) })
+              : g === 'today' ? t('today.dueToday') : t('today.followUpOn', { date: fmtDate(l.nextFollowUp) })}
+          </p>
+          {s && <p className="mt-1 flex items-start gap-1.5 text-sm"><Sparkles className="mt-0.5 size-3.5 shrink-0 text-violet" />{t(s.key, sv)}</p>}
         </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        {fact(t('lead.group.money'), `${inrShort(l.budget.min)} – ${inrShort(l.budget.max)}`)}
+        {fact(t('props.match.readyToBuy'), <>{x.ready.total} · {t(`lead.assess.band.${x.ready.band}`)}</>, toneText[tone])}
+        {fact(t('today.wants'), [r.bhk, L.type(r.type)].filter(Boolean).join(' '))}
+        {fact(t('ai.where'), (r.localities.length ? r.localities : r.cities).slice(0, 2).join(', '))}
       </div>
 
-      {block(t('today.wants'), (
-        <div className="flex flex-col gap-1 text-sm">
-          <p className="font-medium">{wants(l)}</p>
-          <p className="text-muted-foreground">{inrShort(l.budget.min)} – {inrShort(l.budget.max)}{l.purpose ? ` · ${t(`purpose.buyer.${l.purpose}`)}` : ''}</p>
-          {can('lead.seeAll') && <p className="flex items-center gap-1.5 text-muted-foreground"><UserRound className="size-3.5" />{userName(db, l.ownerId) || t('leads.unassigned')}</p>}
-        </div>
-      ))}
+      <div>
+        <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t('today.best', { count: best.length })}</p>
+        {best.length ? (
+          <ul className="flex flex-col gap-1.5">
+            {best.map((m) => (
+              <li key={m.property.id}>
+                <Link to={`/properties/${m.property.id}`} className="flex items-center gap-3 rounded-xl border bg-card p-2 hover:border-primary/40">
+                  <PropertyPhoto type={m.property.type} media={m.property.media.find((y) => y.isCover) ?? m.property.media[0]} alt="" className="h-10 w-14 shrink-0 rounded-lg" iconClassName="size-4" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{m.property.title}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{inrShort(m.property.price)} · {t(`match.${m.label}`)}</span>
+                  </span>
+                  <span className={cn('text-sm font-semibold tabular-nums', toneText[MATCH_TONE[m.label]])}>{m.score}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="size-4" />{t('today.noMatches')}</p>}
+      </div>
 
-      {isActive(l) && block(t('today.next'), (
-        <p className={cn('text-sm', g === 'overdue' ? 'font-medium text-danger' : g === 'today' ? 'font-medium text-warning' : '')}>
-          {!l.nextFollowUp ? t('today.noNext') : g === 'overdue' ? t('today.overdueSince', { date: fmtDate(l.nextFollowUp), days: daysBetween(l.nextFollowUp, today) })
-            : g === 'today' ? t('today.dueToday') : t('today.followUpOn', { date: fmtDate(l.nextFollowUp) })}
-        </p>
-      ))}
-
-      {block(t('today.best', { count: best.length }), best.length ? (
-        <ul className="flex flex-col gap-2">
-          {best.map((m) => (
-            <li key={m.property.id}>
-              <Link to={`/properties/${m.property.id}`} className="flex items-center gap-3 rounded-lg p-1 -m-1 hover:bg-muted">
-                <PropertyPhoto type={m.property.type} media={m.property.media.find((x) => x.isCover) ?? m.property.media[0]} alt="" className="size-11 shrink-0 rounded-lg" iconClassName="size-4" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{m.property.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{inrShort(m.property.price)} · {L.type(m.property.type)}</span>
-                </span>
-                <span className={cn('text-sm font-semibold tabular-nums', toneText[MATCH_TONE[m.label]])}>{m.score}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : <p className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="size-4" />{t('today.noMatches')}</p>)}
-
-      {last && block(t('today.last'), (
-        <div className="text-sm">
-          <p className="line-clamp-2">{last.text}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{fmtDate(last.at)} · {userName(db, last.by)}</p>
-        </div>
-      ))}
-
-      <div className="flex gap-2 border-t bg-muted/30 px-5 py-3"><QuickActions lead={l} big /></div>
-      <Link to={`/leads/${l.id}`} className="flex items-center justify-center gap-1 border-t py-2.5 text-sm font-medium text-primary hover:bg-muted/40">
-        {t('today.openFull')} <ArrowRight className="size-4" />
-      </Link>
+      {/* say what happened without leaving the list */}
+      <AssistantBox key={l.id} mode="lead" leadId={l.id} composer placeholder={t('ai.composerPlaceholder', { name: l.name.split(' ')[0] })} examples={[]} />
+      {!bare && <p className="text-xs text-muted-foreground">{t('today.keys')}</p>}
+      {bare && <Link to={`/leads/${l.id}`} className="flex items-center justify-center gap-1 text-sm font-medium text-primary">{t('today.openFull')} <ArrowRight className="size-4" /></Link>}
     </section>
   )
 }

@@ -46,6 +46,7 @@ import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import { MATCH_TONE } from '../properties/components/property-bits'
 import { isActive } from './lead-list'
 import { ConsentControl } from './consent-control'
+import { AmenitiesEditor, ContactEditor, InlineEdit, MoneyEditor, PurposeEditor, WantsEditor, WhereEditor } from './inline-edit'
 import { MatchesTab } from './matches-tab'
 import { AssistantBox } from '../assistant/assistant-box'
 import { DoneButton } from './done-button'
@@ -302,9 +303,14 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
   const r = l.requirement
   const b = l.budget
   const ceiling = Math.round(b.max * (1 + (b.flexPct || 0) / 100))
-  const wantsList = [L.type(r.type), r.bhk, r.bedrooms && t('lead.bedrooms', { n: r.bedrooms }), r.sizeSqft && `${num(r.sizeSqft)} sq.ft.`, r.commCategory].filter(Boolean).join(' · ')
+  const wantsList = [L.type(r.type), r.bhk, r.bedrooms && t('lead.bedrooms', { n: r.bedrooms }), r.commCategory].filter(Boolean).join(' · ')
   const place = [...r.localities, ...(r.localities.length ? [] : r.cities)].join(', ') + (r.localities.length ? ` · ${r.cities.join(', ')}` : '')
-  const extras = [...r.amenities.map((x) => t(`amenity.${x}`, { defaultValue: x })), r.possession && r.possession !== 'any' && t(`lead.possession.${r.possession}`), r.parking === 'required' && t('lead.parkingNeeded'), r.facing && L.facing(r.facing)].filter(Boolean) as string[]
+  // plot area · facing · corner (then ready to move, parking) on one line; amenities in their own row (27 Nov)
+  const specs = [r.sizeSqft && `${num(r.sizeSqft)} sq.ft.`, r.facing && t('lead.facingDir', { dir: L.facing(r.facing) }), r.corner && r.corner !== 'any' && t(`reason.${r.corner}`), r.possession && r.possession !== 'any' && t(`lead.possession.${r.possession}`), r.parking === 'required' && t('lead.parkingNeeded')].filter(Boolean) as string[]
+  const amenities = r.amenities.map((x) => t(`amenity.${x}`, { defaultValue: x }))
+  // whole names only: as many as fit on one line (up to 3), the rest as "+N"
+  const amenityShown: string[] = []
+  for (const a of amenities) { if (amenityShown.length >= 3 || (amenityShown.length > 0 && [...amenityShown, a].join(' ').length > 24)) break; amenityShown.push(a) }
   const visits = [...l.visits].sort((x, y) => y.date.localeCompare(x.date))
   const owner = userName(db, l.ownerId) || t('leads.unassigned')
   // short groups with an icon heading, written as plain sentences (redesign 26 Nov, version 2)
@@ -328,8 +334,12 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
         <UserAvatar name={l.name} size="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-lg leading-tight font-semibold">{l.name}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {l.purpose ? t(`purpose.buyer.${l.purpose}`) : '—'} · {hniHidden ? <span title={t('leads.restrictedHint')}>🔒 {t('leads.restricted')}</span> : t(`class.${cls}`)}
+          <p className="mt-0.5 flex flex-wrap items-center text-sm text-muted-foreground">
+            {/* the purpose: click to change (edit in place, 27 Nov) */}
+            <InlineEdit label={t('ai.purpose')} className="mx-0 w-auto py-0 pr-6 pl-1 -ml-1" editor={(close) => <PurposeEditor lead={l} close={close} />}>
+              {l.purpose ? t(`purpose.buyer.${l.purpose}`) : '—'}
+            </InlineEdit>
+            <span className="mr-1">·</span>{hniHidden ? <span title={t('leads.restrictedHint')}>🔒 {t('leads.restricted')}</span> : t(`class.${cls}`)}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">{l.id} · {l.source} · {fmtDate(l.enquiryDate)}</p>
           {/* the owner as a small chip; managers click it to reassign */}
@@ -372,13 +382,19 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
       <div className="flex flex-col gap-1 px-4 pt-3 text-sm">
         <p className="flex items-center gap-2">
           <Phone className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{l.phone} <span className="text-muted-foreground">· {t('lead.prefers', { how: t(`lead.pref.${l.contactPref ?? 'call'}`) })}</span></span>
+          <InlineEdit label={t('inline.contact')} className="mx-0 w-auto min-w-0 flex-1 py-0.5 pr-6 pl-1 -ml-1" editor={(close) => <ContactEditor lead={l} close={close} />}>
+            <span className="block truncate">{l.phone} <span className="text-muted-foreground">· {t('lead.prefers', { how: t(`lead.pref.${l.contactPref ?? 'call'}`) })}</span></span>
+          </InlineEdit>
           <span className="ml-auto flex shrink-0 gap-1">
             <Button size="icon-sm" variant="outline" className="size-7" onClick={a.call} aria-label={t('leads.call')} title={t('leads.call')}><Phone /></Button>
             <Button size="icon-sm" variant="outline" className="size-7" onClick={a.whatsapp} aria-label={t('leads.whatsappShort')} title={t('leads.whatsappShort')}><MessageCircle /></Button>
           </span>
         </p>
-        {l.email && <p className="flex items-center gap-2"><Mail className="size-3.5 shrink-0 text-muted-foreground" /> <span className="truncate">{l.email}</span></p>}
+        {l.email && (
+          <p className="flex items-center gap-2"><Mail className="size-3.5 shrink-0 text-muted-foreground" />
+            <InlineEdit label={t('inline.contact')} className="mx-0 w-auto min-w-0 flex-1 py-0.5 pr-6 pl-1 -ml-1" editor={(close) => <ContactEditor lead={l} close={close} />}><span className="block truncate">{l.email}</span></InlineEdit>
+          </p>
+        )}
         <ConsentControl lead={l} />
       </div>
 
@@ -387,13 +403,29 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
       <div className="mt-4">
         {group(Home, t('lead.group.lookingFor'), (
           <div className="text-sm">
-            <p className="font-medium">{wantsList}</p>
-            <p className="text-muted-foreground">{place}</p>
-            {extras.length > 0 && <p className="mt-0.5 text-xs text-muted-foreground">{extras.join(' · ')}</p>}
+            {/* what they want, then plot area · facing · corner (then ready to move, parking) — one block, one editor */}
+            <InlineEdit label={t('today.wants')} editor={(close) => <WantsEditor lead={l} close={close} />}>
+              <p className="pr-5 font-medium">{wantsList}</p>
+              {specs.length > 0 && <p className="pr-5 text-xs text-muted-foreground">{specs.join(' · ')}</p>}
+            </InlineEdit>
+            <InlineEdit label={t('ai.where')} editor={(close) => <WhereEditor lead={l} close={close} />}><p className="pr-5 text-muted-foreground">{place}</p></InlineEdit>
+            {/* amenities: the title and the chips in one row — up to 3, then +N */}
+            <InlineEdit label={t('leadForm.amenities')} className="mt-1" editor={(close) => <AmenitiesEditor lead={l} close={close} />}>
+              <span className="flex min-w-0 items-center gap-2 pr-5">
+                <span className="shrink-0 text-caption font-semibold tracking-wide text-muted-foreground uppercase">{t('lead.amenitiesTitle')}</span>
+                {amenities.length ? (
+                  <span className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
+                    {amenityShown.map((a, i) => <span key={a} title={a} className={cn('rounded-full bg-muted px-2 py-0.5 text-xs', i === 0 ? 'min-w-0 truncate' : 'shrink-0')}>{a}</span>)}
+                    {amenities.length > amenityShown.length && <span className="shrink-0 rounded-full border px-1.5 py-0.5 text-xs text-muted-foreground" title={amenities.slice(amenityShown.length).join(', ')}>+{amenities.length - amenityShown.length}</span>}
+                  </span>
+                ) : <span className="truncate text-xs text-muted-foreground">{t('lead.noAmenities')}</span>}
+              </span>
+            </InlineEdit>
           </div>
         ))}
         {group(Wallet, t('lead.group.money'), (
-          <div className="text-sm">
+          <InlineEdit label={t('lead.group.money')} editor={(close) => <MoneyEditor lead={l} close={close} />}>
+          <div className="pr-5 text-sm">
             <p><b className="font-semibold">{inrShort(b.min)} – {inrShort(b.max)}</b> <span className="text-muted-foreground">· {t('lead.preferred', { amount: inrShort(b.preferred) })}</span></p>
             <p className="text-muted-foreground">
               {b.flexPct > 0 && <>{t('lead.flex', { pct: b.flexPct, ceiling: inrShort(ceiling) })} · </>}
@@ -403,6 +435,7 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
             {b.basis ? <p className="mt-0.5 text-xs text-muted-foreground">{t(`lead.basis.${b.basis}`)}</p>
               : <p className="mt-0.5 text-xs text-warning" title={t('leadForm.basisHint')}>{t('lead.basis.ask')}</p>}
           </div>
+          </InlineEdit>
         ))}
         {(l.negotiation || l.stage === 'negotiation') && group(Handshake, l.negotiation
           ? <>{t('lead.group.negotiating')} · <Link to={`/properties/${l.negotiation.propertyId}`} className="text-primary normal-case hover:underline">{l.negotiation.propertyId}</Link></>
