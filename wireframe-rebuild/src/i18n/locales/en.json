@@ -122,6 +122,7 @@
   },
   "stageShort": { "new": "Enquiry", "contacted": "Contacted", "qualified": "Qualified", "recommended": "Recommended", "visitScheduled": "Site visit", "negotiation": "Negotiation", "closed": "Closed", "lost": "Lost" },
   "classShort": { "general": "General", "qualifiedBuyer": "Qualified buyer", "investor": "Investor", "highValue": "High value", "potentialHni": "Potential HNI", "verifiedHni": "Verified HNI" },
+  "typeShort": { "plot": "Plot", "flat": "Flat", "house": "House / Villa", "commercial": "Commercial", "agri": "Agri land", "industrial": "Industrial" },
   "amount": { "unit": { "L": "Lakh", "Cr": "Cr" } },
   "approval": {
     "dtcp": "DTCP approval",
@@ -1647,7 +1648,6 @@
       "owner": "Executive",
       "purpose": "Purpose",
       "type": "Property type",
-      "band": "Readiness",
       "cls": "Classification"
     },
     "city": "City",
@@ -1743,6 +1743,11 @@
     "askPlaceholder": "e.g. investors in Madurai under 50 lakh",
     "toSearch": "Back to keyword search",
     "filter": "Filter",
+    "filters": "Filters",
+    "clear": "Clear",
+    "showN_one": "Show {{count}} lead",
+    "showN_other": "Show {{count}} leads",
+    "active": { "title": "Active leads", "ofTotal_one": "of {{count}} total", "ofTotal_other": "of {{count}} total", "split": "{{booked}} booked · {{lost}} lost", "bar": "{{active}} active, {{booked}} booked, {{lost}} lost" },
     "showing_one": "{{count}} lead",
     "showing_other": "{{count}} leads",
     "group": {

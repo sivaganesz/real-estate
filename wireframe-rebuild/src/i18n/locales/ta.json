@@ -122,6 +122,7 @@
   },
   "stageShort": { "new": "விசாரணை", "contacted": "தொடர்பு", "qualified": "தகுதி", "recommended": "பரிந்துரை", "visitScheduled": "தள வருகை", "negotiation": "பேரம்", "closed": "முடிவு", "lost": "இழந்தது" },
   "classShort": { "general": "பொது", "qualifiedBuyer": "தகுதியானவர்", "investor": "முதலீட்டாளர்", "highValue": "உயர் மதிப்பு", "potentialHni": "சாத்தியமான HNI", "verifiedHni": "சரிபார்த்த HNI" },
+  "typeShort": { "plot": "மனை", "flat": "பிளாட்", "house": "வீடு / வில்லா", "commercial": "வணிகம்", "agri": "விவசாய நிலம்", "industrial": "தொழில்துறை" },
   "amount": { "unit": { "L": "லட்சம்", "Cr": "கோடி" } },
   "approval": {
     "dtcp": "DTCP அனுமதி",
@@ -1715,7 +1716,6 @@
       "owner": "நிர்வாகி",
       "purpose": "நோக்கம்",
       "type": "சொத்து வகை",
-      "band": "தயார்நிலை",
       "cls": "வகைப்பாடு"
     },
     "city": "நகரம்",
@@ -1811,6 +1811,11 @@
     "askPlaceholder": "எ.கா. மதுரையில் 50 லட்சத்துக்குள் முதலீட்டாளர்கள்",
     "toSearch": "சொல் தேடலுக்குத் திரும்பு",
     "filter": "வடிகட்டி",
+    "filters": "வடிகட்டிகள்",
+    "clear": "அழி",
+    "showN_one": "{{count}} லீடைக் காட்டு",
+    "showN_other": "{{count}} லீட்களைக் காட்டு",
+    "active": { "title": "செயலில் உள்ள லீட்கள்", "ofTotal_one": "மொத்தம் {{count}} இல்", "ofTotal_other": "மொத்தம் {{count}} இல்", "split": "{{booked}} முன்பதிவு · {{lost}} இழந்தது", "bar": "{{active}} செயலில், {{booked}} முன்பதிவு, {{lost}} இழந்தது" },
     "showing_one": "{{count}} லீட்",
     "showing_other": "{{count}} லீட்கள்",
     "group": {

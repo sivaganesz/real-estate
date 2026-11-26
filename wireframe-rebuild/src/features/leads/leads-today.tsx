@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import {
-  ArrowRight, Building2, Check, Flame, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, UserRound, X,
+  ArrowRight, Building2, Check, Flame, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, UserRound, Users, X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -91,7 +91,8 @@ export function LeadsToday() {
             : view === 'hni' ? isHni(x.cls) : true
   const inTile = (x: LeadItem) =>
     !tile ? true : tile === 'hot' ? isHot(x) : tile === 'new' ? isNew(x, today) : groupOf(x.lead, today) === tile
-  const list = items.filter((x) => inView(x) && inTile(x) && matchesLead(x, f, today))
+  const base = items.filter((x) => inView(x) && inTile(x))
+  const list = base.filter((x) => matchesLead(x, f, today))
     .sort((a, b) => (a.lead.nextFollowUp ?? '9999').localeCompare(b.lead.nextFollowUp ?? '9999') || b.ready.total - a.ready.total)
   const groups = (['overdue', 'today', 'week', 'later', 'none', 'closed'] as Group[])
     .map((g) => ({ g, rows: list.filter((x) => groupOf(x.lead, today) === g) })).filter((x) => x.rows.length)
@@ -123,7 +124,8 @@ export function LeadsToday() {
       </div>
 
       {/* summary tiles: today at a glance; each filters the list */}
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <ActiveCard items={items} />
         <StatTile on={tile === 'overdue'} onClick={() => setTile(tile === 'overdue' ? null : 'overdue')} tone="danger" n={counts.overdue} label={t('today.tile.overdue')} hint={t('today.tile.overdueHint')} />
         <StatTile on={tile === 'today'} onClick={() => setTile(tile === 'today' ? null : 'today')} tone="warning" n={counts.today} label={t('today.tile.today')} hint={t('today.tile.todayHint')} />
         <StatTile on={tile === 'hot'} onClick={() => setTile(tile === 'hot' ? null : 'hot')} tone="success" n={counts.hot} label={t('today.tile.hot')} hint={t('today.tile.hotHint')} icon={<Flame />} />
@@ -144,7 +146,7 @@ export function LeadsToday() {
               ))}
             </nav>
             <SearchAsk f={f} ask={ask} onAsk={setAsk} onChange={setF} onRun={runAsk} />
-            <FilterButton f={f} onChange={setF} manager={manager} />
+            <FilterButton f={f} onChange={setF} manager={manager} base={base} shown={list.length} />
           </div>
 
           {(tile || f.aiRan) && (
@@ -194,6 +196,35 @@ export function LeadsToday() {
 
 /* ---------- pieces ---------- */
 
+/**
+ * Active leads at a glance (27 Nov): how many are still being worked on out of all of them, and a bar of where the rest
+ * ended — booked or lost. Counts only the leads you can see (an executive's own). Not a filter, so not a button.
+ */
+function ActiveCard({ items }: { items: LeadItem[] }) {
+  const { t } = useTranslation()
+  const total = items.length
+  const active = items.filter((x) => isActive(x.lead)).length
+  const booked = items.filter((x) => x.lead.stage === 'closed').length
+  const lost = items.filter((x) => x.lead.stage === 'lost').length
+  const pct = (n: number) => (total ? `${(n / total) * 100}%` : '0%')
+  return (
+    <div className="relative col-span-2 flex flex-col gap-1 overflow-hidden rounded-2xl border bg-card p-3 shadow-card sm:p-4 lg:col-span-1">
+      <span className="absolute -top-6 -right-6 size-20 rounded-full bg-success-soft opacity-60" aria-hidden />
+      <span className="relative flex items-center gap-1.5 text-sm font-medium text-success"><Users className="size-4" /> {t('today.active.title')}</span>
+      <p className="relative flex items-baseline gap-1.5">
+        <span className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{active}</span>
+        <span className="text-sm text-muted-foreground">{t('today.active.ofTotal', { count: total })}</span>
+      </p>
+      <span role="img" aria-label={t('today.active.bar', { active, booked, lost })} className="relative mt-1 flex h-1.5 overflow-hidden rounded-full bg-muted">
+        <span className="bg-success" style={{ width: pct(active) }} />
+        <span className="bg-success/45" style={{ width: pct(booked) }} />
+        <span className="bg-danger/70" style={{ width: pct(lost) }} />
+      </span>
+      <span className="relative text-meta text-muted-foreground">{t('today.active.split', { booked, lost })}</span>
+    </div>
+  )
+}
+
 function StatTile({ on, onClick, tone, n, label, hint, icon }: { on: boolean; onClick: () => void; tone: Tone; n: number; label: string; hint: string; icon?: ReactNode }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on}
@@ -238,33 +269,88 @@ function SearchAsk({ f, ask, onAsk, onChange, onRun }: { f: LeadFilters; ask: bo
   )
 }
 
-/** One button for the detailed filters (they used to be six pills). */
-function FilterButton({ f, onChange, manager }: { f: LeadFilters; onChange: (f: LeadFilters) => void; manager: boolean }) {
+/** The panel's sections: the many-value key, and the single-value key the list pills and the ✨ search still set. */
+const SECTIONS = [
+  { arr: 'stages', one: 'stage' },
+  { arr: 'types', one: 'type' },
+  { arr: 'cities', one: 'city' },
+  { arr: 'owners', one: 'owner' },
+] as const
+type Section = (typeof SECTIONS)[number]
+
+/** What's chosen in a section: the panel's values plus one set elsewhere (a list pill or the ✨ search). */
+const chosen = (f: LeadFilters, s: Section): string[] => [...new Set([...((f[s.arr] as string[] | undefined) ?? []), ...(f[s.one] ? [f[s.one] as string] : [])])]
+/** The filters with a section set to these values (the single value folds into the list). */
+const withSection = (f: LeadFilters, s: Section, values: string[]): LeadFilters => ({ ...f, [s.arr]: values.length ? values : undefined, [s.one]: undefined })
+
+/**
+ * One button for the detailed filters (agreed 27 Nov): short labels, a count on every option (greyed out at 0), several
+ * picks per section (a lead matches any of them), a Clear per section and Clear all, and "Show N leads" at the foot.
+ * Counts take the other sections, the view and the tile into account, so they say what you'd get.
+ */
+function FilterButton({ f, onChange, manager, base, shown }: { f: LeadFilters; onChange: (f: LeadFilters) => void; manager: boolean; base: LeadItem[]; shown: number }) {
   const { t } = useTranslation()
   const L = useLabels()
-  const { db } = useStore()
-  const n = (['stage', 'owner', 'purpose', 'type', 'city', 'band', 'cls'] as const).filter((k) => f[k]).length
-  const chip = (on: boolean, label: string, onClick: () => void) => (
-    <button key={label} type="button" onClick={onClick}
-      className={cn('rounded-full border px-2.5 py-1 text-sm', on ? 'border-primary bg-accent font-medium text-primary' : 'hover:bg-muted')}>{label}</button>
-  )
-  const row = (label: string, children: ReactNode) => (
-    <div><p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p><div className="flex flex-wrap gap-1.5">{children}</div></div>
-  )
+  const { db, today } = useStore()
+  const [open, setOpen] = useState(false)
+  const executives = db.users.filter((u) => u.role === 'executive')
+  const sections = SECTIONS.filter((s) => manager || s.arr !== 'owners')
+  const n = sections.filter((s) => chosen(f, s).length).length
+  const count = (s: Section, v: string) => base.filter((x) => matchesLead(x, withSection(f, s, [v]), today)).length
+  const toggle = (s: Section, v: string) => {
+    const cur = chosen(f, s)
+    onChange(withSection(f, s, cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]))
+  }
+  const options: Record<Section['arr'], { v: string; label: ReactNode; full: string }[]> = {
+    stages: [...STAGE_ORDER, 'lost' as LeadStage].map((s) => ({ v: s, label: t(`stageShort.${s}`), full: t(`stage.${s}`) })),
+    types: TYPE_ORDER.map((x) => ({ v: x, label: t(`typeShort.${x}`), full: L.type(x) })),
+    cities: Object.keys(CITIES).map((c) => ({ v: c, label: c, full: c })),
+    owners: executives.map((u) => ({ v: u.id, label: <><UserAvatar name={u.name} size="xs" className="-ml-1 size-5" />{u.name}</>, full: u.name })),
+  }
+  const title: Record<Section['arr'], string> = { stages: t('leads.pill.stage'), types: t('leads.pill.type'), cities: t('leads.city'), owners: t('leads.pill.owner') }
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-8">
           <SlidersHorizontal /> {t('today.filter')}{n > 0 && <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{n}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="flex w-[min(26.25rem,calc(100vw-2rem))] flex-col gap-3 rounded-xl p-4">
-        {row(t('leads.pill.stage'), [...STAGE_ORDER, 'lost' as LeadStage].map((s) => chip(f.stage === s, t(`stage.${s}`), () => onChange({ ...f, stage: f.stage === s ? undefined : s }))))}
-        {row(t('leads.pill.type'), TYPE_ORDER.map((x) => chip(f.type === x, L.type(x), () => onChange({ ...f, type: f.type === x ? undefined : x }))))}
-        {row(t('leads.city'), Object.keys(CITIES).map((c) => chip(f.city === c, c, () => onChange({ ...f, city: f.city === c ? undefined : c }))))}
-        {row(t('leads.pill.band'), (['high', 'qualified', 'developing', 'early'] as const).map((b) => chip(f.band === b, t(`readiness.${b}`), () => onChange({ ...f, band: f.band === b ? undefined : b }))))}
-        {manager && row(t('leads.pill.owner'), db.users.filter((u) => u.role === 'executive').map((u) => chip(f.owner === u.id, u.name, () => onChange({ ...f, owner: f.owner === u.id ? undefined : u.id }))))}
-        {n > 0 && <button type="button" onClick={() => onChange({ q: f.q })} className="self-start text-sm font-medium text-primary">{t('ps.clearAll')}</button>}
+      <PopoverContent align="end" className="flex max-h-[min(36rem,calc(100vh-8rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-xl p-0">
+        <div className="flex items-center justify-between border-b px-4 py-2.5">
+          <p className="font-semibold">{t('today.filters')}</p>
+          {n > 0 && <button type="button" onClick={() => onChange({ q: f.q })} className="text-sm font-medium text-primary hover:underline">{t('ps.clearAll')}</button>}
+        </div>
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-4 py-3">
+          {sections.map((s) => {
+            const on = chosen(f, s)
+            return (
+              <div key={s.arr} role="group" aria-label={title[s.arr]}>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">{title[s.arr]}</p>
+                  {on.length > 0 && <button type="button" onClick={() => onChange(withSection(f, s, []))} className="text-xs text-primary hover:underline">{t('today.clear')}</button>}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {options[s.arr].map((o) => {
+                    const sel = on.includes(o.v)
+                    const c = count(s, o.v)
+                    return (
+                      <button key={o.v} type="button" onClick={() => toggle(s, o.v)} aria-pressed={sel} disabled={!sel && c === 0} title={o.full}
+                        className={cn('inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors disabled:cursor-default disabled:opacity-40',
+                          sel ? 'border-primary bg-primary font-medium text-primary-foreground' : 'hover:border-primary/40 hover:bg-muted')}>
+                        {sel && <Check className="-ml-0.5 size-3.5" strokeWidth={3} />}
+                        {o.label}
+                        <span className={cn('text-xs tabular-nums', sel ? 'opacity-80' : 'text-muted-foreground')}>{c}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="border-t px-4 py-3">
+          <Button className="w-full" onClick={() => setOpen(false)}>{t('today.showN', { count: shown })}</Button>
+        </div>
       </PopoverContent>
     </Popover>
   )

@@ -58,9 +58,13 @@ export type LeadFilters = {
   owner?: string
   purpose?: BuyerPurpose
   type?: PropertyTypeKey
-  band?: ReadinessBand
   cls?: Classification
   city?: string
+  /** Several values per section (the Today design's Filter panel): a lead matches if it has any of them. */
+  stages?: LeadStage[]
+  types?: PropertyTypeKey[]
+  cities?: string[]
+  owners?: string[]
   /** Budget the lead can go up to — "under 50 lakh" keeps leads whose top budget is at most this. */
   maxBudget?: number
   minBudget?: number
@@ -82,12 +86,15 @@ export function matchesLead(x: LeadItem, f: LeadFilters, today: string): boolean
   if (f.owner && (f.owner === '__none' ? !!l.ownerId : l.ownerId !== f.owner)) return false
   if (f.purpose && l.purpose !== f.purpose) return false
   if (f.type && l.requirement.type !== f.type) return false
-  if (f.band && x.ready.band !== f.band) return false
   if (f.cls && x.cls !== f.cls) return false
   if (f.city && !l.requirement.cities.includes(f.city)) return false
   if (f.maxBudget && l.budget.max > f.maxBudget) return false
   if (f.minBudget && l.budget.max < f.minBudget) return false
   if (f.attn && !attentionOf(x, today).includes(f.attn)) return false
+  if (f.stages?.length && !f.stages.includes(l.stage)) return false
+  if (f.types?.length && !f.types.includes(l.requirement.type)) return false
+  if (f.cities?.length && !l.requirement.cities.some((c) => f.cities!.includes(c))) return false
+  if (f.owners?.length && !f.owners.includes(l.ownerId ?? '__none')) return false
   return true
 }
 
@@ -100,7 +107,8 @@ export function sortLeads(list: LeadItem[], by: LeadSort = 'ready'): LeadItem[] 
 
 /** Filters that are set (for "Clear all"); the sort and the sentence don't count. */
 export const filterCount = (f: LeadFilters) =>
-  (['q', 'stage', 'owner', 'purpose', 'type', 'band', 'cls', 'city', 'maxBudget', 'minBudget', 'attn'] as const).filter((k) => f[k] !== undefined && f[k] !== '').length
+  (['q', 'stage', 'owner', 'purpose', 'type', 'cls', 'city', 'maxBudget', 'minBudget', 'attn'] as const).filter((k) => f[k] !== undefined && f[k] !== '').length +
+  (['stages', 'types', 'cities', 'owners'] as const).filter((k) => f[k]?.length).length
 
 /* ---------- ✨ sentence search ---------- */
 
@@ -131,7 +139,6 @@ export function parseLeadSentence(text: string): LeadFilters {
   else if (/\bown use|to live|self use\b/.test(q)) f.purpose = 'ownUse'
   else if (/\bbusiness\b/.test(q)) f.purpose = 'businessUse'
   else if (/\bsecond home|holiday home\b/.test(q)) f.purpose = 'secondHome'
-  if (/\bready[- ]to[- ]buy|hot|high[- ]priority\b/.test(q)) f.band = 'high'
   const stages: [RegExp, LeadStage][] = [[/\bnegotiat/, 'negotiation'], [/\bsite visit|visit scheduled\b/, 'visitScheduled'], [/\bnew (enquir|lead)/, 'new'],
     [/\bcontacted\b/, 'contacted'], [/\bqualified\b/, 'qualified'], [/\brecommended\b/, 'recommended'], [/\blost\b/, 'lost'], [/\bclosed|booked\b/, 'closed']]
   for (const [re, s] of stages) if (re.test(q)) { f.stage = s; break }

@@ -24,7 +24,7 @@ import { Meter } from '@/components/app/meter'
 import { Page, PageHeader } from '@/components/app/page-header'
 import { Segmented } from '@/components/app/segmented'
 import { StatusChip } from '@/components/app/status-chip'
-import { type Tone, toneFill, toneText } from '@/components/app/tone'
+import { type Tone, toneText } from '@/components/app/tone'
 import { UserAvatar } from '@/components/app/user-avatar'
 import { useCrumbs } from '@/components/layout/crumbs'
 import { CITIES, STAGE_ORDER, TYPE_ORDER } from '@/data/catalogue'
@@ -32,7 +32,7 @@ import type { BuyerPurpose, Classification, Lead, LeadStage } from '@/data/types
 import { CLASS_TONE, CLASSIFICATIONS, isHni } from '@/lib/classification'
 import { fmtDate, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
-import { BAND_TONE, type ReadinessBand } from '@/lib/readiness'
+import { BAND_TONE } from '@/lib/readiness'
 import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import { ListOptions, useListPrefs } from '../properties/components/list-options'
@@ -48,7 +48,6 @@ export const STAGE_TONE: Record<LeadStage, Tone> = {
   new: 'neutral', contacted: 'neutral', qualified: 'info', recommended: 'primary', visitScheduled: 'violet', negotiation: 'warning', closed: 'success', lost: 'danger',
 }
 const PURPOSES: BuyerPurpose[] = ['ownUse', 'investment', 'rentalIncome', 'businessUse', 'secondHome', 'other']
-const BANDS: ReadinessBand[] = ['high', 'qualified', 'developing', 'early']
 const SORTS: LeadSort[] = ['ready', 'followUp', 'newest']
 const GRID_SIZES = [12, 24, 48]
 
@@ -71,7 +70,7 @@ function useLeadView(userId: string, manager: boolean): [View, (v: View) => void
   return [views[userId] ?? fallback, set]
 }
 
-type Pill = 'stage' | 'owner' | 'purpose' | 'type' | 'band' | 'cls' | 'sort'
+type Pill = 'stage' | 'owner' | 'purpose' | 'type' | 'cls' | 'sort'
 
 /** /leads shows the current list; /leads?design=new the "Today" prototype (26 Nov), to compare the two. */
 export function LeadsPage() {
@@ -148,8 +147,6 @@ function LeadsList() {
           </div>
         </>
       ) },
-    { k: 'band', label: f.band ? t(`readiness.${f.band}`) : t('leads.pill.band'), set: !!f.band,
-      body: BANDS.map((b) => opt(f.band === b, <span className="flex items-center gap-2"><span className={cn('size-2 rounded-full', toneFill[BAND_TONE[b]])} />{t(`readiness.${b}`)}</span>, () => set('band', f.band === b ? undefined : b), b)) },
     { k: 'cls', label: f.cls ? t(`class.${f.cls}`) : t('leads.pill.cls'), set: !!f.cls,
       body: CLASSIFICATIONS.filter((c) => manager || !isHni(c)).map((c) => opt(f.cls === c, t(`class.${c}`), () => set('cls', f.cls === c ? undefined : c), c)) },
   ]
