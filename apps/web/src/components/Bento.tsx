@@ -33,13 +33,29 @@ export function TileLink({ to, children }: { to: string; children: React.ReactNo
   );
 }
 
-/** Big weekday headline used by every role's Today. */
+/** "Good morning" before noon, "Good afternoon" until 5 pm, then "Good evening". */
+export function greeting(now = new Date()) {
+  const h = now.getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+/** The headline on every role's Today: the day, a greeting by first name, and one line about the day. */
 export function DayHeadline({ line, actions }: { line: string; actions?: React.ReactNode }) {
-  const weekday = new Date().toLocaleDateString('en-IN', { weekday: 'long' });
+  const { user } = useAuth();
+  const now = new Date();
+  const day = now.toLocaleDateString('en-IN', { weekday: 'long' });
+  const date = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const first = user?.name.split(" ")[0];
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 pb-2">
       <div>
-        <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{weekday}.</h1>
+        <p className="text-sm font-medium text-slate-500">
+          {day} · {date}
+        </p>
+        <h1 className="mt-1 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+          {greeting(now)}
+          {first ? `, ${first}` : ''}.
+        </h1>
         <p className="mt-1 text-2xl font-medium tracking-tight text-slate-400 sm:text-3xl">{line || ' '}</p>
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

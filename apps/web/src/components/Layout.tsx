@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { LogOut, Search, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, LogOut, Search, Sparkles } from 'lucide-react';
 import { ROLE_LABEL } from '@estate/shared';
-import { useAuth } from '../lib/auth';
+import { useAuth, useSwitchOptions } from '../lib/auth';
 import { NAV, TOP_NAV_ROLES, type NavItem } from '../nav';
-import { Avatar, PageLoader } from './ui';
+import { Avatar, Modal, PageLoader } from './ui';
+import { RoleList } from './RoleSwitcher';
 import { AssistantPanel } from '../ai/AssistantPanel';
 import { useAssistant } from '../ai/assistant';
 import { Reminders } from '../features/activities';
@@ -151,12 +152,13 @@ function Sidebar({ items }: { items: NavItem[] }) {
         </p>
         <p className="mt-1 text-xs text-slate-600">Ask about leads, properties or your day. Press Ctrl/⌘ K.</p>
       </div>
-      <div className="flex items-center gap-2 border-t border-slate-100 px-4 py-3">
+      <div className="relative flex items-center gap-2 border-t border-slate-100 px-4 py-3">
         <Avatar name={user.name} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-slate-800">{user.name}</p>
           <p className="text-xs text-slate-400">{ROLE_LABEL[user.role]}</p>
         </div>
+        <SidebarSwitch />
         <button onClick={() => signOut().then(() => navigate('/login'))} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" title="Sign out">
           <LogOut className="h-4 w-4" />
         </button>
@@ -219,9 +221,10 @@ function AssistantButton({ labelFrom }: { labelFrom: 'sm' | 'xl' }) {
   );
 }
 
-/** Avatar with a small menu: who you are, and sign out. */
+/** Avatar with a small menu: who you are, switch role (demo accounts), and sign out. */
 function UserMenu() {
   const { user, ai, signOut } = useAuth();
+  const switchable = useSwitchOptions();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -247,6 +250,14 @@ function UserMenu() {
             </div>
           </div>
           {ai?.mode === 'offline' && <p className="mx-2 mb-1 rounded-lg bg-amber-50 px-2 py-1 text-[11px] text-amber-800">Assistant is in offline mode</p>}
+          {!!switchable.data?.length && (
+            <div className="my-1 border-y border-slate-100 py-1">
+              <p className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-500">
+                <ArrowLeftRight className="h-3.5 w-3.5" /> Switch role
+              </p>
+              <RoleList onDone={() => setOpen(false)} />
+            </div>
+          )}
           <button onClick={() => signOut().then(() => navigate('/login'))} className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
             <LogOut className="h-4 w-4 text-slate-400" /> Sign out
           </button>
@@ -259,6 +270,8 @@ function UserMenu() {
 /** Phones: the main sections as a bottom tab bar, for every role. */
 function BottomBar({ items }: { items: NavItem[] }) {
   const { signOut } = useAuth();
+  const switchable = useSwitchOptions();
+  const [switching, setSwitching] = useState(false);
   const navigate = useNavigate();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden" aria-label="Main">
@@ -270,10 +283,19 @@ function BottomBar({ items }: { items: NavItem[] }) {
             {n.label}
           </NavLink>
         ))}
+      {!!switchable.data?.length && (
+        <button onClick={() => setSwitching(true)} className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
+          <ArrowLeftRight className="h-[18px] w-[18px]" />
+          Role
+        </button>
+      )}
       <button onClick={() => signOut().then(() => navigate('/login'))} className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
         <LogOut className="h-[18px] w-[18px]" />
         Sign out
       </button>
+      <Modal open={switching} onClose={() => setSwitching(false)} title="Switch role">
+        <RoleList onDone={() => setSwitching(false)} />
+      </Modal>
     </nav>
   );
 }
@@ -286,6 +308,41 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
         {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+/** Sidebar: a switch button beside sign-out; its list opens above the profile row. Demo accounts only. */
+function SidebarSwitch() {
+  const switchable = useSwitchOptions();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+  if (!switchable.data?.length) return null;
+  return (
+    <div ref={ref}>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="dialog" className={clsx('rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700', open && 'bg-slate-100 text-slate-700')} title="Switch role">
+        <ArrowLeftRight className="h-4 w-4" />
+        <span className="sr-only">Switch role</span>
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Switch role" className="absolute bottom-full left-3 right-3 z-40 mb-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-pop">
+          <p className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-500">
+            <ArrowLeftRight className="h-3.5 w-3.5" /> Switch role
+          </p>
+          <RoleList onDone={() => setOpen(false)} />
+        </div>
+      )}
     </div>
   );
 }

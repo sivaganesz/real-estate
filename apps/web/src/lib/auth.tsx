@@ -13,6 +13,8 @@ type AuthValue = {
   can: (p: Permission) => boolean;
   refresh: () => void;
   signOut: () => Promise<void>;
+  /** Demo accounts only: become another demo user (another role). */
+  switchTo: (userId: string) => Promise<User>;
 };
 
 const Ctx = createContext<AuthValue | null>(null);
@@ -44,6 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       qc.clear();
       qc.setQueryData(['me'], null);
     },
+    switchTo: async (userId) => {
+      const r = await api.post<{ user: User }>('/auth/switch', { userId });
+      // Everything cached belonged to the previous person. Reset it all (screens stay subscribed)
+      // and wait for "who am I" to come back as the new person before showing their home.
+      await qc.resetQueries();
+      return r.user;
+    },
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -56,4 +65,16 @@ export function useAuth() {
 
 export function useUsers() {
   return useQuery({ queryKey: ['users'], queryFn: () => api.get<{ users: User[] }>('/users'), staleTime: 60_000, select: (d) => d.users });
+}
+
+/** The demo accounts this person can switch into; empty for real accounts or when switching is off. */
+export function useSwitchOptions() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['switch-options', user?.id],
+    queryFn: () => api.get<{ options: { id: string; name: string; role: Role }[] }>('/auth/switch'),
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+    select: (d) => d.options,
+  });
 }

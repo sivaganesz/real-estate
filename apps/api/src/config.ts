@@ -16,4 +16,9 @@ export const config = {
   dataDir: path.resolve(here, '../../../.data/mongo'),
   mongoBinaryDir: path.resolve(here, '../../../node_modules/.cache/mongodb-memory-server'),
   isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
+  /**
+   * "Switch role" in the profile menu: hop between the demo accounts to see each
+   * role's view. On by default outside production; in production only with ROLE_SWITCH=1.
+   */
+  roleSwitch: process.env.ROLE_SWITCH === '1' || (process.env.ROLE_SWITCH !== '0' && process.env.NODE_ENV !== 'production'),
 };

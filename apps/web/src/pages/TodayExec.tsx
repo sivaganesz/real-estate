@@ -10,7 +10,7 @@ import { waLink, type Lead } from '../lib/leads';
 import type { Deal } from '../lib/deals';
 import type { Property } from '../lib/property';
 import { Button } from '../components/ui';
-import { Tile, TileHead } from '../components/Bento';
+import { DayHeadline, Tile, TileHead } from '../components/Bento';
 import { PropertyCover } from '../components/PropertyCard';
 import { NewLead } from '../components/NewLead';
 import { DealDrawer } from '../components/DealDrawer';
@@ -49,24 +49,22 @@ export function TodayExec() {
   ];
   const parts = words.filter(([c]) => c).map(([c, w]) => `${c} ${w}${c > 1 ? 's' : ''}`);
   const said = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
-  const weekday = new Date().toLocaleDateString('en-IN', { weekday: 'long' });
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4 pb-2">
-        <div>
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{weekday}.</h1>
-          <p className="mt-1 text-2xl font-medium tracking-tight text-slate-400 sm:text-3xl">{d ? (said ? `${said} today.` : 'A clear day — time to find new buyers.') : ' '}</p>
-        </div>
-        <div className="flex gap-2">
+      <DayHeadline
+        line={d ? (said ? `${said} today.` : 'A clear day — time to find new buyers.') : ''}
+        actions={
+          <>
           <Button className="rounded-full" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             New lead
           </Button>
           <Button variant="primary" className="rounded-full bg-slate-900 hover:bg-slate-800" icon={<Sparkles className="h-4 w-4" />} onClick={() => assistant.ask('Plan my day: what should I do first and why?')}>
             Plan my day
           </Button>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-12">
         <DayProgress d={d} name={user?.name.split(' ')[0] ?? ''} className="lg:col-span-5" />
