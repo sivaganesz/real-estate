@@ -27,20 +27,21 @@ test.describe('sales executive', () => {
     await page.goto('/leads?q=Vignesh');
     await openLead(page, /Vignesh Babu/);
     await expect(page.getByRole('heading', { name: 'Vignesh Babu' })).toBeVisible();
-    await page.getByRole('button', { name: 'Log a call' }).click();
+    await page.getByRole('group', { name: 'What to log' }).getByRole('button', { name: 'Call', exact: true }).click();
     await page.getByRole('button', { name: 'Interested', exact: true }).first().click();
-    await page.getByPlaceholder(/What was said/).fill('Wants a 2 BHK near Porur, budget 65 lakhs');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByPlaceholder(/What did you talk about/).fill('Wants a 2 BHK near Porur, budget 65 lakhs');
+    await page.getByRole('button', { name: 'Log', exact: true }).click();
     // The phone run follows the desktop run on the same data, so this call may be the second one.
     await expect(page.getByText('Logged', { exact: true })).toBeVisible();
     await expect(page.getByText('Call · Interested').first()).toBeVisible();
-    await expect(page.locator('h1 + span, h1 ~ span').filter({ hasText: 'Contacted' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Contacted, current stage' })).toBeVisible();
   });
 
   test('sees why properties fit a customer and sends two on WhatsApp', async ({ page }) => {
     await signIn(page, 'Sales executive');
     await page.goto('/leads?q=Irfan');
     await openLead(page, /Mohammed Irfan/);
+    await page.getByRole('tab', { name: /Matches/ }).click();
     await expect(page.getByText('Strong fit').first()).toBeVisible();
     await expect(page.getByText(/within budget/).first()).toBeVisible();
     const boxes = page.getByRole('button', { name: 'Select' });

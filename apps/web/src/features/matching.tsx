@@ -6,7 +6,7 @@ import { Check, Copy, MessageCircle, Send, Sparkles, ThumbsDown, ThumbsUp } from
 import { api } from '../lib/api';
 import { waLink, type Lead } from '../lib/leads';
 import { keyFacts, priceLabel, type Property } from '../lib/property';
-import { Badge, Button, Card, Modal, SectionTitle, Segmented, Textarea, type Tone } from '../components/ui';
+import { Badge, Button, Modal, SectionTitle, Segmented, Textarea, type Tone } from '../components/ui';
 import { PropertyCover } from '../components/PropertyCard';
 import { useToast } from '../components/toast';
 import { leadSlots } from '../slots-leads';
@@ -100,10 +100,10 @@ function LeadMatches({ lead }: { lead: Lead }) {
       void qc.invalidateQueries({ queryKey: ['shortlist', lead.id] });
     },
   });
-  if (lead.stage === 'lost' || lead.stage === 'booked') return null;
+  if (lead.stage === 'lost' || lead.stage === 'booked') return <p className="text-sm text-slate-500">{lead.stage === 'booked' ? 'Booked: no more matches needed.' : 'Reopen the lead to see matches again.'}</p>;
   const first = lead.name.split(' ')[0];
   return (
-    <Card className="rounded-3xl p-5">
+    <div>
       <SectionTitle
         action={
           <Segmented
@@ -202,8 +202,14 @@ function LeadMatches({ lead }: { lead: Lead }) {
           }}
         />
       )}
-    </Card>
+    </div>
   );
 }
 
-leadSlots.top.push(LeadMatches);
+/** How many properties fit: the number beside the Matches tab. */
+function useMatchCount(lead: Lead) {
+  const open = lead.stage !== 'lost' && lead.stage !== 'booked';
+  return useQuery({ queryKey: ['matches', lead.id], queryFn: () => api.get<{ qualified: boolean; total: number; items: MatchItem[] }>(`/matching/lead/${lead.id}?limit=6`), enabled: open }).data?.total;
+}
+
+leadSlots.tabs.push({ key: 'matches', label: 'Matches', useCount: useMatchCount, C: LeadMatches });

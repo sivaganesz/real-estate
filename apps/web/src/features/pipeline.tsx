@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ArrowRight, ChevronRight, RotateCcw, TrendingDown, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, RotateCcw, TrendingDown, X } from 'lucide-react';
 import { CALL_OUTCOMES, LOST_REASONS, OPEN_STAGES, STAGE_META, relativeDay, type Stage } from '@estate/shared';
 import { api, ApiError, qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { STAGE_TONE, TEMP_DOT, type Lead } from '../lib/leads';
+import { TEMP_DOT, type Lead } from '../lib/leads';
 import { priceLabel, type Property } from '../lib/property';
 import { Avatar, Badge, Button, Card, ErrorNote, Input, Modal, PageLoader, Textarea } from '../components/ui';
 import { useToast } from '../components/toast';
@@ -244,66 +244,82 @@ function Health({ owner }: { owner: string }) {
 }
 
 /** On the lead page: where they are, and the obvious next move. */
+/** Short names for the stage steps, so each fits on one line. */
+const STEP_LABEL: Partial<Record<Stage, string>> = { new: 'Enquiry' };
+const STEPS: Stage[] = ['new', 'contacted', 'qualified', 'visit', 'negotiation', 'booked'];
+// Arrow-shaped steps: the first has a flat left edge, the last a flat right edge.
+const ARROW = {
+  first: '[clip-path:polygon(0_0,calc(100%-14px)_0,100%_50%,calc(100%-14px)_100%,0_100%)]',
+  middle: '[clip-path:polygon(0_0,calc(100%-14px)_0,100%_50%,calc(100%-14px)_100%,0_100%,14px_50%)]',
+  last: '[clip-path:polygon(0_0,100%_0,100%_100%,0_100%,14px_50%)]',
+};
+
+/** The sales stage on a lead's page: where they are, since when, and one click to move them on. */
 function StageBar({ lead }: { lead: Lead }) {
   const [gate, setGate] = useState<{ to: Stage; need: Need; message: string } | null>(null);
   const move = useMove((_l, to, need, message) => setGate({ to, need, message }));
-  const steps: Stage[] = ['new', 'contacted', 'qualified', 'visit', 'negotiation', 'booked'];
-  const at = steps.indexOf(lead.stage);
-  const next = at >= 0 && at < 4 ? steps[at + 1] : null;
+  const lost = lead.stage === 'lost';
+  const at = STEPS.indexOf(lead.stage);
+  const since = new Date(lead.stageChangedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <ol className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {steps.map((s, i) => (
-            <li key={s} className="flex items-center gap-1">
-              <button
-                disabled={lead.stage === 'lost' || s === 'booked' || s === lead.stage}
-                onClick={() => move.mutate({ lead, to: s })}
-                title={STAGE_META[s].entry}
-                className={clsx(
-                  'whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition',
-                  s === lead.stage ? 'bg-brand-700 text-white' : i < at ? 'bg-brand-50 text-brand-800 hover:bg-brand-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
-                  lead.stage === 'lost' && 'opacity-50',
-                )}
-              >
-                {STAGE_META[s].label}
-              </button>
-              {i < steps.length - 1 && <ChevronRight className="h-3 w-3 shrink-0 text-slate-300" />}
-            </li>
-          ))}
-        </ol>
-        {lead.stage === 'lost' ? (
+    <section className="card rounded-3xl p-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="min-w-0 flex-1 text-sm text-slate-500">
+          <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Sales stage</span>
+          <span className={clsx('font-semibold', lost ? 'text-rose-600' : 'text-brand-700')}>{STAGE_META[lead.stage].label}</span> · since {since} · {lead.daysInStage} day{lead.daysInStage === 1 ? '' : 's'}
+        </p>
+        {lost ? (
           <Button size="sm" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => move.mutate({ lead, to: 'contacted' })}>
             Reopen
           </Button>
         ) : (
-          <div className="flex gap-2">
-            {next && (
-              <Button size="sm" variant="primary" onClick={() => move.mutate({ lead, to: next })}>
-                Move to {STAGE_META[next].label}
-              </Button>
-            )}
-            {lead.stage !== 'booked' && (
-              <Button size="sm" variant="ghost" className="text-rose-600" icon={<XCircle className="h-3.5 w-3.5" />} onClick={() => setGate({ to: 'lost', need: 'reason', message: '' })}>
-                Lost
-              </Button>
-            )}
-          </div>
+          lead.stage !== 'booked' && (
+            <Button size="sm" icon={<X className="h-3.5 w-3.5" />} onClick={() => setGate({ to: 'lost', need: 'reason', message: '' })}>
+              Mark as lost
+            </Button>
+          )
         )}
       </div>
-      {lead.stage === 'lost' && lead.lostReason && (
-        <p className="mt-2 text-xs text-rose-700">
+      <ol className="mt-4 flex overflow-x-auto" aria-label="Sales stages">
+        {STEPS.map((s, i) => {
+          const done = !lost && i < at;
+          const current = s === lead.stage;
+          const label = STEP_LABEL[s] ?? STAGE_META[s].label;
+          return (
+            <li key={s} className={clsx('min-w-[104px] flex-1', i > 0 && '-ml-2')}>
+              <button
+                disabled={lost || s === 'booked' || current}
+                onClick={() => move.mutate({ lead, to: s })}
+                aria-current={current ? 'step' : undefined}
+                aria-label={current ? `${STAGE_META[s].label}, current stage` : `Move to ${STAGE_META[s].label}`}
+                title={STAGE_META[s].entry}
+                className={clsx(
+                  'flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap px-6 text-sm font-medium transition',
+                  i === 0 ? clsx(ARROW.first, 'rounded-l-xl') : i === STEPS.length - 1 ? clsx(ARROW.last, 'rounded-r-xl') : ARROW.middle,
+                  current ? 'bg-brand-700 font-semibold text-white' : done ? 'bg-brand-50 text-brand-800 hover:bg-brand-100' : 'bg-slate-100 text-slate-500 enabled:hover:bg-slate-200',
+                  lost && 'opacity-60',
+                )}
+              >
+                {done && <Check className="h-3.5 w-3.5 shrink-0" />}
+                {label}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      {lost && lead.lostReason && (
+        <p className="mt-3 text-xs text-rose-700">
           Lost: {lead.lostReason}
           {lead.lostNote && ` — ${lead.lostNote}`}
         </p>
       )}
-      {lead.stale && lead.stage !== 'lost' && (
-        <p className="mt-2 text-xs text-amber-700">
-          {lead.daysInStage} days in {STAGE_META[lead.stage].label} — longer than usual. <Badge tone={STAGE_TONE[lead.stage]}>{STAGE_META[lead.stage].entry}</Badge>
+      {lead.stale && !lost && (
+        <p className="mt-3 text-xs text-amber-700">
+          {lead.daysInStage} days in {STAGE_META[lead.stage].label}, longer than usual. To move on: {STAGE_META[STEPS[at + 1] ?? lead.stage].entry.toLowerCase()}.
         </p>
       )}
       {gate && <MoveDialog lead={lead} {...gate} onClose={() => setGate(null)} onRetry={(extra) => move.mutateAsync({ lead, to: gate.to, extra }).then(() => setGate(null))} />}
-    </div>
+    </section>
   );
 }
 

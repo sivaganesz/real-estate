@@ -9,24 +9,21 @@ import {
   INTENT_LABEL,
   LEAD_SOURCE_LABEL,
   OPEN_STAGES,
-  PROPERTY_TYPE_LABEL,
   SCORE_BAND_LABEL,
   SEGMENT_LABEL,
   STAGE_META,
   TIMELINE_LABEL,
-  formatINR,
   formatTime,
   scoreBand,
   type ActivityType,
-  type ScoreBand,
   type Stage,
 } from '@estate/shared';
 import { api, qs } from '../lib/api';
 import { useAuth, useUsers } from '../lib/auth';
-import { STAGE_TONE, waLink, type Lead, type TimelineItem } from '../lib/leads';
-import { priceLabel, typeLabel, type Property } from '../lib/property';
+import { waLink, type Lead, type TimelineItem } from '../lib/leads';
+import { priceLabel, typeLabel } from '../lib/property';
 import { PageHeader } from '../components/Layout';
-import { Avatar, Button, EmptyState, PageLoader, Segmented, Select, type Tone } from '../components/ui';
+import { Avatar, Button, EmptyState, PageLoader, Segmented, Select } from '../components/ui';
 import { Popover } from '../components/Popover';
 import { PropertyCover } from '../components/PropertyCard';
 import { FilterChip } from './Properties';
@@ -35,6 +32,7 @@ import { useToast } from '../components/toast';
 import { useAssistant, useAssistantPage } from '../ai/assistant';
 import { CompleteDialog, PlanNextDialog } from '../features/activities';
 import { views } from '../slots-leads';
+import { BAND_STYLE, ScoreRing, StageLabel, budgetText, daysFromToday, matchTone, shortDate, whatAndWhere, type MatchItem } from '../components/leadBits';
 
 type Tab = 'all' | 'hot' | 'investors' | 'hni' | 'closed';
 type FocusKey = 'overdue' | 'today' | 'hot' | 'new';
@@ -316,11 +314,7 @@ function DoneDialog({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   return <CompleteDialog id={next.activityId} type={next.type as ActivityType} title={next.title ?? ACTIVITY_LABEL[next.type as ActivityType] ?? next.type} leadId={lead.id} leadName={lead.name} properties={[]} onClose={onClose} />;
 }
 
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-const daysFromToday = (iso: string) => Math.round((startOfDay(new Date(iso)) - startOfDay(new Date())) / 86_400_000);
 const isNew = (l: Lead) => Date.now() - new Date(l.createdAt).getTime() < 7 * 86_400_000;
-/** "6 Nov", or "6 Nov 2026" with the year. */
-const shortDate = (d: string, year = false) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}) });
 
 /** The four counts above the list. */
 const FOCUS: Record<FocusKey, { label: string; hint: string; mark: ReactNode; text: string; glow: string; ring: string; test: (l: Lead) => boolean }> = {
@@ -373,39 +367,6 @@ function groupByDue(items: Lead[]): Group[] {
   const byDue = (a: Lead, b: Lead) => +new Date(a.nextAction?.dueAt ?? 0) - +new Date(b.nextAction?.dueAt ?? 0);
   for (const d of defs) d.key === 'none' ? d.items.sort((a, b) => b.score - a.score) : d.items.sort(byDue);
   return defs.filter((d) => d.items.length);
-}
-
-const STAGE_DOT: Record<Tone, string> = { slate: 'bg-slate-500', blue: 'bg-sky-500', brand: 'bg-brand-500', ai: 'bg-ai-500', amber: 'bg-amber-600', green: 'bg-emerald-500', red: 'bg-rose-500' };
-
-function StageLabel({ stage, className }: { stage: Stage; className?: string }) {
-  return (
-    <span className={clsx('inline-flex items-center gap-1.5', className)}>
-      <span className={clsx('h-2 w-2 shrink-0 rounded-full', STAGE_DOT[STAGE_TONE[stage]])} />
-      {STAGE_META[stage].label}
-    </span>
-  );
-}
-
-/** "₹30 L–₹40 L", "up to ₹95 L"; rent per month. `spaced` puts spaces round the dash. */
-function budgetText(l: Lead, spaced = false) {
-  const r = l.requirement;
-  const rent = r.purpose && r.purpose !== 'sale';
-  const f = (n: number) => (rent ? `${formatINR(n, { short: false })}/mo` : formatINR(n));
-  if (r.budgetMin && r.budgetMax) return `${f(r.budgetMin)}${spaced ? ' – ' : '–'}${f(r.budgetMax)}`;
-  if (r.budgetMax) return `up to ${f(r.budgetMax)}`;
-  if (r.budgetMin) return `from ${f(r.budgetMin)}`;
-  return null;
-}
-
-/** "Plot · K.K. Nagar / Anna Nagar · 1,200 sq.ft. · 2 BHK": what and where. */
-function whatAndWhere(l: Lead) {
-  const r = l.requirement;
-  return [
-    r.types?.length ? r.types.map((t) => PROPERTY_TYPE_LABEL[t]).join(' / ') : null,
-    r.localities?.length ? r.localities.join(' / ') : r.city,
-    r.areaMin ? `${r.areaMin.toLocaleString('en-IN')} sq.ft.` : null,
-    r.bedrooms ? `${r.bedrooms} BHK` : null,
-  ].filter(Boolean) as string[];
 }
 
 /** When the next step is due, coloured by urgency. */
@@ -468,33 +429,6 @@ function LeadRow({ l, selected, onPick, onDone }: { l: Lead; selected?: boolean;
   );
 }
 
-const BAND_STYLE: Record<ScoreBand, { text: string; stroke: string }> = {
-  high: { text: 'text-emerald-700', stroke: 'stroke-emerald-600' },
-  qualified: { text: 'text-blue-700', stroke: 'stroke-blue-600' },
-  nurture: { text: 'text-amber-700', stroke: 'stroke-amber-500' },
-  early: { text: 'text-slate-600', stroke: 'stroke-slate-400' },
-  closed: { text: 'text-slate-600', stroke: 'stroke-slate-400' },
-};
-
-/** The lead score as a ring, like a progress dial. */
-function ScoreRing({ score, band }: { score: number; band: ScoreBand }) {
-  const r = 27;
-  const c = 2 * Math.PI * r;
-  return (
-    <span className="relative inline-flex h-14 w-14 shrink-0 items-center justify-center" role="img" aria-label={`Lead score ${score} of 100`} title="Lead score, out of 100">
-      <svg viewBox="0 0 64 64" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" className="stroke-slate-200/70" />
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" strokeLinecap="round" className={BAND_STYLE[band].stroke} strokeDasharray={`${(c * score) / 100} ${c}`} />
-      </svg>
-      <span className="text-lg font-semibold text-slate-900">{score}</span>
-    </span>
-  );
-}
-
-/** Match scores: green for strong, blue for good, amber for the rest. */
-const matchTone = (s: number) => (s >= 85 ? 'text-emerald-700' : s >= 70 ? 'text-blue-700' : 'text-amber-700');
-
-type MatchItem = { property: Property; score: number };
 
 /** The chosen lead, beside the list: enough to act without opening the page. */
 function LeadPreview({ lead: l, onDone }: { lead: Lead; onDone: () => void }) {

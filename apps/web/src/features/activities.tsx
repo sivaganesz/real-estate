@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Bell, CalendarPlus, Check, Clock, MessageCircle, Phone, X } from 'lucide-react';
-import { ACTIVITY_LABEL, CALL_OUTCOMES, VISIT_INTEREST, formatTime, relativeDay, type ActivityType } from '@estate/shared';
+import { Bell, CalendarClock, CalendarDays, CalendarPlus, Check, Clock, MessageCircle, Phone, X } from 'lucide-react';
+import { ACTIVITY_LABEL, CALL_OUTCOMES, OPEN_STAGES, VISIT_INTEREST, formatTime, relativeDay, type ActivityType } from '@estate/shared';
 import { api, ApiError, qs } from '../lib/api';
 import { waLink, type Lead, type TimelineItem } from '../lib/leads';
 import { priceLabel, type Property } from '../lib/property';
 import { Button, ErrorNote, Input, Modal, Textarea } from '../components/ui';
 import { useToast } from '../components/toast';
 import { PlannedActionsSlot, composerTabs } from '../pages/LeadDetail';
+import { leadSlots } from '../slots-leads';
 
 export type AgendaItem = {
   id: string;
@@ -95,9 +96,9 @@ function PropertyPicker({ lead, value, onChange }: { lead: Lead; value: string[]
 }
 
 /** "Plan next" on a lead page. */
-function ScheduleTab({ lead, onDone }: { lead: Lead; onDone: () => void }) {
+function ScheduleTab({ lead, onDone, initialType = 'call' }: { lead: Lead; onDone: () => void; initialType?: ActivityType }) {
   const toast = useToast();
-  const [type, setType] = useState<ActivityType>('call');
+  const [type, setType] = useState<ActivityType>(initialType);
   const [when, setWhen] = useState<Date | null>(null);
   const [notes, setNotes] = useState('');
   const [props, setProps] = useState<string[]>([]);
@@ -148,12 +149,13 @@ function ScheduleTab({ lead, onDone }: { lead: Lead; onDone: () => void }) {
 
 /** Book a meeting, call or visit from anywhere (the Calendar): pick the customer, what, when. */
 /** The same "Plan next" form, in a dialog: used from the Leads list preview. */
-export function PlanNextDialog({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+export function PlanNextDialog({ lead, onClose, type }: { lead: Lead; onClose: () => void; type?: ActivityType }) {
   const refresh = useRefresh(lead.id);
   return (
-    <Modal open onClose={onClose} title={`Plan the next step with ${lead.name}`}>
+    <Modal open onClose={onClose} title={type === 'site_visit' ? `Book a site visit with ${lead.name}` : `Plan the next step with ${lead.name}`}>
       <ScheduleTab
         lead={lead}
+        initialType={type}
         onDone={() => {
           refresh();
           onClose();
@@ -578,4 +580,109 @@ function TimelinePlanned({ item }: { item: TimelineItem }) {
 }
 
 PlannedActionsSlot.C = TimelinePlanned;
+leadSlots.next.push(NextStep);
+leadSlots.side.push(SiteVisits);
 composerTabs.push({ key: 'schedule', label: 'Plan next', icon: <CalendarPlus className="h-3.5 w-3.5" />, C: ScheduleTab });
+
+/** The lead page's next step: what's planned and when, with Reschedule and Done; or a way to plan one. */
+function NextStep({ lead }: { lead: Lead }) {
+  const [mode, setMode] = useState<'done' | 'move' | 'plan' | null>(null);
+  if (!OPEN_STAGES.includes(lead.stage)) return null;
+  const n = lead.nextAction;
+  const due = n?.dueAt;
+  const kind = n ? ACTIVITY_LABEL[n.type as ActivityType] ?? 'Follow-up' : '';
+  const title = n ? n.title ?? kind : '';
+  const day = (d: string | Date) => new Date(new Date(d).toDateString()).getTime();
+  const late = due ? Math.round((day(new Date()) - day(due)) / 86_400_000) : 0;
+  const date = due ? new Date(due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  return (
+    <section className={clsx('card flex flex-wrap items-start gap-4 rounded-3xl p-5', lead.overdue && 'ring-1 ring-rose-200')}>
+      <span className={clsx('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', lead.overdue ? 'bg-rose-50 text-rose-600' : due ? 'bg-brand-50 text-brand-700' : 'bg-amber-50 text-amber-700')}>
+        <CalendarClock className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Next step</p>
+        {!n || !due ? (
+          <p className="mt-0.5 text-base font-semibold text-amber-800">No follow-up planned</p>
+        ) : lead.overdue ? (
+          <p className="mt-0.5 text-base font-semibold text-rose-700">
+            {kind} was due {date} ({late <= 0 ? 'earlier today' : `${late} day${late === 1 ? '' : 's'} ago`})
+          </p>
+        ) : (
+          <p className="mt-0.5 text-base font-semibold text-slate-900">
+            {kind} {late === 0 ? 'today' : `on ${date}`} at {formatTime(due)}
+          </p>
+        )}
+        {n?.title && <p className="mt-2 inline-flex max-w-full rounded-xl bg-slate-100 px-3 py-1.5 text-sm text-slate-700">{n.title}</p>}
+        {!n && <p className="mt-1 text-sm text-slate-500">Every open lead needs a next step. Plan a call, visit or meeting.</p>}
+      </div>
+      <div className="flex shrink-0 gap-2">
+        {n ? (
+          <>
+            <Button size="sm" icon={<Clock className="h-3.5 w-3.5" />} onClick={() => setMode('move')}>
+              Reschedule
+            </Button>
+            <Button size="sm" variant="primary" icon={<Check className="h-3.5 w-3.5" />} onClick={() => setMode('done')}>
+              Done
+            </Button>
+          </>
+        ) : (
+          <Button size="sm" variant="primary" icon={<CalendarPlus className="h-3.5 w-3.5" />} onClick={() => setMode('plan')}>
+            Plan next step
+          </Button>
+        )}
+      </div>
+      {mode === 'done' && n && <CompleteDialog id={n.activityId} type={n.type as ActivityType} title={title} leadId={lead.id} leadName={lead.name} properties={[]} onClose={() => setMode(null)} />}
+      {mode === 'move' && n && <MoveOrCancel id={n.activityId} mode="move" leadId={lead.id} title={title} onClose={() => setMode(null)} />}
+      {mode === 'plan' && <PlanNextDialog lead={lead} onClose={() => setMode(null)} />}
+    </section>
+  );
+}
+
+/** Site visits, planned and done, as a section of the lead's profile card. */
+function SiteVisits({ lead }: { lead: Lead }) {
+  const [booking, setBooking] = useState(false);
+  const t = useQuery({ queryKey: ['timeline', lead.id], queryFn: () => api.get<{ items: TimelineItem[] }>(`/leads/${lead.id}/timeline`) });
+  const visits = (t.data?.items ?? []).filter((i) => i.kind === 'activity' && i.type === 'site_visit' && i.status !== 'cancelled');
+  const canBook = OPEN_STAGES.includes(lead.stage);
+  if (!visits.length && !canBook) return null;
+  return (
+    <div className="border-t border-slate-100 px-5 py-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+          <CalendarDays className="h-3.5 w-3.5" /> Site visits
+        </p>
+        {canBook && (
+          <button onClick={() => setBooking(true)} className="text-xs font-medium text-brand-700 hover:underline">
+            + Book
+          </button>
+        )}
+      </div>
+      {!visits.length ? (
+        <p className="text-sm text-slate-500">No visits yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {visits.slice(0, 4).map((v) => (
+            <li key={v.id} className="text-sm">
+              <p className="flex items-center gap-1.5">
+                <span className={clsx('h-1.5 w-1.5 shrink-0 rounded-full', v.status === 'planned' ? 'bg-brand-500' : v.status === 'done' ? 'bg-emerald-500' : 'bg-slate-300')} />
+                {v.properties?.length ? (
+                  <Link to={`/properties/${v.properties[0].id}`} className="truncate font-medium text-brand-700 hover:underline">
+                    {v.properties[0].title}
+                  </Link>
+                ) : (
+                  <span className="truncate font-medium text-slate-800">{v.title}</span>
+                )}
+                <span className="shrink-0 text-slate-500">
+                  · {new Date(v.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {v.status === 'planned' ? 'Planned' : v.status === 'done' ? 'Done' : 'Missed'}
+                </span>
+              </p>
+              {(v.feedback?.liked || v.body) && <p className="ml-3 mt-0.5 line-clamp-2 text-xs text-slate-500">“{v.feedback?.liked ?? v.body}”</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {booking && <PlanNextDialog lead={lead} type="site_visit" onClose={() => setBooking(false)} />}
+    </div>
+  );
+}
