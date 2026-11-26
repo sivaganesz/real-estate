@@ -298,7 +298,7 @@ function LeadsList() {
                       </small>
                       {/* phones: the hidden columns' essentials under the name */}
                       <span className="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
-                        <StatusChip tone={STAGE_TONE[x.lead.stage]}>{t(`stage.${x.lead.stage}`)}</StatusChip><FollowUp lead={x.lead} />
+                        <StageChip stage={x.lead.stage} /><FollowUp lead={x.lead} />
                       </span>
                     </div>
                   </div>
@@ -308,8 +308,8 @@ function LeadsList() {
               { key: 'looking', header: t('leads.col.looking'), hideBelow: 'xl', cell: (x) => <LookingFor lead={x.lead} /> },
               { key: 'budget', header: t('leads.col.budget'), align: 'right', hideBelow: 'md', cell: (x) => <span className="inline-block whitespace-normal"><span className="whitespace-nowrap">{inrShort(x.lead.budget.min)} –</span> <span className="whitespace-nowrap">{inrShort(x.lead.budget.max)}</span></span> },
               { key: 'ready', header: <span title={t('leads.readyHint')}>{t('leads.col.ready')}</span>, hideBelow: 'md', cell: (x) => <Ready x={x} /> },
-              { key: 'cls', header: t('leads.col.cls'), hideBelow: 'xl', cell: (x) => <ClassChip cls={x.cls} className="h-auto min-h-6 max-w-32 py-0.5 leading-tight whitespace-normal" /> },
-              { key: 'stage', header: t('leads.col.stage'), hideBelow: 'md', cell: (x) => <StatusChip tone={STAGE_TONE[x.lead.stage]} className="h-auto min-h-6 max-w-32 py-0.5 leading-tight whitespace-normal">{t(`stage.${x.lead.stage}`)}</StatusChip> },
+              { key: 'cls', header: t('leads.col.cls'), hideBelow: 'xl', cell: (x) => <ClassChip cls={x.cls} className="max-w-36" /> },
+              { key: 'stage', header: t('leads.col.stage'), hideBelow: 'md', cell: (x) => <StageChip stage={x.lead.stage} className="max-w-36" /> },
               ...(manager ? [{ key: 'owner', header: t('leads.col.owner'), hideBelow: 'wide' as const, cell: (x: LeadItem) => <small>{userName(db, x.lead.ownerId) || <span className="text-muted-foreground">{t('leads.unassigned')}</span>}</small> }] : []),
               { key: 'followUp', header: t('leads.col.followUp'), hideBelow: 'md', cell: (x) => <FollowUp lead={x.lead} /> },
               { key: 'actions', header: <span className="sr-only">{t('table.actions')}</span>, className: 'w-9 py-1.5 pr-2 pl-0', sticky: true, cell: (x) => <LeadRowMenu lead={x.lead} /> },
@@ -368,12 +368,31 @@ function Ready({ x }: { x: LeadItem }) {
   )
 }
 
+/**
+ * Chips use short labels on one line (27 Nov): "Recommended" for "Property recommended", "High value" for
+ * "High-value prospect". The full name is the tooltip and what a screen reader hears; "…" only on a very narrow screen.
+ */
+function StageChip({ stage, className }: { stage: LeadStage; className?: string }) {
+  const { t } = useTranslation()
+  const full = t(`stage.${stage}`)
+  return (
+    <StatusChip tone={STAGE_TONE[stage]} title={full} aria-label={full} className={cn('max-w-full', className)}>
+      <span className="truncate" aria-hidden>{t(`stageShort.${stage}`)}</span>
+    </StatusChip>
+  )
+}
+
 /** The classification; an HNI one is "Restricted" for executives. */
 function ClassChip({ cls, className }: { cls: Classification; className?: string }) {
   const { t } = useTranslation()
   const can = useCan()
   if (isHni(cls) && !can('lead.seeAll')) return <StatusChip tone="neutral" variant="outline" title={t('leads.restrictedHint')} className={className}>🔒 {t('leads.restricted')}</StatusChip>
-  return <StatusChip tone={CLASS_TONE[cls]} variant={isHni(cls) ? 'soft' : 'outline'} className={className}>{t(`class.${cls}`)}</StatusChip>
+  const full = t(`class.${cls}`)
+  return (
+    <StatusChip tone={CLASS_TONE[cls]} variant={isHni(cls) ? 'soft' : 'outline'} title={full} aria-label={full} className={cn('max-w-full', className)}>
+      <span className="truncate" aria-hidden>{t(`classShort.${cls}`)}</span>
+    </StatusChip>
+  )
 }
 
 /** Overdue (red), Today (amber), or the date — day and month only, a follow-up is always near; nothing for closed / lost leads. */
@@ -470,7 +489,7 @@ function LeadCard({ x }: { x: LeadItem }) {
           <Link to={`/leads/${l.id}`} className="block truncate font-semibold text-primary hover:underline" title={l.name}>{l.name}</Link>
           <p className="truncate text-meta text-muted-foreground"><span className="font-mono">{l.id}</span> · {l.purpose ? t(`purpose.buyer.${l.purpose}`) : l.source}</p>
         </div>
-        <ClassChip cls={x.cls} className="max-w-[45%] truncate" />
+        <ClassChip cls={x.cls} className="max-w-[45%]" />
       </div>
       <div className="flex flex-col gap-2 px-3">
         <div className="flex items-center gap-2 text-meta">
@@ -484,7 +503,7 @@ function LeadCard({ x }: { x: LeadItem }) {
           {can('lead.seeAll') && fact(UserRound, userName(db, l.ownerId) || t('leads.unassigned'))}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <StatusChip tone={STAGE_TONE[l.stage]}>{t(`stage.${l.stage}`)}</StatusChip>
+          <StageChip stage={l.stage} />
           <FollowUp lead={l} />
         </div>
       </div>

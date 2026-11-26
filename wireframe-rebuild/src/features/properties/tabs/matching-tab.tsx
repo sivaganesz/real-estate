@@ -97,7 +97,7 @@ export function MatchingTab({ p }: { p: Property }) {
                 <li key={m.lead.id} className="flex flex-wrap items-center gap-3 py-2.5">
                   <UserAvatar name={m.lead.name} />
                   <div className="min-w-0 flex-1">
-                    <p className="flex flex-wrap items-center gap-2"><Link to={`/leads/${m.lead.id}`} className="font-medium text-primary hover:underline">{m.lead.name}</Link> <StatusChip tone="neutral">{t(`stage.${m.lead.stage}`)}</StatusChip></p>
+                    <p className="flex flex-wrap items-center gap-2"><Link to={`/leads/${m.lead.id}`} className="font-medium text-primary hover:underline">{m.lead.name}</Link> <StatusChip tone="neutral" title={t(`stage.${m.lead.stage}`)}>{t(`stageShort.${m.lead.stage}`)}</StatusChip></p>
                     <p className="text-xs text-muted-foreground">
                       {t('share.budgetUpTo', { amount: inrShort(m.lead.budget.max) })}{m.lead.budget.flexPct ? ` (${t('props.match.flexible', { pct: m.lead.budget.flexPct })})` : ''} ·{' '}
                       <span className="font-medium text-warning">{t('props.match.over', { amount: inrShort(gap), pct: Math.round((gap / m.lead.budget.max) * 100) })}</span>

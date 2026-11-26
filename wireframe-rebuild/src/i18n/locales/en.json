@@ -120,7 +120,8 @@
     "closed": "Booking / closed",
     "lost": "Lost"
   },
-  "stageShort": { "new": "Enquiry", "contacted": "Contacted", "qualified": "Qualified", "recommended": "Recommended", "visitScheduled": "Site visit", "negotiation": "Negotiation", "closed": "Closed" },
+  "stageShort": { "new": "Enquiry", "contacted": "Contacted", "qualified": "Qualified", "recommended": "Recommended", "visitScheduled": "Site visit", "negotiation": "Negotiation", "closed": "Closed", "lost": "Lost" },
+  "classShort": { "general": "General", "qualifiedBuyer": "Qualified buyer", "investor": "Investor", "highValue": "High value", "potentialHni": "Potential HNI", "verifiedHni": "Verified HNI" },
   "amount": { "unit": { "L": "Lakh", "Cr": "Cr" } },
   "approval": {
     "dtcp": "DTCP approval",

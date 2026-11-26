@@ -120,7 +120,8 @@
     "closed": "முன்பதிவு / முடிந்தது",
     "lost": "இழந்தது"
   },
-  "stageShort": { "new": "விசாரணை", "contacted": "தொடர்பு", "qualified": "தகுதி", "recommended": "பரிந்துரை", "visitScheduled": "தள வருகை", "negotiation": "பேரம்", "closed": "முடிவு" },
+  "stageShort": { "new": "விசாரணை", "contacted": "தொடர்பு", "qualified": "தகுதி", "recommended": "பரிந்துரை", "visitScheduled": "தள வருகை", "negotiation": "பேரம்", "closed": "முடிவு", "lost": "இழந்தது" },
+  "classShort": { "general": "பொது", "qualifiedBuyer": "தகுதியானவர்", "investor": "முதலீட்டாளர்", "highValue": "உயர் மதிப்பு", "potentialHni": "சாத்தியமான HNI", "verifiedHni": "சரிபார்த்த HNI" },
   "amount": { "unit": { "L": "லட்சம்", "Cr": "கோடி" } },
   "approval": {
     "dtcp": "DTCP அனுமதி",
