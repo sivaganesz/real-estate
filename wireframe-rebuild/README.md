@@ -13,7 +13,7 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
 - i18next: English and Tamil, chosen in Settings → Your preferences
 - Mock data saved in the browser, shaped like the real database; no backend
 
-**Run it:** `pnpm install`, then `pnpm dev`. `pnpm build` makes static files that can be demoed anywhere.
+**Run it:** `pnpm install`, then `pnpm dev`, and open **http://localhost:5180** (always this port, so the demo data you edit is still there next time; `pnpm preview` uses 5181). Edits are saved in the browser; **Reset demo data** in the top bar brings back the original data. `pnpm build` makes static files that can be demoed anywhere.
 
 ## Theme
 
