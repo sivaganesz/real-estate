@@ -578,15 +578,18 @@ function ActivityTab({ l }: { l: Lead }) {
   const { db, today, user, updateLead } = useStore()
   const [type, setType] = useState<LeadActivity['type']>('call')
   const [text, setText] = useState('')
-  // logging only records what happened; the next follow-up is planned in the Next step card (agreed 26 Nov)
+  const [replied, setReplied] = useState(false)
+  // logging only records what happened; the next follow-up is planned in the Next step card (agreed 26 Nov).
+  // A call made or a message sent doesn't mean they answered, so "Responded" is ticked only when you say so.
   const log = () => {
     if (!text.trim()) return
     updateLead(l.id, (x) => {
       x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type, text: text.trim() })
-      x.engagement.responded = true
+      if (replied) x.engagement.responded = true
     })
     toast.success(t('lead.logged'))
     setText('')
+    setReplied(false)
   }
   const entryText = (x: LeadActivity) => {
     if (x.type === 'shared') return <>{t('lead.act.shared', { channel: t(`props.hist.channel.${x.text}`, { defaultValue: x.text }) })} <PropLink id={x.propertyId} /></>
@@ -612,7 +615,13 @@ function ActivityTab({ l }: { l: Lead }) {
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t(`lead.act.placeholder.${type}`)} aria-label={t('lead.act.what')}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); log() } }}
           className="min-h-16 resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0" />
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+          {/* once they have responded, it stays ticked (Qualification tab can undo it) */}
+          {!l.engagement.responded && (
+            <label className="mr-auto flex items-center gap-2 text-sm text-muted-foreground" title={t('lead.act.repliedHint')}>
+              <Checkbox checked={replied} onCheckedChange={(v) => setReplied(!!v)} /> {t('lead.act.replied')}
+            </label>
+          )}
           <Button type="submit" size="sm" disabled={!text.trim()}>{t('lead.act.log')}</Button>
         </div>
       </form>
@@ -699,7 +708,8 @@ function QualificationTab({ l }: { l: Lead }) {
         </div>
       </div>
 
-      <div className="self-start rounded-xl border">
+      <div className="flex flex-col gap-4 self-start">
+      <div className="rounded-xl border">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="font-semibold">{t('qual.score')}</p>
           <StatusChip tone={BAND_TONE[ready.band]}>{ready.total}/100</StatusChip>
@@ -720,6 +730,46 @@ function QualificationTab({ l }: { l: Lead }) {
           <p className="mt-2 text-xs text-muted-foreground">{t('qual.fair')}</p>
         </div>
       </div>
+      <CustomerType l={l} />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * What kind of customer this is — separate from how ready they are, and not an HNI decision, so it lives here
+ * (moved from the HNI tab, 26 Nov). The suggestion comes from lib/classification.ts; a manager can choose another.
+ * "Verified HNI" needs a verified HNI status. Sales executives see it read-only, and an HNI class as Restricted.
+ */
+function CustomerType({ l }: { l: Lead }) {
+  const { t } = useTranslation()
+  const { db, updateLead } = useStore()
+  const can = useCan()
+  const manager = can('lead.seeAll')
+  const suggested = suggestedClassification({ ...l, classification: undefined }, db)
+  const cls = classificationOf(l, db)
+  const label = (c: Classification) => t(`class.${c}`)
+  return (
+    <div className="rounded-xl border px-4 py-3">
+      <p className="font-semibold">{t('qual.cls.title')}</p>
+      <p className="mb-2.5 text-xs text-muted-foreground">{t('qual.cls.why')}</p>
+      {manager ? (
+        <>
+          <Select value={l.classification ?? 'auto'} onValueChange={(v) => updateLead(l.id, (x) => { x.classification = v === 'auto' ? undefined : (v as Classification) }, t('hniTab.clsNote', { cls: v === 'auto' ? t('hniTab.auto', { cls: label(suggested) }) : label(v as Classification) }))}>
+            <SelectTrigger className="w-full" aria-label={t('qual.cls.title')}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">{t('hniTab.auto', { cls: label(suggested) })}</SelectItem>
+              {CLASSIFICATIONS.map((c) => <SelectItem key={c} value={c} disabled={c === 'verifiedHni' && l.hni?.status !== 'verified'}>{label(c)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="mt-1.5 text-xs text-muted-foreground">{t('hniTab.clsHint')}</p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-medium">{isHni(cls) ? <span title={t('leads.restrictedHint')}>🔒 {t('leads.restricted')}</span> : label(cls)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('qual.cls.managersOnly')}</p>
+        </>
+      )}
     </div>
   )
 }
@@ -728,34 +778,21 @@ function QualificationTab({ l }: { l: Lead }) {
 
 function HniTab({ l }: { l: Lead }) {
   const { t } = useTranslation()
-  const { db, updateLead } = useStore()
-  const suggested = suggestedClassification({ ...l, classification: undefined }, db)
+  const { updateLead } = useStore()
   const hni = l.hni ?? { status: 'notDetermined' as HniStatus, potential: false }
   const setHni = (patch: Partial<NonNullable<Lead['hni']>>, note: string) => updateLead(l.id, (x) => { x.hni = { ...hni, ...patch } }, note)
   return (
     <div className="flex max-w-2xl flex-col gap-5">
       <Callout tone="info" title={t('hniTab.ruleTitle')}>{t('hniTab.rule')}</Callout>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <p className="mb-1.5 text-sm font-medium">{t('hniTab.status')}</p>
-          <Select value={hni.status} onValueChange={(v) => setHni({ status: v as HniStatus, potential: v === 'potential' || hni.potential }, t('hniTab.statusNote', { status: t(`hniTab.st.${v}`) }))}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{HNI_STATUSES.map((s) => <SelectItem key={s} value={s} disabled={s === 'verified' && hni.status !== 'consentInProgress' && hni.status !== 'verified'}>{t(`hniTab.st.${s}`)}</SelectItem>)}</SelectContent>
-          </Select>
-          <p className="mt-1 text-xs text-muted-foreground">{t('hniTab.verifiedNeedsConsent')}</p>
-        </div>
-        <div>
-          <p className="mb-1.5 text-sm font-medium">{t('hniTab.cls')}</p>
-          <Select value={l.classification ?? 'auto'} onValueChange={(v) => updateLead(l.id, (x) => { x.classification = v === 'auto' ? undefined : (v as Classification) }, t('hniTab.clsNote', { cls: v === 'auto' ? t('hniTab.auto', { cls: t(`class.${suggested}`) }) : t(`class.${v}`) }))}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">{t('hniTab.auto', { cls: t(`class.${suggested}`) })}</SelectItem>
-              {CLASSIFICATIONS.map((c) => <SelectItem key={c} value={c} disabled={c === 'verifiedHni' && hni.status !== 'verified'}>{t(`class.${c}`)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <p className="mt-1 text-xs text-muted-foreground">{t('hniTab.clsHint')}</p>
-        </div>
+      <div className="max-w-sm">
+        <p className="mb-1.5 text-sm font-medium">{t('hniTab.status')}</p>
+        <Select value={hni.status} onValueChange={(v) => setHni({ status: v as HniStatus, potential: v === 'potential' || hni.potential }, t('hniTab.statusNote', { status: t(`hniTab.st.${v}`) }))}>
+          <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+          <SelectContent>{HNI_STATUSES.map((s) => <SelectItem key={s} value={s} disabled={s === 'verified' && hni.status !== 'consentInProgress' && hni.status !== 'verified'}>{t(`hniTab.st.${s}`)}</SelectItem>)}</SelectContent>
+        </Select>
+        <p className="mt-1 text-xs text-muted-foreground">{t('hniTab.verifiedNeedsConsent')}</p>
       </div>
+      <p className="text-sm text-muted-foreground">{t('hniTab.clsMoved')}</p>
       <label className="flex items-start gap-3 rounded-xl border p-3">
         <Switch checked={hni.potential} onCheckedChange={(v) => setHni({ potential: v }, t(v ? 'hniTab.potentialOn' : 'hniTab.potentialOff'))} className="mt-0.5" />
         <span className="text-sm"><b className="font-medium">{t('hniTab.potential')}</b><span className="block text-muted-foreground">{t('hniTab.potentialHint')}</span></span>

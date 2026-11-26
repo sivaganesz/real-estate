@@ -1,7 +1,7 @@
 # RealSpec CRM — wireframe rebuild checklist
 
 What the clickable wireframe (`spec-system-wireframe/`) has, and how far the React rebuild (`wireframe-rebuild/`) has got.
-Updated 25 Nov 2026.
+Updated 26 Nov 2026.
 
 - `[x]` done in the rebuild
 - `[ ]` not done yet
@@ -20,9 +20,9 @@ Updated 25 Nov 2026.
 | App shell (sidebar, top bar) | Done |
 | Theme (light / dark) and language (English / Tamil) | Done |
 | Properties — list | Done |
-| Properties — property page | Mostly done; design changes in progress |
-| Properties — Drafts, Add property with AI, Edit with AI, Share page | Not started |
-| Leads (list, add / edit, lead page) | Not started |
+| Properties — property page | Done |
+| Properties — Drafts, Add property with AI, Edit with AI, Share page | Done |
+| Leads — list, Add / Edit lead, lead page | Built, for review (a few items left, see 4) |
 | Bulk import | Not started |
 | Appointments | Not started |
 | Lead pipeline | Not started |
@@ -181,7 +181,7 @@ Updated 25 Nov 2026.
   - [x] **New:** Send on WhatsApp (simulated) when a buyer is chosen; "See the brochure" from the quick Share panel
   - [x] The quick **Share panel** (choose a lead, then WhatsApp, Copy link or PDF) already works from the list and the property page
 
-## 4. Leads — next module
+## 4. Leads
 
 - [x] **Leads list** (design agreed 26 Nov):
   - [x] Search and ✨ sentence search; filter pills: stage, executive (managers), purpose, property type + city, readiness, classification; sort: most ready, next follow-up, newest
@@ -190,20 +190,27 @@ Updated 25 Nov 2026.
   - [x] Table or cards, remembered per user; ⋯ menu: open, call, WhatsApp, log activity, move stage, reassign (managers)
   - [x] "⚠ Needs attention" on demand: overdue, no follow-up date, ready to buy but no site visit
   - [x] Executives see their own leads; HNI classification shows "Restricted" to them
-  - [ ] Opening a lead, Log activity, and marking Lost with a reason come with the Lead page
+  - [x] Opening a lead and marking Lost with a reason (on the lead page)
+  - [ ] Log activity from the list's ⋯ menu (still "coming next"; logging works on the lead page)
 - [ ] **Prototype (26 Nov): "Today" design** at /leads?design=new — summary tiles, saved views, list grouped by follow-up, actions on hover (Call · WhatsApp · ✓ Done), preview panel. Waiting for review: replace the current list, or keep both
-- [ ] **Add / edit lead:**
-  - [ ] Basic information; assigned executive (auto-assign to the least busy); stage; consent to follow up
-  - [ ] Purpose; budget (min / preferred / max / flexibility, what it includes, funding)
-  - [ ] Requirements, with fields per property type; readiness questions
-  - [ ] Checks: required fields; min and preferred ≤ max
-- [ ] **Lead page — header:** stage, readiness, classification, consent; owner (managers); next follow-up; Move stage (Lost needs a reason); Log activity
-- [ ] **Lead page tabs:**
-  - [ ] Overview: property fit, readiness out of 100, HNI status, requirements, budget, classification (with manager override), sales record
-  - [ ] Qualification: questions with suggested wording, readiness points table
-  - [ ] Property matches: fit score and its parts, recommend, schedule site visit, excluded properties with reasons
-  - [ ] Follow-ups & activity: log activity, timeline, consent record / withdraw, site visits, negotiation, reason lost
-  - [ ] HNI assessment (managers only): signals, verification with consent, classification ladder
+- [x] **Add / Edit lead** (/leads/new, /leads/:id/edit — 26 Nov):
+  - [x] Contact, owner (managers pick or auto-assign to the executive with the fewest open leads; an executive's new lead is theirs), consent to follow up with what to say
+  - [x] Purpose; budget (min / preferred / max / flexibility, in lakh or crore, live summary) and funding
+  - [x] Requirements, with only the questions each property type needs; readiness questions
+  - [x] Checks: required fields (name, 10-digit mobile, purpose, maximum budget, one city); min and preferred ≤ max
+  - [ ] "What the budget includes" (property only, all-in, with the loan) — not asked yet
+  - [x] **Changed:** the stage isn't in the form — it moves on the lead page. Editing changes details only; consent is changed from the profile
+- [x] **Lead page** (design agreed 26 Nov; work on the left, the person on the right):
+  - [x] **Changed:** stage as arrow steps with one-word names; the current stage and how long it has been there; Mark as lost (needs a reason) as its own button
+  - [x] **New:** Next step card — what's due, ✨ a suggestion, Schedule / Reschedule (Tomorrow, In 3 days, Next week, a calendar) and ✓ Done
+  - [x] Profile: owner chip (managers reassign), contact, consent record / withdraw, the three assessments side by side (property fit · ready to buy · HNI status, never combined), looking for, money, negotiation as a price scale, site visits
+  - [x] Site visits: book; record the outcome (completed with feedback and interest, no-show, cancelled); "Needs outcome" when the day has passed
+  - [x] Negotiation: record or update the offer and the seller's counter; moves the lead to Negotiation
+  - [x] Activity: log a call / WhatsApp / visit / note, and say whether they responded; timeline grouped by day
+  - [x] Matches: fit score, why (the five parts with their weights, and reasons), recommend, share, book a visit; properties not shown and why
+  - [x] Qualification: questions with suggested wording, the readiness points table, and the customer type (managers can override)
+  - [x] HNI (managers only): status (verified only after consent), potential indicators
+  - [ ] HNI: the signals list and the classification ladder from the old wireframe
 
 ## 5. Bulk import
 
@@ -306,7 +313,7 @@ Updated 25 Nov 2026.
 
 ## 10. Business rules to carry over
 
-These run behind the screens. They're already in the rebuild where Properties uses them; the rest come with their modules.
+These run behind the screens. Properties and Leads use them now; the rest come with their modules.
 
 - [x] Match fit score: M = 0.30 budget + 0.25 location + 0.20 size + 0.15 amenities / infrastructure + 0.10 preferences
 - [x] Hard filters: available, type, preferred city, price within max budget + flexibility; archived never matches
@@ -318,19 +325,21 @@ These run behind the screens. They're already in the rebuild where Properties us
 - [x] Listing completion score out of 100 (purpose, type, city, locality, price, area, key details, photos, documents, amenities)
 - [x] "Needs attention" rules (below 80%, price out of range, 45+ days without a visit, document pending)
 - [x] Price check against similar properties; total cost for the buyer
-- [ ] Purchase readiness out of 100, and its bands (High-priority 80+, Qualified 60+, Developing 40+)
-- [ ] Suggested classification, in order:
-  - [ ] Verified HNI
-  - [ ] Potential HNI
-  - [ ] High-value prospect
-  - [ ] Investor
-  - [ ] Qualified buyer
-  - [ ] General lead
-- [ ] HNI verification only after consent; a high budget never makes someone an HNI
-- [ ] Auto-assign new leads to the least busy executive
-- [ ] No follow-up date without consent
-- [ ] Automatic stage moves, forward only:
-  - [ ] Recommending or sharing a property → "Property recommended"
-  - [ ] Booking a site visit → "Site visit scheduled"
-- [ ] Lost needs a reason; stuck lead after 14 days in one stage
+- [x] Purchase readiness out of 100, and its bands (High-priority 80+, Qualified 60+, Developing 40+)
+- [x] Suggested classification, in order:
+  - [x] Verified HNI
+  - [x] Potential HNI
+  - [x] High-value prospect
+  - [x] Investor
+  - [x] Qualified buyer
+  - [x] General lead
+- [x] HNI verification only after consent; a high budget never makes someone an HNI
+- [x] Auto-assign new leads to the least busy executive
+- [x] No follow-up date without consent
+- [x] Automatic stage moves, forward only:
+  - [x] Recommending or sharing a property → "Property recommended"
+  - [x] Booking a site visit → "Site visit scheduled"
+  - [x] **New:** recording the first offer → "Negotiation"
+- [x] Lost needs a reason
+- [ ] Stuck lead after 14 days in one stage (comes with the Pipeline)
 - [ ] Project unit price (area × rate + floor rise + corner + parking); holds last 2 days

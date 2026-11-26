@@ -35,7 +35,7 @@ The clickable wireframe in `spec-system-wireframe/` (HTML and JavaScript), rebui
 | Where | What |
 |---|---|
 | `src/components/ui/` | shadcn components: button, input, select, dialog, sheet, table, … |
-| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip` (labels), `Chip` (clickable options, suggestions and dashed "add" actions), `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable` (optional sortable headers, row selection, compact rows, columns that hide below a screen width, a pinned ⋯ column), `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar` |
+| `src/components/app/` | Our shared components: `Page` and `PageHeader`, `SectionCard`, `StatCard`, `StatusChip` (labels), `Chip` (clickable options, suggestions and dashed "add" actions), `Callout`, `Meter`, `EmptyState`, `KeyValueGrid`, `FilterBar`, `Segmented` (tabs and view switch), `DataTable` (optional sortable headers, row selection, compact rows, columns that hide below a screen width, a pinned ⋯ column), `SidePanel` (right on desktop, bottom on phone), `ConfirmDialog`, `UserAvatar`, `AmountInput` (rupees in lakh or crore), `MiniCalendar` |
 | `src/components/layout/` | The app shell: sidebar, top bar, phone drawer; the navigation list in `nav.ts` |
 | `src/data/` | Types, the property catalogue and the seed data (from the current wireframe) |
 | `public/demo-photos/` | One cover photo per demo property, resized to 1000 px and compressed. Raw photos dropped in `demo-photos-inbox/` stay out of git. For demos only: check each photo's licence before any public use |
@@ -52,6 +52,9 @@ The full feature-by-feature list, against the old wireframe, is in [CHECKLIST.md
 | Section | Status |
 |---|---|
 | Setup, theme, shared components, app shell | Done (24dfd08) |
-| Properties: list, property page (Overview, Legal & documents, Price, Matching buyers, History), Share panel, archive | Built, for review — `src/features/properties/` |
-| Properties: Add and Edit with AI, Bulk import, Share page (customer brochure) | Next |
-| Leads, Pipeline, Appointments, Matching, Projects, Bulk import, Reports, HNI, Settings, Enquiry form, System map, Dashboard | Later, one at a time |
+| Properties: list, property page (Overview, Legal & documents, Price, Matching buyers, History), Share panel, archive and delete | Done — `src/features/properties/` |
+| Properties: Drafts, Add and Edit with the AI assistant, Share page (customer brochure) | Done |
+| Leads: list, Add / Edit lead, lead page (stage, next step, profile, site-visit outcomes, offer, Activity, Matches, Qualification, HNI) | Built, for review — `src/features/leads/` |
+| Settings: your preferences (theme, language) | Done; business rules later |
+| Bulk import, Appointments, Pipeline | Next, in that order |
+| Dashboard, Projects, Matching engine, HNI, Reports, Enquiry form | Later, one at a time |

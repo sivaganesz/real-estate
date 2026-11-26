@@ -1944,7 +1944,8 @@
         "note": "A note for the team…"
       },
       "what": "What happened",
-      "next": "Next follow-up",
+      "replied": "They responded",
+      "repliedHint": "Tick when they answered or replied — it counts towards “ready to buy”. Calling or messaging alone doesn’t.",
       "log": "Log",
       "enquiry": "Enquired via {{source}}",
       "none": "Nothing logged yet."
@@ -2166,7 +2167,8 @@
       "developing": "40–59 Developing",
       "early": "Below 40 Early stage"
     },
-    "fair": "Starting rules — adjust in Settings once there is conversion data. No points are ever given for name, appearance, occupation, caste, religion or other personal characteristics."
+    "fair": "Starting rules — adjust in Settings once there is conversion data. No points are ever given for name, appearance, occupation, caste, religion or other personal characteristics.",
+    "cls": { "title": "Customer type", "why": "What kind of customer this is — separate from how ready they are. A high budget never makes someone an HNI.", "managersOnly": "Only a manager can change it." }
   },
   "hniTab": {
     "restricted": "HNI assessment is for Admins and Sales managers",
@@ -2184,7 +2186,7 @@
     },
     "statusNote": "HNI status: {{status}}",
     "verifiedNeedsConsent": "“Verified” is available only after consent and verification are in progress.",
-    "cls": "Classification",
+    "clsMoved": "The customer type (classification) is on the Qualification tab.",
     "auto": "Auto — {{cls}}",
     "clsHint": "Leave on Auto unless you know better; “Verified HNI” needs a verified status.",
     "clsNote": "Classification set to {{cls}}",
