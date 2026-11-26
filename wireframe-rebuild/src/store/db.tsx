@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { DATA_VERSION, DEMO_TODAY, seedDatabase } from '@/data/seed'
 import type { Database, Lead, Property, Role, User } from '@/data/types'
+import { hasFollowUpConsent } from '@/lib/consent'
 
 const DB_KEY = 'realspec-rebuild-db'
 const ROLE_KEY = 'realspec-rebuild-role'
@@ -143,7 +144,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next = structuredClone(prev)
       const l = next.leads.find((x) => x.id === id)
       if (!l) return prev
+      const before = l.nextFollowUp
       change(l)
+      // safety net for the consent rule: a new follow-up date without consent is not saved (screens disable these controls)
+      if (l.nextFollowUp && l.nextFollowUp !== before && !hasFollowUpConsent(l)) {
+        console.warn(`Follow-up for ${l.id} not saved: no consent to follow up`)
+        l.nextFollowUp = before
+      }
       if (note) l.activity.unshift({ id: `${l.id}-a${l.activity.length + 1}`, at: DEMO_TODAY, by: user.id, type: 'note', text: note })
       return next
     })

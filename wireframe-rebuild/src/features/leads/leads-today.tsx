@@ -22,7 +22,9 @@ import { CITIES, STAGE_ORDER, TYPE_ORDER } from '@/data/catalogue'
 import type { Lead, LeadStage } from '@/data/types'
 import { useIsPhone } from '@/hooks/use-media-query'
 import { isHni } from '@/lib/classification'
-import { daysBetween, fmtDate, inrShort, num } from '@/lib/format'
+import { hasFollowUpConsent } from '@/lib/consent'
+import { DoneButton } from './done-button'
+import { addDays, daysBetween, fmtDate, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { propertiesForLead } from '@/lib/matching'
 import { BAND_TONE } from '@/lib/readiness'
@@ -328,8 +330,9 @@ function LeadRow({ x, selected, onSelect }: { x: LeadItem; selected: boolean; on
 function QuickActions({ lead: l, big }: { lead: Lead; big?: boolean }) {
   const { t } = useTranslation()
   const { today, updateLead } = useStore()
+  const consent = hasFollowUpConsent(l)
   const done = (days: number | null) => {
-    const next = days === null ? undefined : new Date(new Date(today).getTime() + days * 864e5).toISOString().slice(0, 10)
+    const next = days === null || !consent ? undefined : addDays(today, days)
     updateLead(l.id, (x) => { x.nextFollowUp = next }, next ? t('today.doneNote', { date: fmtDate(next) }) : t('today.doneNoteNone'))
     toast.success(t('today.doneToast', { name: l.name }), { description: next ? t('today.nextOn', { date: fmtDate(next) }) : undefined })
   }
@@ -343,17 +346,8 @@ function QuickActions({ lead: l, big }: { lead: Lead; big?: boolean }) {
         <MessageCircle />{big && t('leads.whatsappShort')}
       </Button>
       {isActive(l) && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button size={size} variant={big ? 'default' : 'outline'} className={cn(big && 'flex-1', !big && 'bg-card')} title={t('today.done')}><Check />{big && t('today.done')}</Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-56 rounded-xl p-2">
-            <p className="px-2 pt-1 pb-2 text-xs font-medium text-muted-foreground">{t('today.nextWhen')}</p>
-            {([[1, 'tomorrow'], [3, 'in3'], [7, 'nextWeek'], [null, 'none']] as const).map(([d, k]) => (
-              <button key={k} type="button" onClick={() => done(d)} className="block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted">{t(`today.when.${k}`)}</button>
-            ))}
-          </PopoverContent>
-        </Popover>
+        <DoneButton onDone={done} canSchedule={consent} size={size} variant={big ? 'default' : 'outline'} label={!!big}
+          className={cn(big && 'flex-1', !big && 'bg-card')} />
       )}
     </>
   )

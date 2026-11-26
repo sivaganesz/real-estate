@@ -36,7 +36,8 @@ import { STAGE_ORDER } from '@/data/catalogue'
 import type { Classification, HniStatus, Lead, LeadActivity, LeadStage, LostReason } from '@/data/types'
 import { useIsPhone } from '@/hooks/use-media-query'
 import { CLASSIFICATIONS, classificationOf, isHni, suggestedClassification } from '@/lib/classification'
-import { fmtDate, inr, inrShort, num } from '@/lib/format'
+import { hasFollowUpConsent } from '@/lib/consent'
+import { addDays, fmtDate, inr, inrShort, num } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { type Match, propertiesForLead } from '@/lib/matching'
 import { BAND_TONE, readiness } from '@/lib/readiness'
@@ -45,6 +46,7 @@ import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
 import { MATCH_TONE, PropertyPhoto } from '../properties/components/property-bits'
 import { isActive } from './lead-list'
 import { STAGE_TONE } from './leads-page'
+import { DoneButton } from './done-button'
 import { dueOf, suggestNext } from './next-step'
 
 const TABS = ['activity', 'matches', 'qualification', 'hni'] as const
@@ -52,7 +54,6 @@ type Tab = (typeof TABS)[number]
 const LOST_REASONS: LostReason[] = ['boughtElsewhere', 'budget', 'noInventory', 'notResponding', 'postponed', 'loan', 'other']
 const HNI_STATUSES: HniStatus[] = ['notDetermined', 'notVerified', 'potential', 'consentInProgress', 'verified', 'declined']
 const STROKE: Record<Tone, string> = { neutral: 'stroke-neutral', primary: 'stroke-primary', success: 'stroke-success', warning: 'stroke-warning', danger: 'stroke-danger', info: 'stroke-info', violet: 'stroke-violet' }
-const addDays = (iso: string, d: number) => new Date(new Date(iso + 'T00:00:00').getTime() + d * 864e5).toISOString().slice(0, 10)
 
 export function LeadPage() {
   const { id, tab } = useParams()
@@ -78,16 +79,20 @@ export function LeadPage() {
 function useLead(l: Lead) {
   const { t } = useTranslation()
   const { db, today, user, updateLead } = useStore()
+  const consent = hasFollowUpConsent(l)
   return {
+    /** Follow-ups need the customer's consent; without it only "no follow-up" is possible. */
+    consent,
     call: () => toast(t('leads.calling', { name: l.name, phone: l.phone }), { description: t('leads.demoHint') }),
     whatsapp: () => toast(t('leads.whatsapping', { name: l.name }), { description: t('leads.demoHint') }),
     /** Follow-up done: log it and set the next one (or none). */
     done: (days: number | null) => {
-      const next = days === null ? undefined : addDays(today, days)
+      const next = days === null || !consent ? undefined : addDays(today, days)
       updateLead(l.id, (x) => { x.nextFollowUp = next; x.engagement.responded = true }, next ? t('today.doneNote', { date: fmtDate(next) }) : t('today.doneNoteNone'))
       toast.success(t('today.doneToast', { name: l.name }), { description: next ? t('today.nextOn', { date: fmtDate(next) }) : undefined })
     },
     setFollowUp: (date: string) => {
+      if (date && !consent) { toast.error(t('lead.consentFirst')); return }
       updateLead(l.id, (x) => { x.nextFollowUp = date || undefined }, date ? t('lead.followUpSet', { date: fmtDate(date) }) : t('lead.followUpCleared'))
     },
     move: (s: LeadStage) => {
@@ -108,12 +113,15 @@ function useLead(l: Lead) {
       updateLead(l.id, (x) => { x.ownerId = userId }, t('leads.reassignNote', { name: userName(db, userId) }))
       toast.success(t('leads.reassigned', { name: l.name, to: userName(db, userId) }))
     },
-    /** Book a site visit: it goes on the lead, moves an early lead to "Site visit scheduled" and becomes the next follow-up. */
+    /**
+     * Book a site visit: it goes on the lead, moves an early lead to "Site visit scheduled" and, with consent, becomes the
+     * next follow-up. Without consent the visit is still booked (the customer asked for it) but no follow-up is set.
+     */
     bookVisit: (propertyId: string, date: string, time: string) => {
       updateLead(l.id, (x) => {
         x.visits.push({ id: `VIS-${Date.now()}`, propertyId, date, time: time || undefined, status: 'scheduled' })
         if (STAGE_ORDER.indexOf(x.stage) < STAGE_ORDER.indexOf('visitScheduled')) { x.stage = 'visitScheduled'; x.stageSince = today }
-        x.nextFollowUp = date
+        if (consent) x.nextFollowUp = date
         if (!x.recommendedPropertyIds.includes(propertyId)) x.recommendedPropertyIds.push(propertyId)
       }, t('lead.visitNote', { id: propertyId, date: fmtDate(date), time }))
       toast.success(t('lead.visitBooked', { date: fmtDate(date) }))
@@ -177,7 +185,7 @@ function LeadView({ l, tab }: { l: Lead; tab: Tab }) {
         <div className="fixed inset-x-0 bottom-0 z-20 flex gap-2 border-t bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           <Button variant="outline" className="flex-1" onClick={a.call}><Phone /> {t('leads.call')}</Button>
           <Button variant="outline" className="flex-1" onClick={a.whatsapp}><MessageCircle /> {t('leads.whatsappShort')}</Button>
-          <DoneButton onDone={a.done} className="flex-1" />
+          <DoneButton onDone={a.done} canSchedule={a.consent} className="flex-1" />
         </div>
       )}
 
@@ -220,7 +228,7 @@ function Profile({ l, onLose, onBook }: { l: Lead; onLose: () => void; onBook: (
   const wantsList = [L.type(r.type), r.bhk, r.bedrooms && t('lead.bedrooms', { n: r.bedrooms }), r.sizeSqft && `${num(r.sizeSqft)} sq.ft.`, r.commCategory].filter(Boolean).join(' · ')
   const place = [...r.localities, ...(r.localities.length ? [] : r.cities)].join(', ') + (r.localities.length ? ` · ${r.cities.join(', ')}` : '')
   const extras = [...r.amenities.map((x) => t(`amenity.${x}`, { defaultValue: x })), r.possession && r.possession !== 'any' && t(`lead.possession.${r.possession}`), r.parking === 'required' && t('lead.parkingNeeded'), r.facing && L.facing(r.facing)].filter(Boolean) as string[]
-  const consentOk = l.consent?.followUp && !l.consent.withdrawnAt
+  const consentOk = a.consent
   const section = (label: string, icon: LucideIcon, children: ReactNode, action?: ReactNode) => {
     const Icon = icon
     return (
@@ -403,33 +411,22 @@ function NextStep({ l, onBook }: { l: Lead; onBook: (propertyId: string) => void
         </div>
         <div className="flex flex-wrap gap-2 sm:ml-auto">
           {s?.key === 'next.bookVisit' && s.propertyId && <Button size="sm" variant="outline" onClick={() => onBook(s.propertyId!)}><CalendarPlus /> {t('lead.bookVisit')}</Button>}
-          <Popover>
-            <PopoverTrigger asChild><Button size="sm" variant="outline"><CalendarClock /> {t('lead.reschedule')}</Button></PopoverTrigger>
-            <PopoverContent align="end" className="w-60 rounded-xl p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">{t('lead.newDate')}</p>
-              <Input type="date" defaultValue={l.nextFollowUp} min={today} onChange={(e) => e.target.value && a.setFollowUp(e.target.value)} />
-            </PopoverContent>
-          </Popover>
-          <DoneButton onDone={a.done} />
+          {a.consent ? (
+            <Popover>
+              <PopoverTrigger asChild><Button size="sm" variant="outline"><CalendarClock /> {t('lead.reschedule')}</Button></PopoverTrigger>
+              <PopoverContent align="end" className="w-60 rounded-xl p-3">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">{t('lead.newDate')}</p>
+                <Input type="date" defaultValue={l.nextFollowUp} min={today} onChange={(e) => e.target.value && a.setFollowUp(e.target.value)} />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            // a disabled button gets no hover events, so the hint sits on a wrapper
+            <span title={t('lead.consentFirst')}><Button size="sm" variant="outline" disabled><CalendarClock /> {t('lead.reschedule')}</Button></span>
+          )}
+          <DoneButton onDone={a.done} canSchedule={a.consent} />
         </div>
       </div>
     </section>
-  )
-}
-
-/** ✓ Done — and when is the next follow-up? */
-function DoneButton({ onDone, className }: { onDone: (days: number | null) => void; className?: string }) {
-  const { t } = useTranslation()
-  return (
-    <Popover>
-      <PopoverTrigger asChild><Button size="sm" className={className}><Check /> {t('today.done')}</Button></PopoverTrigger>
-      <PopoverContent align="end" className="w-56 rounded-xl p-2">
-        <p className="px-2 pt-1 pb-2 text-xs font-medium text-muted-foreground">{t('today.nextWhen')}</p>
-        {([[1, 'tomorrow'], [3, 'in3'], [7, 'nextWeek'], [null, 'none']] as const).map(([d, k]) => (
-          <button key={k} type="button" onClick={() => onDone(d)} className="block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted">{t(`today.when.${k}`)}</button>
-        ))}
-      </PopoverContent>
-    </Popover>
   )
 }
 
@@ -449,14 +446,16 @@ function ActivityTab({ l }: { l: Lead }) {
   const [type, setType] = useState<LeadActivity['type']>('call')
   const [text, setText] = useState('')
   const [next, setNext] = useState('')
+  const consent = hasFollowUpConsent(l)
   const log = () => {
     if (!text.trim()) return
+    const nextDate = consent ? next : ''
     updateLead(l.id, (x) => {
       x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type, text: text.trim() })
       x.engagement.responded = true
-      if (next) x.nextFollowUp = next
+      if (nextDate) x.nextFollowUp = nextDate
     })
-    toast.success(t('lead.logged'), { description: next ? t('today.nextOn', { date: fmtDate(next) }) : undefined })
+    toast.success(t('lead.logged'), { description: nextDate ? t('today.nextOn', { date: fmtDate(nextDate) }) : undefined })
     setText('')
     setNext('')
   }
@@ -485,9 +484,9 @@ function ActivityTab({ l }: { l: Lead }) {
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); log() } }}
           className="min-h-16 resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground" title={consent ? undefined : t('lead.consentFirst')}>
             <CalendarClock className="size-3.5" /> {t('lead.act.next')}
-            <Input type="date" value={next} min={today} onChange={(e) => setNext(e.target.value)} className="h-7 w-36 text-sm" />
+            <Input type="date" value={consent ? next : ''} min={today} onChange={(e) => setNext(e.target.value)} disabled={!consent} className="h-7 w-36 text-sm" />
           </label>
           <span className="flex-1" />
           <Button type="submit" size="sm" disabled={!text.trim()}>{t('lead.act.log')}</Button>

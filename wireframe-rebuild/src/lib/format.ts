@@ -34,5 +34,15 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((new Date(b + 'T00:00:00').getTime() - new Date(a + 'T00:00:00').getTime()) / 86_400_000)
 }
 
-export const initials = (name: string) =>
+/**
+ * A date n days after `iso` (YYYY-MM-DD), worked out in local time. Never use toISOString() for this: it converts to UTC,
+ * which in India (UTC+5:30) turns local midnight into the previous day, so "tomorrow" would come out as today.
+ */
+export function addDays(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export const initials =(name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
