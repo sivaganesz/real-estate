@@ -183,7 +183,9 @@ export type Requirement = {
   approvalRequired: boolean
 }
 
-export type Budget = { min: number; preferred: number; max: number; flexPct: number }
+/** What the budget covers — ask before recommending: ₹30 L may mean the property only, all-in with registration, or with a loan. */
+export type BudgetBasis = 'propertyOnly' | 'withCosts' | 'withLoan'
+export type Budget = { min: number; preferred: number; max: number; flexPct: number; /** Not set: not clarified yet. */ basis?: BudgetBasis }
 
 export type LeadActivity = {
   id: string
@@ -240,7 +242,7 @@ export type Lead = {
   /** A manager's choice of classification; without it the suggested one is used (lib/classification.ts). */
   classification?: Classification
   /** HNI status — recorded only from what the customer chose to share; verified only with their consent. */
-  hni?: { status: HniStatus; potential: boolean }
+  hni?: { status: HniStatus; potential: boolean; /** What they chose to tell us, in their words (never documents). */ signals?: Partial<Record<HniSignal, string>> }
   /** Consent to be followed up (DPDP): when and how it was given; withdrawn stops follow-ups. */
   consent?: { followUp: boolean; at: string; how: string; withdrawnAt?: string }
   /** How they prefer to be contacted. */
@@ -253,6 +255,8 @@ export type LostReason = 'boughtElsewhere' | 'budget' | 'noInventory' | 'notResp
 
 /** What kind of customer this is — separate from how ready they are to buy. A high budget never makes someone an HNI. */
 export type Classification = 'general' | 'qualifiedBuyer' | 'investor' | 'highValue' | 'potentialHni' | 'verifiedHni'
+/** The questions a manager may ask about investment capacity (old wireframe HNI_SIGNALS); answers are as stated. */
+export type HniSignal = 'prevInvestment' | 'portfolio' | 'objective' | 'range' | 'fundingReadiness' | 'decisionProcess' | 'timeline'
 export type HniStatus = 'notDetermined' | 'notVerified' | 'potential' | 'consentInProgress' | 'verified' | 'declined'
 
 export type BuyerPurpose = 'ownUse' | 'investment' | 'rentalIncome' | 'businessUse' | 'secondHome' | 'other'

@@ -54,7 +54,8 @@ The full feature-by-feature list, against the old wireframe, is in [CHECKLIST.md
 | Setup, theme, shared components, app shell | Done (24dfd08) |
 | Properties: list, property page (Overview, Legal & documents, Price, Matching buyers, History), Share panel, archive and delete | Done — `src/features/properties/` |
 | Properties: Drafts, Add and Edit with the AI assistant, Share page (customer brochure) | Done |
-| Leads: list, Add / Edit lead, lead page (stage, next step, profile, site-visit outcomes, offer, Activity, Matches, Qualification, HNI) | Built, for review — `src/features/leads/` |
+| Leads: list and the Today design, Add / Edit lead, lead page (stage, next step, profile, site-visit outcomes, offer, Activity, Matches, Qualification, HNI) | Done — `src/features/leads/`; Tamil text to review |
+| AI assistant, step A: Ask bar, preview → apply → Undo, lead skills, Activity composer | Done — `src/lib/ai/`, `src/features/assistant/`; step B (the real AI) later |
 | Settings: your preferences (theme, language) | Done; business rules later |
 | Bulk import, Appointments, Pipeline | Next, in that order |
 | Dashboard, Projects, Matching engine, HNI, Reports, Enquiry form | Later, one at a time |

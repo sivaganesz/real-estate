@@ -406,14 +406,15 @@ function FollowUp({ lead: l }: { lead: Lead }) {
 
 /* ---------- actions ---------- */
 
-/** Call, WhatsApp and Log activity for anyone; Move stage; Reassign for managers. Opening the lead comes with the Lead page. */
+/** Call, WhatsApp and Log activity for anyone; Move stage; Reassign for managers. Log activity opens the lead's Activity tab with the assistant ready (27 Nov). */
 function useLeadActions(l: Lead) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { db, today, updateLead } = useStore()
   return {
     call: () => toast(t('leads.calling', { name: l.name, phone: l.phone }), { description: t('leads.demoHint') }),
     whatsapp: () => toast(t('leads.whatsapping', { name: l.name }), { description: t('leads.demoHint') }),
-    log: () => toast(t('property.comingNext', { what: t('leads.logActivityModule') })),
+    log: () => navigate(`/leads/${l.id}?log=1`),
     move: (s: LeadStage) => {
       if (s === 'lost') { toast(t('leads.lostNeedsReason')); return }
       updateLead(l.id, (x) => { x.stage = s; x.stageSince = today }, t('leads.stageNote', { stage: t(`stage.${s}`) }))

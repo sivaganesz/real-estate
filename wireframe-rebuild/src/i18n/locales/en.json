@@ -1705,7 +1705,6 @@
     "whatsapp": "WhatsApp",
     "whatsappShort": "WhatsApp",
     "logActivity": "Log activity",
-    "logActivityModule": "Logging calls and visits on the lead page",
     "moveStage": "Move stage",
     "reassign": "Reassign",
     "calling": "Calling {{name}} · {{phone}}",
@@ -1848,6 +1847,7 @@
       "noShow": "No-show"
     },
     "noVisits": "No site visits yet.",
+    "basis": { "propertyOnly": "Budget is for the property price only", "withCosts": "Budget includes registration and other costs", "withLoan": "Budget includes a home loan", "ask": "Ask what the budget includes" },
     "group": { "lookingFor": "Looking for", "money": "Money", "negotiating": "Negotiating" },
     "scale": { "offer": "offer", "counter": "counter", "asking": "asking" },
     "ownerReassign": "Owner — click to reassign",
@@ -2098,6 +2098,7 @@
     "newLeadIntro": "Describe the lead in one message — as you’d tell a colleague. The assistant fills in what it can and asks for the rest.",
     "newLeadPlaceholder": "e.g. New lead Karthikeyan, 98765 43210, 2 BHK in Velachery, 50–60 L, WhatsApp, OK to follow up",
     "newLeadRules": "Name, mobile, why they’re buying, the maximum budget and a city are needed. Nothing is saved until you choose Create lead.",
+    "edit": { "title": "Tell the assistant what changed", "placeholder": "e.g. Budget now up to 32 L, also looking in Thirunagar, prefers WhatsApp", "ex1": "Budget now up to 32 L, also looking in Thirunagar", "ex2": "Prefers WhatsApp now; wants 1,500 sq.ft.", "found_one": "{{count}} change from your message. Untick any you don’t want.", "found_other": "{{count}} changes from your message. Untick any you don’t want.", "thenSave": "Fills the form — then check it and Save changes.", "apply_one": "Apply {{count}} change to the form", "apply_other": "Apply {{count}} changes to the form", "none": "I couldn’t find a change to these details in that. Try the budget, places, size, type, purpose or how they prefer to be contacted.", "applied_one": "{{count}} change filled in — check it, then Save changes", "applied_other": "{{count}} changes filled in — check them, then Save changes" },
     "prefilledTitle": "Filled in from your message",
     "prefilled": "Check every section, add what’s missing, then create the lead."
   },
@@ -2143,6 +2144,9 @@
     "max": "Maximum",
     "flex": "Can stretch by (%)",
     "flexHint": "Up to 50%",
+    "basis": "What does the budget include?",
+    "basisHint": "Ask before recommending: ₹30 L may mean the property only, all-in with registration, or with a home loan.",
+    "basisOpt": { "none": "Not clarified yet", "propertyOnly": "Property price only", "withCosts": "With registration and costs", "withLoan": "Includes a home loan" },
     "budgetLive": "{{min}} – {{max}} · prefers {{pref}} · can go up to {{ceiling}}",
     "budgetEmpty": "Enter at least the maximum budget.",
     "type": "Property type",
@@ -2315,8 +2319,37 @@
       "declined": "Customer declined verification"
     },
     "statusNote": "HNI status: {{status}}",
+    "signals": {
+      "title": "Qualification signals",
+      "recorded": "{{n}}/{{total}} recorded",
+      "notDiscussed": "Not discussed",
+      "never": "Write down only what the customer chose to tell you. Never ask for bank statements, tax returns or account balances.",
+      "item": {
+        "prevInvestment": { "l": "Previous investment", "q": "Have you invested in property before?" },
+        "portfolio": { "l": "Portfolio experience", "q": "Do you own residential or commercial properties?" },
+        "objective": { "l": "Investment objective", "q": "Are you looking for capital appreciation or rental income?" },
+        "range": { "l": "Purchase range", "q": "What investment range are you considering?" },
+        "fundingReadiness": { "l": "Funding readiness", "q": "Have you arranged funds for this purchase?" },
+        "decisionProcess": { "l": "Decision process", "q": "Who else will take part in the decision?" },
+        "timeline": { "l": "Timeline", "q": "When would you like to complete the purchase?" }
+      }
+    },
+    "ladder": {
+      "title": "Classification ladder",
+      "current": "Current",
+      "suggested": "Suggested",
+      "note": "A potential HNI is not a confirmed HNI. A ₹30 L buyer may be a serious investor; a ₹5 Cr enquiry may have no buying capacity right now.",
+      "change": "Change the customer type on the Qualification tab →",
+      "desc": {
+        "general": "Has enquired about a property",
+        "qualifiedBuyer": "Has a clear requirement and a realistic budget",
+        "investor": "Has an investment objective",
+        "highValue": "Considering a high-ticket property",
+        "potentialHni": "Has indicators of substantial wealth or investment capacity",
+        "verifiedHni": "Status verified through a proper, consent-based process"
+      }
+    },
     "verifiedNeedsConsent": "“Verified” is available only after consent and verification are in progress.",
-    "clsMoved": "The customer type (classification) is on the Qualification tab.",
     "auto": "Auto — {{cls}}",
     "clsHint": "Leave on Auto unless you know better; “Verified HNI” needs a verified status.",
     "clsNote": "Classification set to {{cls}}",

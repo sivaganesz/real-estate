@@ -6,9 +6,9 @@
  * - A manager picks the owner (or "Auto-assign" to the executive with the fewest open leads); an executive's new lead is theirs.
  * - Editing changes the details only: the stage, consent, visits and timeline are changed on the lead page.
  */
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Check, Lock, ShieldCheck, ShieldX, UserRound } from 'lucide-react'
+import { ArrowLeft, Check, CornerDownLeft, Lock, Mic, MicOff, ShieldCheck, ShieldX, Sparkles, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AmountInput } from '@/components/app/amount-input'
@@ -22,14 +22,16 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCrumbs } from '@/components/layout/crumbs'
 import { CITIES, FACINGS, TYPE_ORDER, amenityList } from '@/data/catalogue'
-import type { BuyerPurpose, Facing, Lead, PropertyTypeKey, Requirement } from '@/data/types'
+import type { BudgetBasis, BuyerPurpose, Facing, Lead, PropertyTypeKey, Requirement } from '@/data/types'
 import { type AmountField, fromAmountField, toAmountField } from '@/lib/amount'
 import { hasFollowUpConsent } from '@/lib/consent'
 import { addDays, fmtDate, inrShort } from '@/lib/format'
 import { useLabels } from '@/lib/labels'
 import { cn } from '@/lib/utils'
 import { useCan, useStore, useVisibleLeads, userName } from '@/store/db'
-import type { NewLeadFields } from '@/lib/ai/understand'
+import { type NewLeadFields, readLeadDetails } from '@/lib/ai/understand'
+import { Textarea } from '@/components/ui/textarea'
+import { useSpeech } from '../assistant/use-speech'
 import { AssistantBox } from '../assistant/assistant-box'
 import { isActive } from './lead-list'
 
@@ -61,7 +63,7 @@ const TYPE_FIELDS: Record<PropertyTypeKey, ('bhk' | 'possession' | 'parking' | '
 type Draft = {
   name: string; phone: string; email: string; contactPref: NonNullable<Lead['contactPref']>; source: string; enquiryDate: string; ownerId: string
   purpose?: BuyerPurpose; purposeNote: string
-  min: AmountField; preferred: AmountField; max: AmountField; flexPct: string
+  min: AmountField; preferred: AmountField; max: AmountField; flexPct: string; basis?: BudgetBasis
   q: Lead['qualification']
   type: PropertyTypeKey; cities: string[]; localities: string[]; sizeSqft: string; bhk?: string; possession: NonNullable<Requirement['possession']>
   parking: NonNullable<Requirement['parking']>; facing?: Facing; minRoadFt: string; corner: NonNullable<Requirement['corner']>; commCategory: string
@@ -76,7 +78,7 @@ const draftOf = (l: Lead | undefined, today: string, ownerId: string): Draft => 
     name: l?.name ?? '', phone: l?.phone ?? '', email: l?.email ?? '', contactPref: l?.contactPref ?? 'call', source: l?.source ?? 'Walk-in',
     enquiryDate: l?.enquiryDate ?? today, ownerId: l ? l.ownerId ?? '' : ownerId,
     purpose: l?.purpose, purposeNote: l?.purposeNote ?? '',
-    min: toAmountField(b?.min, unit), preferred: toAmountField(b?.preferred, unit), max: toAmountField(b?.max, unit), flexPct: b?.flexPct ? String(b.flexPct) : '',
+    min: toAmountField(b?.min, unit), preferred: toAmountField(b?.preferred, unit), max: toAmountField(b?.max, unit), flexPct: b?.flexPct ? String(b.flexPct) : '', basis: b?.basis,
     q: l?.qualification ?? { need: 'partly', timeline: 'undecided', authority: 'unknown', funding: 'own', fundingReady: 'undecided' },
     type: r?.type ?? 'plot', cities: r?.cities ?? [], localities: r?.localities ?? [], sizeSqft: r?.sizeSqft ? String(r.sizeSqft) : '',
     bhk: r?.bhk, possession: r?.possession ?? 'any', parking: r?.parking ?? 'preferred', facing: r?.facing, minRoadFt: r?.minRoadFt ? String(r.minRoadFt) : '',
@@ -176,7 +178,7 @@ function LeadForm({ base, prefill }: { base?: Lead; prefill?: NewLeadFields }) {
   const build = (): Pick<Lead, 'name' | 'phone' | 'email' | 'contactPref' | 'source' | 'enquiryDate' | 'purpose' | 'purposeNote' | 'qualification' | 'budget' | 'requirement'> => ({
     name: d.name.trim(), phone: d.phone.trim(), email: d.email.trim() || undefined, contactPref: d.contactPref, source: d.source, enquiryDate: d.enquiryDate,
     purpose: d.purpose, purposeNote: d.purposeNote.trim() || undefined, qualification: d.q,
-    budget: { min: min ?? 0, preferred: pref ?? max!, max: max!, flexPct: flex },
+    budget: { min: min ?? 0, preferred: pref ?? max!, max: max!, flexPct: flex, ...(d.basis ? { basis: d.basis } : {}) },
     requirement: {
       type: d.type, cities: d.cities, localities: d.localities, sizeSqft: Number(d.sizeSqft) || undefined, amenities: d.amenities, approvalRequired: d.approvalRequired,
       ...(fields.includes('bhk') && d.bhk ? { bhk: d.bhk } : {}),
@@ -231,6 +233,8 @@ function LeadForm({ base, prefill }: { base?: Lead; prefill?: NewLeadFields }) {
         description={t('leadForm.intro')} />
 
       {prefill && !tried && <Callout tone="violet" title={t('ai.prefilledTitle')} className="mb-4">{t('ai.prefilled')}</Callout>}
+      {/* editing: say what changed, check the changes, fill them into the form */}
+      {base && <EditAssistant d={d} onApply={(next, n) => { setD(next); toast.success(t('ai.edit.applied', { count: n })) }} />}
       {tried && invalid && (
         <Callout tone="danger" title={t('leadForm.fixTitle')} className="mb-4">
           {[errors.name && t('leadForm.err.name'), errors.phone && t('leadForm.err.phone'), errors.purpose && t('leadForm.err.purpose'),
@@ -334,6 +338,10 @@ function LeadForm({ base, prefill }: { base?: Lead; prefill?: NewLeadFields }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {max ? t('leadForm.budgetLive', { min: inrShort(min ?? 0), max: inrShort(max), pref: inrShort(pref ?? max), ceiling: inrShort(Math.round(max * (1 + flex / 100))) }) : t('leadForm.budgetEmpty')}
           </p>
+          {/* what ₹30 L means: property only, all-in, or with a loan — clarify before recommending (old wireframe) */}
+          <Field label={t('leadForm.basis')} hint={t('leadForm.basisHint')} className="mt-4">
+            {choose(['none', 'propertyOnly', 'withCosts', 'withLoan'] as const, d.basis ?? 'none', (v) => set('basis', v === 'none' ? undefined : v), (v) => t(`leadForm.basisOpt.${v}`))}
+          </Field>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label={t('qual.q.fundingType')}>{choose(Q.funding, d.q.funding, (v) => setQ('funding', v), (v) => t(`qual.answer.fundingType.${v}`))}</Field>
             <Field label={t('qual.q.funding')}>{choose(Q.fundingReady, d.q.fundingReady, (v) => setQ('fundingReady', v), (v) => t(`qual.answer.funding.${v}`))}</Field>
@@ -416,6 +424,104 @@ function LeadForm({ base, prefill }: { base?: Lead; prefill?: NewLeadFields }) {
         </div>
       </form>
     </Page>
+  )
+}
+
+/**
+ * Edit lead with the assistant (27 Nov): say what changed; it lists each change as old → new with a tick box, and
+ * "Apply to the form" fills the ticked ones in. Nothing is saved until "Save changes" — the form stays the place to check.
+ * Places are added to the ones already there; consent is not changed here (it is recorded on the profile).
+ */
+function EditAssistant({ d, onApply }: { d: Draft; onApply: (next: Draft, n: number) => void }) {
+  const { t } = useTranslation()
+  const L = useLabels()
+  const [text, setText] = useState('')
+  const [sent, setSent] = useState('')
+  const [off, setOff] = useState<Set<string>>(() => new Set())
+  const box = useRef<HTMLTextAreaElement>(null)
+  const speech = useSpeech((heard, final) => { setText(heard); if (final && heard.trim()) { setSent(heard.trim()); setOff(new Set()) } })
+  const send = () => { const v = text.trim(); if (v) { setSent(v); setOff(new Set()) } }
+
+  type Change = { key: string; label: string; from: string; to: string; apply: (x: Draft) => Draft }
+  const changes: Change[] = []
+  if (sent) {
+    const f = readLeadDetails(sent)
+    const money = (a: AmountField) => { const n = fromAmountField(a); return n ? inrShort(n) : '—' }
+    const unit = (n: number): 'L' | 'Cr' => (n >= 1e7 ? 'Cr' : 'L')
+    if (f.phone && f.phone !== d.phone) changes.push({ key: 'phone', label: t('leadForm.phone'), from: d.phone || '—', to: f.phone, apply: (x) => ({ ...x, phone: f.phone! }) })
+    if (f.email && f.email !== d.email) changes.push({ key: 'email', label: t('leadForm.email'), from: d.email || '—', to: f.email, apply: (x) => ({ ...x, email: f.email! }) })
+    if (f.contactPref && f.contactPref !== d.contactPref) changes.push({ key: 'pref', label: t('leadForm.contactPref'), from: t(`leadForm.pref.${d.contactPref}`), to: t(`leadForm.pref.${f.contactPref}`), apply: (x) => ({ ...x, contactPref: f.contactPref! }) })
+    if (f.purpose && f.purpose !== d.purpose) changes.push({ key: 'purpose', label: t('ai.purpose'), from: d.purpose ? t(`purpose.buyer.${d.purpose}`) : '—', to: t(`purpose.buyer.${f.purpose}`), apply: (x) => ({ ...x, purpose: f.purpose }) })
+    if (f.max && f.max !== fromAmountField(d.max)) changes.push({ key: 'max', label: t('leadForm.max'), from: money(d.max), to: inrShort(f.max), apply: (x) => ({ ...x, max: toAmountField(f.max, unit(f.max!)) }) })
+    if (f.min && f.min !== fromAmountField(d.min)) changes.push({ key: 'min', label: t('leadForm.min'), from: money(d.min), to: inrShort(f.min), apply: (x) => ({ ...x, min: toAmountField(f.min, unit(f.min!)) }) })
+    if (f.type && f.type !== d.type) changes.push({ key: 'type', label: t('leadForm.type'), from: L.type(d.type), to: L.type(f.type), apply: (x) => ({ ...x, type: f.type! }) })
+    if (f.bhk && f.bhk !== d.bhk) changes.push({ key: 'bhk', label: t('leadForm.bhk'), from: d.bhk ?? '—', to: f.bhk, apply: (x) => ({ ...x, bhk: f.bhk }) })
+    if (f.sizeSqft && String(f.sizeSqft) !== d.sizeSqft) changes.push({ key: 'size', label: t('leadForm.size'), from: d.sizeSqft || '—', to: String(f.sizeSqft), apply: (x) => ({ ...x, sizeSqft: String(f.sizeSqft) }) })
+    const newCities = f.cities.filter((c) => !d.cities.includes(c)), newLocs = f.localities.filter((c) => !d.localities.includes(c))
+    if (newCities.length || newLocs.length) {
+      changes.push({
+        key: 'places', label: t('leadForm.localities'), from: [...d.localities, ...(d.localities.length ? [] : d.cities)].join(', ') || '—',
+        to: `+ ${[...newLocs, ...newCities].join(', ')}`,
+        apply: (x) => ({ ...x, cities: [...new Set([...x.cities, ...f.cities])], localities: [...new Set([...x.localities, ...f.localities])] }),
+      })
+    }
+    if (f.source && f.source !== d.source) changes.push({ key: 'source', label: t('leadForm.sourceLabel'), from: d.source, to: f.source, apply: (x) => ({ ...x, source: f.source! }) })
+  }
+  const chosen = changes.filter((c) => !off.has(c.key))
+  const apply = () => {
+    onApply(chosen.reduce((x, c) => c.apply(x), d), chosen.length)
+    setText(''); setSent('')
+  }
+
+  return (
+    <SectionCard className="mb-4 border-violet/25">
+      <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><Sparkles className="size-4 text-violet" /> {t('ai.edit.title')}</p>
+      <form onSubmit={(e) => { e.preventDefault(); send() }}
+        className="flex items-center gap-2 rounded-xl border bg-card py-1.5 pr-1.5 pl-3 focus-within:border-primary/60 focus-within:ring-3 focus-within:ring-ring/15">
+        <Textarea ref={box} rows={1} value={text} onChange={(e) => setText(e.target.value)} aria-label={t('ai.edit.placeholder')} placeholder={t('ai.edit.placeholder')}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+          className="field-sizing-content max-h-32 min-h-9 flex-1 resize-none border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0 md:text-sm" />
+        {speech.supported && (
+          <Button type="button" variant="outline" size="icon" className={cn('size-9 shrink-0', speech.listening && 'border-danger text-danger')}
+            aria-label={speech.listening ? t('ai.stopListening') : t('ai.speak')} onClick={() => (speech.listening ? speech.stop() : speech.start())}>
+            {speech.listening ? <MicOff /> : <Mic />}
+          </Button>
+        )}
+        <Button type="submit" size="icon" className="size-9 shrink-0" aria-label={t('ai.send')} disabled={!text.trim()}><CornerDownLeft /></Button>
+      </form>
+      {!sent && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {[t('ai.edit.ex1'), t('ai.edit.ex2')].map((x) => (
+            <button key={x} type="button" onClick={() => { setText(x); setSent(x); setOff(new Set()) }} className="rounded-full bg-violet-soft px-2.5 py-1 text-left text-xs text-violet hover:bg-violet-soft/70">{x}</button>
+          ))}
+        </div>
+      )}
+      {sent && (
+        <div className="mt-3 flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 text-sm">
+          {changes.length ? (
+            <>
+              <p className="text-muted-foreground">{t('ai.edit.found', { count: changes.length })}</p>
+              <ul className="flex flex-col gap-1.5">
+                {changes.map((c) => (
+                  <li key={c.key}>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2">
+                      <Checkbox checked={!off.has(c.key)} onCheckedChange={(v) => setOff((s) => { const n = new Set(s); if (v) n.delete(c.key); else n.add(c.key); return n })} />
+                      <span className="w-28 shrink-0 text-muted-foreground">{c.label}</span>
+                      <span className="min-w-0"><s className="text-muted-foreground">{c.from}</s> → <b className="font-semibold">{c.to}</b></span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="mr-auto text-xs text-muted-foreground">{t('ai.edit.thenSave')}</span>
+                <Button type="button" variant="outline" onClick={() => { setSent(''); box.current?.focus() }}>{t('action.cancel')}</Button>
+                <Button type="button" disabled={!chosen.length} onClick={apply}><Check /> {t('ai.edit.apply', { count: chosen.length })}</Button>
+              </div>
+            </>
+          ) : <p>{t('ai.edit.none')}</p>}
+        </div>
+      )}
+    </SectionCard>
   )
 }
 

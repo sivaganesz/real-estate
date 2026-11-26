@@ -6,8 +6,8 @@
  * Same rules as the old wireframe (views-customers.js): readiness and classification are separate; HNI is a status,
  * never a score, and is shown to Admins and Sales managers only; marking a lead Lost needs a reason.
  */
-import { useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   ArrowLeft, CalendarClock, CalendarPlus, Check, ChevronDown, Handshake, Home, Lock, Mail, MapPin, MessageCircle, MoreHorizontal, Pencil,
   Phone, RotateCcw, Share2, ShieldCheck, Sparkles, StickyNote, ThumbsUp, UserRound, Users, Wallet, X, type LucideIcon,
@@ -33,7 +33,7 @@ import { type Tone, toneFill, toneSoft, toneText } from '@/components/app/tone'
 import { UserAvatar } from '@/components/app/user-avatar'
 import { useCrumbs } from '@/components/layout/crumbs'
 import { STAGE_ORDER } from '@/data/catalogue'
-import type { Classification, HniStatus, Lead, LeadActivity, LeadStage, LostReason, SiteVisit } from '@/data/types'
+import type { Classification, HniSignal, HniStatus, Lead, LeadActivity, LeadStage, LostReason, SiteVisit } from '@/data/types'
 import { useIsPhone } from '@/hooks/use-media-query'
 import { CLASSIFICATIONS, classificationOf, isHni, suggestedClassification } from '@/lib/classification'
 import { hasFollowUpConsent } from '@/lib/consent'
@@ -399,6 +399,9 @@ function Profile({ l, top, onLose, onBook }: { l: Lead; top?: Match; onLose: () 
               {b.flexPct > 0 && <>{t('lead.flex', { pct: b.flexPct, ceiling: inrShort(ceiling) })} · </>}
               {t(`qual.answer.fundingType.${l.qualification.funding}`)} · <span className={cn(l.qualification.fundingReady === 'ready' && 'font-medium text-success')}>{t(`qual.answer.funding.${l.qualification.fundingReady}`)}</span>
             </p>
+            {/* what the budget covers; until it's asked, a reminder */}
+            {b.basis ? <p className="mt-0.5 text-xs text-muted-foreground">{t(`lead.basis.${b.basis}`)}</p>
+              : <p className="mt-0.5 text-xs text-warning" title={t('leadForm.basisHint')}>{t('lead.basis.ask')}</p>}
           </div>
         ))}
         {(l.negotiation || l.stage === 'negotiation') && group(Handshake, l.negotiation
@@ -583,6 +586,10 @@ const ACT_TONE: Record<LeadActivity['type'], Tone> = {
 function ActivityTab({ l }: { l: Lead }) {
   const { t, i18n } = useTranslation()
   const { db, today, user, updateLead } = useStore()
+  // "Log activity" from the Leads list opens here with ?log=1: the composer gets the cursor, then the address is tidied
+  const [params, setParams] = useSearchParams()
+  const [focusOnOpen] = useState(params.get('log') === '1')
+  useEffect(() => { if (params.get('log')) setParams({}, { replace: true }) }, [params, setParams])
   const note = (text: string) => {
     updateLead(l.id, (x) => { x.activity.unshift({ id: `${x.id}-a${x.activity.length + 1}`, at: today, by: user.id, type: 'note', text }) })
     toast.success(t('lead.logged'))
@@ -599,7 +606,7 @@ function ActivityTab({ l }: { l: Lead }) {
     <div className="flex flex-col gap-5 lg:min-h-0 lg:flex-1">
       {/* an open proposal can be tall: on a short page it scrolls on its own rather than pushing the log out */}
       <div className="-m-1 shrink-0 p-1 lg:max-h-[70%] lg:overflow-y-auto">
-      <AssistantBox key={l.id} mode="lead" leadId={l.id} composer onPlainNote={note}
+      <AssistantBox key={l.id} mode="lead" leadId={l.id} composer onPlainNote={note} autoFocus={focusOnOpen}
         placeholder={t('ai.composerPlaceholder', { name: l.name.split(' ')[0] })}
         examples={[t('ai.ex.short1'), t('ai.ex.short2')]} />
       </div>
@@ -756,28 +763,99 @@ function CustomerType({ l }: { l: Lead }) {
 
 /* ---------- HNI (managers): a status, never a score ---------- */
 
+/** The questions a manager may ask (old wireframe HNI_SIGNALS). Answers are what the customer chose to say. */
+const HNI_SIGNALS: HniSignal[] = ['prevInvestment', 'portfolio', 'objective', 'range', 'fundingReadiness', 'decisionProcess', 'timeline']
+
+/**
+ * HNI tab (old wireframe custHNI, rebuilt 27 Nov): the rule; the qualification signals — what to ask and what they said,
+ * N of 7 recorded; the verification status (Verified only after consent) and the potential-indicators switch; and the
+ * classification ladder beside it (current and suggested; changed on the Qualification tab).
+ */
 function HniTab({ l }: { l: Lead }) {
   const { t } = useTranslation()
   const { updateLead } = useStore()
   const hni = l.hni ?? { status: 'notDetermined' as HniStatus, potential: false }
+  const signals = hni.signals ?? {}
+  const recorded = HNI_SIGNALS.filter((k) => signals[k]?.trim()).length
   const setHni = (patch: Partial<NonNullable<Lead['hni']>>, note: string) => updateLead(l.id, (x) => { x.hni = { ...hni, ...patch } }, note)
+  // saved when the field is left; an unchanged answer saves nothing
+  const setSignal = (k: HniSignal, value: string) => {
+    const v = value.trim()
+    if ((signals[k] ?? '') === v) return
+    updateLead(l.id, (x) => {
+      const cur = x.hni ?? { status: 'notDetermined' as HniStatus, potential: false }
+      x.hni = { ...cur, signals: { ...(cur.signals ?? {}), [k]: v || undefined } }
+    })
+  }
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <Callout tone="info" title={t('hniTab.ruleTitle')}>{t('hniTab.rule')}</Callout>
-      <div className="max-w-sm">
-        <p className="mb-1.5 text-sm font-medium">{t('hniTab.status')}</p>
-        <Select value={hni.status} onValueChange={(v) => setHni({ status: v as HniStatus, potential: v === 'potential' || hni.potential }, t('hniTab.statusNote', { status: t(`hniTab.st.${v}`) }))}>
-          <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-          <SelectContent>{HNI_STATUSES.map((s) => <SelectItem key={s} value={s} disabled={s === 'verified' && hni.status !== 'consentInProgress' && hni.status !== 'verified'}>{t(`hniTab.st.${s}`)}</SelectItem>)}</SelectContent>
-        </Select>
-        <p className="mt-1 text-xs text-muted-foreground">{t('hniTab.verifiedNeedsConsent')}</p>
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
+      <div className="flex min-w-0 flex-col gap-5">
+        <Callout tone="info" title={t('hniTab.ruleTitle')}>{t('hniTab.rule')}</Callout>
+
+        <section className="rounded-xl border">
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
+            <p className="font-semibold">{t('hniTab.signals.title')}</p>
+            <StatusChip tone={recorded ? 'info' : 'neutral'}>{t('hniTab.signals.recorded', { n: recorded, total: HNI_SIGNALS.length })}</StatusChip>
+          </div>
+          <ul className="divide-y">
+            {HNI_SIGNALS.map((k) => (
+              <li key={k} className="grid gap-1.5 px-4 py-2.5 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] sm:items-center sm:gap-4">
+                <label htmlFor={`sig-${k}`} className="min-w-0">
+                  <span className="block text-sm font-medium">{t(`hniTab.signals.item.${k}.l`)}</span>
+                  <span className="block text-xs text-muted-foreground italic">“{t(`hniTab.signals.item.${k}.q`)}”</span>
+                </label>
+                <Input id={`sig-${k}`} key={`${l.id}-${k}`} defaultValue={signals[k] ?? ''} placeholder={t('hniTab.signals.notDiscussed')} className="h-8"
+                  onBlur={(e) => setSignal(k, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} />
+              </li>
+            ))}
+          </ul>
+          <p className="border-t px-4 py-2 text-xs text-muted-foreground">{t('hniTab.signals.never')}</p>
+        </section>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-sm font-medium">{t('hniTab.status')}</p>
+            <Select value={hni.status} onValueChange={(v) => setHni({ status: v as HniStatus, potential: v === 'potential' || hni.potential }, t('hniTab.statusNote', { status: t(`hniTab.st.${v}`) }))}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>{HNI_STATUSES.map((s) => <SelectItem key={s} value={s} disabled={s === 'verified' && hni.status !== 'consentInProgress' && hni.status !== 'verified'}>{t(`hniTab.st.${s}`)}</SelectItem>)}</SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">{t('hniTab.verifiedNeedsConsent')}</p>
+          </div>
+          <label className="flex items-start gap-3 self-start rounded-xl border p-3">
+            <Switch checked={hni.potential} onCheckedChange={(v) => setHni({ potential: v }, t(v ? 'hniTab.potentialOn' : 'hniTab.potentialOff'))} className="mt-0.5" />
+            <span className="text-sm"><b className="font-medium">{t('hniTab.potential')}</b><span className="block text-muted-foreground">{t('hniTab.potentialHint')}</span></span>
+          </label>
+        </div>
       </div>
-      <p className="text-sm text-muted-foreground">{t('hniTab.clsMoved')}</p>
-      <label className="flex items-start gap-3 rounded-xl border p-3">
-        <Switch checked={hni.potential} onCheckedChange={(v) => setHni({ potential: v }, t(v ? 'hniTab.potentialOn' : 'hniTab.potentialOff'))} className="mt-0.5" />
-        <span className="text-sm"><b className="font-medium">{t('hniTab.potential')}</b><span className="block text-muted-foreground">{t('hniTab.potentialHint')}</span></span>
-      </label>
+      <Ladder l={l} />
     </div>
+  )
+}
+
+/** The classification ladder: every customer type with what it means; the current one and the suggested one marked. */
+function Ladder({ l }: { l: Lead }) {
+  const { t } = useTranslation()
+  const { db } = useStore()
+  const cls = classificationOf(l, db)
+  const suggested = suggestedClassification({ ...l, classification: undefined }, db)
+  return (
+    <aside className="rounded-xl border p-4">
+      <p className="mb-2 font-semibold">{t('hniTab.ladder.title')}</p>
+      <ol className="flex flex-col gap-1">
+        {CLASSIFICATIONS.map((c) => (
+          <li key={c} className={cn('rounded-lg px-2.5 py-2', c === cls && 'bg-violet-soft')}>
+            <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+              {t(`class.${c}`)}
+              {c === cls && <StatusChip tone="violet" className="h-5 px-2">{t('hniTab.ladder.current')}</StatusChip>}
+              {c === suggested && c !== cls && <StatusChip tone="neutral" variant="outline" className="h-5 px-2">{t('hniTab.ladder.suggested')}</StatusChip>}
+            </p>
+            <p className="text-xs text-muted-foreground">{t(`hniTab.ladder.desc.${c}`)}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground">{t('hniTab.ladder.note')}</p>
+      <Link to={`/leads/${l.id}/qualification`} className="mt-2 inline-block text-xs font-medium text-primary hover:underline">{t('hniTab.ladder.change')}</Link>
+    </aside>
   )
 }
 

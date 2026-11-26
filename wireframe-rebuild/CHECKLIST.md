@@ -1,7 +1,7 @@
 # RealSpec CRM — wireframe rebuild checklist
 
 What the clickable wireframe (`spec-system-wireframe/`) has, and how far the React rebuild (`wireframe-rebuild/`) has got.
-Updated 26 Nov 2026.
+Updated 27 Nov 2026.
 
 - `[x]` done in the rebuild
 - `[ ]` not done yet
@@ -22,7 +22,7 @@ Updated 26 Nov 2026.
 | Properties — list | Done |
 | Properties — property page | Done |
 | Properties — Drafts, Add property with AI, Edit with AI, Share page | Done |
-| Leads — list, Add / Edit lead, lead page | Built, for review (a few items left, see 4) |
+| Leads — list, Today design, Add / Edit lead, lead page, AI assistant (step A) | Done; the Tamil text needs review |
 | Bulk import | Not started |
 | Appointments | Not started |
 | Lead pipeline | Not started |
@@ -184,21 +184,25 @@ Updated 26 Nov 2026.
 ## 4. Leads
 
 - [x] **Leads list** (design agreed 26 Nov):
-  - [x] Search and ✨ sentence search; filter pills: stage, executive (managers), purpose, property type + city, readiness, classification; sort: most ready, next follow-up, newest
+  - [x] Search and ✨ sentence search; filter pills: stage, executive (managers), purpose, property type + city, classification (**Changed 27 Nov:** no Readiness filter); sort: most ready, next follow-up, newest
   - [x] Follow-up tabs: All · Overdue · Due today · Upcoming · Closed / Lost
   - [x] Columns: lead, purpose, looking for, budget, ready to buy, classification, stage, owner, next follow-up (overdue / today); columns can be hidden
   - [x] Table or cards, remembered per user; ⋯ menu: open, call, WhatsApp, log activity, move stage, reassign (managers)
   - [x] "⚠ Needs attention" on demand: overdue, no follow-up date, ready to buy but no site visit
   - [x] Executives see their own leads; HNI classification shows "Restricted" to them
   - [x] Opening a lead and marking Lost with a reason (on the lead page)
-  - [ ] Log activity from the list's ⋯ menu (still "coming next"; logging works on the lead page)
-- [ ] **Prototype (26 Nov): "Today" design** at /leads?design=new — summary tiles, saved views, list grouped by follow-up, actions on hover (Call · WhatsApp · ✓ Done), preview panel. Waiting for review: replace the current list, or keep both
+  - [x] Log activity from the list's ⋯ menu opens the lead's Activity tab with the assistant ready to type (27 Nov)
+  - [x] **Changed (27 Nov):** short one-line chips for stage and classification ("Recommended", "High value"); full name on hover
+- [x] **New — "Today" design** at /leads?design=new, **kept alongside the table** (decided 27 Nov; "Try the new design" / "← Current design" switch between them):
+  - [x] Summary cards: **Active leads** (active out of all, bar of active / booked / lost), Overdue, Due today, Hot, New this week — the last four filter the list
+  - [x] Saved views (All · Hot · Investors · HNI · Closed / Lost), list grouped by follow-up, actions on hover (Call · WhatsApp · ✓ Done), preview panel
+  - [x] Filter panel: short labels, a count on every option (0 greyed out), several picks per section, Clear / Clear all, "Show N leads"
 - [x] **Add / Edit lead** (/leads/new, /leads/:id/edit — 26 Nov):
   - [x] Contact, owner (managers pick or auto-assign to the executive with the fewest open leads; an executive's new lead is theirs), consent to follow up with what to say
   - [x] Purpose; budget (min / preferred / max / flexibility, in lakh or crore, live summary) and funding
   - [x] Requirements, with only the questions each property type needs; readiness questions
   - [x] Checks: required fields (name, 10-digit mobile, purpose, maximum budget, one city); min and preferred ≤ max
-  - [ ] "What the budget includes" (property only, all-in, with the loan) — not asked yet
+  - [x] "What does the budget include?" (not clarified · property only · with registration and costs · with a home loan); the profile reminds you to ask until it is answered (27 Nov)
   - [x] **Changed:** the stage isn't in the form — it moves on the lead page. Editing changes details only; consent is changed from the profile
 - [x] **Lead page** (design agreed 26 Nov; work on the left, the person on the right):
   - [x] **Changed:** stage as arrow steps with one-word names; the current stage and how long it has been there; Mark as lost (needs a reason) as its own button
@@ -206,11 +210,19 @@ Updated 26 Nov 2026.
   - [x] Profile: owner chip (managers reassign), contact, consent record / withdraw, the three assessments side by side (property fit · ready to buy · HNI status, never combined), looking for, money, negotiation as a price scale, site visits
   - [x] Site visits: book; record the outcome (completed with feedback and interest, no-show, cancelled); "Needs outcome" when the day has passed
   - [x] Negotiation: record or update the offer and the seller's counter; moves the lead to Negotiation
-  - [x] Activity: log a call / WhatsApp / visit / note, and say whether they responded; timeline grouped by day
+  - [x] Activity: the assistant composer on top (say what happened, or "Just add a note"), the timeline grouped by day below; on wide screens only the log scrolls
   - [x] Matches: fit score, why (the five parts with their weights, and reasons), recommend, share, book a visit; properties not shown and why
   - [x] Qualification: questions with suggested wording, the readiness points table, and the customer type (managers can override)
   - [x] HNI (managers only): status (verified only after consent), potential indicators
-  - [ ] HNI: the signals list and the classification ladder from the old wireframe
+  - [x] HNI: the 7 qualification signals (question to ask, their answer as stated, N/7 recorded) and the classification ladder (current and suggested) (27 Nov)
+- [x] **New — AI assistant, step A** (agreed 26–27 Nov; understanding is rules for now, the real AI replaces one file in step B):
+  - [x] Ask bar on every page (/ or Ctrl K; a round button on phones); on a lead's page it knows the lead
+  - [x] Every change previewed (old → new, tick boxes), applied by a person, Undo for 10 s, ✨ on the timeline
+  - [x] Add a lead from one sentence; log, book a visit, visit outcome, budget, follow-up, offer, lost, share, consent; questions about leads with "How I read it"
+  - [x] Add lead starts as a chat; the form is "Fill in the form instead"
+  - [x] The Activity tab's composer is the assistant ("Just add a note" for plain notes)
+  - [ ] Step B: the real AI behind the same shape; Tamil voice
+- [x] **New — demo data:** 9 more leads (LEAD-1016 – 1024) at every stage, merged into saved demo data without a reset
 
 ## 5. Bulk import
 

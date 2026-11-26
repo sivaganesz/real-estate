@@ -300,7 +300,7 @@ export function seedLeads(): Lead[] {
     L({ id: 'LEAD-1001', name: 'Arun', phone: '+91 98xxxxxx01', source: 'Website', enquiryDate: '2026-11-16', ownerId: 'u-ex01', purpose: 'ownUse',
       qualification: { need: 'clear', timeline: 'm1to3', authority: 'joint', funding: 'combination', fundingReady: 'arranging' },
       engagement: { responded: true, docsRequested: false, siteVisited: false }, purposeNote: 'Building a family home',
-      budget: budget(2000000, 2500000, 3000000, 5),
+      budget: { ...budget(2000000, 2500000, 3000000, 5), basis: 'propertyOnly' },
       requirement: req({ type: 'plot', cities: ['Madurai'], localities: ['Vilangudi', 'Thirunagar'], sizeSqft: 1200, facing: facing('E'), minRoadFt: 30, corner: 'any' }),
       stage: 'qualified', stageSince: '2026-11-16', nextFollowUp: '2026-11-17',
       activity: [act('2026-11-16', 'call', 'Wants a 1,200 sq.ft. plot in an approved layout to build a house. ₹30 L is for the plot only; home loan in process.', 'u-ex01')] }),
@@ -341,7 +341,7 @@ export function seedLeads(): Lead[] {
       qualification: { need: 'clear', timeline: 'm1to3', authority: 'sole', funding: 'own', fundingReady: 'ready' },
       engagement: { responded: true, docsRequested: true, siteVisited: false }, purposeNote: 'Investment',
       // indicators recorded from voluntary conversation only; no financial documents asked for
-      hni: { status: 'potential', potential: true },
+      hni: { status: 'potential', potential: true, signals: { prevInvestment: 'Yes — 3 earlier property purchases (as stated)', portfolio: 'Owns 2 flats and a shop in Coimbatore (as stated)', objective: 'Capital appreciation' } },
       budget: budget(30000000, 35000000, 40000000),
       requirement: req({ type: 'house', cities: ['Coimbatore'], localities: ['Vadavalli'], sizeSqft: 3500, bhk: '4 BHK', parking: 'required', possession: 'ready', amenities: ['Gated community', 'Swimming pool'] }),
       stage: 'visitScheduled', stageSince: '2026-11-10', nextFollowUp: '2026-11-19', recommendedPropertyIds: ['PROP-1008'],

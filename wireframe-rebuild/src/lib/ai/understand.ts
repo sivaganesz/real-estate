@@ -137,6 +137,14 @@ function leadQuery(s: string): LeadQuery {
   return q
 }
 
+/** Edit lead: what a message says about an existing lead's details (no name — edits rarely rename someone). */
+export function readLeadDetails(text: string): NewLeadFields {
+  const f = newLead(text)
+  delete f.name
+  delete f.consent // consent is recorded on the profile, with how and when
+  return f
+}
+
 function newLead(s: string): NewLeadFields {
   const places = placesIn(s)
   const a = amounts(s)
