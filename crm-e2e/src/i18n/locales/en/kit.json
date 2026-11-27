@@ -1,0 +1,150 @@
+{
+  "title": "Component kit",
+  "subtitle": "Every shared, AI and domain building block on live demo data.",
+  "devOnly": "Dev only",
+  "toc": "Sections",
+  "shortcut": "Assistant:",
+  "section": {
+    "kpi": "KPI cards",
+    "charts": "Charts",
+    "badges": "Badges, avatars and bars",
+    "table": "Data table",
+    "forms": "Form inputs",
+    "states": "Empty, error and loading",
+    "overlays": "Drawers and dialogs",
+    "ai": "AI elements",
+    "domain": "Domain widgets",
+    "timeline": "Timeline",
+    "art": "Illustrations"
+  },
+  "kpi": {
+    "pipeline": "Pipeline value",
+    "visits": "Site visits (month)",
+    "calls": "Calls this month",
+    "overdue": "Overdue tasks",
+    "bookings": "Bookings target",
+    "vsLastMonth": "vs last month",
+    "sinceYesterday": "since yesterday",
+    "target": "Target {{target}}",
+    "overdueHint": "Going up is bad for this one."
+  },
+  "chart": {
+    "trend": "Leads and bookings (6 months)",
+    "sources": "Leads by source",
+    "inventory": "Inventory by status",
+    "funnel": "Pipeline funnel",
+    "heatmap": "When calls happen (last 30 days)",
+    "gauge": "Targets",
+    "leads": "Leads",
+    "bookings": "Bookings",
+    "visited": "Visited",
+    "properties": "properties",
+    "revenueTarget": "Revenue target",
+    "visitsTarget": "Visits target",
+    "empty": "Empty chart"
+  },
+  "badge": {
+    "outline": "Outline",
+    "dot": "Dot",
+    "meter": "Listing completeness"
+  },
+  "kv": {
+    "phone": "Phone",
+    "budget": "Budget",
+    "empty": "Empty value (hidden)",
+    "config": "Configuration"
+  },
+  "callout": {
+    "title": "Consent is not recorded",
+    "body": "Follow-ups still work; ask for consent on the next call."
+  },
+  "table": {
+    "name": "Name",
+    "stage": "Stage",
+    "temperature": "Temperature",
+    "budget": "Budget",
+    "score": "Score",
+    "search": "Search leads",
+    "schedule": "Schedule",
+    "state": "Table state",
+    "states": {
+      "data": "Data",
+      "loading": "Loading",
+      "empty": "Empty",
+      "error": "Error"
+    }
+  },
+  "bulk": {
+    "assign": "Assign",
+    "delete": "Delete"
+  },
+  "forms": {
+    "inputs": "Inputs",
+    "amount": "Budget",
+    "amountHint": "Type 1.2 and pick Crore, or paste \"85 lakhs\".",
+    "phone": "Mobile number",
+    "when": "Date and time",
+    "tabs": "Lead views",
+    "all": "All",
+    "today": "Today",
+    "view": "View",
+    "cards": "Cards",
+    "tableView": "Table",
+    "upload": "Upload and column mapping"
+  },
+  "map": {
+    "name": "Name",
+    "phone": "Phone",
+    "source": "Source",
+    "locality": "Preferred locality",
+    "config": "Configuration",
+    "budget": "Budget (max)",
+    "notes": "Notes"
+  },
+  "states": {
+    "emptyTitle": "No leads yet",
+    "emptyBody": "Add your first lead, or paste a WhatsApp message and let the AI fill it in.",
+    "add": "Add lead",
+    "paste": "Paste a message",
+    "cleared": "Filters cleared",
+    "retry": "Retrying…"
+  },
+  "overlay": {
+    "drawer": "Open drawer",
+    "drawerSub": "Type below, then close to see the unsaved-changes check.",
+    "typeToDirty": "Type something",
+    "confirm": "Delete with confirm",
+    "confirmTitle": "Delete 3 leads?",
+    "confirmBody": "They move out of every list. You can undo for a few seconds.",
+    "confirmAction": "Delete 3 leads",
+    "deleted": "3 leads deleted",
+    "toast": "Show a toast",
+    "undoToast": "Saved",
+    "assign": "Assign dialog",
+    "stage": "Stage change dialog",
+    "appointment": "Appointment form",
+    "task": "Task form",
+    "log": "Log activity"
+  },
+  "ai": {
+    "rahul": "Hi, I'm Rahul Verma, 9845012345. Looking for a 3BHK in Whitefield or Sarjapur, budget around 1.2 Cr, ready to move, need it in 2–3 months. Wife will also decide.",
+    "form": "A lead form filled by AI",
+    "formHint": "Press Extract on the left to fill this form.",
+    "name": "Name",
+    "phone": "Phone",
+    "config": "Configuration",
+    "place": "Locations",
+    "timeline": "Timeline",
+    "source": "Source",
+    "budget": "Budget (max)",
+    "suggestion": "Visit at 11:00 today · asked for price sheet",
+    "tomorrow10": "Tomorrow, 10:00 AM"
+  },
+  "domain": {
+    "shortlist": "Shortlist",
+    "share": "Share",
+    "appointments": "Appointments",
+    "tasks": "Tasks",
+    "matches": "Matches for {{name}}"
+  }
+}

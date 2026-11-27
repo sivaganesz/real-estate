@@ -1,0 +1,35 @@
+{
+  "title": "Notifications",
+  "subtitle": "Assignments, reminders, overdue work and alerts for you.",
+  "kind": {
+    "assignment": "New lead assigned: {{name}}",
+    "reassignment": "{{name}} was reassigned from {{from}}",
+    "appointmentCreated": "New appointment with {{name}}",
+    "appointmentReminder": "{{name}} at {{time}}: {{property}}",
+    "taskOverdue": "Overdue: {{title}}",
+    "slaBreach": "Not called within {{mins}} minutes",
+    "escalation": "{{owner}} has not called {{name}} for {{mins}} minutes",
+    "importFinished": "Import finished: {{fileName}}",
+    "stageChanged": "{{name}} moved to a new stage",
+    "booking": "Booking: {{name}} paid a token for {{property}}",
+    "propertyUnavailable": "{{property}} is no longer available: see alternatives",
+    "leaveReassign": "{{name}} is on leave: reassign {{count}} open leads?",
+    "stalledDeal": "{{name}} has been stuck for {{days}} days",
+    "deactivatedOwner": "{{name}} is deactivated and still owns {{count}} open lead(s)",
+    "duplicateFound": "Possible duplicate: {{name}} matches {{other}}",
+    "system": "System message"
+  },
+  "system": {
+    "readyToBook": "{{name}} is ready to book ({{owner}})",
+    "welcome": "Welcome to RealSpec CRM. Demo data is loaded.",
+    "assignmentBatch": "{{count}} new leads assigned to you",
+    "rescheduled": "{{name}}'s appointment moved to {{time}}",
+    "reassignRequest": "{{owner}} asks to reassign {{name}}"
+  },
+  "stub": {
+    "index": {
+      "title": "Notification centre",
+      "body": "All your alerts with filters, read state and links to the record."
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "title": "Tasks",
+  "subtitle": "Calls and follow-ups, overdue first.",
+  "stub": {
+    "index": {
+      "title": "Follow-ups",
+      "body": "Overdue, today and upcoming tasks with one-click call and WhatsApp."
+    }
+  }
+}

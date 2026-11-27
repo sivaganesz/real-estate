@@ -1,0 +1,356 @@
+{
+  "stage": {
+    "new": "புதியது",
+    "contacted": "தொடர்பு கொள்ளப்பட்டது",
+    "qualified": "தகுதி பெற்றது",
+    "siteVisitScheduled": "தள வருகை திட்டமிடப்பட்டது",
+    "siteVisitDone": "தள வருகை முடிந்தது",
+    "negotiation": "பேச்சுவார்த்தை",
+    "booked": "முன்பதிவு (டோக்கன் செலுத்தப்பட்டது)",
+    "converted": "விற்பனை முடிந்தது",
+    "lost": "இழந்தது"
+  },
+  "stageShort": {
+    "new": "புதியது",
+    "contacted": "தொடர்பு",
+    "qualified": "தகுதி",
+    "siteVisitScheduled": "வருகை திட்டம்",
+    "siteVisitDone": "வருகை முடிந்தது",
+    "negotiation": "பேச்சுவார்த்தை",
+    "booked": "முன்பதிவு",
+    "converted": "வெற்றி",
+    "lost": "இழந்தது"
+  },
+  "source": {
+    "phone": "தொலைபேசி அழைப்பு",
+    "whatsapp": "வாட்ஸ்அப்",
+    "website": "இணையதளம்",
+    "walkIn": "நேரடி வருகை",
+    "acres99": "99acres",
+    "magicbricks": "MagicBricks",
+    "housing": "Housing.com",
+    "nobroker": "NoBroker",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "googleAds": "Google Ads",
+    "channelPartner": "சேனல் பார்ட்னர்",
+    "referral": "பரிந்துரை",
+    "manual": "கைமுறையாகச் சேர்க்கப்பட்டது",
+    "other": "பிற"
+  },
+  "temperature": {
+    "hot": "சூடான",
+    "warm": "மிதமான",
+    "cold": "குளிர்ந்த"
+  },
+  "priority": {
+    "high": "உயர்",
+    "medium": "நடுத்தர",
+    "low": "குறைவு"
+  },
+  "lostReason": {
+    "budgetMismatch": "பட்ஜெட் பொருந்தவில்லை",
+    "boughtElsewhere": "வேறு இடத்தில் வாங்கினார்",
+    "notResponding": "பதிலளிக்கவில்லை",
+    "location": "இடம் பொருந்தவில்லை",
+    "loanRejected": "கடன் நிராகரிக்கப்பட்டது",
+    "other": "பிற"
+  },
+  "need": {
+    "clear": "தெளிவான தேவை",
+    "partly": "ஓரளவு தெளிவு",
+    "exploring": "பார்த்துக்கொண்டிருக்கிறார்"
+  },
+  "timeline": {
+    "immediate": "உடனடியாக",
+    "m1to3": "1–3 மாதங்களில்",
+    "m3to6": "3–6 மாதங்களில்",
+    "m6to12": "6–12 மாதங்களில்",
+    "exploring": "பார்த்துக்கொண்டிருக்கிறார்"
+  },
+  "authority": {
+    "sole": "தானே முடிவு செய்வார்",
+    "joint": "கூட்டாக முடிவு",
+    "needsApproval": "ஒப்புதல் தேவை"
+  },
+  "decisionMaker": {
+    "self": "தானே",
+    "spouse": "வாழ்க்கைத் துணை",
+    "parents": "பெற்றோர்",
+    "family": "குடும்பம்",
+    "partner": "வணிகக் கூட்டாளி",
+    "company": "நிறுவனம்"
+  },
+  "buyerPurpose": {
+    "selfUse": "சொந்தப் பயன்பாடு",
+    "investment": "முதலீடு",
+    "rental": "வாடகை வருமானம்",
+    "business": "வணிகப் பயன்பாடு"
+  },
+  "loan": {
+    "notNeeded": "கடன் தேவையில்லை",
+    "needed": "கடன் தேவை",
+    "preApproved": "கடன் முன் ஒப்புதல்",
+    "unknown": "கடன் பற்றிப் பேசவில்லை"
+  },
+  "funding": {
+    "ready": "நிதி தயார்",
+    "arranging": "நிதி ஏற்பாட்டில்",
+    "undecided": "முடிவாகவில்லை"
+  },
+  "possession": {
+    "ready": "உடனே குடியேறலாம்",
+    "underConstruction": "கட்டுமானத்தில்",
+    "any": "ஏதேனும்"
+  },
+  "furnishing": {
+    "unfurnished": "தளபாடமில்லை",
+    "semi": "பகுதி தளபாடம்",
+    "full": "முழு தளபாடம்",
+    "any": "ஏதேனும்"
+  },
+  "facing": {
+    "E": "கிழக்கு",
+    "N": "வடக்கு",
+    "W": "மேற்கு",
+    "S": "தெற்கு",
+    "NE": "வடகிழக்கு",
+    "NW": "வடமேற்கு",
+    "SE": "தென்கிழக்கு",
+    "SW": "தென்மேற்கு"
+  },
+  "purpose": {
+    "sale": "விற்பனை",
+    "rent": "வாடகை",
+    "lease": "குத்தகை"
+  },
+  "transaction": {
+    "newBooking": "புதிய முன்பதிவு",
+    "resale": "மறுவிற்பனை",
+    "any": "ஏதேனும்"
+  },
+  "propertyType": {
+    "apartment": "அடுக்குமாடி",
+    "villa": "வில்லா",
+    "independentHouse": "தனி வீடு",
+    "rowHouse": "வரிசை வீடு",
+    "plot": "மனை",
+    "agriLand": "விவசாய நிலம்",
+    "office": "அலுவலகம்",
+    "shop": "கடை",
+    "showroom": "ஷோரூம்",
+    "warehouse": "கிடங்கு",
+    "coworking": "கூட்டுப் பணியிடம்"
+  },
+  "propertyFamily": {
+    "flat": "அடுக்குமாடி",
+    "house": "வீடு",
+    "plot": "மனை",
+    "land": "நிலம்",
+    "commercial": "வணிகம்",
+    "warehouse": "கிடங்கு"
+  },
+  "category": {
+    "residential": "குடியிருப்பு",
+    "commercial": "வணிகம்",
+    "land": "நிலம்"
+  },
+  "propertyStatus": {
+    "available": "கிடைக்கிறது",
+    "onHold": "நிறுத்தி வைக்கப்பட்டது",
+    "booked": "முன்பதிவு",
+    "sold": "விற்கப்பட்டது"
+  },
+  "listing": {
+    "draft": "வரைவு",
+    "live": "நேரலையில்",
+    "archived": "காப்பகம்"
+  },
+  "areaUnit": {
+    "sqft": "சது. அடி",
+    "sqyd": "சது. கெஜம்",
+    "cents": "சென்ட்",
+    "acres": "ஏக்கர்",
+    "guntha": "குண்டா"
+  },
+  "amenity": {
+    "gatedCommunity": "கேட்டட் சமூகம்",
+    "security": "24×7 பாதுகாப்பு",
+    "parkOpenSpace": "பூங்கா / திறந்தவெளி",
+    "powerBackup": "மின் காப்பு",
+    "lift": "லிஃப்ட்",
+    "gym": "உடற்பயிற்சிக் கூடம்",
+    "swimmingPool": "நீச்சல் குளம்",
+    "clubhouse": "கிளப்ஹவுஸ்",
+    "rainwaterHarvesting": "மழைநீர் சேகரிப்பு",
+    "cctv": "CCTV",
+    "visitorParking": "பார்வையாளர் நிறுத்தம்",
+    "loadingBay": "சரக்கு ஏற்றும் இடம்",
+    "coveredParking": "மூடிய நிறுத்தம்",
+    "kidsPlayArea": "குழந்தைகள் விளையாட்டுப் பகுதி",
+    "joggingTrack": "ஜாகிங் பாதை",
+    "evCharging": "EV சார்ஜிங்",
+    "water24x7": "24×7 தண்ணீர்"
+  },
+  "spec": {
+    "lifts": "லிஃப்ட்களின் எண்ணிக்கை",
+    "udsSqft": "UDS (சது. அடி)",
+    "towerName": "டவர் / பிளாக்",
+    "unitNumber": "யூனிட் எண்",
+    "powerBackup": "மின் காப்பு",
+    "floors": "மாடிகளின் எண்ணிக்கை",
+    "constructionYear": "கட்டிய ஆண்டு",
+    "quality": "கட்டுமானத் தரம்",
+    "condition": "நிலை",
+    "privateGarden": "தனித் தோட்டம்",
+    "water": "தண்ணீர் வசதி",
+    "power": "மின்சாரம்",
+    "roadAccess": "சாலை அணுகல்",
+    "topography": "நில அமைப்பு",
+    "surveyNo": "சர்வே எண்",
+    "layoutApproval": "லேஅவுட் ஒப்புதல் விவரம்",
+    "landUse": "நிலப் பயன்பாடு",
+    "electricity": "மின் இணைப்பு",
+    "drainage": "வடிகால்",
+    "boundaryWall": "சுற்றுச்சுவர்",
+    "soil": "மண் வகை",
+    "waterSource": "நீர் ஆதாரம்",
+    "crops": "தற்போதைய பயிர்கள் / மரங்கள்",
+    "fencing": "வேலி",
+    "washrooms": "கழிவறைகள்",
+    "frontageFt": "முகப்பு (அடி)",
+    "seats": "இருக்கைகள்",
+    "cabins": "கேபின்கள்",
+    "permittedUsage": "அனுமதிக்கப்பட்ட பயன்பாடு",
+    "occupancy": "பயன்பாட்டு நிலை",
+    "rentalIncome": "வாடகை வருமானம் (₹ / மாதம்)",
+    "leaseTenureYears": "குத்தகைக் காலம் (ஆண்டுகள்)",
+    "powerKva": "மின் சுமை (kVA)",
+    "clearHeightFt": "உள் உயரம் (அடி)",
+    "dockDoors": "டாக் கதவுகள்",
+    "truckAccess": "லாரி அணுகல்",
+    "floorLoadTonnes": "தரைச் சுமை (டன் / சது. மீ)",
+    "estateZone": "தொழிற்பேட்டை / மண்டலம்",
+    "fireNoc": "தீயணைப்பு NOC"
+  },
+  "specOption": {
+    "full": "முழுமை",
+    "partial": "பகுதி",
+    "none": "இல்லை",
+    "premium": "உயர்தரம்",
+    "standard": "நிலையான",
+    "basic": "அடிப்படை",
+    "new": "புதியது",
+    "good": "நல்ல நிலை",
+    "minorRepair": "சிறு பழுது தேவை",
+    "majorRepair": "பெரிய பழுது தேவை",
+    "municipal": "நகராட்சி நீர்",
+    "borewell": "ஆழ்துளைக் கிணறு",
+    "municipalBorewell": "நகராட்சி + ஆழ்துளை",
+    "tanker": "டேங்கர் சார்ந்தது",
+    "notAvailable": "இல்லை",
+    "eb": "EB இணைப்பு",
+    "ebInverter": "EB + இன்வர்ட்டர்",
+    "ebGenerator": "EB + ஜெனரேட்டர்",
+    "ebSolar": "EB + சோலார்",
+    "publicRoad": "பொதுச் சாலை",
+    "layoutRoad": "லேஅவுட் சாலை",
+    "privatePath": "தனிப் பாதை",
+    "level": "சமதளம்",
+    "gentleSlope": "மிதமான சரிவு",
+    "elevated": "உயரமான",
+    "lowLying": "தாழ்வான",
+    "residential": "குடியிருப்பு",
+    "mixed": "கலப்புக் குடியிருப்பு",
+    "commercialUse": "வணிகம்",
+    "agriConversion": "விவசாயம் (மாற்றம் தேவை)",
+    "atSite": "தளத்தில் உள்ளது",
+    "lineNearby": "அருகில் இணைப்பு",
+    "underground": "பாதாளச் சாக்கடை",
+    "openDrain": "திறந்த வடிகால்",
+    "red": "செம்மண்",
+    "black": "கரிசல் மண்",
+    "alluvial": "வண்டல் மண்",
+    "sandy": "மணல்",
+    "mixedSoil": "கலப்பு",
+    "openWell": "திறந்த கிணறு",
+    "canal": "கால்வாய்",
+    "river": "ஆறு / வாய்க்கால்",
+    "rainFed": "மழை சார்ந்தது",
+    "threePhase": "மும்முனை",
+    "singlePhase": "ஒருமுனை",
+    "vacant": "காலி",
+    "tenanted": "வாடகைக்கு உள்ளது",
+    "ownerOccupied": "உரிமையாளர் பயன்பாட்டில்",
+    "container": "கண்டெய்னர் லாரிகள்",
+    "smallTrucks": "சிறு லாரிகள் மட்டும்",
+    "noTrucks": "லாரி அணுகல் இல்லை"
+  },
+  "appointmentType": {
+    "siteVisit": "தள வருகை",
+    "officeMeeting": "அலுவலகச் சந்திப்பு",
+    "phoneCall": "தொலைபேசி அழைப்பு",
+    "videoCall": "வீடியோ அழைப்பு",
+    "documentation": "ஆவணம் / பதிவு"
+  },
+  "appointmentStatus": {
+    "scheduled": "திட்டமிடப்பட்டது",
+    "confirmed": "உறுதிசெய்யப்பட்டது",
+    "completed": "முடிந்தது",
+    "noShow": "வரவில்லை",
+    "cancelled": "ரத்து செய்யப்பட்டது",
+    "rescheduled": "மாற்றியமைக்கப்பட்டது"
+  },
+  "taskType": {
+    "call": "அழைப்பு",
+    "whatsapp": "வாட்ஸ்அப்",
+    "followUp": "பின்தொடர்வு",
+    "email": "மின்னஞ்சல்",
+    "meeting": "சந்திப்பு",
+    "document": "ஆவணம்",
+    "other": "பிற"
+  },
+  "taskStatus": {
+    "open": "நிலுவையில்",
+    "done": "முடிந்தது",
+    "cancelled": "ரத்து"
+  },
+  "classification": {
+    "general": "பொது",
+    "qualifiedBuyer": "தகுதியான வாங்குபவர்",
+    "investor": "முதலீட்டாளர்",
+    "highValue": "உயர் மதிப்பு",
+    "potentialHni": "சாத்தியமான HNI",
+    "verifiedHni": "உறுதிசெய்யப்பட்ட HNI"
+  },
+  "messagePurpose": {
+    "intro": "அறிமுகம்",
+    "followUp": "பின்தொடர்வு",
+    "visitConfirm": "வருகை உறுதிப்படுத்தல்",
+    "postVisit": "வருகைக்குப் பின்",
+    "offer": "சலுகை",
+    "share": "சொத்துகளைப் பகிர்",
+    "reminder": "நினைவூட்டல்"
+  },
+  "autoTaskReason": {
+    "slaFirstCall": "முதல் அழைப்பு (பதில் நேரம்)",
+    "postVisitCall": "வருகைக்குப் பின் அழைப்பு",
+    "noAnswerRetry": "மீண்டும் அழை: பதில் இல்லை",
+    "noShowReschedule": "வராததால் மாற்றியமை",
+    "visitCancelledReschedule": "ரத்தான வருகையை மாற்றியமை",
+    "bookingDocs": "முன்பதிவு ஆவணங்களைச் சேகரி"
+  },
+  "assignmentReason": {
+    "lowestWorkload": "குறைந்த பணிச்சுமை",
+    "roundRobinTie": "சுழற்சி முறை (சம பணிச்சுமை)",
+    "ruleLocation": "இட விதி",
+    "rulePropertyType": "சொத்து வகை விதி",
+    "ruleLanguage": "மொழி விதி",
+    "ruleSource": "மூல விதி",
+    "manual": "கைமுறையாக ஒதுக்கப்பட்டது",
+    "creatorOwns": "உரிமையாளரே சேர்த்தார்",
+    "ownerDeactivated": "முந்தைய உரிமையாளர் செயலிழக்கப்பட்டார்",
+    "ownerOnLeave": "முந்தைய உரிமையாளர் விடுப்பில்",
+    "unassigned": "யாரும் கிடைக்கவில்லை"
+  }
+}

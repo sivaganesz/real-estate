@@ -1,0 +1,10 @@
+{
+  "title": "Pipeline",
+  "subtitle": "Deals by stage, with ageing and value.",
+  "stub": {
+    "index": {
+      "title": "Pipeline board",
+      "body": "Drag deals between stages, spot stalled deals and see the value at each stage."
+    }
+  }
+}

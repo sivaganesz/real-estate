@@ -1,0 +1,294 @@
+{
+  "demoBadge": "Demo AI",
+  "liveBadge": "AI",
+  "assistant": "AI assistant",
+  "thinking": "Thinking…",
+  "badge": {
+    "demoTip": "Simulated AI (rule-based, runs in your browser). Not a live model.",
+    "liveTip": "Answered by the live AI service through the company proxy."
+  },
+  "voice": {
+    "start": "Speak instead of typing",
+    "stop": "Stop listening",
+    "listening": "Listening… (en-IN)",
+    "hint": "Tap the mic and speak",
+    "unsupportedLabel": "Voice input is not available in this browser",
+    "unsupportedTitle": "Voice input needs Chrome or Edge",
+    "unsupportedBody": "This browser has no speech recognition. Type or paste the text instead; everything else works the same.",
+    "error": {
+      "notAllowed": "Microphone access was blocked. Allow it in the browser to use voice.",
+      "noSpeech": "Nothing was heard. Try again a little closer to the mic.",
+      "network": "Voice needs an internet connection in this browser.",
+      "other": "Voice input stopped. Try again or type instead."
+    }
+  },
+  "effort": {
+    "none": "Nothing could be read from this text yet. Add a few details or fill the form by hand.",
+    "fields_one": "{{count}} field auto-filled",
+    "fields_other": "{{count}} fields auto-filled",
+    "leads_one": "{{count}} lead auto-assigned today",
+    "leads_other": "{{count}} leads auto-assigned today",
+    "tasks_one": "{{count}} follow-up created for you",
+    "tasks_other": "{{count}} follow-ups created for you"
+  },
+  "paste": {
+    "title": "Paste and fill",
+    "toggle": "Fill with AI from a message",
+    "heading": {
+      "lead": "Paste a WhatsApp message, enquiry or call note",
+      "property": "Paste the owner's or builder's listing message",
+      "appointment": "Describe the appointment in your own words"
+    },
+    "placeholder": {
+      "lead": "e.g. Hi, I'm Rahul Verma, 9845012345. Looking for a 3BHK in Whitefield, budget around 1.2 Cr, ready to move…",
+      "property": "e.g. 3 BHK apartment in Gachibowli, 1450 sqft carpet, 2nd floor, east facing, asking 1.25 Cr negotiable, ready to move…",
+      "appointment": "e.g. Site visit with Priya Sharma tomorrow 11am at Prestige Lakeside"
+    },
+    "extract": "Extract",
+    "file": "From .txt file",
+    "clear": "Clear",
+    "fileType": "Only plain-text (.txt) files can be read here. Use Import for spreadsheets, PDFs and images.",
+    "fileSize": "This text file is too large to paste. Keep it under 200 KB.",
+    "duplicate_one": "A lead with this contact already exists:",
+    "duplicate_other": "{{count}} leads with this contact already exist:"
+  },
+  "questions": {
+    "title": "A few quick questions",
+    "left_one": "{{count}} left",
+    "left_other": "{{count}} left",
+    "essential": "Needed",
+    "typeIt": "Type it in the form"
+  },
+  "question": {
+    "lead": {
+      "name": "What is the client's name?",
+      "phone": "What is their mobile number?",
+      "source": "Where did this enquiry come from?",
+      "budget": "What is their budget (maximum)?",
+      "configuration": "Which configuration are they looking for?",
+      "location": "Which area or city do they prefer?",
+      "timeline": "When is the client planning to buy?",
+      "decisionMakers": "Who else decides on the purchase?"
+    },
+    "property": {
+      "type": "What type of property is it?",
+      "configuration": "What is the configuration (BHK)?",
+      "location": "Where is it (locality and city)?",
+      "price": "What is the asking price?",
+      "area": "What is the area (carpet, built-up or plot)?",
+      "possession": "Is it ready to move or under construction?",
+      "facing": "Which way does it face?"
+    },
+    "appointment": {
+      "lead": "Who is the appointment with?",
+      "type": "What kind of appointment is it?",
+      "date": "Which day?",
+      "time": "What time?",
+      "property": "Which property will they visit?"
+    }
+  },
+  "chip": {
+    "config": {
+      "1BHK": "1 BHK",
+      "2BHK": "2 BHK",
+      "3BHK": "3 BHK",
+      "4BHKplus": "4+ BHK"
+    },
+    "date": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "dayAfter": "Day after tomorrow"
+    },
+    "time": {
+      "1000": "10:00 AM",
+      "1100": "11:00 AM",
+      "1500": "3:00 PM",
+      "1700": "5:00 PM"
+    }
+  },
+  "note": {
+    "budgetAround": "\"Around\" budget read as both the preferred and the maximum budget.",
+    "budgetMinOnly": "Only a minimum budget was mentioned.",
+    "checkName": "The name was guessed from the message layout. Please check it.",
+    "areaAssumedCarpet": "The area type was not stated, so it was read as carpet area.",
+    "titleSuggested": "A title was suggested from the details. Change it if you like.",
+    "severalLeads": "More than one lead matches the name. The closest one was picked.",
+    "shortlistUsed": "No property was named, so the lead's shortlisted properties were used."
+  },
+  "panel": {
+    "title": "Assistant",
+    "context": "On: {{where}}",
+    "hello": "Hi! I can add leads, book visits, find matches and answer questions about your work.",
+    "intro": "I never change anything without your confirmation. Every change shows up first as a card you can confirm, edit or cancel.",
+    "try": "Try",
+    "placeholder": "Ask or tell me what to do…",
+    "inputLabel": "Message to the assistant",
+    "send": "Send",
+    "clear": "Clear conversation",
+    "footnote": "Demo AI reads your text with rules and fuzzy matching on your data."
+  },
+  "prompt": {
+    "todayTasks": "Show today's pending tasks",
+    "priorityLeads": "My highest-priority leads",
+    "visit": "Schedule a site visit with {{name}} tomorrow 11am",
+    "matches": "Find matching properties for {{name}}",
+    "assign": "Assign {{name}} to {{exec}}",
+    "followUps": "Leads needing follow-up",
+    "team": "Summarise my team's performance",
+    "addLead": "Add a lead from a message"
+  },
+  "entity": {
+    "lead": "Lead",
+    "client": "Client",
+    "property": "Property",
+    "appointment": "Appointment",
+    "task": "Task",
+    "user": "Team member",
+    "importJob": "Import",
+    "draft": "Draft",
+    "settings": "Settings"
+  },
+  "proposal": {
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "running": "Working on it…",
+    "cancelled": "Cancelled. Nothing was changed.",
+    "failed": "This could not be done.",
+    "done": "Done",
+    "kind": {
+      "createLead": "Create lead",
+      "updateLead": "Update lead",
+      "assignLead": "Assign lead",
+      "moveStage": "Move stage",
+      "createAppointment": "Book appointment",
+      "rescheduleAppointment": "Reschedule appointment",
+      "createTask": "Create follow-up",
+      "completeTask": "Complete task",
+      "shortlistProperty": "Shortlist property",
+      "shareProperties": "Share properties",
+      "logActivity": "Log activity",
+      "createProperty": "Add property",
+      "updateProperty": "Update property"
+    },
+    "toast": {
+      "createLead": "Lead created by the assistant",
+      "updateLead": "Lead updated by the assistant",
+      "assignLead": "Lead assigned",
+      "moveStage": "Stage changed",
+      "createAppointment": "Appointment booked",
+      "rescheduleAppointment": "Appointment rescheduled",
+      "createTask": "Follow-up created",
+      "completeTask": "Task completed",
+      "shortlistProperty": "Property shortlisted",
+      "shareProperties": "Properties shared",
+      "logActivity": "Activity logged",
+      "createProperty": "Property added",
+      "updateProperty": "Property updated"
+    }
+  },
+  "field": {
+    "tip": "Filled by AI from your message · edit freely",
+    "lowTip": "Filled by AI · please check",
+    "name": "Name",
+    "phone": "Phone",
+    "configuration": "Configuration",
+    "location": "Location",
+    "budget": "Budget",
+    "source": "Source",
+    "type": "Type",
+    "lead": "Lead",
+    "when": "When",
+    "property": "Property",
+    "owner": "With",
+    "title": "Title",
+    "due": "Due",
+    "from": "From",
+    "to": "To",
+    "reason": "Reason"
+  },
+  "value": {
+    "missing": "Not given yet",
+    "unassigned": "Unassigned",
+    "auto": "Auto (lowest workload)"
+  },
+  "taskTitle": {
+    "call": "Call {{name}}",
+    "whatsapp": "WhatsApp {{name}}",
+    "email": "Email {{name}}",
+    "followUp": "Follow up with {{name}}"
+  },
+  "reply": {
+    "help": "You can ask me to add a lead, book a site visit, create a follow-up, assign a lead, move a stage, find matching properties, or show today's tasks, appointments and priority leads.",
+    "unknown": "I didn't understand that yet. Try \"Show today's pending tasks\", \"Find matching properties for Priya\" or paste a client's message to add a lead.",
+    "failed": "Something went wrong while reading that. Please try again.",
+    "refused": "I can't do that for you: {{reason}}",
+    "deleteOnRecord": "Deleting is done on the record itself, with a confirmation and Undo. Open it and choose Delete.",
+    "manageUsersOnTeam": "Users are added, activated and deactivated in Team. Open Team to do it there.",
+    "leadNeedsDetails": "To add a lead I need at least a name or a phone number. Paste the client's message or type the details.",
+    "createLead_one": "I read {{count}} detail from your message. Check the lead below and confirm to save it.",
+    "createLead_other": "I read {{count}} details from your message. Check the lead below and confirm to save it.",
+    "duplicate": "A lead with this number already exists: {{name}}.",
+    "createAppointment": "Here is the appointment for {{name}}. Confirm to book it.",
+    "assumedDate": "No day was given, so I picked tomorrow. Edit if needed.",
+    "assumedTime": "No time was given, so I picked 11:00 AM. Edit if needed.",
+    "createTask": "Here is the follow-up. Confirm to add it.",
+    "assignLead": "Here is the assignment for {{name}}. Confirm to apply it.",
+    "moveStage": "Here is the stage change for {{name}}. Confirm to apply it.",
+    "bookingNeedsDialog": "Booking {{name}} needs the property and the booking amount. Open the lead and use Mark as booked.",
+    "whichLead": "Which lead do you mean? Use their name as it appears in your leads.",
+    "whichExecutive": "Who should get the lead? Name an executive from your team, or say \"auto\".",
+    "whichStage": "Which stage should the lead move to?",
+    "noMatches": "No live property matches {{name}}'s requirement right now.",
+    "matches_one": "{{count}} property matches {{name}}:",
+    "matches_other": "Top {{count}} properties for {{name}}:",
+    "todayTasks_one": "You have {{count}} task due today ({{overdue}} overdue).",
+    "todayTasks_other": "You have {{count}} tasks due today ({{overdue}} overdue).",
+    "priorityLeads_one": "Your highest-priority lead right now:",
+    "priorityLeads_other": "Your {{count}} highest-priority leads right now:",
+    "conversions_one": "{{count}} lead looks close to booking:",
+    "conversions_other": "{{count}} leads look close to booking:",
+    "followUpLeads_one": "{{count}} lead has had no contact for {{days}}+ days:",
+    "followUpLeads_other": "{{count}} leads have had no contact for {{days}}+ days:",
+    "lastContact": "{{name}} · last contact {{days}} days ago",
+    "propertySearch_one": "{{count}} property fits that search:",
+    "propertySearch_other": "{{count}} properties fit that search:"
+  },
+  "match": {
+    "summary_one": "{{count}} match for {{name}}. Best: {{best}} ({{score}}%, {{price}}).",
+    "summary_other": "{{count}} matches for {{name}}. Best: {{best}} ({{score}}%, {{price}})."
+  },
+  "summary": {
+    "notFound": "That record could not be found.",
+    "leadTitle": "Summary of {{name}}",
+    "leadWants": "Wants {{config}} in {{places}}, budget {{budget}}.",
+    "anyConfig": "any configuration",
+    "anyPlace": "any location",
+    "budgetUnknown": "not known yet",
+    "leadStage": "Stage: {{stage}} for {{days}} days.",
+    "leadScore": "Score {{score}} ({{temperature}}).",
+    "leadTimeline": "Plans to buy: {{timeline}}.",
+    "leadNext": "Next: {{next}}",
+    "appointment": "{{type}} with {{name}} on {{when}} · {{properties}}",
+    "day": "Today: {{appointments}} appointments and {{tasks}} tasks due ({{overdue}} overdue).",
+    "pipeline_one": "{{count}} open deal worth {{value}}; {{stalled}} stalled.",
+    "pipeline_other": "{{count}} open deals worth {{value}}; {{stalled}} stalled.",
+    "stalledLead": "{{name}} · {{stage}} for {{days}} days"
+  },
+  "insight": {
+    "title": {
+      "personal": "Your month so far",
+      "team": "Your team at a glance",
+      "business": "The business at a glance"
+    },
+    "calls": "Calls: {{done}} of {{target}} ({{pct}}%)",
+    "visits": "Site visits: {{done}} of {{target}} ({{pct}}%)",
+    "bookings": "Bookings: {{done}} of {{target}}",
+    "pipeline": "Pipeline value {{value}} across {{open}} open leads",
+    "conversion": "Conversion rate {{pct}}%",
+    "visitsToday": "Site visits today: {{count}}",
+    "inventory": "Available inventory: {{count}} properties"
+  },
+  "next": {
+    "none": "No next step needed right now."
+  }
+}

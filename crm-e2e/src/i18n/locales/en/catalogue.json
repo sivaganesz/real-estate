@@ -1,0 +1,356 @@
+{
+  "stage": {
+    "new": "New",
+    "contacted": "Contacted",
+    "qualified": "Qualified",
+    "siteVisitScheduled": "Site visit scheduled",
+    "siteVisitDone": "Site visit done",
+    "negotiation": "Negotiation",
+    "booked": "Booked (token paid)",
+    "converted": "Converted",
+    "lost": "Lost"
+  },
+  "stageShort": {
+    "new": "New",
+    "contacted": "Contacted",
+    "qualified": "Qualified",
+    "siteVisitScheduled": "Visit set",
+    "siteVisitDone": "Visited",
+    "negotiation": "Negotiation",
+    "booked": "Booked",
+    "converted": "Won",
+    "lost": "Lost"
+  },
+  "source": {
+    "phone": "Phone call",
+    "whatsapp": "WhatsApp",
+    "website": "Website",
+    "walkIn": "Walk-in",
+    "acres99": "99acres",
+    "magicbricks": "MagicBricks",
+    "housing": "Housing.com",
+    "nobroker": "NoBroker",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "googleAds": "Google Ads",
+    "channelPartner": "Channel partner",
+    "referral": "Referral",
+    "manual": "Added manually",
+    "other": "Other"
+  },
+  "temperature": {
+    "hot": "Hot",
+    "warm": "Warm",
+    "cold": "Cold"
+  },
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "lostReason": {
+    "budgetMismatch": "Budget mismatch",
+    "boughtElsewhere": "Bought elsewhere",
+    "notResponding": "Not responding",
+    "location": "Location not suitable",
+    "loanRejected": "Loan rejected",
+    "other": "Other"
+  },
+  "need": {
+    "clear": "Clear requirement",
+    "partly": "Partly clear",
+    "exploring": "Just exploring"
+  },
+  "timeline": {
+    "immediate": "Immediately",
+    "m1to3": "In 1–3 months",
+    "m3to6": "In 3–6 months",
+    "m6to12": "In 6–12 months",
+    "exploring": "Just exploring"
+  },
+  "authority": {
+    "sole": "Decides alone",
+    "joint": "Decides jointly",
+    "needsApproval": "Needs approval"
+  },
+  "decisionMaker": {
+    "self": "Self",
+    "spouse": "Spouse",
+    "parents": "Parents",
+    "family": "Family",
+    "partner": "Business partner",
+    "company": "Company"
+  },
+  "buyerPurpose": {
+    "selfUse": "Own use",
+    "investment": "Investment",
+    "rental": "Rental income",
+    "business": "Business use"
+  },
+  "loan": {
+    "notNeeded": "No loan needed",
+    "needed": "Needs a loan",
+    "preApproved": "Loan pre-approved",
+    "unknown": "Loan not discussed"
+  },
+  "funding": {
+    "ready": "Funds ready",
+    "arranging": "Arranging funds",
+    "undecided": "Undecided"
+  },
+  "possession": {
+    "ready": "Ready to move",
+    "underConstruction": "Under construction",
+    "any": "Any"
+  },
+  "furnishing": {
+    "unfurnished": "Unfurnished",
+    "semi": "Semi-furnished",
+    "full": "Fully furnished",
+    "any": "Any"
+  },
+  "facing": {
+    "E": "East",
+    "N": "North",
+    "W": "West",
+    "S": "South",
+    "NE": "North-east",
+    "NW": "North-west",
+    "SE": "South-east",
+    "SW": "South-west"
+  },
+  "purpose": {
+    "sale": "Sale",
+    "rent": "Rent",
+    "lease": "Lease"
+  },
+  "transaction": {
+    "newBooking": "New booking",
+    "resale": "Resale",
+    "any": "Any"
+  },
+  "propertyType": {
+    "apartment": "Apartment",
+    "villa": "Villa",
+    "independentHouse": "Independent house",
+    "rowHouse": "Row house",
+    "plot": "Plot",
+    "agriLand": "Agricultural land",
+    "office": "Office",
+    "shop": "Shop",
+    "showroom": "Showroom",
+    "warehouse": "Warehouse",
+    "coworking": "Co-working space"
+  },
+  "propertyFamily": {
+    "flat": "Flat",
+    "house": "House",
+    "plot": "Plot",
+    "land": "Land",
+    "commercial": "Commercial",
+    "warehouse": "Warehouse"
+  },
+  "category": {
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "land": "Land"
+  },
+  "propertyStatus": {
+    "available": "Available",
+    "onHold": "On hold",
+    "booked": "Booked",
+    "sold": "Sold"
+  },
+  "listing": {
+    "draft": "Draft",
+    "live": "Live",
+    "archived": "Archived"
+  },
+  "areaUnit": {
+    "sqft": "sq ft",
+    "sqyd": "sq yd",
+    "cents": "cents",
+    "acres": "acres",
+    "guntha": "guntha"
+  },
+  "amenity": {
+    "gatedCommunity": "Gated community",
+    "security": "24×7 security",
+    "parkOpenSpace": "Park / open space",
+    "powerBackup": "Power backup",
+    "lift": "Lift",
+    "gym": "Gym",
+    "swimmingPool": "Swimming pool",
+    "clubhouse": "Clubhouse",
+    "rainwaterHarvesting": "Rainwater harvesting",
+    "cctv": "CCTV",
+    "visitorParking": "Visitor parking",
+    "loadingBay": "Loading bay",
+    "coveredParking": "Covered parking",
+    "kidsPlayArea": "Kids' play area",
+    "joggingTrack": "Jogging track",
+    "evCharging": "EV charging",
+    "water24x7": "24×7 water"
+  },
+  "spec": {
+    "lifts": "Number of lifts",
+    "udsSqft": "UDS (sq ft)",
+    "towerName": "Tower / block",
+    "unitNumber": "Unit number",
+    "powerBackup": "Power backup",
+    "floors": "Number of floors",
+    "constructionYear": "Construction year",
+    "quality": "Construction quality",
+    "condition": "Condition",
+    "privateGarden": "Private garden",
+    "water": "Water supply",
+    "power": "Power",
+    "roadAccess": "Road access",
+    "topography": "Topography",
+    "surveyNo": "Survey number",
+    "layoutApproval": "Layout approval details",
+    "landUse": "Land use",
+    "electricity": "Electricity",
+    "drainage": "Drainage",
+    "boundaryWall": "Boundary wall",
+    "soil": "Soil type",
+    "waterSource": "Water source",
+    "crops": "Current crops / trees",
+    "fencing": "Fencing",
+    "washrooms": "Washrooms",
+    "frontageFt": "Frontage (ft)",
+    "seats": "Seats",
+    "cabins": "Cabins",
+    "permittedUsage": "Permitted usage",
+    "occupancy": "Occupancy",
+    "rentalIncome": "Rental income (₹ / month)",
+    "leaseTenureYears": "Lease tenure (years)",
+    "powerKva": "Power load (kVA)",
+    "clearHeightFt": "Clear height (ft)",
+    "dockDoors": "Dock doors",
+    "truckAccess": "Truck access",
+    "floorLoadTonnes": "Floor load (tonnes / sq m)",
+    "estateZone": "Industrial estate / zone",
+    "fireNoc": "Fire NOC"
+  },
+  "specOption": {
+    "full": "Full",
+    "partial": "Partial",
+    "none": "None",
+    "premium": "Premium",
+    "standard": "Standard",
+    "basic": "Basic",
+    "new": "New",
+    "good": "Good",
+    "minorRepair": "Needs minor repair",
+    "majorRepair": "Needs major repair",
+    "municipal": "Municipal supply",
+    "borewell": "Borewell",
+    "municipalBorewell": "Municipal + borewell",
+    "tanker": "Tanker dependent",
+    "notAvailable": "Not available",
+    "eb": "EB connection",
+    "ebInverter": "EB + inverter",
+    "ebGenerator": "EB + generator",
+    "ebSolar": "EB + solar",
+    "publicRoad": "Public road",
+    "layoutRoad": "Layout road",
+    "privatePath": "Private / pathway access",
+    "level": "Level",
+    "gentleSlope": "Gentle slope",
+    "elevated": "Elevated",
+    "lowLying": "Low-lying",
+    "residential": "Residential",
+    "mixed": "Mixed residential",
+    "commercialUse": "Commercial",
+    "agriConversion": "Agricultural (conversion needed)",
+    "atSite": "Available at site",
+    "lineNearby": "Line nearby",
+    "underground": "Underground drainage",
+    "openDrain": "Open drain",
+    "red": "Red soil",
+    "black": "Black soil",
+    "alluvial": "Alluvial",
+    "sandy": "Sandy",
+    "mixedSoil": "Mixed",
+    "openWell": "Open well",
+    "canal": "Canal",
+    "river": "River / channel",
+    "rainFed": "Rain-fed only",
+    "threePhase": "Three-phase",
+    "singlePhase": "Single-phase",
+    "vacant": "Vacant",
+    "tenanted": "Tenanted",
+    "ownerOccupied": "Owner-occupied",
+    "container": "Container trucks",
+    "smallTrucks": "Small trucks only",
+    "noTrucks": "No truck access"
+  },
+  "appointmentType": {
+    "siteVisit": "Site visit",
+    "officeMeeting": "Office meeting",
+    "phoneCall": "Phone call",
+    "videoCall": "Video call",
+    "documentation": "Documentation / registration"
+  },
+  "appointmentStatus": {
+    "scheduled": "Scheduled",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "noShow": "No-show",
+    "cancelled": "Cancelled",
+    "rescheduled": "Rescheduled"
+  },
+  "taskType": {
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "followUp": "Follow-up",
+    "email": "Email",
+    "meeting": "Meeting",
+    "document": "Document",
+    "other": "Other"
+  },
+  "taskStatus": {
+    "open": "Open",
+    "done": "Done",
+    "cancelled": "Cancelled"
+  },
+  "classification": {
+    "general": "General",
+    "qualifiedBuyer": "Qualified buyer",
+    "investor": "Investor",
+    "highValue": "High value",
+    "potentialHni": "Potential HNI",
+    "verifiedHni": "Verified HNI"
+  },
+  "messagePurpose": {
+    "intro": "Introduction",
+    "followUp": "Follow-up",
+    "visitConfirm": "Visit confirmation",
+    "postVisit": "After the visit",
+    "offer": "Offer",
+    "share": "Share properties",
+    "reminder": "Reminder"
+  },
+  "autoTaskReason": {
+    "slaFirstCall": "First call (response time)",
+    "postVisitCall": "Call after the visit",
+    "noAnswerRetry": "Retry: no answer",
+    "noShowReschedule": "Reschedule after no-show",
+    "visitCancelledReschedule": "Reschedule cancelled visit",
+    "bookingDocs": "Collect booking documents"
+  },
+  "assignmentReason": {
+    "lowestWorkload": "Lowest workload",
+    "roundRobinTie": "Round-robin (tied workload)",
+    "ruleLocation": "Location rule",
+    "rulePropertyType": "Property type rule",
+    "ruleLanguage": "Language rule",
+    "ruleSource": "Source rule",
+    "manual": "Assigned by hand",
+    "creatorOwns": "Added by the owner",
+    "ownerDeactivated": "Previous owner deactivated",
+    "ownerOnLeave": "Previous owner on leave",
+    "unassigned": "No one available"
+  }
+}

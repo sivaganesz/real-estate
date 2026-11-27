@@ -1,0 +1,22 @@
+{
+  "title": "Properties",
+  "subtitle": "Inventory across cities, with status and matches.",
+  "stub": {
+    "index": {
+      "title": "Property inventory",
+      "body": "Grid and table views, natural-language search, status tabs and bulk actions."
+    },
+    "new": {
+      "title": "Add a property",
+      "body": "A form that adapts to the property type, with paste-and-fill from a brochure or message."
+    },
+    "detail": {
+      "title": "Property details",
+      "body": "Overview, legal and approvals, price check, matched leads and history."
+    },
+    "edit": {
+      "title": "Edit property",
+      "body": "Change price, status, area and details."
+    }
+  }
+}

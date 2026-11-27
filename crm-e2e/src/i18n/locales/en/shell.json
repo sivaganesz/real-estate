@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "today": "Today",
+    "tasks": "Tasks",
+    "appointments": "Appointments",
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "clients": "Clients",
+    "matching": "Matching",
+    "properties": "Properties",
+    "import": "Import",
+    "reports": "Reports",
+    "activity": "Activity log",
+    "team": "Team",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "calendar": "Calendar",
+    "more": "More"
+  },
+  "groups": {
+    "work": "Work",
+    "sales": "Sales",
+    "inventory": "Inventory",
+    "insights": "Insights",
+    "admin": "Admin"
+  },
+  "badges": {
+    "unassigned": "{{count}} unassigned",
+    "overdue": "{{count}} overdue",
+    "today": "{{count}} today"
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "openMenu": "Open menu",
+    "mainNav": "Main navigation"
+  },
+  "topbar": {
+    "askAi": "Search or ask AI…",
+    "askAiShort": "Ask AI",
+    "shortcut": "Ctrl K",
+    "home": "Home",
+    "search": "Search",
+    "breadcrumb": "Breadcrumb"
+  },
+  "ai": {
+    "open": "Open the AI assistant",
+    "panelSoon": "The AI assistant arrives with the AI module. Ctrl+K will open it here."
+  },
+  "bell": {
+    "label": "Notifications",
+    "unread": "{{count}} unread",
+    "empty": "You're all caught up",
+    "soon": "The full notification centre arrives with the Notifications module.",
+    "viewAll": "View all notifications"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Match my device"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ta": "தமிழ் (Tamil)",
+    "short_en": "EN",
+    "short_ta": "த"
+  },
+  "profile": {
+    "label": "Switch profile",
+    "viewingAs": "Viewing as",
+    "chooseRole": "View the CRM as",
+    "executives": "Sales executives",
+    "activeLeads_one": "{{count}} active lead",
+    "activeLeads_other": "{{count}} active leads",
+    "switched": "Now viewing as {{name}} · {{role}}",
+    "current": "Current profile"
+  },
+  "noAccess": {
+    "title": "This area isn't available for {{role}}",
+    "body": "Your role keeps this section with someone else. Here is what you can do:",
+    "canDo": "You can use"
+  },
+  "denied": {
+    "role": "$t(common:roles.{{role}}) can't do this.",
+    "notOwn": "You can only change records you own.",
+    "notTeam": "This record belongs to another team.",
+    "deactivated": "This account is deactivated.",
+    "leadAssign": "Sales Executives can't reassign leads. You can ask your manager: Request reassignment.",
+    "leadDelete": "Sales Executives can't delete leads. Mark the lead as Lost instead.",
+    "leadViewHni": "HNI details are visible to managers and admins only.",
+    "importProperties": "Bulk property import is kept with the admin so the inventory stays accurate.",
+    "teamView": "The team view is for managers and admins.",
+    "propertyDelete": "Only the admin can delete properties. Change its status to On hold or Sold instead.",
+    "userManage": "Only the admin can add, activate or deactivate users."
+  },
+  "skipToContent": "Skip to content",
+  "stubNotice": "Placeholder screen"
+}

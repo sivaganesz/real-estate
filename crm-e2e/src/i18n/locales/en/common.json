@@ -1,0 +1,65 @@
+{
+  "appName": "RealSpec CRM",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "tryAgain": "Try again",
+    "goToday": "Go to Today",
+    "back": "Back",
+    "viewAll": "View all",
+    "undo": "Undo",
+    "open": "Open",
+    "more": "More",
+    "clear": "Clear",
+    "search": "Search"
+  },
+  "roles": {
+    "admin": "Admin",
+    "manager": "Sales Manager",
+    "executive": "Sales Executive"
+  },
+  "roleDescriptions": {
+    "admin": "Whole business, settings and users",
+    "manager": "Team, assignment and approvals",
+    "executive": "My leads, visits and follow-ups"
+  },
+  "availability": {
+    "available": "Available",
+    "inVisit": "In a visit",
+    "onLeave": "On leave"
+  },
+  "comingSoon": {
+    "badge": "Coming soon",
+    "title": "Coming in Phase 2",
+    "body": "This screen is being built. Navigation, permissions and demo data are already in place."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "This page hit a problem. Your data is safe. Try again, or go back to Today.",
+    "details": "Technical details"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you opened doesn't exist or has moved."
+  },
+  "loading": "Loading…",
+  "optional": "(optional)",
+  "required": "Required",
+  "count": "{{count}}",
+  "validation": {
+    "required": "Required",
+    "phoneOrEmail": "Add a phone number or an email",
+    "invalidPhone": "Enter a 10-digit Indian mobile number",
+    "invalidEmail": "Enter a valid email",
+    "budgetOrder": "The minimum cannot be above the maximum",
+    "rangeOrder": "The minimum cannot be above the maximum",
+    "positive": "Must be more than zero",
+    "lostReasonRequired": "Choose why the lead was lost",
+    "bookingPropertyRequired": "Choose the property being booked",
+    "bookingAmountRequired": "Enter the booking amount",
+    "carpetOverBuiltUp": "Carpet area cannot be more than the built-up area",
+    "floorOverTotal": "The floor cannot be above the total floors",
+    "siteVisitProperty": "Choose at least one property for a site visit"
+  }
+}

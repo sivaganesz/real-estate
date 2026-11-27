@@ -1,0 +1,24 @@
+# dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+dist-e2e/
+*.tsbuildinfo
+
+# test artefacts
+test-results/
+playwright-report/
+blob-report/
+
+# env (keys never live in the frontend)
+.env
+.env.*
+!.env.example
+
+# logs and editors
+*.log
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

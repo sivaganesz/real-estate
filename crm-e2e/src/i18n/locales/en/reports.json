@@ -1,0 +1,14 @@
+{
+  "title": "Reports",
+  "subtitle": "Performance, funnel, sources and inventory.",
+  "stub": {
+    "index": {
+      "title": "Reports",
+      "body": "Targets, conversion funnel, lead sources, lost reasons and activity."
+    },
+    "tab": {
+      "title": "Report",
+      "body": "A detailed report view."
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Settings",
+  "subtitle": "Preferences and business rules.",
+  "stub": {
+    "index": {
+      "title": "Settings",
+      "body": "Theme, language, pipeline stages, templates, assignment rules and demo data."
+    },
+    "section": {
+      "title": "Settings section",
+      "body": "One group of settings."
+    }
+  }
+}

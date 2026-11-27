@@ -5,12 +5,12 @@ Branch: `feature/crm-e2e` (from `spec-system-wireframe` @ 10bc8c74ed5b1d9c12d8e8
 New folder: `crm-e2e/`
 
 ## Current phase
-Phase 1 — foundation (sequential agents F1–F4 per notes/foundation-plan.md §9)
+Phase 2 — module work (M1–M8)
 
 ## Status by module
 | Module | Status |
 |---|---|
-| Foundation | not started |
+| Foundation | DONE — verify + 11 e2e green, independent review passed (commit "foundation") |
 
 ## Assumptions
 - Folder name `crm-e2e/`; branch `feature/crm-e2e`.

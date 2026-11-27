@@ -1,0 +1,26 @@
+{
+  "title": "Import",
+  "subtitle": "Bring in leads and properties from sheets, PDFs and images.",
+  "stub": {
+    "index": {
+      "title": "Import data",
+      "body": "Upload a sheet, PDF, image or pasted text. Columns are mapped for you and nothing is lost."
+    },
+    "wizard": {
+      "title": "Import wizard",
+      "body": "Upload, map columns, review duplicates and errors, then import."
+    },
+    "history": {
+      "title": "Import history",
+      "body": "Every finished import with its counts and error rows."
+    },
+    "drafts": {
+      "title": "Drafts",
+      "body": "Records that need a quick review before they are saved."
+    },
+    "draft": {
+      "title": "Review draft",
+      "body": "Low-confidence fields are highlighted for you to check."
+    }
+  }
+}

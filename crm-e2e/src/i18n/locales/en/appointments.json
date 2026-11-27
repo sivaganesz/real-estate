@@ -1,0 +1,14 @@
+{
+  "title": "Appointments",
+  "subtitle": "Site visits, meetings and calls on one calendar.",
+  "stub": {
+    "index": {
+      "title": "Calendar",
+      "body": "Day, week, month and list views with clash warnings and quick outcomes."
+    },
+    "detail": {
+      "title": "Appointment",
+      "body": "Details, directions, visit outcome and follow-up."
+    }
+  }
+}

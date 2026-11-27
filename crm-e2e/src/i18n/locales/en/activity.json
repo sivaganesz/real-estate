@@ -1,0 +1,69 @@
+{
+  "lead": {
+    "created": "Lead created: {{name}}",
+    "updated": "Lead details updated",
+    "stageChanged": "Stage moved to {{toLabel}}",
+    "assigned": "Assigned to {{to}}",
+    "reassigned": "Reassigned from {{from}} to {{to}}",
+    "deleted": "Lead deleted",
+    "qualified": "Qualification updated",
+    "merged": "Duplicate merged"
+  },
+  "comm": {
+    "call": "Call logged",
+    "whatsapp": "WhatsApp sent",
+    "email": "Email sent",
+    "sms": "SMS sent"
+  },
+  "note": "Note added",
+  "appointment": {
+    "created": "Appointment booked",
+    "rescheduled": "Appointment rescheduled",
+    "completed": "Appointment completed",
+    "cancelled": "Appointment cancelled",
+    "noShow": "Marked as no-show"
+  },
+  "task": {
+    "created": "Task added",
+    "completed": "Task completed",
+    "cancelled": "Task cancelled"
+  },
+  "property": {
+    "created": "Property added",
+    "updated": "Property updated",
+    "statusChanged": "Property status changed",
+    "deleted": "Property deleted",
+    "shared": "Properties shared",
+    "shortlisted": "Property shortlisted"
+  },
+  "client": {
+    "created": "Client created",
+    "updated": "Client updated"
+  },
+  "import": {
+    "completed": "Import finished"
+  },
+  "draft": {
+    "saved": "Draft saved"
+  },
+  "user": {
+    "created": "User added",
+    "updated": "User updated",
+    "deactivated": "User deactivated",
+    "activated": "User activated",
+    "availability": "Availability changed"
+  },
+  "settings": {
+    "changed": "Settings changed"
+  },
+  "page": {
+    "title": "Activity log",
+    "subtitle": "Who did what, and when, across the CRM.",
+    "stub": {
+      "index": {
+        "title": "Activity log",
+        "body": "Every change across the CRM, filterable by person, record and type."
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Today",
+  "subtitle": "Your day at a glance: what to do first, visits and targets.",
+  "stub": {
+    "index": {
+      "title": "Your day, ranked",
+      "body": "Uncalled new leads, visits in the next two hours, overdue follow-ups and post-visit calls will appear here in priority order."
+    }
+  },
+  "reason": {
+    "slaBreached": "Not called yet: {{mins}} min since the enquiry",
+    "newLead": "New enquiry: call within the first-response time",
+    "postVisit": "Post-visit call due",
+    "overdue": "Overdue follow-up",
+    "hotNoContact": "Hot lead, no contact for {{days}} days",
+    "stale": "No contact for {{days}} days",
+    "dueToday": "Due today",
+    "soon": {
+      "siteVisit": "Site visit in {{mins}} min",
+      "officeMeeting": "Office meeting in {{mins}} min",
+      "phoneCall": "Call in {{mins}} min",
+      "videoCall": "Video call in {{mins}} min",
+      "documentation": "Documentation in {{mins}} min"
+    }
+  }
+}

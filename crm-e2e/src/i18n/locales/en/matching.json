@@ -1,0 +1,85 @@
+{
+  "title": "Matching",
+  "subtitle": "Find the right homes for a buyer, or the right buyers for a home.",
+  "stub": {
+    "index": {
+      "title": "Property matching",
+      "body": "Ranked matches with a percentage and a plain reason for every match."
+    }
+  },
+  "label": {
+    "strong": "Strong match",
+    "good": "Good match",
+    "weak": "Weak match",
+    "conditional": "Conditional match",
+    "budgetMismatch": "Over budget",
+    "excluded": "Not a match"
+  },
+  "part": {
+    "budget": "Budget",
+    "location": "Location",
+    "size": "Size",
+    "amenities": "Amenities",
+    "preferences": "Preferences"
+  },
+  "summary": {
+    "withMissing": "{{good}}. Gaps: {{missing}}"
+  },
+  "reason": {
+    "fail": {
+      "listing": "Not live ({{listing}})",
+      "status": "{{status}}: no longer available",
+      "purpose": "For {{purpose}}, not what they want",
+      "type": "{{type}}: not a type they want",
+      "city": "In {{city}}, outside their cities",
+      "bedrooms": "{{has}}, fewer bedrooms than the {{want}} wanted",
+      "notInterested": "They said not interested",
+      "budget": "{{over}} over budget ({{pct}}%), too far"
+    },
+    "priceOnRequest": "Price on request",
+    "budgetUnknown": "{{price}}; budget not known yet",
+    "wellUnder": "{{price}}, well under their budget; may feel too small",
+    "withinBudget": "{{price}}, within budget (up to {{max}})",
+    "overBudget": "{{over}} over budget ({{pct}}%), worth a try if negotiable",
+    "overBudgetFar": "{{over}} over budget ({{pct}}%)",
+    "preferredLocality": "In {{locality}}, a preferred area",
+    "otherLocality": "In {{locality}}, not one of their areas ({{wanted}})",
+    "inCity": "In {{city}}",
+    "configExact": "{{config}} as wanted",
+    "configMore": "{{config}} (wanted {{want}})",
+    "areaFits": "{{area}} sq.ft (wanted {{want}}+)",
+    "areaSlightlySmaller": "{{area}} sq.ft, slightly smaller than the {{want}} wanted",
+    "areaSmaller": "{{area}} sq.ft, smaller than the {{want}} wanted",
+    "areaLarger": "{{area}} sq.ft, larger than the {{want}} wanted",
+    "hasAmenity": "{{amenity}}",
+    "missingAmenity": "No {{amenity}}",
+    "readyToMove": "Ready to move",
+    "notReady": "Under construction (possession {{date}})",
+    "underConstruction": "Under construction, as wanted",
+    "readyNotUc": "Ready to move (they asked for under construction)",
+    "possessionInTime": "Possession by {{date}}, in time",
+    "possessionLate": "Possession {{date}}, later than wanted",
+    "facingOk": "{{facing}} facing",
+    "facingOff": "Facing does not match ({{facing}})",
+    "vastuOk": "Vastu compliant",
+    "vastuMissing": "Not marked Vastu compliant",
+    "parkingOk": "Covered parking",
+    "parkingMissing": "No covered parking",
+    "furnishingOk": "{{furnishing}}",
+    "furnishingOff": "{{furnishing}}, not what they want",
+    "transactionOk": "{{transaction}}",
+    "transactionOff": "{{transaction}}, not what they want",
+    "mustHave": "{{text}}",
+    "mustHaveMissing": "No {{text}} listed",
+    "mustHaveCheck": "{{text}}: check",
+    "onHold": "On hold for another buyer",
+    "onHoldUntil": "On hold until {{date}} for another buyer",
+    "docPending": "{{list}} claimed; document pending",
+    "liked": "They liked this one",
+    "visited": "Already visited",
+    "sharedToday": "Already shared today",
+    "sharedYesterday": "Already shared yesterday",
+    "sharedDaysAgo": "Already shared {{days}} days ago",
+    "shortlisted": "On their shortlist"
+  }
+}

@@ -1,0 +1,538 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource/noto-sans-tamil/400.css";
+@import "@fontsource/noto-sans-tamil/500.css";
+@import "@fontsource/noto-sans-tamil/600.css";
+@import "@fontsource/noto-sans-tamil/700.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --breakpoint-3xl: 120rem;
+  --breakpoint-4xl: 137.5rem;
+
+  --font-sans: 'Inter Variable', 'Noto Sans Tamil', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* shadcn core */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-strong: var(--primary-strong);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-highlight: var(--highlight);
+  --color-highlight-soft: var(--highlight-soft);
+  --color-highlight-foreground: var(--highlight-foreground);
+
+  /* semantic tones: text/solid + soft background + text-on-solid */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-foreground: var(--info-foreground);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-violet-foreground: var(--violet-foreground);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-foreground: var(--neutral-foreground);
+
+  /* AI */
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+  --color-ai-foreground: var(--ai-foreground);
+  --color-ai-border: var(--ai-border);
+
+  /* lead temperature */
+  --color-hot: var(--hot);
+  --color-hot-soft: var(--hot-soft);
+  --color-warm: var(--warm);
+  --color-warm-soft: var(--warm-soft);
+  --color-cold: var(--cold);
+  --color-cold-soft: var(--cold-soft);
+
+  /* pipeline stages */
+  --color-stage-new: var(--stage-new);
+  --color-stage-new-soft: var(--stage-new-soft);
+  --color-stage-contacted: var(--stage-contacted);
+  --color-stage-contacted-soft: var(--stage-contacted-soft);
+  --color-stage-qualified: var(--stage-qualified);
+  --color-stage-qualified-soft: var(--stage-qualified-soft);
+  --color-stage-visit-scheduled: var(--stage-visit-scheduled);
+  --color-stage-visit-scheduled-soft: var(--stage-visit-scheduled-soft);
+  --color-stage-visit-done: var(--stage-visit-done);
+  --color-stage-visit-done-soft: var(--stage-visit-done-soft);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-negotiation-soft: var(--stage-negotiation-soft);
+  --color-stage-booked: var(--stage-booked);
+  --color-stage-booked-soft: var(--stage-booked-soft);
+  --color-stage-converted: var(--stage-converted);
+  --color-stage-converted-soft: var(--stage-converted-soft);
+  --color-stage-lost: var(--stage-lost);
+  --color-stage-lost-soft: var(--stage-lost-soft);
+
+  /* appointment types */
+  --color-appt-site-visit: var(--appt-site-visit);
+  --color-appt-site-visit-soft: var(--appt-site-visit-soft);
+  --color-appt-office: var(--appt-office);
+  --color-appt-office-soft: var(--appt-office-soft);
+  --color-appt-call: var(--appt-call);
+  --color-appt-call-soft: var(--appt-call-soft);
+  --color-appt-video: var(--appt-video);
+  --color-appt-video-soft: var(--appt-video-soft);
+  --color-appt-docs: var(--appt-docs);
+  --color-appt-docs-soft: var(--appt-docs-soft);
+
+  /* sidebar (shadcn names) */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+
+  /* radius */
+  --radius-xs: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* elevation */
+  --shadow-xs: var(--elev-xs);
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-md);
+  --shadow-lg: var(--elev-lg);
+  --shadow-xl: var(--elev-xl);
+  --shadow-card: var(--elev-sm);
+  --shadow-card-hover: var(--elev-md);
+  --shadow-focus: 0 0 0 3px var(--ring-soft);
+
+  /* small named type sizes (kept from wireframe-rebuild so ported screens keep their names) */
+  --text-micro: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-label: 0.71875rem;
+  --text-meta: 0.78125rem;
+  --text-ui: 0.8125rem;
+  --text-prompt: 0.90625rem;
+  /* display sizes for numbers and page titles */
+  --text-kpi: 1.75rem;
+  --text-kpi--line-height: 2.125rem;
+  --text-kpi--letter-spacing: -0.02em;
+  --text-display: 2.25rem;
+  --text-display--line-height: 2.625rem;
+  --text-display--letter-spacing: -0.025em;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-ai-pulse: ai-pulse 2.4s var(--ease-in-out) infinite;
+  --animate-fade-up: fade-up 240ms var(--ease-out) both;
+}
+
+:root,
+.light {
+  --radius: 0.75rem;
+
+  /* motion durations (read by components via var()) */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 200ms;
+  --dur-slow: 280ms;
+  --dur-slower: 420ms;
+
+  /* surfaces + ink: cool slate with a faint peacock tint */
+  --background: oklch(0.975 0.004 230);
+  --canvas: oklch(0.985 0.003 230);
+  --foreground: oklch(0.22 0.025 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.025 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 250);
+
+  /* primary: Peacock */
+  --primary: oklch(0.5 0.09 218);
+  --primary-strong: oklch(0.43 0.08 222);
+  --primary-foreground: oklch(0.99 0.004 210);
+  --primary-soft: oklch(0.955 0.025 212);
+  --secondary: oklch(0.955 0.006 235);
+  --secondary-foreground: oklch(0.32 0.025 250);
+  --muted: oklch(0.96 0.005 235);
+  --muted-foreground: oklch(0.48 0.022 250);
+  --subtle-foreground: oklch(0.55 0.018 250);
+  --accent: oklch(0.955 0.025 212);
+  --accent-foreground: oklch(0.43 0.08 222);
+  --destructive: oklch(0.54 0.19 25);
+  --destructive-foreground: oklch(0.99 0.004 25);
+  --border: oklch(0.92 0.007 240);
+  --border-strong: oklch(0.86 0.01 240);
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.55 0.099 218);
+  --ring-soft: oklch(0.55 0.099 218 / 0.22);
+
+  /* highlight: Marigold, used sparingly (premium, "new", gradient end, target met) */
+  --highlight: oklch(0.8 0.15 78);
+  --highlight-soft: oklch(0.965 0.037 85);
+  --highlight-foreground: oklch(0.3 0.06 60);
+
+  /* semantic tones (text-on-white / dot / fill) */
+  --success: oklch(0.52 0.125 155);
+  --success-soft: oklch(0.955 0.04 158);
+  --success-foreground: oklch(0.99 0.01 155);
+  --warning: oklch(0.54 0.12 62);
+  --warning-soft: oklch(0.96 0.038 82);
+  --warning-foreground: oklch(0.99 0.009 80);
+  --danger: oklch(0.54 0.19 25);
+  --danger-soft: oklch(0.96 0.019 22);
+  --danger-foreground: oklch(0.99 0.004 25);
+  --info: oklch(0.52 0.14 255);
+  --info-soft: oklch(0.955 0.021 255);
+  --info-foreground: oklch(0.99 0.004 255);
+  --violet: oklch(0.52 0.18 292);
+  --violet-soft: oklch(0.955 0.023 292);
+  --violet-foreground: oklch(0.99 0.004 292);
+  --neutral: oklch(0.47 0.02 250);
+  --neutral-soft: oklch(0.955 0.005 250);
+  --neutral-foreground: oklch(0.99 0 0);
+
+  /* AI: Iris, plus the Peacock to Iris gradient (AI surfaces only) */
+  --ai: oklch(0.52 0.17 285);
+  --ai-soft: oklch(0.96 0.019 285);
+  --ai-foreground: oklch(0.99 0.004 285);
+  --ai-border: oklch(0.82 0.08 285);
+  --ai-gradient: linear-gradient(135deg, oklch(0.56 0.097 210), oklch(0.53 0.17 285));
+
+  /* lead temperature */
+  --hot: oklch(0.54 0.18 32);
+  --hot-soft: oklch(0.955 0.022 35);
+  --warm: oklch(0.53 0.115 62);
+  --warm-soft: oklch(0.96 0.038 82);
+  --cold: oklch(0.53 0.12 240);
+  --cold-soft: oklch(0.955 0.022 235);
+
+  /* pipeline stages: solid = dot, bar, column accent; soft = column wash, badge background */
+  --stage-new: oklch(0.62 0.12 235);
+  --stage-new-soft: oklch(0.96 0.02 235);
+  --stage-contacted: oklch(0.56 0.15 265);
+  --stage-contacted-soft: oklch(0.955 0.021 265);
+  --stage-qualified: oklch(0.55 0.17 295);
+  --stage-qualified-soft: oklch(0.955 0.023 295);
+  --stage-visit-scheduled: oklch(0.74 0.14 75);
+  --stage-visit-scheduled-soft: oklch(0.965 0.037 85);
+  --stage-visit-done: oklch(0.66 0.15 50);
+  --stage-visit-done-soft: oklch(0.96 0.023 55);
+  --stage-negotiation: oklch(0.6 0.18 355);
+  --stage-negotiation-soft: oklch(0.96 0.022 355);
+  --stage-booked: oklch(0.58 0.098 200);
+  --stage-booked-soft: oklch(0.955 0.03 200);
+  --stage-converted: oklch(0.57 0.14 152);
+  --stage-converted-soft: oklch(0.955 0.04 155);
+  --stage-lost: oklch(0.6 0.02 250);
+  --stage-lost-soft: oklch(0.955 0.004 250);
+
+  /* appointment types */
+  --appt-site-visit: oklch(0.6 0.15 45);
+  --appt-site-visit-soft: oklch(0.96 0.022 50);
+  --appt-office: oklch(0.56 0.15 265);
+  --appt-office-soft: oklch(0.955 0.021 265);
+  --appt-call: oklch(0.57 0.129 160);
+  --appt-call-soft: oklch(0.955 0.04 160);
+  --appt-video: oklch(0.56 0.17 300);
+  --appt-video-soft: oklch(0.955 0.025 300);
+  --appt-docs: oklch(0.7 0.13 85);
+  --appt-docs-soft: oklch(0.965 0.041 88);
+
+  /* sidebar: sits on the canvas, active item is a raised white pill */
+  --sidebar: oklch(0.975 0.004 230);
+  --sidebar-foreground: oklch(0.36 0.022 250);
+  --sidebar-primary: oklch(0.5 0.09 218);
+  --sidebar-primary-foreground: oklch(0.99 0.004 210);
+  --sidebar-accent: oklch(1 0 0);
+  --sidebar-accent-foreground: oklch(0.22 0.025 250);
+  --sidebar-border: oklch(0.92 0.007 240);
+  --sidebar-ring: oklch(0.55 0.099 218);
+
+  /* charts: ordered for adjacent contrast */
+  --chart-1: oklch(0.55 0.097 215);
+  --chart-2: oklch(0.78 0.14 75);
+  --chart-3: oklch(0.55 0.16 280);
+  --chart-4: oklch(0.66 0.16 32);
+  --chart-5: oklch(0.63 0.13 155);
+  --chart-6: oklch(0.62 0.17 350);
+  --chart-7: oklch(0.72 0.1 232);
+  --chart-8: oklch(0.62 0.025 250);
+  --chart-grid: oklch(0.93 0.006 240);
+  --chart-axis: oklch(0.55 0.018 250);
+
+  /* elevation: ink-tinted, layered */
+  --elev-xs: 0 1px 2px oklch(0.22 0.025 250 / 0.05);
+  --elev-sm: 0 1px 2px oklch(0.22 0.025 250 / 0.05), 0 1px 3px oklch(0.22 0.025 250 / 0.06);
+  --elev-md: 0 2px 4px oklch(0.22 0.025 250 / 0.04), 0 6px 16px -2px oklch(0.22 0.025 250 / 0.08);
+  --elev-lg: 0 4px 8px oklch(0.22 0.025 250 / 0.04), 0 16px 32px -6px oklch(0.22 0.025 250 / 0.12);
+  --elev-xl: 0 8px 16px oklch(0.22 0.025 250 / 0.06), 0 28px 56px -12px oklch(0.22 0.025 250 / 0.2);
+
+  --scrollbar: oklch(0.86 0.01 240);
+  --scrollbar-soft: oklch(0.9 0.008 240);
+  --scrollbar-hover: oklch(0.74 0.015 245);
+  --skeleton: oklch(0.94 0.006 240);
+  --skeleton-shine: oklch(0.975 0.004 240);
+  --overlay: oklch(0.2 0.03 250 / 0.4);
+}
+
+/* Dark: deep ink-slate surfaces that step lighter with elevation (not an inversion). Peacock brightens to Lagoon. */
+.dark {
+  --background: oklch(0.165 0.012 245);
+  --canvas: oklch(0.145 0.012 245);
+  --foreground: oklch(0.94 0.006 240);
+  --card: oklch(0.2 0.014 245);
+  --card-foreground: oklch(0.94 0.006 240);
+  --popover: oklch(0.225 0.015 245);
+  --popover-foreground: oklch(0.94 0.006 240);
+
+  --primary: oklch(0.74 0.115 205);
+  --primary-strong: oklch(0.8 0.1 200);
+  --primary-foreground: oklch(0.18 0.03 225);
+  --primary-soft: oklch(0.29 0.05 215);
+  --secondary: oklch(0.255 0.014 245);
+  --secondary-foreground: oklch(0.88 0.01 240);
+  --muted: oklch(0.24 0.013 245);
+  --muted-foreground: oklch(0.7 0.016 245);
+  --subtle-foreground: oklch(0.63 0.016 245);
+  --accent: oklch(0.29 0.05 215);
+  --accent-foreground: oklch(0.86 0.08 205);
+  --destructive: oklch(0.7 0.17 22);
+  --destructive-foreground: oklch(0.18 0.03 22);
+  --border: oklch(0.285 0.014 245);
+  --border-strong: oklch(0.35 0.016 245);
+  --input: oklch(0.32 0.016 245);
+  --ring: oklch(0.74 0.115 205);
+  --ring-soft: oklch(0.74 0.115 205 / 0.3);
+
+  --highlight: oklch(0.82 0.14 80);
+  --highlight-soft: oklch(0.29 0.05 75);
+  --highlight-foreground: oklch(0.2 0.04 70);
+
+  --success: oklch(0.76 0.14 155);
+  --success-soft: oklch(0.27 0.045 158);
+  --success-foreground: oklch(0.18 0.03 155);
+  --warning: oklch(0.81 0.13 78);
+  --warning-soft: oklch(0.28 0.045 72);
+  --warning-foreground: oklch(0.2 0.04 70);
+  --danger: oklch(0.72 0.16 22);
+  --danger-soft: oklch(0.28 0.06 22);
+  --danger-foreground: oklch(0.18 0.03 22);
+  --info: oklch(0.75 0.12 250);
+  --info-soft: oklch(0.27 0.05 255);
+  --info-foreground: oklch(0.18 0.03 255);
+  --violet: oklch(0.76 0.13 295);
+  --violet-soft: oklch(0.28 0.06 295);
+  --violet-foreground: oklch(0.18 0.03 295);
+  --neutral: oklch(0.76 0.015 245);
+  --neutral-soft: oklch(0.26 0.012 245);
+  --neutral-foreground: oklch(0.17 0.012 245);
+
+  --ai: oklch(0.76 0.128 285);
+  --ai-soft: oklch(0.27 0.06 285);
+  --ai-foreground: oklch(0.18 0.03 285);
+  --ai-border: oklch(0.42 0.1 285);
+  --ai-gradient: linear-gradient(135deg, oklch(0.7 0.11 205), oklch(0.68 0.15 285));
+
+  --hot: oklch(0.72 0.17 35);
+  --hot-soft: oklch(0.28 0.06 32);
+  --warm: oklch(0.81 0.13 78);
+  --warm-soft: oklch(0.28 0.045 72);
+  --cold: oklch(0.75 0.11 238);
+  --cold-soft: oklch(0.27 0.045 240);
+
+  --stage-new: oklch(0.74 0.11 235);
+  --stage-new-soft: oklch(0.26 0.035 238);
+  --stage-contacted: oklch(0.72 0.13 268);
+  --stage-contacted-soft: oklch(0.27 0.05 268);
+  --stage-qualified: oklch(0.73 0.14 295);
+  --stage-qualified-soft: oklch(0.27 0.055 295);
+  --stage-visit-scheduled: oklch(0.82 0.14 80);
+  --stage-visit-scheduled-soft: oklch(0.28 0.045 75);
+  --stage-visit-done: oklch(0.75 0.14 52);
+  --stage-visit-done-soft: oklch(0.28 0.05 50);
+  --stage-negotiation: oklch(0.72 0.16 355);
+  --stage-negotiation-soft: oklch(0.28 0.06 355);
+  --stage-booked: oklch(0.75 0.1 198);
+  --stage-booked-soft: oklch(0.27 0.045 205);
+  --stage-converted: oklch(0.75 0.14 152);
+  --stage-converted-soft: oklch(0.27 0.045 155);
+  --stage-lost: oklch(0.6 0.018 245);
+  --stage-lost-soft: oklch(0.25 0.01 245);
+
+  --appt-site-visit: oklch(0.74 0.14 48);
+  --appt-site-visit-soft: oklch(0.28 0.05 48);
+  --appt-office: oklch(0.72 0.13 268);
+  --appt-office-soft: oklch(0.27 0.05 268);
+  --appt-call: oklch(0.75 0.13 160);
+  --appt-call-soft: oklch(0.27 0.045 160);
+  --appt-video: oklch(0.74 0.14 300);
+  --appt-video-soft: oklch(0.28 0.055 300);
+  --appt-docs: oklch(0.82 0.13 85);
+  --appt-docs-soft: oklch(0.28 0.045 82);
+
+  --sidebar: oklch(0.145 0.012 245);
+  --sidebar-foreground: oklch(0.78 0.014 245);
+  --sidebar-primary: oklch(0.74 0.115 205);
+  --sidebar-primary-foreground: oklch(0.18 0.03 225);
+  --sidebar-accent: oklch(0.23 0.016 245);
+  --sidebar-accent-foreground: oklch(0.96 0.006 240);
+  --sidebar-border: oklch(0.25 0.013 245);
+  --sidebar-ring: oklch(0.74 0.115 205);
+
+  --chart-1: oklch(0.72 0.11 205);
+  --chart-2: oklch(0.82 0.14 80);
+  --chart-3: oklch(0.7 0.14 282);
+  --chart-4: oklch(0.72 0.15 35);
+  --chart-5: oklch(0.74 0.13 155);
+  --chart-6: oklch(0.72 0.15 352);
+  --chart-7: oklch(0.8 0.09 232);
+  --chart-8: oklch(0.62 0.02 245);
+  --chart-grid: oklch(0.27 0.012 245);
+  --chart-axis: oklch(0.62 0.016 245);
+
+  /* dark elevation: deeper drop + a 1px top highlight so raised surfaces read */
+  --elev-xs: 0 1px 2px oklch(0 0 0 / 0.3);
+  --elev-sm: inset 0 1px 0 oklch(1 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.35), 0 1px 3px oklch(0 0 0 / 0.25);
+  --elev-md: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 2px 4px oklch(0 0 0 / 0.3), 0 8px 20px -4px oklch(0 0 0 / 0.45);
+  --elev-lg: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 4px 8px oklch(0 0 0 / 0.3), 0 18px 36px -8px oklch(0 0 0 / 0.55);
+  --elev-xl: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 8px 16px oklch(0 0 0 / 0.35), 0 30px 60px -12px oklch(0 0 0 / 0.65);
+
+  --scrollbar: oklch(0.33 0.014 245);
+  --scrollbar-soft: oklch(0.29 0.013 245);
+  --scrollbar-hover: oklch(0.42 0.016 245);
+  --skeleton: oklch(0.24 0.013 245);
+  --skeleton-shine: oklch(0.29 0.014 245);
+  --overlay: oklch(0.08 0.01 245 / 0.6);
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes ai-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  /* Laptops and desktops: 90% root (decision carried over from wireframe-rebuild, 26 Nov). */
+  @media (min-width: 64rem) {
+    html { font-size: 90%; }
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  /* Tamil script needs a little more line height and no negative tracking */
+  :lang(ta) {
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  .tabular, .num { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  .bg-ai-gradient { background-image: var(--ai-gradient); }
+  .text-ai-gradient { background-image: var(--ai-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .skeleton {
+    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-shine) 50%, var(--skeleton) 100%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: var(--radius-sm);
+  }
+  .ai-filled {
+    background-color: var(--ai-soft);
+    box-shadow: inset 2px 0 0 var(--ai);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { animation: none; }
+}
+
+/* Thin scrollbars (carried over from wireframe-rebuild) */
+html::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 99px; border: 2px solid var(--background); }
+html::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar-soft); border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-soft) transparent; }
+  html { scrollbar-width: thin; scrollbar-color: var(--scrollbar) transparent; }
+}

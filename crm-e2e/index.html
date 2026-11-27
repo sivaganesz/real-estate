@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>RealSpec CRM</title>
+    <!-- Saved theme and language, applied before the first paint (src/lib/theme.ts and src/i18n keep them in step). -->
+    <script>
+      try {
+        var t = localStorage.getItem('crm-e2e-theme')
+        if (t === 'dark' || ((t === 'system' || t === null) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = 'dark'
+        }
+        var l = localStorage.getItem('crm-e2e-lang')
+        if (l === 'ta' || l === 'en') document.documentElement.lang = l
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "title": "Team",
+  "subtitle": "Workload, availability and performance per person.",
+  "stub": {
+    "index": {
+      "title": "Team overview",
+      "body": "Workload bars, availability and assignment rules for your team."
+    },
+    "member": {
+      "title": "Team member",
+      "body": "Leads, targets and activity for one person."
+    }
+  }
+}

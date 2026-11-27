@@ -1,0 +1,14 @@
+{
+  "title": "Clients",
+  "subtitle": "Booked and converted buyers: agreement, loan and registration.",
+  "stub": {
+    "index": {
+      "title": "Client list",
+      "body": "Track every booking through agreement, loan and registration."
+    },
+    "detail": {
+      "title": "Client profile",
+      "body": "Documents, loan status and the deal for one client."
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "kpi": {
+    "deltaGood": "{{value}}, an improvement",
+    "deltaBad": "{{value}}, needs attention",
+    "deltaFlat": "{{value}}, no change"
+  },
+  "chart": {
+    "legend": "Chart legend",
+    "empty": "No data for this period",
+    "dropOff": "{{pct}}% drop-off",
+    "less": "Less",
+    "more": "More"
+  },
+  "table": {
+    "empty": "Nothing to show here yet.",
+    "selectAll": "Select all rows on this page",
+    "selectRow": "Select {{name}}",
+    "actions": "Row actions",
+    "columns": "Columns",
+    "density": {
+      "comfortable": "Comfortable rows",
+      "compact": "Compact rows"
+    }
+  },
+  "bulk": {
+    "label": "Actions for the selected rows",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "clear": "Clear selection"
+  },
+  "pagination": {
+    "label": "Pages",
+    "range": "{{from}}–{{to}} of {{total}}",
+    "perPage": "Rows per page",
+    "page": "Page {{page}} of {{pages}}",
+    "prev": "Previous page",
+    "next": "Next page"
+  },
+  "filter": {
+    "search": "Search",
+    "clear": "Clear",
+    "clearOne": "Clear the {{label}} filter",
+    "clearAll_one": "Clear filter",
+    "clearAll_other": "Clear all ({{count}})",
+    "pillActive_one": "{{label}}: {{count}} chosen",
+    "pillActive_other": "{{label}}: {{count}} chosen",
+    "noMatchTitle": "Nothing matches these filters",
+    "noMatchBody": "Try removing a filter or searching for something else.",
+    "clearFilters": "Clear filters"
+  },
+  "drawer": {
+    "discardTitle": "Discard changes?",
+    "discardBody": "You have changes that are not saved. If you close now, they will be lost.",
+    "discard": "Discard",
+    "keepEditing": "Keep editing"
+  },
+  "undo": {
+    "done": "Undone. Everything is back as it was.",
+    "expired": "It is too late to undo this."
+  },
+  "error": {
+    "generic": "Something went wrong. Please try again."
+  },
+  "workload": {
+    "aria": "{{name}}: {{total}} active leads ({{hot}} hot, {{warm}} warm, {{cold}} cold)"
+  },
+  "timeline": {
+    "byAi": "Done with the AI assistant"
+  },
+  "date": {
+    "pick": "Pick a date",
+    "time": "Time",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inThreeDays": "In 3 days",
+    "nextWeek": "Next week",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "amount": {
+    "unit": "Unit",
+    "L": "Lakh",
+    "Cr": "Crore"
+  },
+  "upload": {
+    "drop": "Drop a file here or",
+    "browse": "browse",
+    "anyType": "any file",
+    "limits": "{{types}} · up to {{size}} MB",
+    "remove": "Remove {{file}}",
+    "rejected": {
+      "type": "{{file}}: this file type is not supported here.",
+      "size": "{{file}}: the file is larger than {{size}} MB.",
+      "count": "{{file}}: at most {{max}} files can be added."
+    }
+  },
+  "mapping": {
+    "label": "Column mapping",
+    "column": "Your column",
+    "sample": "Sample",
+    "field": "CRM field",
+    "fieldFor": "CRM field for {{column}}",
+    "confidence": "Confidence",
+    "skip": "Skip this column",
+    "skipped": "Skipped",
+    "required": "needed",
+    "aiSuggested": "Suggested by AI",
+    "missingRequired": "Still to map: {{fields}}"
+  }
+}

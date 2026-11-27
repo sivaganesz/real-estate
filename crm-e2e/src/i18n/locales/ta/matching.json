@@ -1,0 +1,85 @@
+{
+  "title": "பொருத்தம்",
+  "subtitle": "வாங்குபவருக்கு ஏற்ற வீடுகள், அல்லது வீட்டுக்கு ஏற்ற வாங்குபவர்கள்.",
+  "stub": {
+    "index": {
+      "title": "சொத்துப் பொருத்தம்",
+      "body": "ஒவ்வொரு பொருத்தத்துக்கும் சதவீதமும் எளிய காரணமும்."
+    }
+  },
+  "label": {
+    "strong": "வலுவான பொருத்தம்",
+    "good": "நல்ல பொருத்தம்",
+    "weak": "குறைந்த பொருத்தம்",
+    "conditional": "நிபந்தனைப் பொருத்தம்",
+    "budgetMismatch": "பட்ஜெட்டுக்கு மேல்",
+    "excluded": "பொருந்தவில்லை"
+  },
+  "part": {
+    "budget": "பட்ஜெட்",
+    "location": "இடம்",
+    "size": "அளவு",
+    "amenities": "வசதிகள்",
+    "preferences": "விருப்பங்கள்"
+  },
+  "summary": {
+    "withMissing": "{{good}}. குறைகள்: {{missing}}"
+  },
+  "reason": {
+    "fail": {
+      "listing": "நேரலையில் இல்லை ({{listing}})",
+      "status": "{{status}}: இனி கிடைக்காது",
+      "purpose": "{{purpose}}க்கு, அவர்கள் விரும்புவது அல்ல",
+      "type": "{{type}}: அவர்கள் விரும்பும் வகை அல்ல",
+      "city": "{{city}} இல், அவர்களின் நகரங்களுக்கு வெளியே",
+      "bedrooms": "{{has}}, விரும்பிய {{want}} ஐ விட குறைவான அறைகள்",
+      "notInterested": "விருப்பமில்லை என்றார்கள்",
+      "budget": "பட்ஜெட்டை விட {{over}} அதிகம் ({{pct}}%), மிக அதிகம்"
+    },
+    "priceOnRequest": "கோரிக்கையின் பேரில் விலை",
+    "budgetUnknown": "{{price}}; பட்ஜெட் இன்னும் தெரியவில்லை",
+    "wellUnder": "{{price}}, பட்ஜெட்டை விட மிகக் குறைவு; சிறியதாகத் தோன்றலாம்",
+    "withinBudget": "{{price}}, பட்ஜெட்டுக்குள் ({{max}} வரை)",
+    "overBudget": "பட்ஜெட்டை விட {{over}} அதிகம் ({{pct}}%), பேரம் பேசினால் முயற்சிக்கலாம்",
+    "overBudgetFar": "பட்ஜெட்டை விட {{over}} அதிகம் ({{pct}}%)",
+    "preferredLocality": "{{locality}} இல், விரும்பிய பகுதி",
+    "otherLocality": "{{locality}} இல், அவர்களின் பகுதி அல்ல ({{wanted}})",
+    "inCity": "{{city}} இல்",
+    "configExact": "விரும்பியபடி {{config}}",
+    "configMore": "{{config}} (விரும்பியது {{want}})",
+    "areaFits": "{{area}} ச.அடி (விரும்பியது {{want}}+)",
+    "areaSlightlySmaller": "{{area}} ச.அடி, விரும்பிய {{want}} ஐ விட சற்று சிறியது",
+    "areaSmaller": "{{area}} ச.அடி, விரும்பிய {{want}} ஐ விட சிறியது",
+    "areaLarger": "{{area}} ச.அடி, விரும்பிய {{want}} ஐ விட பெரியது",
+    "hasAmenity": "{{amenity}}",
+    "missingAmenity": "{{amenity}} இல்லை",
+    "readyToMove": "உடனே குடியேறலாம்",
+    "notReady": "கட்டுமானத்தில் (ஒப்படைப்பு {{date}})",
+    "underConstruction": "விரும்பியபடி கட்டுமானத்தில்",
+    "readyNotUc": "உடனே குடியேறலாம் (அவர்கள் கட்டுமானத்தில் உள்ளதைக் கேட்டனர்)",
+    "possessionInTime": "{{date}} க்குள் ஒப்படைப்பு, நேரத்தில்",
+    "possessionLate": "ஒப்படைப்பு {{date}}, விரும்பியதை விட தாமதம்",
+    "facingOk": "{{facing}} நோக்கியது",
+    "facingOff": "திசை பொருந்தவில்லை ({{facing}})",
+    "vastuOk": "வாஸ்து இணக்கம்",
+    "vastuMissing": "வாஸ்து இணக்கம் குறிப்பிடப்படவில்லை",
+    "parkingOk": "மூடிய வாகன நிறுத்தம்",
+    "parkingMissing": "மூடிய வாகன நிறுத்தம் இல்லை",
+    "furnishingOk": "{{furnishing}}",
+    "furnishingOff": "{{furnishing}}, அவர்கள் விரும்புவது அல்ல",
+    "transactionOk": "{{transaction}}",
+    "transactionOff": "{{transaction}}, அவர்கள் விரும்புவது அல்ல",
+    "mustHave": "{{text}}",
+    "mustHaveMissing": "{{text}} பட்டியலில் இல்லை",
+    "mustHaveCheck": "{{text}}: சரிபார்க்கவும்",
+    "onHold": "மற்றொரு வாங்குபவருக்காக நிறுத்தி வைக்கப்பட்டுள்ளது",
+    "onHoldUntil": "மற்றொரு வாங்குபவருக்காக {{date}} வரை நிறுத்தி வைக்கப்பட்டுள்ளது",
+    "docPending": "{{list}} கோரப்பட்டது; ஆவணம் நிலுவையில்",
+    "liked": "இது அவர்களுக்குப் பிடித்தது",
+    "visited": "ஏற்கனவே பார்வையிட்டனர்",
+    "sharedToday": "இன்று ஏற்கனவே பகிரப்பட்டது",
+    "sharedYesterday": "நேற்று ஏற்கனவே பகிரப்பட்டது",
+    "sharedDaysAgo": "{{days}} நாட்களுக்கு முன் ஏற்கனவே பகிரப்பட்டது",
+    "shortlisted": "அவர்களின் தேர்வுப் பட்டியலில்"
+  }
+}
