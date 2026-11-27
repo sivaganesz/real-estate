@@ -68,22 +68,23 @@ Offline (no AI key), or if Gemini fails or returns something unusable, typed tex
 
 ## 5. Screens
 
-1. **Properties:**
-   - *All properties* as photo-first cards or a table, with one smart search box and quick filter chips; sold units are hidden unless asked for;
+1. **Properties** (`pages/Properties.tsx`, `PropertyList.tsx`, `ProjectsTab.tsx`):
+   - one search row shared by both tabs (`components/SearchBar.tsx`) with the *All properties / Projects* switch beside it (`Segmented size="lg"`), and **Bulk import** at the top right;
+   - status tabs (All, Available, …) with Filters, Sort and the Table / Grid view on the same row (stacked below `xl`);
+   - *All properties* as photo-first cards or a table. The table's **Price** column; the Area cell shows icons with counts (bed and bath) for homes, and "L × W" for plots. Sold units are hidden unless asked for;
    - *Projects* with a sell-through bar per project.
 2. **Add property** (drawer): the describe box, then the short form.
-3. **Property page:**
-   - gallery;
-   - key facts (✨ marks values read by AI; hover shows the source);
-   - amenities and other details;
-   - approvals and documents;
-   - history;
+3. **Property page** (`pages/PropertyDetail.tsx`, parts in `components/property/`):
+   - a header with the key facts for its type, an adaptive photo collage with a viewer, and five tabs (Overview, Legal & documents, Price, Matching customers, History);
+   - key facts (✨ marks values read by AI; hover shows the source); a details card with the description (clamped, *Expand*) and collapsible sections per type;
+   - land listed in acres, cents or grounds shows its rate in that unit (₹34 L/acre), see `packages/shared/src/format.ts`;
+   - **Explore the neighbourhood** (`property/Neighbourhood.tsx`): places grouped by commute, schools, hospitals and shopping, with a distance sketch. *Team* and *Customer* views; each place can be marked "route checked" and "OK to advertise". *Find more places* looks them up on OpenStreetMap through the Overpass API (`OVERPASS_URL`; the free public server is often busy). New places start unchecked; the buyer page lists only advertised ones;
    - a side card with price, status and actions (Share, Publish, Edit, Availability, Draft a buyer message), and a To do card.
 4. **Project page:** availability counts and the **inventory grid** (floors × units, colour by state), plus Add units, Publish drafts and Revise prices.
-5. **Buyer page** `/p/:token`: no sign-in; photos, price with an approximate total including stamp duty and registration, facts, amenities and approval badges.
+5. **Buyer page** `/p/:token`: no sign-in; photos, price with an approximate total including stamp duty and registration, facts, amenities, approval badges and the advertised nearby places.
 
 ## 6. Deliberately left out (for review)
 
 - **A separate "review" listing state.** With only managers and admins loading, both of whom may publish, a review step adds a click but no check. If a data-entry role is added, it comes back as one state.
 - **Admin-defined property fields** (the old field builder). The six types with known key details plus free-form extras cover the sample data. Revisit only if a client needs a field to be filterable.
-- **Maps and nearby places.** These need a Google Maps account and budget.
+- **A real map (Google Maps).** It needs a Google Maps account and budget. Nearby places are now covered without it: the neighbourhood explorer uses free OpenStreetMap data and draws a distance sketch, not a map.

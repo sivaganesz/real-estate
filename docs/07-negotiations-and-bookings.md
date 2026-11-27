@@ -54,15 +54,15 @@ In Indian residential sales the price is haggled **per unit**, not per project. 
 
 ## 4. Screens
 
-- **Deals page:**
-  - **Money summary:** value being negotiated, booked this month, due in the next 30 days, overdue payments (and deals idle 5+ days).
-  - **Waiting for you** (managers and admins): price approvals at your level and bookings to confirm.
-  - **Overdue payments**, each opening its deal.
-  - **Tabs:** In progress, Booked (with % paid), Closed (registered and cancelled). Managers see whose customer each deal is.
+- **Deals page** (`pages/Deals.tsx`):
+  - **Tiles:** Negotiating, Waiting for approval, Booked this month, Payments due in 30 days. A tile filters the list to its step.
+  - **Needs your action:** price approvals at your level, bookings to confirm and overdue payments.
+  - **Step tabs:** All, then one per step (Price, Approval, Booking, Payments, Registered), and Dropped when there are any.
+  - Rows with the step track; on wide screens a **preview panel** with the price track, payments, the next step and *Open deal*. Managers see whose customer each deal is.
 - **Deal drawer:** the property and customer; a **price ladder** (list price, every offer with % off, the agreed price and who agreed it); then only the next sensible step: negotiate, decide, book, payments, register. Cancel sits at the bottom.
-- **Customer page → Deals card:** their deals with status and current or agreed price, and **+ Negotiate**.
+- **Lead page → Deals** (a profile-card section, `features/deals.tsx`): their deals with the price track, and **+ Negotiate**.
 - **Today:** a **"waiting for you"** card for managers and admins, linking to Deals.
-- **Settings → Price approvals and holds** (admin): executive limit, manager limit, hold days.
+- **Settings → Price approvals and holds** (admin): drawn as a ladder (green: the executive agrees; amber: a manager approves; violet: an admin approves), with the executive limit, manager limit and hold days below, and *Save rules* / *Undo changes*.
 
 ## 5. AI
 

@@ -43,9 +43,11 @@ Shown above the board, and available to the assistant (`pipeline_insights`):
 
 ## 4. Screens
 
-- **Leads → Pipeline** (toggle next to List): the health strip, then columns New → Negotiation, plus Booked and Lost for the last 30 days.
-  - Each card shows the temperature, name, what they want, the next step (or "No next step"), days in stage (red when stuck), and the owner (for managers).
-  - Drag to move; on a phone, use the stage bar on the lead page.
+- **Leads → Pipeline** (the *List / Pipeline* switch; `features/pipeline.tsx`, registered as `views.board`):
+  - **Outcomes** across the top in three columns: four status tiles (2 × 2); a green **Booked** panel with a build-up chart and the people who booked; a **Lost** panel with the value lost, a "Where" chart (furthest stage reached, 90 days) and the people.
+  - **Flow:** a 90-day band with the conversion between stages and the number lost at each.
+  - Focus chips, then columns New → Negotiation. Cards are ordered by lead score and show the score, name, what they want, the next step (or "No next step"), days in stage (red when stuck) and the owner (for managers).
+  - **Move a lead:** drag the card (a drop bar for Booked and Lost appears while dragging), or use the card's *Move to…* menu, which also works on phones where touch dragging doesn't.
 - **Lead page:** a stage bar across the top. Click a stage or **Move to …**; **Lost** asks for a reason; **Reopen** when lost.
 
 ## 5. AI

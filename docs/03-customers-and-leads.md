@@ -40,15 +40,34 @@
 
 ## 4. Screens
 
-- **Leads**: one list ("My leads" for executives).
-  - Each row shows the temperature dot, stage, days in stage when it's overdue for that stage, what they want, the next step (or "No next step" in amber), and when you last spoke.
-  - Filters: *Needs attention*, stages, owner. The pipeline view arrives in Phase 4.
-- **New lead** (drawer): mobile number first, the known-customer check, then a describe box with **Understand** and the requirement editor.
-- **Customer page:**
-  - header with call and WhatsApp buttons, temperature and owner;
-  - **History** with a composer (log a call with outcome chips, WhatsApp, note);
-  - **Looking for**, with gaps highlighted ("Still unknown: budget");
-  - assistant buttons and enquiries.
+- **Leads** (`pages/Leads.tsx`), with a *List / Pipeline* switch beside **New lead**:
+  - **Tiles:** Active leads (of the total, with an active / booked / lost bar), Overdue, Due today, Hot (score 80+), New this week. Clicking a tile filters the list.
+  - **Tabs:** Active, Hot leads, Investors, HNI, Closed / Lost. Open leads are grouped by when the follow-up is due.
+  - **Rows:** score ring, name, what and where, budget and buyer type, next step. Call, WhatsApp and Done appear on hover (or keyboard focus) only.
+  - **Preview panel** on wide screens (`xl`): score ring and band; timeline, buyer type and stage in one row; *Looking for* with the agent on the money row ("up to ₹40 L · Investment · Priya Sundar"); next step; the best match with an "N properties ⌄" toggle for the top 3; last contact; and actions.
+- **New lead** (drawer): mobile number first, the known-customer check, then a describe box with **Understand** and the requirement editor (now including **Buying for**: own use or investment).
+- **Lead page** (`pages/LeadDetail.tsx`), two columns:
+  - left: the stage bar (pipeline), the next step (activities), then tabs: **Activity** (history with the composer), **Matches** (from matching) and **Qualification**;
+  - right, a profile card: "Agent: name" (a select for managers), phone, three dials (Property fit, Ready to buy, HNI), *Looking for*, money, then sections added by modules (site visits, deals).
+  - Most of these parts come from slots (see `slots-leads.ts`), not from the page itself.
+
+### Lead score and buyer type
+
+Rules, not AI, in `packages/shared/src/leadScore.ts`; the API adds `score` and `segment` to every lead (`serialiseLead`).
+
+| Part | Points | How |
+|---|---|---|
+| Requirement | 30 | 10 each for budget, location and type |
+| Timeline | 20 | ready to buy 20, 3 months 14, 6 months 8, exploring 2 (unknown 5) |
+| Payment | 15 | own funds or loan approved 15, loan 8, unknown 3 |
+| Stage | 25 | new 0, contacted 6, qualified 12, visit 18, negotiation 22, booked 25 |
+| Interest | 10 | hot 10, warm 5, cold 0 |
+
+Less 5 for an overdue follow-up and 5 for a stuck stage; lost leads score 0. **Hot** means 80 or more (`HOT_SCORE`). Bands: high-priority (80+), qualified (60+), needs nurturing (40+), early stage, and closed (booked or lost).
+
+**Buyer type** (`buyerSegment`): *Potential HNI* (budget ₹2 Cr or more), *Investor* (buying for investment), *Qualified buyer*, *General lead*.
+
+The weights are waiting for the client's confirmation (see `STATUS.md`).
 
 ## 5. AI
 

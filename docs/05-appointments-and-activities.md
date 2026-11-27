@@ -31,7 +31,12 @@ A salesperson's day is calls and WhatsApps in the morning, site visits from late
   - **executive**: a one-line brief, then Overdue (red), Today (time-ordered, each with call/WhatsApp, **Done**, **Reschedule**, **Cancel**), New leads to call, and No next step planned;
   - **manager**: the same for the whole team, plus a **Team** table (open, overdue, no next step, stuck, booked per person) and an "unassigned leads" card;
   - **Plan my day / Brief me** asks the assistant.
-- **Calendar:** a week strip with counts per day; tap a day to focus. Managers filter by person.
+- **Today** greets by first name ("Good morning, Priya") through `greeting()` in `components/Bento.tsx`.
+- **Calendar** (`pages/Calendar.tsx`):
+  - tiles: Today (left to do, done), Overdue (earlier days plus missed today), Left this week, Site visits;
+  - a **Today** card: overdue items in a rose box, then today's items on a time rail with a red "Now" line; done items fade;
+  - the week grid in a card, each item coloured by kind (calls and messages, site visits, meetings, tasks). Managers filter by person;
+  - on phones: pick a day and see its plan; the Today card shows only the overdue part, so nothing appears twice.
 - **Customer page:** a **Plan next** tab in the composer (type; quick times like "Tomorrow 11 am" or "Saturday 11 am"; properties for a site visit; clash warning). Planned items in the history have Done / Reschedule / Cancel.
 - **Finish dialog:** call outcome chips, or visit interest with liked, concerns and per-property feedback, plus notes and the next step.
 

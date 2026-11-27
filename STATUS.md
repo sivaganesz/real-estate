@@ -21,6 +21,7 @@ Last updated: 2026-11-27 (with a Next up checklist)
 | End-to-end tests | Playwright journeys for each role, desktop and phone | ✅ Done | `70c43a1` | — |
 | Docs refresh | README, STATUS and docs pass | ✅ Done | — | — |
 | 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
+| UI patterns | How the screens are built, shared pieces, colours, slots; screenshots | ✅ Done | — | [09-ui-patterns.md](docs/09-ui-patterns.md) |
 
 ## Done since last update
 
@@ -146,9 +147,10 @@ Last updated: 2026-11-27 (with a Next up checklist)
 
 A running checklist: ticked when done, new items added as they come up, updated with each commit.
 
-**To commit**
+**Done**
 
-- [ ] Deals, Calendar and Settings redesign (built and tested, see above)
+- [x] Deals, Calendar and Settings redesign (`53e687a`, not pushed yet)
+- [x] AI handoff: `AGENTS.md` extended (UI patterns, shared pieces, slots, colours, gotchas, how to work with you), feature docs 01, 03, 04, 05 and 07 refreshed, new [09-ui-patterns.md](docs/09-ui-patterns.md) with screenshots, and a `GEMINI.md` pointer
 
 **Deploy (on Render and Vercel)**
 
