@@ -22,7 +22,8 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider delayDuration={300}>
       {children}
-      <Toaster theme={dark ? 'dark' : 'light'} position={phone ? 'top-center' : 'bottom-right'} visibleToasts={3} closeButton />
+      {/* desktop: the stack sits beside the floating AI button (right-6 bottom-6, 48 px), never over it, even while sliding in */}
+      <Toaster theme={dark ? 'dark' : 'light'} position={phone ? 'top-center' : 'bottom-right'} offset={phone ? undefined : { bottom: 24, right: 84 }} visibleToasts={3} closeButton />
     </TooltipProvider>
   )
 }

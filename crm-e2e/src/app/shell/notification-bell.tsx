@@ -25,7 +25,7 @@ const SHOWN = 8
 
 export function NotificationBell() {
   const { t } = useTranslation(['notifications', 'shell'])
-  const now = useNow()
+  const now = useNow(15_000)
   const user = useCurrentUser()
   const all = useDb((db) => db.notifications)
   const [open, setOpen] = useState(false)

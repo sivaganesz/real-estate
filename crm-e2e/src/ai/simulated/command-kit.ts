@@ -10,7 +10,7 @@ import { localDay } from '@/lib/dates'
 import { visible } from '@/services/queries/visibility'
 import type { AIContext, CommandPlan } from '../types'
 import type { IntentKey } from './intents'
-import { named, norm, propertyNamed, timeIn } from './parse'
+import { escapeRe, named, norm, propertyNamed, timeIn } from './parse'
 
 export const t = (key: string, opts: Record<string, unknown> = {}): string => i18next.t(key, opts)
 
@@ -66,20 +66,58 @@ export function refuse(intent: IntentKey | string, action: Action, user: User, a
   }
 }
 
-/** The lead a request is about: named in the text (exact name first, then first name or a 1-letter typo), else the open record. */
-export function leadFor(text: string, env: Env, pool: Lead[] = env.leads): { lead?: Lead; others: Lead[] } {
+export type LeadLookup = {
+  lead?: Lead
+  others: Lead[]
+  /** The text names a lead the user can't see (another executive's): the name as typed, never more of it. */
+  notYours?: string
+}
+
+/**
+ * A lead the text names by its full name, first name or id that is NOT in the user's pool (another executive's lead).
+ * Exact words only (no typo tolerance), so ordinary words never read as someone else's lead. Returns the name as typed
+ * (the first name when only that was typed), so nothing about the hidden record leaks.
+ */
+export function hiddenLeadNamed(text: string, env: Env, pool: Lead[] = env.leads): string | undefined {
+  const s = ` ${norm(text).toLowerCase()} `
+  const mine = new Set(pool.map((l) => l.id))
+  for (const l of env.db.leads) {
+    if (mine.has(l.id)) continue
+    const full = l.name.toLowerCase()
+    const firstName = full.split(/\s+/)[0]
+    if (s.includes(l.id.toLowerCase())) return l.id
+    if (new RegExp(String.raw`\b${escapeRe(full)}\b`).test(s)) return l.name
+    if (firstName.length > 2 && new RegExp(String.raw`\b${escapeRe(firstName)}(?:'s)?\b`).test(s)) return first(l.name)
+  }
+  return undefined
+}
+
+/**
+ * The lead a request is about: named in the text (exact name first, then first name or a 1-letter typo), else the open
+ * record. When the text names someone else's lead, the open record is NOT used in its place ("move Harish Reddy to
+ * negotiation" on Ananya's page must never move Ananya): `notYours` carries the typed name for the reply.
+ */
+export function leadFor(text: string, env: Env, pool: Lead[] = env.leads): LeadLookup {
   const hits = named(text, pool.map((l) => ({ id: l.id, name: l.name })))
+  const hidden = hiddenLeadNamed(text, env, pool)
   if (hits.length) {
     const lower = norm(text).toLowerCase()
     const exact = hits.filter((h) => lower.includes(h.name.toLowerCase()))
+    // a typo-level hit on one of mine loses to an exact name of someone else's ("Harish Reddy" is not my "Harsh …")
+    if (!exact.length && hidden && hidden.includes(' ')) return { others: [], notYours: hidden }
     const pick = exact[0] ?? hits[0]
     const others = (exact.length ? [] : hits.slice(1, 4)).map((h) => pool.find((l) => l.id === h.id)).filter((l): l is Lead => !!l)
     return { lead: pool.find((l) => l.id === pick.id), others }
   }
+  if (hidden) return { others: [], notYours: hidden }
   // no name: "this lead", "him", "her" and bare commands mean the record that is open
   if (env.selLead) return { lead: env.selLead, others: [] }
   return { others: [] }
 }
+
+/** The reply when a request names a lead that isn't on the user's list (it is never applied to another record). */
+export const notYoursReply = (intent: IntentKey | string, name: string): CommandPlan =>
+  say(intent, t('ai:reply.leadNotFound', { name }))
 
 /** Executives the user can hand leads to (admins: everyone active; managers: their team). */
 export function assignees(env: Env): User[] {

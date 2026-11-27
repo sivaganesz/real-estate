@@ -118,7 +118,7 @@ export default function ImportPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <SectionCard
           className="min-w-0 lg:col-span-5" icon={ScanText} title={t('hub.docsTitle')} description={t('hub.docsBody')}
           action={<DemoAIBadge mode={getAI().mode} />}

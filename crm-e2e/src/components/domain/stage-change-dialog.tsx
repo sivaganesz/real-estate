@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { LOST_REASONS, STAGES } from '@/domain/catalogue'
+import { STAGES } from '@/domain/catalogue'
 import type { ID, LostReason, PipelineStageKey } from '@/domain/types'
 import { useDb } from '@/hooks/use-db'
 import { usePermission } from '@/hooks/use-permission'
@@ -22,6 +22,7 @@ import { stageTone } from '@/lib/tones'
 import { cn } from '@/lib/utils'
 import { ValidationError, type FieldError } from '@/lib/validation'
 import { changeStage } from '@/services/leads'
+import { enabledLostReasons } from '@/services/settings'
 
 export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, onDone, onCancel }: {
   open: boolean
@@ -36,6 +37,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
   const lead = useDb((db) => db.leads.find((l) => l.id === leadId))
   const properties = useDb((db) => db.properties)
   const stageDefs = useDb((db) => db.settings.pipeline.stages)
+  const lostReasons = useDb((db) => enabledLostReasons(db.settings))
   // stages switched off in Settings → Pipeline are not offered (the lead's own stage stays listed so it reads right)
   const offered = STAGES.filter((s) => s === lead?.stage || s === initialTo || stageDefs.find((d) => d.key === s)?.enabled !== false)
   const { can } = usePermission()
@@ -106,7 +108,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
                 {({ id, invalid }) => (
                   <Select value={reason ?? ''} onValueChange={(v) => setReason(v as LostReason)}>
                     <SelectTrigger id={id} aria-invalid={invalid || undefined} className="w-full"><SelectValue placeholder={t('domain:stage.chooseReason')} /></SelectTrigger>
-                    <SelectContent>{LOST_REASONS.map((r) => <SelectItem key={r} value={r}>{t(`catalogue:lostReason.${r}`)}</SelectItem>)}</SelectContent>
+                    <SelectContent>{lostReasons.map((r) => <SelectItem key={r} value={r}>{t(`catalogue:lostReason.${r}`)}</SelectItem>)}</SelectContent>
                   </Select>
                 )}
               </FormField>

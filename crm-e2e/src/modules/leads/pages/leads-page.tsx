@@ -173,7 +173,7 @@ export default function LeadsPage() {
           <KpiCard label={t('leads:kpi.hot')} value={h.hot} icon={Flame} tone="hot" ring={{ value: h.open ? (h.hot / h.open) * 100 : 0, label: t('leads:kpi.hotShare') }} onClick={() => changeFilters({ ...filters, temperatures: ['hot'] })} hint={t('leads:kpi.hotHint')} />
           <KpiCard label={t('leads:kpi.overdue')} value={h.overdue} icon={AlarmClock} tone={h.overdue ? 'danger' : 'success'} ring={{ value: h.open ? (h.overdue / h.open) * 100 : 0, label: t('leads:kpi.overdueShare') }} onClick={() => setParam('tab', 'overdue')} hint={t('leads:kpi.overdueHint')} />
           {manager
-            ? <KpiCard label={t('leads:kpi.unassigned')} value={h.unassigned} icon={UserX} tone={h.unassigned ? 'warning' : 'success'} ring={{ value: h.open ? (h.unassigned / h.open) * 100 : 0, label: t('leads:kpi.unassignedShare') }} onClick={() => setParam('tab', 'unassigned')} hint={t('leads:kpi.slaHint', { count: h.sla })} />
+            ? <KpiCard label={t('leads:kpi.unassigned')} value={h.unassigned} icon={UserX} tone={h.unassigned ? 'warning' : 'success'} ring={{ value: h.open ? (h.unassigned / h.open) * 100 : 0, label: t('leads:kpi.unassignedShare') }} onClick={() => setParam('tab', 'unassigned')} hint={t('leads:kpi.slaHint', { count: h.unassignedSla })} />
             : <KpiCard label={t('leads:kpi.sla')} value={h.sla} icon={AlarmClock} tone={h.sla ? 'danger' : 'success'} ring={{ value: h.open ? (h.sla / h.open) * 100 : 0, label: t('leads:kpi.slaShare') }} onClick={() => changeFilters({ ...filters, attn: 'uncontacted' })} hint={t('leads:kpi.slaExecHint')} />}
         </div>
 

@@ -20,7 +20,7 @@ import {
 } from './command-queries'
 import { fromHinglish } from './hinglish'
 import { detectIntent, type IntentKey } from './intents'
-import { norm } from './parse'
+import { named, norm } from './parse'
 import { readPropertyUpdate } from './property-update'
 import { propose } from '../proposals'
 import { changeText, fieldLabelKey } from './summaries'
@@ -36,9 +36,17 @@ function run(intent: IntentKey, env: Env): CommandPlan {
       return can(user, 'lead.delete') ? say(intent, t('ai:reply.deleteOnRecord'), { nav: [{ label: 'ai:nav.leads', to: paths.leads() }] })
         : refuse(intent, 'lead.delete', user, { text: t('ai:reply.markLostInstead'), label: t('ai:followUp.markLost'), command: `${env.text.replace(/\b(delete|remove|erase)\b/i, 'mark')} as lost` })
     case 'manageUsers':
-      return can(user, 'user.manage') ? say(intent, t('ai:reply.manageUsersOnTeam'), { nav: [{ label: 'ai:nav.team', to: paths.team() }] }) : refuse(intent, 'user.manage', user)
+      if (!can(user, 'user.manage')) return refuse(intent, 'user.manage', user)
+      // "Deactivate Kavya and redistribute her leads": the account change stays on Team, the hand-over is proposed here
+      if (/\b(redistribute|reassign|hand ?over|transfer|give|move|shift|share out|assign)\b.*\bleads?\b/.test(env.s)) return deactivateAndHandOver(env)
+      return say(intent, t('ai:reply.manageUsersOnTeam'), { nav: [{ label: 'ai:nav.team', to: paths.team() }] })
     case 'importHelp': {
       const action = /\bpropert|inventory|listing|flats|villas|plots\b/.test(env.s) ? 'import.properties' as const : 'import.leads' as const
+      // a manager may bulk-import leads but not properties: say why, and offer what they can do
+      if (action === 'import.properties' && !can(user, action) && can(user, 'import.leads')) {
+        const r = refuse(intent, action, user, { text: t('ai:reply.importPropertiesAlt'), label: t('ai:followUp.importLeads'), command: 'Import leads from a CSV' })
+        return { ...r, reply: { ...r.reply, nav: [{ label: 'ai:nav.import', to: paths.import() }] } }
+      }
       if (!can(user, action)) {
         return can(user, 'import.document')
           ? say(intent, t('ai:reply.importDocumentOnly'), { nav: [{ label: 'ai:nav.import', to: paths.import() }] })
@@ -92,6 +100,21 @@ function run(intent: IntentKey, env: Env): CommandPlan {
     case 'unknown':
       return namedLeadPlan(env) ?? say(intent, t('ai:reply.unknown'), { followUps: helpChips(env) })
   }
+}
+
+/**
+ * "Deactivate Kavya and redistribute her leads", "deactivate Vikram and give his leads to Sneha": the hand-over of the
+ * open leads as a proposal (as the "Redistribute Kavya's leads" chip does), with a note that the account itself is
+ * deactivated in Team (or already is).
+ */
+function deactivateAndHandOver(env: Env): CommandPlan {
+  const plan = reassignFromPlan(env)
+  const fromPart = env.text.split(/\bto\b(?!.*\bto\b)/i)[0]
+  const person = named(fromPart, env.db.users.filter((u) => u.role === 'executive'))[0]
+  if (!person) return plan
+  const note = t(person.status === 'active' ? 'ai:reply.deactivateOnTeam' : 'ai:reply.alreadyDeactivated', { name: person.name })
+  const nav = [...(plan.reply.nav ?? []), { label: 'ai:nav.team', to: paths.team() }]
+  return { ...plan, reply: { ...plan.reply, bullets: [note, ...(plan.reply.bullets ?? [])], nav } }
 }
 
 /** A few things to try, by role (the full role chips live in ai/prompts.ts). */

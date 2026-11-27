@@ -76,13 +76,18 @@ export function OutcomeDialog({ appointment: a, open, onOpenChange, onDone }: {
   const draft: OutcomeDraft | undefined = result ? { result, interest, likedPropertyIds: liked, objections, decisionMakerPresent: dm, nextStep } : undefined
   const suggestion = draft && lead ? suggestAfterOutcome({ outcome: draft, type: a.type, stage: lead.stage, now }) : undefined
   const mayMove = lead ? can('lead.moveStage', lead) : false
-  const stageOptions = lead ? OPEN_STAGES.filter((s) => STAGE_RANK[s] > STAGE_RANK[lead.stage] && s !== 'booked') : []
+  // Completing a site visit moves an open lead to at least "Site visit done" on its own (E7), so that is what the
+  // "no manual pick" option really saves: label it and offer only stages beyond it, never "Keep <current stage>".
+  const baseStage: PipelineStageKey | undefined = lead
+    ? a.type === 'siteVisit' && OPEN_STAGES.includes(lead.stage) && STAGE_RANK[lead.stage] < STAGE_RANK.siteVisitDone ? 'siteVisitDone' : lead.stage
+    : undefined
+  const stageOptions = baseStage ? OPEN_STAGES.filter((s) => STAGE_RANK[s] > STAGE_RANK[baseStage] && s !== 'booked') : []
 
   const applySuggestion = () => {
     if (!suggestion) return
     setFollowUpAt(suggestion.followUpAt)
     const meta: Record<string, { origin: 'ai'; confidence: number }> = { followUpAt: { origin: 'ai', confidence: 0.85 } }
-    if (suggestion.stage && mayMove) { setStage(suggestion.stage); meta.stage = { origin: 'ai', confidence: 0.8 } }
+    if (suggestion.stage && mayMove) { setStage(suggestion.stage === baseStage ? KEEP : suggestion.stage); meta.stage = { origin: 'ai', confidence: 0.8 } }
     if (!nextStep.trim()) { setNextStep(t(`appointments:ai.${suggestion.nextStepKey}`)); meta.nextStep = { origin: 'ai', confidence: 0.7 } }
     ai.apply(meta)
   }
@@ -265,14 +270,18 @@ export function OutcomeDialog({ appointment: a, open, onOpenChange, onDone }: {
                 {({ id, describedBy }) => <DateTimeField id={id} value={followUpAt} onChange={(v) => { setFollowUpAt(v); ai.clear('followUpAt') }} describedBy={describedBy} now={now} />}
               </FormField>
             </AIField>
-            {lead && mayMove && (
+            {lead && baseStage && mayMove && (
               <AIField meta={ai.get('stage')}>
                 <FormField label={t('appointments:outcome.stage')} optional labelEnd={<AIFieldMarker meta={ai.get('stage')} />}>
                   {({ id }) => (
                     <Select value={stage} onValueChange={(v) => { setStage(v); ai.clear('stage') }}>
                       <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={KEEP}>{t('appointments:outcome.keepStage', { stage: t(`catalogue:stage.${lead.stage}`) })}</SelectItem>
+                        <SelectItem value={KEEP}>
+                          {baseStage === lead.stage
+                            ? t('appointments:outcome.keepStage', { stage: t(`catalogue:stage.${lead.stage}`) })
+                            : t('appointments:outcome.autoStage', { stage: t(`catalogue:stage.${baseStage}`) })}
+                        </SelectItem>
                         {stageOptions.map((s) => <SelectItem key={s} value={s}>{t(`catalogue:stage.${s}`)}</SelectItem>)}
                       </SelectContent>
                     </Select>

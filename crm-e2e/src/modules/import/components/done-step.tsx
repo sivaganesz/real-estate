@@ -4,7 +4,7 @@
  * column, Undo for 10 s, and Import another file.
  */
 import { useMemo } from 'react'
-import { ArrowRight, CircleCheck, Download, FileClock, History, RotateCcw, Undo2, Upload } from 'lucide-react'
+import { ArrowRight, CircleCheck, Download, FileClock, History, RotateCcw, Undo2, Upload, UserPlus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -32,6 +32,7 @@ export function DoneStep({ kind, result, table, fileName, onAgain }: { kind: She
   const job = useDb((db) => db.importJobs.find((j) => j.id === result.jobId))
   const leads = useDb((db) => db.leads)
   const users = useDb((db) => db.users)
+  const autoAssign = useDb((db) => db.settings.assignment.autoAssign)
   const owners = useMemo(() => {
     if (kind !== 'leads' || !job) return []
     const map = new Map<string, number>()
@@ -57,6 +58,9 @@ export function DoneStep({ kind, result, table, fileName, onAgain }: { kind: She
     .map((k) => ({ key: k, label: t(`import:done.tile.${k}`), value: k === 'duplicates' ? result.plan.failed.filter((f) => f.reason === 'duplicate').length : c[k], color: `var(--${COUNT_TONE[k]})` }))
     .filter((d) => d.value > 0)
   const failed = result.plan.failed
+  // nobody got the batch (auto-assignment off, or no executive could take it): the leads wait in the unassigned queue
+  const waiting = owners.find((o) => !o.id)?.count ?? 0
+  const queued = waiting > 0 && owners.every((o) => !o.id)
 
   const downloadFailed = () => {
     const cells = new Map(table.rows.map((r) => [r.rowNumber, r.cells.map(cellText)]))
@@ -85,7 +89,7 @@ export function DoneStep({ kind, result, table, fileName, onAgain }: { kind: She
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-7 lg:grid-cols-3">
           {tiles.map((tile) => (
             <div key={tile.key} className="rounded-lg border bg-card p-4 shadow-card" data-testid={`done-${tile.key}`}>
@@ -107,7 +111,11 @@ export function DoneStep({ kind, result, table, fileName, onAgain }: { kind: She
       </div>
 
       {kind === 'leads' && owners.length > 0 && (
-        <SectionCard title={t('import:done.assignedTitle')} description={t('import:done.assignedBody')}>
+        <SectionCard
+          title={t(queued ? 'import:done.queueTitle' : 'import:done.assignedTitle')}
+          description={queued ? t(autoAssign ? 'import:done.queueBodyNoOne' : 'import:done.queueBody', { count: waiting }) : t('import:done.assignedBody')}
+          action={waiting > 0 && <Button asChild size="sm" variant="secondary"><Link to={paths.leads({ tab: 'unassigned' })} data-testid="done-assign-now"><UserPlus />{t('import:done.assignNow')}</Link></Button>}
+        >
           <ul className="flex flex-wrap gap-2" data-testid="done-owners">
             {owners.map((o) => (
               <li key={o.id || 'none'} className="flex items-center gap-2 rounded-full border bg-card py-1 pr-3 pl-1">

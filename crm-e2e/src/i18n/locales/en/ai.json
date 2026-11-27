@@ -364,8 +364,8 @@
     "importLeads": "Bulk lead import runs in the Import wizard: upload the 99acres / MagicBricks CSV or Excel, check the mapped columns and duplicates, then import.",
     "importProperties": "Property import runs in the Import wizard: upload the sheet or brochure, check the mapping, then import.",
     "importSteps": "Upload → map columns (AI suggests) → review duplicates and errors → import. Low-confidence rows become drafts.",
-    "lightest": "Lightest load: {{name}} ({{open}} open leads).",
-    "loadRow": "{{name}}: {{open}} open leads, {{overdue}} overdue, {{visits}} visits today",
+    "lightest": "Lightest load: {{name}} ($t(ai:reply.openLeadCount, {\"count\": {{open}} })).",
+    "loadRow": "{{name}}: $t(ai:reply.openLeadCount, {\"count\": {{open}} }), {{overdue}} overdue, $t(ai:reply.visitTodayCount, {\"count\": {{visits}} })",
     "lostTo": "{{count}} leads were lost to {{reason}} {{period}} (of {{total}} lost in all).",
     "lostTotal_one": "{{count}} lead was lost {{period}}.",
     "lostTotal_other": "{{count}} leads were lost {{period}}.",
@@ -458,7 +458,15 @@
     "whichTime": "When should it move to? Give a day or a time.",
     "createProperty_one": "I read {{count}} detail from the listing. Check the property below and confirm to save it.",
     "createProperty_other": "I read {{count}} details from the listing. Check the property below and confirm to save it.",
-    "propertyNeedsDetails": "To add the property I still need the {{fields}}. Add it to your message, or open the property form."
+    "propertyNeedsDetails": "To add the property I still need the {{fields}}. Add it to your message, or open the property form.",
+    "leadNotFound": "I can't find {{name}} among your leads. Check the name, or open Leads to search.",
+    "openLeadCount_one": "{{count}} open lead",
+    "openLeadCount_other": "{{count}} open leads",
+    "visitTodayCount_one": "{{count}} visit today",
+    "visitTodayCount_other": "{{count}} visits today",
+    "alreadyDeactivated": "{{name}} is already deactivated, so only the hand-over of the open leads is left.",
+    "deactivateOnTeam": "Deactivate {{name}} in Team after the hand-over; the account itself is changed only there.",
+    "importPropertiesAlt": "You can bulk-import leads from a CSV or Excel sheet, or add one property from a PDF, image or pasted text in Import."
   },
   "match": {
     "summary_one": "{{count}} match for {{name}}. Best: {{best}} ({{score}}%, {{price}}).",
@@ -679,7 +687,8 @@
     "stalled": "Show stalled deals",
     "summarise": "Summarise {{name}}",
     "targetLeft": "What's left for my target?",
-    "todayTasks": "Today's pending tasks"
+    "todayTasks": "Today's pending tasks",
+    "importLeads": "Import leads from a sheet"
   },
   "followUpTime": {
     "newLead": "New enquiry: call within the first-response time",

@@ -1,11 +1,11 @@
 /**
  * The same journeys against the dev server on 5174 (React dev-mode warnings then count as console problems).
- * Run with `pnpm e2e:dev`. Port 5174 belongs to the Parent / QA: stop any other dev server on it first.
+ * Run with `pnpm e2e:dev`. Set PW_DEV_PORT to use another port (parallel QA agents each use their own). Port 5174 belongs to the Parent / QA: stop any other dev server on it first.
  */
 import { defineConfig } from '@playwright/test'
 import base from './playwright.config.ts'
 
-const PORT = 5174
+const PORT = Number(process.env.PW_DEV_PORT ?? 5174)
 
 export default defineConfig({
   ...base,

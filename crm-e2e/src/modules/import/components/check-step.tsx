@@ -170,7 +170,7 @@ export function CheckStep({ kind, rows, skipped, setSkipped, onFix, onSetAll, on
         {counts.error > 0 && <Callout className="mt-4" tone="warning">{t('check.errorsLeft', { count: counts.error })}</Callout>}
       </SectionCard>
 
-      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur mr-14 md:bottom-4 md:mr-16">
+      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur fab-clear md:bottom-4">
         <Button type="button" variant="ghost" onClick={onBack}><Undo2 />{t('nav.backColumns')}</Button>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-meta text-muted-foreground max-sm:hidden">{t('check.footer', { ready: counts.ready, drafts: counts.draft, left: counts.error + counts.skipped })}</span>

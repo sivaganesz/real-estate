@@ -48,6 +48,16 @@ export function readLeadUpdate(text: string, lead: Lead, ctx: { now: Date }): Le
   const qual: Partial<Qualification> = {}
   const change = (field: string, from: unknown, to: unknown) => out.changes.push({ field, from, to })
 
+  // an explicit note ("add note for Priya: wants east facing", "note: …") is only a note: its words are what the client
+  // said, not a change to the saved requirement (that would overwrite "East, North" with "East")
+  const explicitNote = /^(?:please\s+)?(?:(?:add|log|make|write|put|save)\s+(?:a\s+)?note\b|notes?\s*(?:for|on|to|:|-))\s*(?:(?:for|on|to)\s+[^:,-]*[:,-])?\s*(.*)$/i.exec(s)
+  if (explicitNote) {
+    // the lead's name was blanked by the caller: "add note to   that she wants…" → "she wants…"
+    const noteText = explicitNote[1].replace(/^[\s:,-]+/, '').replace(/^(?:for|on|to)\b[\s:,-]*/i, '').replace(/^(?:that|saying)\s+/i, '').trim()
+    if (noteText) out.note = noteText
+    return out
+  }
+
   // a contact that happened
   const contact = CONTACT_RE.exec(s)
   if (contact) {

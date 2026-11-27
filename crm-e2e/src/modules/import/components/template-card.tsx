@@ -12,15 +12,17 @@ import { paths } from '@/app/paths'
 import { IconTile } from '@/components/shared/icon-tile'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useDb } from '@/hooks/use-db'
 import { usePermission } from '@/hooks/use-permission'
 import type { SheetKind } from '../lib/fields'
-import { KIND_ICON, KIND_TONE, kindPermission } from '../lib/kinds'
+import { KIND_ICON, KIND_TONE, kindBodyKey, kindPermission } from '../lib/kinds'
 import { TEMPLATES } from '../lib/templates'
 import { downloadFile } from '../lib/browser'
 
 export function TemplateCard({ kind }: { kind: SheetKind }) {
   const { t } = useTranslation(['import', 'shell'])
   const { can, explain } = usePermission()
+  const autoAssign = useDb((db) => db.settings.assignment.autoAssign)
   const [busy, setBusy] = useState<'xlsx' | 'csv' | null>(null)
   const allowed = can(kindPermission(kind))
   const denied = explain(kindPermission(kind))
@@ -47,7 +49,7 @@ export function TemplateCard({ kind }: { kind: SheetKind }) {
         <IconTile icon={KIND_ICON[kind]} tone={KIND_TONE[kind]} size="lg" />
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold">{t(`import:kind.${kind}.title`)}</h3>
-          <p className="mt-0.5 text-meta text-muted-foreground">{t(`import:kind.${kind}.body`)}</p>
+          <p className="mt-0.5 text-meta text-muted-foreground">{t(kindBodyKey(kind, autoAssign))}</p>
         </div>
       </header>
       <div className="flex flex-wrap gap-1">

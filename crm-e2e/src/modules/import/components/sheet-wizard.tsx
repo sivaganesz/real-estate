@@ -168,7 +168,7 @@ export function SheetWizard({ kind, initialFile, onDocument }: { kind: SheetKind
       <WizardStepper steps={steps} current={step} label={t('import:step.label')} />
 
       {step === 0 && (
-        <div className="grid gap-4 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <SectionCard className="lg:col-span-7" icon={FileSpreadsheet} title={t('import:upload.title')} description={t('import:upload.body')}>
             <div className="flex flex-col gap-4">
               <FileUploader

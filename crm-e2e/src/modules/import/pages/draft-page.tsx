@@ -173,7 +173,7 @@ function DraftEditor({ draft }: { draft: Draft }) {
           action={draft.savedAs && <Button asChild size="sm" variant="secondary"><Link to={pathFor(draft.savedAs)}>{t('import:drafts.viewSaved')}</Link></Button>} />
       )}
 
-      <div className="grid gap-4 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="flex flex-col gap-4 xl:col-span-8">
           {recordKind && check && (
             <>

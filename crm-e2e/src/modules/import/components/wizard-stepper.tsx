@@ -1,4 +1,7 @@
-/** The wizard's step strip: numbered dots joined by a line; done steps get a tick, the current one the primary ring. */
+/**
+ * The wizard's step strip: numbered dots joined by a line; done steps get a tick, the current one the primary ring.
+ * The current step sizes from its label (flex-auto) so a phone shows it in full while the other labels are hidden.
+ */
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -10,7 +13,7 @@ export function WizardStepper({ steps, current, label }: { steps: string[]; curr
           const done = i < current
           const on = i === current
           return (
-            <li key={s} className={cn('flex min-w-0 items-center gap-2', i < steps.length - 1 && 'flex-1')} aria-current={on ? 'step' : undefined}>
+            <li key={s} className={cn('flex min-w-0 items-center gap-2', i < steps.length - 1 && (on ? 'flex-auto' : 'flex-1'))} aria-current={on ? 'step' : undefined}>
               <span
                 className={cn(
                   'flex size-7 shrink-0 items-center justify-center rounded-full text-meta font-semibold tabular-nums transition-colors duration-(--dur-base)',

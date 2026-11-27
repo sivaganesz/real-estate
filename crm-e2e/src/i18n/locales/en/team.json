@@ -262,5 +262,15 @@
     "byStage": "Open leads by stage",
     "more_one": "and {{count}} more",
     "more_other": "and {{count}} more"
+  },
+  "roleHandOver": {
+    "title": "Change {{name}} to {{role}}?",
+    "body_one": "They still own {{count}} open lead as an executive. Choose who takes it over; the role changes in the same step.",
+    "body_other": "They still own {{count}} open leads as an executive. Choose who takes them over; the role changes in the same step.",
+    "leftWarning_one": "{{count}} lead will wait in the unassigned queue.",
+    "leftWarning_other": "{{count}} leads will wait in the unassigned queue.",
+    "note": "Open tasks and upcoming visits move with each lead. They are removed from assignment rules; a rule left with nobody is switched off. You can undo for 10 seconds.",
+    "confirm": "Hand over and change role",
+    "done": "{{name}} is now {{role}}"
   }
 }

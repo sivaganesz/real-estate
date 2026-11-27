@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { toastError, toastUndo } from '@/components/shared/undo-toast'
 import type { Appointment, ID, Lead } from '@/domain/types'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { retrySlot } from '@/lib/dates'
 import { fmtDateTime, firstName } from '@/lib/format'
 import { fillTemplate, mapsLink, propertyAddress, waLink } from '@/lib/whatsapp'
 import { logContact } from '@/services/activities'
@@ -28,10 +29,25 @@ export function useTodayActions() {
     createTask({ title: t('domain:task.suggest.followUp', { name: l.name }), type: 'followUp', leadId: l.id, dueAt: at, ownerId: l.ownerId ?? user.id })
   }, [t, user.id])
 
-  /** Log what happened: completes the task with the call result, or logs a call on the lead; then plans the next step. */
+  /**
+   * Log what happened: completes the task with the call result, or logs a call on the lead; then plans the next step.
+   * A call task is done once the call was made (a "not reachable" / "busy" result plans the retry call, E10 → E4). Any
+   * other task (collect a document, share a brochure) is done only when the person was reached: otherwise the attempt
+   * is logged on the lead and the task stays open, moved to the chosen follow-up or the retry slot (EXE-1).
+   */
   const logOutcome = useCallback((item: TodayItem, o: OutcomeInput) => {
     const l = lead(item.leadId)
     try {
+      const task = item.ref.kind === 'task' ? getDb().tasks.find((x) => x.id === item.ref.id) : undefined
+      if (l && task && task.type !== 'call' && o.result !== 'connected') {
+        logContact(l.id, { channel: 'call', result: o.result, text: o.note || undefined })
+        const moveTo = o.followUpAt ?? (o.result === 'notReachable' || o.result === 'busy' ? retrySlot(new Date()) : undefined)
+        if (moveTo) rescheduleTask(task.id, moveTo)
+        toast.success(t('today:toast.logged', { name: l.name, result: t(`today:log.results.${o.result}`) }), {
+          description: moveTo ? t('today:toast.keptOpen', { title: task.title, when: fmtDateTime(moveTo, i18n.language) }) : t('today:toast.keptOpenNow', { title: task.title }),
+        })
+        return
+      }
       let undoToken: string | undefined
       if (item.ref.kind === 'task') undoToken = completeTask(item.ref.id, { callResult: o.result, outcome: o.note || undefined }).undoToken
       else if (l) logContact(l.id, { channel: 'call', result: o.result, text: o.note || undefined })

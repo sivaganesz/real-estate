@@ -27,8 +27,9 @@ import { CITY_NAMES, LANGUAGES_SPOKEN } from '@/domain/catalogue'
 import type { FieldMeta, ID, Role, User } from '@/domain/types'
 import { useDb } from '@/hooks/use-db'
 import { ROLES } from '@/lib/permissions'
-import { createUser, updateUser } from '@/services/users'
+import { createUser, openLeadCount, updateUser, type UserPatch } from '@/services/users'
 import { EMPTY_USER_DRAFT, extractUser, validateUserDraft, type UserDraft, type UserFieldError } from '../lib/user-input'
+import { RedistributeDialog } from './redistribute-dialog'
 
 const AI_META: FieldMeta = { origin: 'ai', confidence: 0.9 }
 
@@ -41,6 +42,7 @@ export function UserFormDrawer({ open, onOpenChange, editing, onSaved }: {
 }) {
   const { t } = useTranslation(['team', 'common'])
   const users = useDb((db) => db.users)
+  const leads = useDb((x) => x.leads)
   const managers = useMemo(() => users.filter((u) => u.role === 'manager' && u.status === 'active'), [users])
   const initial = useMemo<UserDraft>(() => (editing
     ? { name: editing.name, role: editing.role, managerId: editing.managerId, phone: editing.phone, email: editing.email, cities: [...editing.cities], languages: [...editing.languages] }
@@ -53,6 +55,7 @@ export function UserFormDrawer({ open, onOpenChange, editing, onSaved }: {
   const [reading, setReading] = useState(false)
   const [filledCount, setFilledCount] = useState<number | null>(null)
   const [tried, setTried] = useState(false)
+  const [handOver, setHandOver] = useState<(UserPatch & { role: Role }) | null>(null)
 
   const errors = validateUserDraft(d, users, editing?.id)
   const errorOf = (field: keyof UserDraft) => {
@@ -97,7 +100,13 @@ export function UserFormDrawer({ open, onOpenChange, editing, onSaved }: {
     try {
       const managerId = d.role === 'executive' ? d.managerId : undefined
       if (editing) {
-        updateUser(editing.id, { name: d.name.trim(), role: d.role, managerId, phone: d.phone, email: d.email.trim(), cities: d.cities, languages: d.languages })
+        const patch = { name: d.name.trim(), role: d.role, managerId, phone: d.phone, email: d.email.trim(), cities: d.cities, languages: d.languages }
+        // an executive moving to another role hands their open leads over first (same choices as deactivation)
+        if (editing.role === 'executive' && d.role !== 'executive' && openLeadCount({ leads }, editing.id) > 0) {
+          setHandOver(patch)
+          return
+        }
+        updateUser(editing.id, patch)
         toast.success(t('team:form.updated', { name: d.name.trim() }))
         onSaved?.(editing.id)
       } else {
@@ -217,6 +226,12 @@ export function UserFormDrawer({ open, onOpenChange, editing, onSaved }: {
           </fieldset>
         </AIField>
       </div>
+      {handOver && editing && (
+        <RedistributeDialog
+          open user={editing} onOpenChange={(o) => { if (!o) setHandOver(null) }}
+          roleChange={{ patch: handOver, onDone: () => { onSaved?.(editing.id); onOpenChange(false) } }}
+        />
+      )}
     </Drawer>
   )
 }

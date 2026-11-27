@@ -12,6 +12,8 @@ import { norm } from './parse'
 const SHAPES: [RegExp, string][] = [
   // "Sanjay ki lead Sneha ko de do" / "Sanjay ka lead Sneha ko assign karo" → "assign Sanjay's lead to Sneha"
   [/^(.*?)\s+(\S+)\s+ko\s+(?:de\s*do|dedo|de\s*dijiye|dena|assign\s*kar(?:o|\s*do|\s*dijiye)?|transfer\s*kar(?:o|\s*do)?|handover\s*kar(?:o|\s*do)?|bhej\s*do)\b\.?\s*(.*)$/i, 'assign $1 to $2 $3'],
+  // "Priya ko kal shaam 5 baje call karna hai" / "Karthik ko parso phone karo" → "remind me to call Priya kal shaam 5 baje"
+  [/^(?!.*\byaad\b)(.*?)\s+ko\s+(.*?)\s*(?:call|phone|ring)\s*(?:kar(?:na(?:\s*hai)?|o|\s*do|\s*dena|\s*lena)|karna)\b\.?\s*(.*)$/i, 'remind me to call $1 $2 $3'],
   // "Sanjay ka budget 2 cr kar do" / "Priya ki timeline 3 mahine karo" → "change Sanjay ka budget to 2 cr"
   [/^(.*?)\s+(budget|phone|number|mobile|email|timeline|requirement|location|locality|bhk|configuration)\s+(.+?)\s+(?:kar\s*do|karo|kar\s*dijiye|(?:update|change)\s*kar(?:o|\s*do)?)\b\.?\s*(.*)$/i, 'change $1 $2 to $3 $4'],
   // "Priya ko negotiation mein daalo" / "Priya ko lost mark karo" → "move Priya to negotiation"
@@ -19,6 +21,10 @@ const SHAPES: [RegExp, string][] = [
   [/^(.*?)\s+ko\s+(\S+(?:\s\S+)?)\s+mark\s*kar(?:o|\s*do)\b\.?\s*(.*)$/i, 'mark $1 as $2 $3'],
   // "... fix karo" / "... book kar do" / "... schedule karna hai" → "schedule ..."
   [/^(.*?)\s+(?:fix|book|schedule|set|arrange|plan)\s*(?:kar(?:o|\s*do|\s*dijiye|na\s*hai|\s*dena)|karna)\b\.?\s*(.*)$/i, 'schedule $1 $2'],
+  // "Rohan ka follow-up kal shaam 6 baje karo" / "Karthik ki call parso rakho" / "Priya ka visit Saturday ko shift karo"
+  // → "reschedule Rohan ka follow-up to kal shaam 6 baje" (the existing follow-up or visit moves; "fix karo" above books one)
+  [/^(.*?)\s+(?:ka|ki|ke)\s+(follow[- ]?ups?|call(?:\s*back)?|callback|task|reminder)\s+(.+?)\s+(?:karo|kar\s*do|kar\s*dijiye|rakho|rakh\s*do|(?:shift|move|change|postpone)\s*kar(?:o|\s*do)?)\b\.?\s*(.*)$/i, 'reschedule $1 ka $2 to $3 $4'],
+  [/^(.*?)\s+(?:ka|ki|ke)\s+((?:site\s+)?visit|meeting|appointment)\s+(.+?)\s+(?:ko\s+)?(?:shift|move|change|postpone|reschedule)\s*kar(?:o|\s*do|\s*dijiye)?\b\.?\s*(.*)$/i, 'reschedule $1 ka $2 to $3 $4'],
   // "... yaad dilana" / "... yaad dila do" → "remind me to ..."
   [/^(.*?)\s+(?:yaad\s*dila(?:na|o|\s*do|\s*dena)|remind\s*kar(?:o|\s*do|na))\b\.?\s*(.*)$/i, 'remind me to $1 $2'],
   // "... dikhao" / "... batao" / "... bata do" → "show ..."

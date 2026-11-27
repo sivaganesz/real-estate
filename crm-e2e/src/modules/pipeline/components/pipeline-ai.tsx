@@ -184,7 +184,7 @@ export function StalledDealsPanel({ stalled, now, value, ownerName, open, onOpen
 /* ---------- assistant ---------- */
 
 export function PipelineAssistant({ examples, onNeedDialog }: {
-  examples: string[]
+  examples: { label: string; command: string }[]
   /** Lost / Booked / Won need details: the page opens the stage dialog and calls back when it is saved. */
   onNeedDialog: (leadId: ID, to: PipelineStageKey, onDone: () => void) => void
 }) {
@@ -267,7 +267,7 @@ export function PipelineAssistant({ examples, onNeedDialog }: {
       </form>
       {!plan && !busy && !failed && (
         <div className="flex flex-wrap gap-1.5">
-          {examples.map((ex) => <AISuggestionChip key={ex} onClick={() => { setText(ex); ask(ex) }}>{ex}</AISuggestionChip>)}
+          {examples.map((ex) => <AISuggestionChip key={ex.command} onClick={() => { setText(ex.command); ask(ex.command) }}>{ex.label}</AISuggestionChip>)}
         </div>
       )}
       {busy && <p className="flex items-center gap-2 text-meta text-muted-foreground" aria-live="polite"><span className="skeleton h-3 w-24 rounded" />{t('ai:thinking')}</p>}

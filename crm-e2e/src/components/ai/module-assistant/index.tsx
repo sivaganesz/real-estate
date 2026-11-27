@@ -52,7 +52,7 @@ export type ModuleAssistantProps = Common & (
 
 /** Dashboard / insights: the numbers that matter for the scope, with follow-up questions that open the panel. */
 function InsightsAssistant({ scope: scopeProp, compact, className }: { scope?: 'personal' | 'team' | 'business' } & Common) {
-  const { t } = useTranslation('ai')
+  const { t, i18n } = useTranslation('ai')
   const { ai, context } = useAI()
   const user = useCurrentUser()
   const { can } = usePermission()
@@ -63,7 +63,8 @@ function InsightsAssistant({ scope: scopeProp, compact, className }: { scope?: '
   const [asked, setAsked] = useState(question)
   useEffect(() => {
     void run(() => ai.parseCommand(asked, context()))
-  }, [asked, run, ai, context])
+    // the answer text is built in the active language: re-ask when the language changes so it is not left stale
+  }, [asked, run, ai, context, i18n.language])
   const plan = call.result
   const followUps = [
     ...(plan?.followUps ?? []),

@@ -87,9 +87,9 @@ export function LeadsTable({ rows, sort, onSort, selected, onSelectedChange, den
 
   const columns: Column<LeadRow>[] = [
     {
-      key: 'name', header: t('leads:col.lead'), sortable: true, className: 'min-w-56',
+      key: 'name', header: t('leads:col.lead'), sortable: true, className: 'lg:min-w-56',
       cell: (r) => (
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5 max-lg:max-w-48">
           <UserAvatar name={r.lead.name} size="sm" />
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 truncate font-semibold">
@@ -101,13 +101,17 @@ export function LeadsTable({ rows, sort, onSort, selected, onSelectedChange, den
         </div>
       ),
     },
-    { key: 'stage', header: t('leads:col.stage'), cell: (r) => <StagePill stage={r.lead.stage} /> },
+    {
+      // below lg (tablet) the short stage name keeps the key columns inside the card without sideways scrolling
+      key: 'stage', header: t('leads:col.stage'),
+      cell: (r) => <><StagePill stage={r.lead.stage} className="max-lg:hidden" /><StagePill stage={r.lead.stage} short className="lg:hidden" /></>,
+    },
     {
       key: 'score', header: t('leads:col.score'), sortable: true,
       cell: (r) => (
         <span className="flex items-center gap-2">
           <ScoreRing score={r.score} size={32} label={t('domain:lead.score')} />
-          <TemperaturePill value={r.temperature} />
+          <TemperaturePill value={r.temperature} className="max-lg:hidden" />
         </span>
       ),
     },

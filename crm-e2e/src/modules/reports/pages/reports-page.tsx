@@ -4,7 +4,7 @@
  * from the store on every render, so a stage change anywhere moves the funnel at once. CSV export of the current tab
  * when the role may export data.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
@@ -48,6 +48,12 @@ export default function ReportsPage() {
   const period: ReportPeriod = isPeriod(sp.get('period')) ? (sp.get('period') as ReportPeriod) : 'half'
   const tabs = REPORT_TABS.filter((x) => x !== 'team' || subject?.kind !== 'user')
   const tab: ReportTab = isReportTab(rawTab) && tabs.includes(rawTab) ? rawTab : 'overview'
+  // A tab this view does not offer (an executive's /reports/team, a typo, Team with one person picked) falls back to
+  // Overview: move the URL there too, so the breadcrumb names the tab that is shown.
+  const search = sp.toString()
+  useEffect(() => {
+    if (rawTab !== undefined && rawTab !== tab) navigate({ pathname: paths.reports(), search: search ? `?${search}` : '' }, { replace: true })
+  }, [rawTab, tab, search, navigate])
   const data = useMemo(() => (subject ? buildReport(db, user, subject, period, now) : null), [db, user, subject, period, now])
   const personal = scope('report.view') === 'own'
 

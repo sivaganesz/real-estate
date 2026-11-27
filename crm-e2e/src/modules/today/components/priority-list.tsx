@@ -5,7 +5,7 @@
  */
 import { useState } from 'react'
 import {
-  AlarmClock, ArrowUpRight, Building2, CalendarCheck, Check, Flame, Hourglass, ListChecks, MessageCircle, Phone, PhoneForwarded,
+  AlarmClock, ArrowUpRight, Building2, CalendarCheck, Check, ClipboardPen, Flame, Hourglass, ListChecks, MessageCircle, Phone, PhoneForwarded,
   PhoneIncoming, type LucideIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +38,7 @@ const KIND: Record<TodayKind, { icon: LucideIcon; tone: Tone }> = {
   uncalledNew: { icon: PhoneIncoming, tone: 'info' },
   visitSoon: { icon: Building2, tone: 'warning' },
   overdueTask: { icon: AlarmClock, tone: 'danger' },
+  visitOutcome: { icon: ClipboardPen, tone: 'warning' },
   postVisitCall: { icon: PhoneForwarded, tone: 'violet' },
   hotNoContact: { icon: Flame, tone: 'hot' },
   stale: { icon: Hourglass, tone: 'neutral' },
@@ -154,6 +155,11 @@ function PriorityRow({ item, index, stagger, lead, score, now, db }: { item: Tod
         )}
         {score && <span className="hidden @3xl:inline-flex"><ScoreRing score={score.score} size={30} label={t('today:priority.score')} /></span>}
         <div className="flex flex-wrap items-center justify-end gap-0.5">
+          {has('recordOutcome') && appt && (
+            <Button asChild size="sm" variant="secondary" className="h-8">
+              <Link to={paths.appointment(appt.id)} data-testid="today-record-outcome"><ClipboardPen /> <span className="hidden @md:inline">{t('today:appointments.recordOutcome')}</span></Link>
+            </Button>
+          )}
           {has('call') && lead?.phone && (
             <Tooltip>
               <TooltipTrigger asChild>

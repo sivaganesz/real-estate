@@ -52,11 +52,25 @@ export function deleteNotifications(ids: ID[]) {
   }, { undoable: true })
 }
 
+/** Elapsed minutes as the app reads them elsewhere: "25 min", "20 h 0 min" or "3 days". */
+export function durationText(t: TFunction, mins: number): string {
+  const total = Math.max(0, Math.round(mins))
+  const d = Math.floor(total / 1440)
+  const h = Math.floor((total % 1440) / 60)
+  if (d) return t('notifications:duration.days', { count: d })
+  if (h) return t('notifications:duration.hours', { h, m: total % 60 })
+  return t('notifications:duration.mins', { count: total })
+}
+
 /** The sentence for a notification, with catalogue labels and ₹ amounts filled in. */
 export function notificationText(t: TFunction, n: Pick<Notification, 'kind' | 'params'>): string {
   const p = n.params
+  if (p.variant === 'reassignRequest' && typeof p.note === 'string' && p.note.trim()) return t('notifications:system.reassignRequestNote', { ...p, note: p.note.trim() })
   if (typeof p.variant === 'string' && p.variant) return t(`notifications:system.${p.variant}`, p)
   switch (n.kind) {
+    case 'escalation':
+      if (typeof p.mins === 'number') return t('notifications:text.escalation', { ...p, age: durationText(t, p.mins) })
+      break
     case 'slaBreach':
       if (typeof p.count === 'number' && !p.name) return t('notifications:text.slaQueue', p)
       if (p.name) return t('notifications:text.slaNamed', p)

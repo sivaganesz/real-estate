@@ -1,20 +1,23 @@
 /**
  * The Leads toolbar filters (master prompt §8): search, then pills for stage, temperature, priority, source,
- * executive (managers/admins), city, locality, budget, created date and "needs attention". A typed sentence
+ * executive (managers/admins), city, locality, budget, created date and "needs attention". Stage, temperature, priority,
+ * source, executive and "needs attention" show; the rest sit behind "More filters", and on phones every pill sits behind
+ * "Filters" until opened or in use. A typed sentence
  * ("hot NRI leads in Gurugram under 4 cr") is offered as filters by the AI (Demo AI badge); the user applies it.
  */
-import { useMemo, type ReactNode } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { SlidersHorizontal, Sparkles } from 'lucide-react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { DemoAIBadge } from '@/components/ai/demo-ai-badge'
-import { FilterBar } from '@/components/shared/filter-bar'
+import { SearchInput } from '@/components/shared/search-input'
 import { FilterPill, type FilterOption } from '@/components/shared/filter-pill'
 import { Button } from '@/components/ui/button'
 import type { LeadSource, LostReason, PipelineStageKey, Priority, Temperature } from '@/domain/types'
 import { CITY_NAMES, LEAD_SOURCES, LOST_REASONS, PRIORITIES, STAGES, TEMPERATURES } from '@/domain/catalogue'
 import { getAI } from '@/ai'
 import { useDb } from '@/hooks/use-db'
+import { useIsPhone } from '@/hooks/use-media-query'
 import { usePermission } from '@/hooks/use-permission'
 import { inrShort } from '@/lib/format'
 import { LEAD_ATTENTION, filterCount, parseLeadSentence, type LeadAttention, type LeadFilters } from '@/lib/lead-queries'
@@ -36,6 +39,9 @@ export function LeadsFilters({ rows, filters, onChange, end }: {
   end?: ReactNode
 }) {
   const { t } = useTranslation(['leads', 'catalogue'])
+  const { t: tUi } = useTranslation('ui')
+  const isPhone = useIsPhone()
+  const [expanded, setExpanded] = useState(false)
   const { scope } = usePermission()
   const users = useDb((db) => db.users)
   const set = <K extends keyof LeadFilters>(k: K, v: LeadFilters[K]) => onChange({ ...filters, [k]: v })
@@ -72,59 +78,97 @@ export function LeadsFilters({ rows, filters, onChange, end }: {
     return filterCount(f) ? f : null
   }, [filters.q])
 
+  // Primary pills stay in view on wider screens; the rest sit behind "More filters" (DESIGN_SYSTEM §11.7) so the
+  // toolbar is one tidy row. On phones every pill sits behind the "Filters" toggle so leads show on the first screen.
+  // A pill that is in use always shows, so a hidden filter never quietly narrows the list.
+  const pills: { key: string; primary: boolean; active: boolean; node: ReactNode }[] = [
+    { key: 'stage', primary: true, active: !!filters.stages?.length, node: <FilterPill label={t('filters.stage')} options={opts(STAGES, (v) => t(`catalogue:stage.${v}`), counts.stage)} selected={filters.stages ?? []} onChange={(v) => set('stages', v as PipelineStageKey[])} /> },
+    { key: 'temp', primary: true, active: !!filters.temperatures?.length, node: <FilterPill label={t('filters.temperature')} options={opts(TEMPERATURES, (v) => t(`catalogue:temperature.${v}`), counts.temp)} selected={filters.temperatures ?? []} onChange={(v) => set('temperatures', v as Temperature[])} /> },
+    { key: 'priority', primary: true, active: !!filters.priorities?.length, node: <FilterPill label={t('filters.priority')} options={opts(PRIORITIES, (v) => t(`catalogue:priority.${v}`), counts.priority)} selected={filters.priorities ?? []} onChange={(v) => set('priorities', v as Priority[])} /> },
+    { key: 'source', primary: true, active: !!filters.sources?.length, node: <FilterPill label={t('filters.source')} options={opts(LEAD_SOURCES, (v) => t(`catalogue:source.${v}`), counts.source).filter((o) => o.count || filters.sources?.includes(o.value as LeadSource))} selected={filters.sources ?? []} onChange={(v) => set('sources', v as LeadSource[])} /> },
+    ...(owners ? [{
+      key: 'owner', primary: true, active: !!filters.owners?.length,
+      node: (
+        <FilterPill
+          label={t('filters.owner')}
+          options={[{ value: '__none', label: t('filters.unassigned'), count: counts.owner.get('__none') ?? 0 }, ...execs.map((u) => ({ value: u.id, label: u.name, count: counts.owner.get(u.id) ?? 0 }))]}
+          selected={filters.owners ?? []} onChange={(v) => set('owners', v)}
+        />
+      ),
+    }] : []),
+    {
+      key: 'attn', primary: true, active: !!filters.attn,
+      node: (
+        <FilterPill
+          single label={t('filters.attention')}
+          options={LEAD_ATTENTION.map((a) => ({ value: a, label: t(`attention.${a}`) }))}
+          selected={filters.attn ? [filters.attn] : []}
+          onChange={(v) => set('attn', (v[0] as LeadAttention | undefined) || undefined)}
+        />
+      ),
+    },
+    { key: 'city', primary: false, active: !!filters.cities?.length, node: <FilterPill label={t('filters.city')} options={opts(CITY_NAMES, (v) => v, counts.city)} selected={filters.cities ?? []} onChange={(v) => set('cities', v)} /> },
+    {
+      key: 'locality', primary: false, active: !!filters.localities?.length,
+      node: (
+        <FilterPill
+          label={t('filters.locality')}
+          options={opts(localityOptions(filters.cities ?? []), (v) => v, counts.locality).filter((o) => o.count || filters.localities?.includes(o.value))}
+          selected={filters.localities ?? []} onChange={(v) => set('localities', v)}
+        />
+      ),
+    },
+    {
+      key: 'budget', primary: false, active: !!budgetKey,
+      node: (
+        <FilterPill
+          single label={t('filters.budget')}
+          options={BUDGET_BANDS.map((b) => ({ value: b.key, label: t(`filters.budgetBand.${b.key}`, { min: inrShort(b.min), max: inrShort(b.max) }) }))}
+          selected={budgetKey ? [budgetKey] : []}
+          onChange={(v) => { const b = BUDGET_BANDS.find((x) => x.key === v[0]); onChange({ ...filters, minBudget: b?.min, maxBudget: b?.max }) }}
+        />
+      ),
+    },
+    {
+      key: 'created', primary: false, active: !!filters.createdWithin,
+      node: (
+        <FilterPill
+          single label={t('filters.created')}
+          options={CREATED.map((d) => ({ value: String(d), label: t(`filters.createdWithin.${d}`) }))}
+          selected={filters.createdWithin ? [String(filters.createdWithin)] : []}
+          onChange={(v) => set('createdWithin', v[0] ? Number(v[0]) : undefined)}
+        />
+      ),
+    },
+    ...(filters.lostReasons?.length || filters.stages?.includes('lost') ? [{
+      key: 'lost', primary: false, active: !!filters.lostReasons?.length,
+      node: <FilterPill label={t('filters.lostReason')} options={opts(LOST_REASONS, (v) => t(`catalogue:lostReason.${v}`), counts.lost)} selected={filters.lostReasons ?? []} onChange={(v) => set('lostReasons', v as LostReason[])} />,
+    }] : []),
+  ]
+  const inView = (p: (typeof pills)[number]) => expanded || p.active || (p.primary && !isPhone)
+  const tucked = pills.filter((p) => !p.primary || isPhone)
+  const activeCount = filterCount({ ...filters, q: undefined })
+
   return (
-    <div className="flex flex-col gap-2">
-      <FilterBar
-        search={filters.q ?? ''}
-        onSearch={(q) => set('q', q)}
-        searchLabel={t('filters.search')}
-        placeholder={t('filters.placeholder')}
-        activeCount={filterCount({ ...filters, q: undefined })}
-        onClearAll={() => onChange({ sort: filters.sort, q: filters.q })}
-        end={end}
-        filters={
-          <>
-            <FilterPill label={t('filters.stage')} options={opts(STAGES, (v) => t(`catalogue:stage.${v}`), counts.stage)} selected={filters.stages ?? []} onChange={(v) => set('stages', v as PipelineStageKey[])} />
-            <FilterPill label={t('filters.temperature')} options={opts(TEMPERATURES, (v) => t(`catalogue:temperature.${v}`), counts.temp)} selected={filters.temperatures ?? []} onChange={(v) => set('temperatures', v as Temperature[])} />
-            <FilterPill label={t('filters.priority')} options={opts(PRIORITIES, (v) => t(`catalogue:priority.${v}`), counts.priority)} selected={filters.priorities ?? []} onChange={(v) => set('priorities', v as Priority[])} />
-            <FilterPill label={t('filters.source')} options={opts(LEAD_SOURCES, (v) => t(`catalogue:source.${v}`), counts.source).filter((o) => o.count || filters.sources?.includes(o.value as LeadSource))} selected={filters.sources ?? []} onChange={(v) => set('sources', v as LeadSource[])} />
-            {owners && (
-              <FilterPill
-                label={t('filters.owner')}
-                options={[{ value: '__none', label: t('filters.unassigned'), count: counts.owner.get('__none') ?? 0 }, ...execs.map((u) => ({ value: u.id, label: u.name, count: counts.owner.get(u.id) ?? 0 }))]}
-                selected={filters.owners ?? []} onChange={(v) => set('owners', v)}
-              />
-            )}
-            <FilterPill label={t('filters.city')} options={opts(CITY_NAMES, (v) => v, counts.city)} selected={filters.cities ?? []} onChange={(v) => set('cities', v)} />
-            <FilterPill
-              label={t('filters.locality')}
-              options={opts(localityOptions(filters.cities ?? []), (v) => v, counts.locality).filter((o) => o.count || filters.localities?.includes(o.value))}
-              selected={filters.localities ?? []} onChange={(v) => set('localities', v)}
-            />
-            <FilterPill
-              single label={t('filters.budget')}
-              options={BUDGET_BANDS.map((b) => ({ value: b.key, label: t(`filters.budgetBand.${b.key}`, { min: inrShort(b.min), max: inrShort(b.max) }) }))}
-              selected={budgetKey ? [budgetKey] : []}
-              onChange={(v) => { const b = BUDGET_BANDS.find((x) => x.key === v[0]); onChange({ ...filters, minBudget: b?.min, maxBudget: b?.max }) }}
-            />
-            <FilterPill
-              single label={t('filters.created')}
-              options={CREATED.map((d) => ({ value: String(d), label: t(`filters.createdWithin.${d}`) }))}
-              selected={filters.createdWithin ? [String(filters.createdWithin)] : []}
-              onChange={(v) => set('createdWithin', v[0] ? Number(v[0]) : undefined)}
-            />
-            {(filters.lostReasons?.length || filters.stages?.includes('lost')) && (
-              <FilterPill label={t('filters.lostReason')} options={opts(LOST_REASONS, (v) => t(`catalogue:lostReason.${v}`), counts.lost)} selected={filters.lostReasons ?? []} onChange={(v) => set('lostReasons', v as LostReason[])} />
-            )}
-            <FilterPill
-              single label={t('filters.attention')}
-              options={LEAD_ATTENTION.map((a) => ({ value: a, label: t(`attention.${a}`) }))}
-              selected={filters.attn ? [filters.attn] : []}
-              onChange={(v) => set('attn', (v[0] as LeadAttention | undefined) || undefined)}
-            />
-          </>
-        }
-      />
+    <div className="flex flex-col gap-2" data-testid="leads-toolbar">
+      <div className="flex flex-wrap items-center gap-2">
+        <SearchInput value={filters.q ?? ''} onChange={(q) => set('q', q)} label={t('filters.search')} placeholder={t('filters.placeholder')} className="min-w-0 basis-full sm:max-w-md sm:flex-1 sm:basis-64" />
+        {end && <div className="flex flex-wrap items-center gap-2 sm:ml-auto">{end}</div>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {pills.filter(inView).map((p) => <Fragment key={p.key}>{p.node}</Fragment>)}
+        {tucked.some((p) => !p.active) && (
+          <Button variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded((x) => !x)} data-testid="leads-more-filters">
+            <SlidersHorizontal />
+            {expanded ? t('filters.fewer') : isPhone ? t('filters.toggle') : t('filters.more')}
+          </Button>
+        )}
+        {activeCount > 0 && (
+          <button type="button" onClick={() => onChange({ sort: filters.sort, q: filters.q })} className="rounded-sm px-1 text-ui font-medium text-primary hover:underline">
+            {tUi('filter.clearAll', { count: activeCount })}
+          </button>
+        )}
+      </div>
       {sentence && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-ai-border/60 bg-ai-soft/40 px-3 py-2 text-meta" data-testid="sentence-filters">
           <Sparkles className="size-3.5 text-ai" aria-hidden="true" />

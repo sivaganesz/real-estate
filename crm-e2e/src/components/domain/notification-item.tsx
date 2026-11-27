@@ -2,7 +2,7 @@
  * One notification (bell popover and notification centre, DESIGN_SYSTEM §11.1): an icon tile coloured by kind, the
  * sentence (rendered from the `notifications` namespace, with stage / status / amount labels resolved), a relative
  * time and an unread dot. Clicking it marks it read and opens the record; the optional actions toggle read state
- * or remove it. A notification without a record just marks itself read.
+ * or remove it. A queue alert or a batch opens the list it is about; anything else without a record just marks itself read.
  */
 import {
   AlarmClock, ArrowRightLeft, Bell, Building2, CalendarPlus, CircleCheck, Copy, Hand, Hourglass, KanbanSquare,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { pathFor } from '@/app/paths'
+import { pathFor, paths } from '@/app/paths'
 import { IconTile } from '@/components/shared/icon-tile'
 import { toastError } from '@/components/shared/undo-toast'
 import { Button } from '@/components/ui/button'
@@ -31,11 +31,21 @@ const KIND_LOOK: Record<NotificationKind, [LucideIcon, Tone]> = {
 }
 const VARIANT_LOOK: Record<string, [LucideIcon, Tone]> = {
   readyToBook: [Trophy, 'success'], assignmentBatch: [Users, 'info'], rescheduled: [CalendarPlus, 'warning'], reassignRequest: [Hand, 'info'], welcome: [CircleCheck, 'primary'],
+  reassignedBatch: [ArrowRightLeft, 'info'],
 }
 
 function notificationLook(n: Pick<Notification, 'kind' | 'params'>): [LucideIcon, Tone] {
   const v = typeof n.params.variant === 'string' ? VARIANT_LOOK[n.params.variant] : undefined
   return v ?? KIND_LOOK[n.kind] ?? [Bell, 'neutral']
+}
+
+/** Where clicking a notification goes: its record, or the list it is about (queue alerts and batches carry no record). */
+function notificationTarget(n: Pick<Notification, 'kind' | 'params' | 'ref'>): string | undefined {
+  if (n.ref) return pathFor(n.ref)
+  const v = n.params.variant
+  if (n.kind === 'slaBreach' && typeof n.params.count === 'number' && !n.params.name) return paths.leads({ tab: 'unassigned' })
+  if (v === 'assignmentBatch' || v === 'reassignedBatch') return paths.leads()
+  return undefined
 }
 
 export function NotificationItem({ n, now, onOpened, selectable, selected, onSelect, onDelete, dense, className }: {
@@ -57,6 +67,9 @@ export function NotificationItem({ n, now, onOpened, selectable, selected, onSel
   const [Icon, tone] = notificationLook(n)
   const text = notificationText(t, n)
   const unread = !n.readAt
+  const target = notificationTarget(n)
+  // notifications are past events: a tick-stale `now` must not make a fresh one read "in 4 seconds"
+  const at = new Date(n.at).getTime() > now.getTime() ? now.toISOString() : n.at
 
   const open = () => {
     try {
@@ -64,7 +77,7 @@ export function NotificationItem({ n, now, onOpened, selectable, selected, onSel
     } catch (e) {
       toastError(e)
     }
-    if (n.ref) navigate(pathFor(n.ref))
+    if (target) navigate(target)
     onOpened?.()
   }
   const toggleRead = () => {
@@ -103,9 +116,9 @@ export function NotificationItem({ n, now, onOpened, selectable, selected, onSel
           {text}
         </span>
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-meta text-subtle-foreground">
-          <span className="tabular-nums">{fmtRelative(n.at, now, i18n.resolvedLanguage)}</span>
+          <span className="tabular-nums">{fmtRelative(at, now, i18n.resolvedLanguage)}</span>
           {n.priority === 'high' && <span className="font-medium text-danger">{t('notifications:priorityHigh')}</span>}
-          {n.ref && <span className="text-primary group-hover:underline">{t('notifications:openRecord')}</span>}
+          {target && <span className="text-primary group-hover:underline">{t('notifications:openRecord')}</span>}
         </span>
       </button>
       <div className="flex shrink-0 items-center gap-0.5">

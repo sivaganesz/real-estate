@@ -2,7 +2,8 @@
  * Business settings and saved views. Each section has its own permission (foundation-plan §3.1); every change is
  * an audit activity (E18).
  */
-import type { AssignmentRule, ID, MessageTemplate, SavedView, Settings } from '@/domain/types'
+import type { AssignmentRule, ID, LostReason, MessageTemplate, SavedView, Settings } from '@/domain/types'
+import { LOST_REASONS } from '@/domain/catalogue'
 import { PermissionError, explainDenied, type Action } from '@/lib/permissions'
 import { assertActorCan, isSystem } from './core/actor'
 import { commit, must, type Tx } from './core/commit'
@@ -33,6 +34,16 @@ export function updateSettings<K extends keyof Settings>(section: K, value: Sett
     }
     tx.emit({ type: 'settings.changed', section })
   }, { undoable: true })
+}
+
+/**
+ * The lost reasons people may pick, in the order set in Settings → Pipeline stages (switched-off ones are left out).
+ * `keep` adds a reason already on the record so an editor can still show it. Falls back to the catalogue if none is on.
+ */
+export function enabledLostReasons(s: Pick<Settings, 'pipeline'>, keep?: LostReason): LostReason[] {
+  const on = s.pipeline.lostReasons.filter((r) => LOST_REASONS.includes(r))
+  const list = on.length ? on : LOST_REASONS
+  return keep && !list.includes(keep) ? [...list, keep] : list
 }
 
 export const setAutoAssign = (on: boolean) => updateSettings('assignment', { autoAssign: on })

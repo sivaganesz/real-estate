@@ -190,11 +190,18 @@ export default function PipelinePage() {
 
   const examples = useMemo(() => {
     const first = stalled[0]?.lead ?? shown.find((d) => OPEN_STAGES.includes(d.lead.stage))?.lead
-    const list = [t('pipeline:assistant.exStalled'), t('pipeline:assistant.exConversions')]
+    // The chip shows the screen language; the command it sends stays English, which the assistant parses (like Today's chips).
+    const list = [
+      { label: t('pipeline:assistant.exStalled'), command: 'Show stalled deals' },
+      { label: t('pipeline:assistant.exConversions'), command: 'Who is close to booking?' },
+    ]
     if (first) {
       const i = stages.indexOf(first.stage)
       const next = stages.slice(i + 1).find((s) => s !== 'lost' && !NEEDS_DIALOG.includes(s)) ?? 'negotiation'
-      list.unshift(t('pipeline:assistant.exMove', { name: first.name, stage: t(`pipeline:assistant.stageWord.${next}`) }))
+      list.unshift({
+        label: t('pipeline:assistant.exMoveLabel', { name: first.name, stage: t(`catalogue:stage.${next}`) }),
+        command: t('pipeline:assistant.exMove', { lng: 'en', name: first.name, stage: t(`pipeline:assistant.stageWord.${next}`, { lng: 'en' }) }),
+      })
     }
     return list
   }, [stalled, shown, stages, t])

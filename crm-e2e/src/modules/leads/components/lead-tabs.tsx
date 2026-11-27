@@ -47,7 +47,8 @@ export function LeadTabs({ lead, tab, onTab }: { lead: Lead; tab: LeadTabKey; on
   return (
     <section aria-label={t('detail.tabs')} className="flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-card md:p-5" id="lead-tabs">
       <Segmented
-        label={t('detail.tabs')} value={tab} onChange={onTab}
+        // the tabs wrap instead of hiding the last one when the main column is narrow (AI panel docked, 2xl three zones)
+        label={t('detail.tabs')} value={tab} onChange={onTab} className="flex-wrap gap-y-1"
         segments={(['activity', 'matches', 'appointments', 'tasks', 'assignments'] as const).map((k) => ({ value: k, label: t(`detail.tab.${k}`), count: counts[k] }))}
       />
       {tab === 'activity' && <ActivityTab lead={lead} />}

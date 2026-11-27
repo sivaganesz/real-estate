@@ -10,7 +10,12 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
-  server: { port: 5174, strictPort: true },
+  server: {
+    port: 5174,
+    strictPort: true,
+    // QA notes, screenshots and Playwright traces are written while pages are open; watching them reloads every tab mid-test
+    watch: { ignored: ['**/notes/**', '**/test-results/**', '**/playwright-report/**'] },
+  },
   preview: { port: 5175, strictPort: true },
   optimizeDeps: { exclude: ['tesseract.js'] },
   // The main chunk carries every locale and the demo seed (~180 kB gzip); heavy libraries (pdf.js, OCR, xlsx) are lazy.

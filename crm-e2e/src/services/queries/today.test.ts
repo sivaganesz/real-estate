@@ -7,6 +7,8 @@ import { clock, runAs } from '../core/actor'
 import { getDb } from '../core/commit'
 import { undo } from '../core/undo'
 import { completeTask, createTask, rescheduleTask } from '../tasks'
+import { completeAppointment, rescheduleAppointment } from '../appointments'
+import { previewAssignments } from '@/lib/assignment'
 import { adminToday, businessInsights, executiveBriefFacts, executiveToday, managerToday, priorityItems } from './today'
 import { activityCounts, funnel, monthlyTrend, summaryKpis } from './stats'
 
@@ -116,6 +118,37 @@ describe('Today reacts to one-click actions (M1)', () => {
     expect(t.visitedNotBooked.every((v) => v.days <= 14)).toBe(true)
     expect(t.rank?.of).toBeGreaterThanOrEqual(3)
     expect(t.streak).toBeGreaterThanOrEqual(1)
+  })
+
+  it('an appointment that is over without an outcome is a priority; recording the outcome clears it (EXE-2)', () => {
+    fresh()
+    const pending = getDb().appointments.find((a) => a.ownerId === 'u-arjun' && a.type === 'siteVisit' && ['scheduled', 'confirmed'].includes(a.status) && new Date(a.start).getTime() + a.durationMin * 60_000 < now.getTime())!
+    expect(pending).toBeDefined()
+    const item = priorityItems(getDb(), arjun(), now).find((i) => i.kind === 'visitOutcome' && i.ref.id === pending.id)
+    expect(item).toMatchObject({ reasonKey: 'outcome.siteVisit', leadId: pending.leadId, actions: expect.arrayContaining(['recordOutcome']) })
+    runAs(arjun(), () => completeAppointment(pending.id, { result: 'thinking', likedPropertyIds: [] }))
+    expect(priorityItems(getDb(), arjun(), now).some((i) => i.kind === 'visitOutcome' && i.ref.id === pending.id)).toBe(false)
+  })
+
+  it('a visit-soon reason uses the 12-hour clock like the rest of the app (EXE-3)', () => {
+    fresh()
+    const a = getDb().appointments.find((x) => x.ownerId === 'u-arjun' && x.start > now.toISOString())!
+    runAs(arjun(), () => rescheduleAppointment(a.id, new Date(now.getTime() + 90 * 60_000).toISOString()))
+    const item = priorityItems(getDb(), arjun(), now).find((i) => i.kind === 'visitSoon' && i.ref.id === a.id)!
+    expect(String(item.params.time)).toMatch(/^\d{1,2}:\d{2} (AM|PM)$/)
+  })
+
+  it('each unassigned row suggests the right owner for that lead on its own; accepting it keeps the reason (MGR-1, MGR-2)', () => {
+    fresh()
+    const rohit = getDb().users.find((u) => u.id === 'u-rohit')!
+    const rows = managerToday(getDb(), rohit, now).unassigned
+    expect(rows.length).toBeGreaterThan(2)
+    for (const row of rows) expect(row.suggestion).toEqual(previewAssignments(getDb(), [row.lead.id], 'u-rohit')[0])
+    // accepting the last row first goes where its label said
+    const last = rows[rows.length - 1]
+    const { result } = runAs(rohit, () => assignLeads([last.lead.id], 'auto'))
+    expect(result[0].to).toBe(last.suggestion!.to)
+    expect(getDb().assignments.at(-1)).toMatchObject({ leadId: last.lead.id, mode: 'auto', reason: { key: last.suggestion!.reasonKey } })
   })
 
   it('admin: KPI series and 3–5 insights with drill-down links', () => {

@@ -2,9 +2,10 @@
  * Deactivate a user (admin; ROLE_RESEARCH #21): their open leads are handed over — auto (the assignment engine without
  * them, within their manager's team), to one person, or left unassigned for the manager's queue — with a preview of
  * who gets what before confirming. Open tasks and future visits follow each lead (effect E3). Undo for 10 s.
+ * The same hand-over runs when an executive who still owns open leads gets another role (`roleChange`, ADM-5).
  */
 import { useMemo, useState, type ReactNode } from 'react'
-import { ArrowRight, Sparkles, UserX } from 'lucide-react'
+import { ArrowRight, Sparkles, UserCog, UserX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getAI } from '@/ai'
 import { DemoAIBadge } from '@/components/ai/demo-ai-badge'
@@ -19,11 +20,17 @@ import type { ID, User } from '@/domain/types'
 import { useWholeDb } from '@/hooks/use-db'
 import { assignablePool, openLeadsOf, previewRedistribution, previewTotals, type RedistributeChoice } from '@/lib/assignment'
 import { cn } from '@/lib/utils'
-import { deactivateUser } from '@/services/users'
+import { changeRoleWithHandOver, deactivateUser, type UserPatch } from '@/services/users'
 
 type Mode = 'auto' | 'person' | 'unassign'
 
-export function RedistributeDialog({ user, open, onOpenChange }: { user: User; open: boolean; onOpenChange: (o: boolean) => void }) {
+export function RedistributeDialog({ user, open, onOpenChange, roleChange }: {
+  user: User
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  /** Hand over for a role change instead of deactivating: the edited fields (with the new role), called back once saved. */
+  roleChange?: { patch: UserPatch & { role: User['role'] }; onDone?: () => void }
+}) {
   const { t } = useTranslation(['team', 'common', 'catalogue'])
   const db = useWholeDb()
   const [mode, setMode] = useState<Mode>('auto')
@@ -41,11 +48,14 @@ export function RedistributeDialog({ user, open, onOpenChange }: { user: User; o
 
   const confirm = () => {
     try {
-      const r = deactivateUser(user.id, choice)
-      toastUndo(t('team:redistribute.done', { name: user.name }), r.undoToken, {
+      const r = roleChange ? changeRoleWithHandOver(user.id, roleChange.patch, choice) : deactivateUser(user.id, choice)
+      const name = roleChange?.patch.name ?? user.name
+      const done = roleChange ? t('team:roleHandOver.done', { name, role: t(`common:roles.${roleChange.patch.role}`) }) : t('team:redistribute.done', { name })
+      toastUndo(done, r.undoToken, {
         description: leads.length ? totals.map((x) => `${nameOf(x.to)} ${x.count}`).join(' · ') : t('team:redistribute.noLeads'),
       })
       onOpenChange(false)
+      roleChange?.onDone?.()
     } catch (e) {
       toastError(e)
     }
@@ -55,8 +65,17 @@ export function RedistributeDialog({ user, open, onOpenChange }: { user: User; o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-xl" data-testid="redistribute-dialog">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><UserX className="size-5 text-danger" aria-hidden="true" />{t('team:redistribute.title', { name: user.name })}</DialogTitle>
-          <DialogDescription>{leads.length ? t('team:redistribute.body', { count: leads.length }) : t('team:redistribute.bodyNone')}</DialogDescription>
+          {roleChange ? (
+            <>
+              <DialogTitle className="flex items-center gap-2"><UserCog className="size-5 text-primary" aria-hidden="true" />{t('team:roleHandOver.title', { name: user.name, role: t(`common:roles.${roleChange.patch.role}`) })}</DialogTitle>
+              <DialogDescription>{t('team:roleHandOver.body', { count: leads.length })}</DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle className="flex items-center gap-2"><UserX className="size-5 text-danger" aria-hidden="true" />{t('team:redistribute.title', { name: user.name })}</DialogTitle>
+              <DialogDescription>{leads.length ? t('team:redistribute.body', { count: leads.length }) : t('team:redistribute.bodyNone')}</DialogDescription>
+            </>
+          )}
         </DialogHeader>
 
         {leads.length > 0 && (
@@ -95,13 +114,15 @@ export function RedistributeDialog({ user, open, onOpenChange }: { user: User; o
                 ))}
               </ul>
             </section>
-            {unassignedLeft > 0 && <Callout tone="warning">{t('team:redistribute.leftWarning', { count: unassignedLeft })}</Callout>}
+            {unassignedLeft > 0 && <Callout tone="warning">{t(roleChange ? 'team:roleHandOver.leftWarning' : 'team:redistribute.leftWarning', { count: unassignedLeft })}</Callout>}
           </>
         )}
-        <Callout tone="info">{t('team:redistribute.note')}</Callout>
+        <Callout tone="info">{t(roleChange ? 'team:roleHandOver.note' : 'team:redistribute.note')}</Callout>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>{t('common:actions.cancel')}</Button>
-          <Button variant="destructive" onClick={confirm} disabled={mode === 'person' && !to} data-testid="redistribute-confirm">{t('team:redistribute.confirm', { name: user.name })}</Button>
+          <Button variant={roleChange ? 'default' : 'destructive'} onClick={confirm} disabled={mode === 'person' && !to} data-testid="redistribute-confirm">
+            {roleChange ? t('team:roleHandOver.confirm') : t('team:redistribute.confirm', { name: user.name })}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

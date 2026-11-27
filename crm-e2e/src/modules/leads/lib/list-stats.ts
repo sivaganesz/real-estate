@@ -23,6 +23,8 @@ export function headline(rows: (LeadItem & { aging: ContactAging })[], now: Date
     overdue: open.filter((r) => isOverdue(r, now)).length,
     sla: open.filter((r) => r.aging.breached).length,
     unassigned: open.filter((r) => !r.lead.ownerId).length,
+    /** Unassigned open leads past the first-call SLA (the hint under the Unassigned card). */
+    unassignedSla: open.filter((r) => !r.lead.ownerId && r.aging.breached).length,
     newThisWeek: rows.filter((r) => now.getTime() - new Date(r.lead.createdAt).getTime() < 7 * DAY).length,
   }
 }

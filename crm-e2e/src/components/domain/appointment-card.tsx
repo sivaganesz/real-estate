@@ -62,7 +62,7 @@ export function AppointmentCard({ appointment: a, showDate, actions, className }
           {a.status === 'confirmed' && <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />}
         </p>
         <h3 className={cn('truncate text-sm font-semibold', a.status === 'cancelled' && 'line-through')}>
-          <Link to={paths.appointment(a.id)} className="hover:underline focus-visible:underline focus-visible:outline-none after:absolute after:inset-0">{lead?.name ?? t('domain:appointment.noLead')}</Link>
+          <Link to={paths.appointment(a.id)} className="hover:underline focus-visible:underline focus-visible:outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-background">{lead?.name ?? t('domain:appointment.noLead')}</Link>
         </h3>
         <p className="truncate text-meta text-muted-foreground">
           {property ? `${property.title}${extra > 0 ? ` +${extra}` : ''} · ${property.location.locality}` : a.location?.text}

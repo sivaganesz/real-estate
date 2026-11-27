@@ -36,7 +36,7 @@ export function WizardNav({ onBack, backLabel, onNext, nextLabel, nextDisabled, 
   onBack: () => void; backLabel: string; onNext: () => void; nextLabel: string; nextDisabled?: boolean; testId?: string; extra?: ReactNode
 }) {
   return (
-    <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur mr-14 md:bottom-4 md:mr-16">
+    <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur fab-clear md:bottom-4">
       <Button type="button" variant="ghost" onClick={onBack}><ArrowLeft />{backLabel}</Button>
       <div className="flex flex-wrap items-center gap-2">
         {extra}

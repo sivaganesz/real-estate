@@ -221,7 +221,7 @@ export function DocumentFlow({ initialFile, target: fixedTarget }: { initialFile
       <WizardStepper steps={steps} current={step} label={t('import:step.label')} />
 
       {step === 0 && (
-        <div className="grid gap-4 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <SectionCard className="lg:col-span-7" icon={ScanText} title={t('import:doc.title')} description={t('import:doc.body')} action={<DemoAIBadge mode={ai.mode} />}>
             <div className="flex flex-col gap-4">
               <FileUploader files={files} onFilesChange={(f) => { setFiles(f); if (f[0]) void read(f[0]) }} accept={ACCEPT_DOCS} maxSizeMb={MAX_FILE_MB}
@@ -280,7 +280,7 @@ export function DocumentFlow({ initialFile, target: fixedTarget }: { initialFile
       )}
 
       {step === 2 && entry && check && (
-        <div className="grid gap-4 xl:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="flex flex-col gap-4 xl:col-span-5">
             <SectionCard icon={doc?.source === 'image' ? FileImage : FileText} title={file?.name ?? t(doc ? 'import:doc.pastedName' : 'import:doc.manualTitle')}
               description={doc ? t(`import:doc.source.${doc.source}`, { count: doc.pages ?? 1 }) : t('import:doc.manualBody')}>
@@ -347,7 +347,7 @@ export function DocumentFlow({ initialFile, target: fixedTarget }: { initialFile
                 )}
               </div>
             </SectionCard>
-            <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur mr-14 md:bottom-4 md:mr-16">
+            <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-popover/95 p-3 shadow-lg backdrop-blur fab-clear md:bottom-4">
               <Button type="button" variant="ghost" onClick={reset}><RotateCcw />{t('import:doc.startOver')}</Button>
               <div className="flex flex-wrap items-center gap-2">
                 {uncertain && <span className="text-meta text-warning max-sm:hidden">{t('import:doc.uncertain')}</span>}

@@ -137,7 +137,7 @@ export function PipelineSection() {
       </SectionCard>
 
       <SaveBar
-        dirty={dirty} valid={valid} onSave={save} testId="pipeline-save" className="sticky bottom-20 z-10 rounded-lg border bg-card/95 p-3 shadow-md backdrop-blur md:bottom-4"
+        dirty={dirty} valid={valid} onSave={save} testId="pipeline-save" className="sticky bottom-20 z-10 fab-clear rounded-lg border bg-card/95 p-3 shadow-md backdrop-blur md:bottom-4"
         onDiscard={() => {
           setStages(saved.stages)
           setReasons(lostReasonRows(LOST_REASONS, saved.lostReasons))

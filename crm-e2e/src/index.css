@@ -512,6 +512,9 @@
     animation: var(--animate-shimmer);
     border-radius: var(--radius-sm);
   }
+  /* sticky bottom action bars: leave the floating AI button (right-4 / md:right-6, 48 px) its own lane */
+  .fab-clear { margin-right: 3.5rem; }
+  @media (width >= 48rem) { .fab-clear { margin-right: 4rem; } }
   .ai-filled {
     background-color: var(--ai-soft);
     box-shadow: inset 2px 0 0 var(--ai);

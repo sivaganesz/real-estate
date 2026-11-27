@@ -87,8 +87,8 @@ export function AdminView() {
         ))}
         stats={[
           { key: 'alerts', label: t('admin.stats.alerts'), value: alertCount, icon: AlertTriangle, tone: alertCount ? 'danger' : 'neutral', onClick: () => document.getElementById('today-alerts')?.scrollIntoView({ behavior: 'smooth' }) },
-          { key: 'unassigned', label: t('admin.stats.unassigned'), value: a.unassigned, icon: Inbox, tone: a.unassigned ? 'warning' : 'neutral' },
-          { key: 'imports', label: t('admin.stats.imports'), value: data.importTotals.imported, icon: Upload, tone: 'info' },
+          { key: 'unassigned', label: t('admin.stats.unassigned'), value: a.unassigned, icon: Inbox, tone: a.unassigned ? 'warning' : 'neutral', onClick: () => navigate(paths.leads({ tab: 'unassigned' })) },
+          { key: 'imports', label: t('admin.stats.imports'), value: data.importTotals.imported, icon: Upload, tone: 'info', onClick: () => navigate(paths.importHistory()) },
           { key: 'drafts', label: t('admin.stats.drafts'), value: a.openDrafts, icon: FileWarning, tone: 'violet', onClick: () => navigate(paths.drafts()) },
         ]}
         assistant={<AIQuickCommand suggestions={suggestions} />}

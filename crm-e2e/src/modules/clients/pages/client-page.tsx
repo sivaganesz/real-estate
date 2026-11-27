@@ -101,7 +101,7 @@ function ClientView({ client: c }: { client: Client }) {
         subtitle={t('clients:detail.subtitle', { id: c.id, date: fmtDate(c.bookedAt, i18n.language) })}
         actions={
           <>
-            {lead && <ContactActions lead={{ id: lead.id, name: c.name, phone: c.phone, email: c.email, ownerId: lead.ownerId }} labels />}
+            {lead && <ContactActions lead={{ id: lead.id, name: c.name, phone: c.phone, email: c.email, ownerId: lead.ownerId }} labels="short" />}
             {lead && <Button asChild variant="secondary"><Link to={paths.lead(lead.id)}><UserRound />{t('clients:detail.openLead')}</Link></Button>}
             {edit && next && <Button onClick={() => move(next)} data-testid="client-next"><ArrowRight />{t('clients:journey.moveTo', { status: t(`clients:status.${next}`) })}</Button>}
           </>
@@ -109,19 +109,20 @@ function ClientView({ client: c }: { client: Client }) {
       />
 
       <section aria-label={t('clients:journey.title')} className="rounded-lg border bg-card p-4 shadow-card md:p-5" data-testid="client-journey">
-        <ol className="flex gap-1 overflow-x-auto">
+        {/* five equal steps that always fit (labels wrap on phones) instead of a strip cut at the right edge */}
+        <ol className="grid grid-cols-5 gap-1">
           {CLIENT_FLOW.map((s, i) => {
             const step = flowStep(c.status)
             const done = c.status !== 'cancelled' && i < step
             const cur = c.status === s
             return (
-              <li key={s} className="min-w-[96px] flex-1">
+              <li key={s} className="min-w-0">
                 <button type="button" disabled={!edit || cur} onClick={() => move(s)} aria-current={cur ? 'step' : undefined}
                   className="group flex w-full flex-col items-start gap-1.5 rounded-md p-1 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-default">
                   <span className={cn('flex size-7 items-center justify-center rounded-full border-2 text-meta font-semibold tabular-nums', cur ? 'border-primary bg-primary text-primary-foreground' : done ? 'border-success bg-success-soft text-success' : 'border-border text-muted-foreground group-enabled:group-hover:border-primary/50')}>
                     {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
                   </span>
-                  <span className={cn('text-meta', cur ? 'font-semibold' : 'text-muted-foreground')}>{t(`clients:status.${s}`)}</span>
+                  <span className={cn('text-meta [overflow-wrap:anywhere]', cur ? 'font-semibold' : 'text-muted-foreground')}>{t(`clients:status.${s}`)}</span>
                 </button>
               </li>
             )
@@ -218,7 +219,8 @@ function DocumentsCard({ client: c, edit }: { client: Client; edit: boolean }) {
         {c.documents.map((d) => (
           <li key={d.name} className="flex flex-wrap items-center gap-2 py-2">
             <IconTile icon={d.status === 'verified' ? BadgeCheck : FileCheck2} size="sm" tone={d.status === 'verified' ? 'success' : d.status === 'received' ? 'warning' : 'neutral'} />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{label(d.name)}</span>
+            {/* the name keeps room to be read; on a narrow card the status buttons wrap under it */}
+            <span className="min-w-36 flex-1 truncate text-sm font-medium">{label(d.name)}</span>
             {edit ? (
               <div className="flex gap-1" role="group" aria-label={t('docs.statusFor', { name: label(d.name) })}>
                 {DOC_STATUSES.map((s) => <Chip key={s} size="sm" pressed={d.status === s} onClick={() => set(d.name, s)}>{t(`docStatus.${s}`)}</Chip>)}

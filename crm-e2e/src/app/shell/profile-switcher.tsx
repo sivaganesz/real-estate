@@ -31,7 +31,7 @@ export function ProfilePicker({ onDone }: { onDone?: () => void }) {
   const switchProfile = useSwitchProfile()
   const [execOpen, setExecOpen] = useState(current.role === 'executive')
   const executives = useDb((db) =>
-    SWITCHABLE_EXECUTIVES.map((id) => db.users.find((u) => u.id === id)).filter((u): u is User => !!u && u.status === 'active'),
+    SWITCHABLE_EXECUTIVES.map((id) => db.users.find((u) => u.id === id)).filter((u): u is User => !!u && u.status === 'active' && u.role === 'executive'),
   )
   const counts = useDb((db) => executives.map((u) => activeLeadCount(db, u.id)))
 

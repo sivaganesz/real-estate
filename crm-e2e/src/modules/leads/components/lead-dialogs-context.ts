@@ -7,7 +7,8 @@ export type OpenLeadDialog =
   | { kind: 'visit'; leadId: ID; propertyIds?: ID[] }
   | { kind: 'task'; leadId: ID }
   | { kind: 'stage'; leadId: ID; to?: PipelineStageKey }
-  | { kind: 'assign'; leadIds: ID[] }
+  /** onDone runs after the assign succeeds (the list clears its bulk selection). */
+  | { kind: 'assign'; leadIds: ID[]; onDone?: () => void }
   | { kind: 'requestReassign'; leadId: ID }
   | { kind: 'delete'; leadIds: ID[] }
 

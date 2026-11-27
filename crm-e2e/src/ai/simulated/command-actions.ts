@@ -16,7 +16,7 @@ import { phoneDisplay } from '@/lib/phone'
 import { aiMeta, propose } from '../proposals'
 import type { ActionProposal, CommandPlan } from '../types'
 import {
-  appointmentFor, assignees, first, leadFor, openTaskFor, propertyIn, refuse, say, t, userIn, type Env,
+  appointmentFor, assignees, first, hiddenLeadNamed, leadFor, notYoursReply, openTaskFor, propertyIn, refuse, say, t, userIn, type Env,
 } from './command-kit'
 import { extractAppointmentFields } from './extract-appointment'
 import { extractLeadFields } from './extract-lead'
@@ -34,8 +34,8 @@ const hhmm = (iso: string) => {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
-const whichLead = (intent: string, env: Env, others: Lead[] = []) =>
-  say(intent, t('ai:reply.whichLead'), { followUps: (others.length ? others : env.open.slice(0, 3)).map((l) => ({ label: l.name, command: `${env.text} ${l.name}` })) })
+const whichLead = (intent: string, env: Env, found: { others?: Lead[]; notYours?: string } = {}) => found.notYours ? notYoursReply(intent, found.notYours) :
+  say(intent, t('ai:reply.whichLead'), { followUps: (found.others?.length ? found.others : env.open.slice(0, 3)).map((l) => ({ label: l.name, command: `${env.text} ${l.name}` })) })
 
 /* ---------- leads ---------- */
 
@@ -48,6 +48,9 @@ export function createLeadPlan(env: Env): CommandPlan {
   const summary = [
     { label: 'ai:field.name', value: x.fields.name ?? t('ai:value.missing') },
     { label: 'ai:field.phone', value: x.fields.phone ? phoneDisplay(x.fields.phone) : t('ai:value.missing') },
+    // the property type when the message names one ("villa in Sarjapur"), not the apartment assumed from "3 BHK"
+    ...(r?.propertyTypes.length && x.meta['requirement.propertyTypes'] && (x.meta['requirement.propertyTypes'].confidence ?? 0) >= 0.8
+      ? [{ label: 'ai:field.type', value: r.propertyTypes.map((p) => t(`catalogue:propertyType.${p}`)).join(', ') }] : []),
     ...(r?.configurations.length ? [{ label: 'ai:field.configuration', value: r.configurations.map(configLabel).join(', ') }] : []),
     ...(r?.localities.length || r?.cities.length ? [{ label: 'ai:field.location', value: (r.localities.length ? r.localities : r.cities).join(', ') }] : []),
     ...(r?.budgetMax || r?.budgetMin ? [{ label: 'ai:field.budget', value: inrRange(r.budgetMin, r.budgetMax, upTo()) }] : []),
@@ -100,7 +103,7 @@ export function updateLeadPlan(env: Env, opts: { leadId?: string } = {}): Comman
   const intent = 'updateLead'
   const found = opts.leadId ? { lead: env.leads.find((l) => l.id === opts.leadId), others: [] } : leadFor(env.text, env)
   const lead = found.lead
-  if (!lead) return whichLead(intent, env, found.others)
+  if (!lead) return whichLead(intent, env, found)
   if (!can(env.user, 'lead.edit', lead, env.db)) return refuse(intent, 'lead.edit', env.user)
   // the lead's own name must not be read as a place or a decision maker
   const text = norm(env.text).replace(new RegExp(lead.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ')
@@ -170,9 +173,9 @@ export function updateLeadPlan(env: Env, opts: { leadId?: string } = {}): Comman
 
 export function moveStagePlan(env: Env): CommandPlan {
   const intent = 'moveStage'
-  const { lead, others } = leadFor(env.text.split(/\b(?:to|as|into)\b/i)[0], env)
+  const { lead, others, notYours } = leadFor(env.text.split(/\b(?:to|as|into)\b/i)[0], env)
   const to = stageIn(env.text)
-  if (!lead) return whichLead(intent, env, others)
+  if (!lead) return whichLead(intent, env, { others, notYours })
   if (!to) return say(intent, t('ai:reply.whichStage'), { followUps: (['contacted', 'qualified', 'negotiation', 'lost'] as PipelineStageKey[]).map((s) => ({ label: t(`catalogue:stage.${s}`), command: `Move ${lead.name} to ${s}` })) })
   const action = to === 'booked' || to === 'converted' ? 'lead.markBooked' : 'lead.moveStage'
   if (!can(env.user, action, lead, env.db)) return refuse(intent, action, env.user)
@@ -199,12 +202,14 @@ export function moveStagePlan(env: Env): CommandPlan {
 
 export function createAppointmentPlan(env: Env): CommandPlan {
   const intent = 'createAppointment'
+  // another executive's lead named on a lead page is never replaced by the open lead
+  const hidden = hiddenLeadNamed(env.text, env)
   if (!can(env.user, 'appointment.manage')) return refuse(intent, 'appointment.manage', env.user)
   const x = extractAppointmentFields(env.text, {
-    now: env.now, leads: env.leads, properties: env.db.properties.filter((p) => p.listing === 'live'), selectedLeadId: env.selLead?.id,
+    now: env.now, leads: env.leads, properties: env.db.properties.filter((p) => p.listing === 'live'), selectedLeadId: hidden ? undefined : env.selLead?.id,
   })
   const lead = env.leads.find((l) => l.id === x.fields.leadId)
-  if (!lead) return whichLead(intent, env)
+  if (!lead) return whichLead(intent, env, { notYours: hidden })
   const ownerId = lead.ownerId ?? env.user.id
   if (!can(env.user, 'appointment.manage', { ownerId }, env.db)) return refuse(intent, 'appointment.manage', env.user)
   const type = x.fields.type ?? 'siteVisit'
@@ -242,13 +247,14 @@ export function createAppointmentPlan(env: Env): CommandPlan {
 export function createTaskPlan(env: Env): CommandPlan {
   const intent = 'createTask'
   if (!can(env.user, 'task.manage')) return refuse(intent, 'task.manage', env.user)
-  const { lead } = leadFor(env.text, env)
+  const { lead, notYours } = leadFor(env.text, env)
+  if (!lead && notYours) return notYoursReply(intent, notYours)
   const day = dateIn(env.text, env.today) ?? addDaysToDay(env.today, 1)
   const dueAt = atLocal(day, timeIn(env.text) ?? '10:00')
   const s = env.s
   const type: Task['type'] = /\bwhats ?app\b/.test(s) ? 'whatsapp' : /\b(call|ring|phone)\b/.test(s) ? 'call' : /\b(e-?mail|mail)\b/.test(s) ? 'email' : /\b(document|docs|papers|kyc)\b/.test(s) ? 'document' : 'followUp'
   const custom = norm(env.text)
-    .replace(/^(?:please\s+)?(?:remind me to|reminder to|remind me|create (?:a )?task(?: to)?|add (?:a )?task(?: to)?|new task:?|todo:?|to-do:?|schedule (?:a )?follow[- ]?up(?: with)?|set (?:a )?follow[- ]?up(?: with)?|add (?:a )?follow[- ]?up(?: with)?|plan (?:a )?follow[- ]?up(?: with)?)\s*/i, '')
+    .replace(/^(?:please\s+)?(?:remind me to|reminder to|remind me|(?:create|add|make|new|set) (?:a |an |new )*(?:task|to-?do|reminder)(?: to)?|task|todo|to-do|schedule (?:a )?follow[- ]?up(?: with)?|set (?:a )?follow[- ]?up(?: with)?|add (?:a )?follow[- ]?up(?: with)?|plan (?:a )?follow[- ]?up(?: with)?)\s*[:\-–]?\s*/i, '')
     .replace(/\b(?:tomorrow|today|day after tomorrow|next week|on \w+day|at \d{1,2}(?::\d{2})?\s*(?:am|pm)?|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/gi, '')
     .replace(/\s{2,}/g, ' ').trim()
   const title = lead && (custom.split(/\s+/).length <= 3 || !custom) ? t(`ai:taskTitle.${type === 'document' ? 'followUp' : type}`, { name: lead.name }) : (custom.charAt(0).toUpperCase() + custom.slice(1)).slice(0, 80)
@@ -273,7 +279,8 @@ export function createTaskPlan(env: Env): CommandPlan {
 export function reschedulePlan(env: Env): CommandPlan {
   const intent = 'reschedule'
   const [head, tail = ''] = env.text.split(/\b(?:to|till|until|for|on)\b(?!.*\b(?:to|till|until|for|on)\b)/i)
-  const { lead } = leadFor(head, env)
+  const { lead, notYours } = leadFor(head, env)
+  if (!lead && notYours) return notYoursReply(intent, notYours)
   const wantsVisit = /\b(visit|site visit|meeting|appointment|video call|my \d)/.test(env.s)
   const appt = wantsVisit ? appointmentFor(env, lead) : undefined
   const task = !appt && lead ? openTaskFor(env, lead) : undefined
@@ -318,8 +325,8 @@ export function reschedulePlan(env: Env): CommandPlan {
 
 export function completeTaskPlan(env: Env): CommandPlan {
   const intent = 'completeTask'
-  const { lead, others } = leadFor(env.text, env)
-  if (!lead) return whichLead(intent, env, others)
+  const { lead, others, notYours } = leadFor(env.text, env)
+  if (!lead) return whichLead(intent, env, { others, notYours })
   const task = openTaskFor(env, lead)
   if (!task) return say(intent, t('ai:reply.noOpenTask', { name: lead.name }), { links: [{ kind: 'lead', id: lead.id }] })
   if (!can(env.user, 'task.manage', task, env.db)) return refuse(intent, 'task.manage', env.user)
@@ -352,10 +359,10 @@ export function assignLeadPlan(env: Env): CommandPlan {
     return refuse(intent, 'lead.assign', env.user, alt)
   }
   const [leadPart, toPart = ''] = norm(env.text).split(TO_SPLIT)
-  const { lead, others } = leadFor(leadPart.replace(/\b(lead|leads|enquiry)\b/gi, ' '), env)
+  const { lead, others, notYours } = leadFor(leadPart.replace(/\b(lead|leads|enquiry)\b/gi, ' '), env)
   const people = assignees(env)
   const target = userIn(toPart, people)
-  if (!lead) return whichLead(intent, env, others)
+  if (!lead) return whichLead(intent, env, { others, notYours })
   if (!can(env.user, 'lead.assign', lead, env.db)) return refuse(intent, 'lead.assign', env.user)
   const auto = /\b(auto|anyone|best|whoever|least busy|lowest)\b/i.test(toPart)
   if (!target && !auto) {
@@ -433,8 +440,8 @@ export function reassignFromPlan(env: Env): CommandPlan {
 
 export function requestReassignPlan(env: Env): CommandPlan {
   const intent = 'requestReassign'
-  const { lead, others } = leadFor(env.text.replace(/\b(request|reassign(?:ment)?|transfer|of|for)\b/gi, ' '), env)
-  if (!lead) return whichLead(intent, env, others)
+  const { lead, others, notYours } = leadFor(env.text.replace(/\b(request|reassign(?:ment)?|transfer|of|for)\b/gi, ' '), env)
+  if (!lead) return whichLead(intent, env, { others, notYours })
   if (can(env.user, 'lead.assign', lead, env.db)) return assignLeadPlan({ ...env, text: `Assign ${lead.name} to auto`, s: `assign ${lead.name.toLowerCase()} to auto` })
   if (!can(env.user, 'lead.requestReassign', lead, env.db)) return refuse(intent, 'lead.requestReassign', env.user)
   const note = /\b(?:because|as|since|reason)\b(.+)$/i.exec(env.text)?.[1]?.trim()
@@ -451,8 +458,8 @@ export function requestReassignPlan(env: Env): CommandPlan {
 export function sharePlan(env: Env, shortlistOnly = false): CommandPlan {
   const intent = shortlistOnly ? 'shortlist' : 'shareProperties'
   const parts = env.text.split(/\b(?:with|to|for)\b/i)
-  const { lead, others } = leadFor(parts.length > 1 ? parts.slice(1).join(' ') : env.text, env)
-  if (!lead) return whichLead(intent, env, others)
+  const { lead, others, notYours } = leadFor(parts.length > 1 ? parts.slice(1).join(' ') : env.text, env)
+  if (!lead) return whichLead(intent, env, { others, notYours })
   if (!can(env.user, 'lead.edit', lead, env.db)) return refuse(intent, 'lead.edit', env.user)
   const named1 = propertyIn(parts[0], env) ?? env.selProperty
   const n = Number(/\b(?:top|best|first)\s+(\d)\b/.exec(env.s)?.[1] ?? 3)
@@ -484,8 +491,8 @@ export function draftMessagePlan(env: Env): CommandPlan {
   const intent = 'draftMessage'
   const appt = appointmentFor(env)
   const found = leadFor(env.text, env)
-  const lead = found.lead ?? (appt?.leadId ? env.leads.find((l) => l.id === appt.leadId) : undefined)
-  if (!lead) return whichLead(intent, env, found.others)
+  const lead = found.lead ?? (appt?.leadId && !found.notYours ? env.leads.find((l) => l.id === appt.leadId) : undefined)
+  if (!lead) return whichLead(intent, env, found)
   const s = env.s
   const purpose = /\bconfirm/.test(s) ? 'visitConfirm' as const : /\b(after (?:the )?visit|post[- ]visit|thank)/.test(s) ? 'postVisit' as const
     : /\breminder|remind\b/.test(s) ? 'reminder' as const : /\b(offer|price|counter|negotiat)/.test(s) ? 'offer' as const

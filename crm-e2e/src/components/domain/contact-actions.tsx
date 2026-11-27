@@ -23,36 +23,40 @@ export function ContactActions({ lead, message, size = 'icon-sm', showEmail, onC
   /** After the dialer opens (e.g. ask for the call result). */
   onCall?: () => void
   className?: string
-  /** Show text labels next to icons. */
-  labels?: boolean
+  /** Show text labels next to icons: `true` names the person ("Call Revathi"); `'short'` shows just "Call" / "WhatsApp"
+   *  (for a page that already names the person), with the full name kept as the accessible name. */
+  labels?: boolean | 'short'
 }) {
   const { t } = useTranslation('domain')
   const { can } = usePermission()
   const mayLog = can('lead.edit', lead)
   const btnSize = labels ? 'sm' : size
-  const item = (key: string, label: string, href: string, icon: ReactNode, onClick?: () => void, extra?: string) => (
-    <Tooltip key={key}>
-      <TooltipTrigger asChild>
-        <Button asChild variant="ghost" size={btnSize} className={extra}>
-          <a href={href} target={key === 'wa' ? '_blank' : undefined} rel="noopener noreferrer" aria-label={labels ? undefined : label} onClick={(e) => { e.stopPropagation(); onClick?.() }}>
-            {icon}
-            {labels && <span>{label}</span>}
-          </a>
-        </Button>
-      </TooltipTrigger>
-      {!labels && <TooltipContent>{label}</TooltipContent>}
-    </Tooltip>
-  )
+  const item = (key: 'call' | 'whatsapp' | 'email', href: string, icon: ReactNode, onClick?: () => void, extra?: string) => {
+    const label = t(`contact.${key}`, { name: lead.name })
+    return (
+      <Tooltip key={key}>
+        <TooltipTrigger asChild>
+          <Button asChild variant="ghost" size={btnSize} className={extra}>
+            <a href={href} target={key === 'whatsapp' ? '_blank' : undefined} rel="noopener noreferrer" aria-label={labels === true ? undefined : label} onClick={(e) => { e.stopPropagation(); onClick?.() }}>
+              {icon}
+              {labels && <span>{labels === 'short' ? t(`log.channel.${key}`) : label}</span>}
+            </a>
+          </Button>
+        </TooltipTrigger>
+        {labels !== true && <TooltipContent>{label}</TooltipContent>}
+      </Tooltip>
+    )
+  }
   if (!lead.phone && !lead.email) return null
   return (
     <div className={cn('flex items-center gap-0.5', className)}>
-      {lead.phone && item('call', t('contact.call', { name: lead.name }), telLink(lead.phone), <Phone />, onCall)}
+      {lead.phone && item('call', telLink(lead.phone), <Phone />, onCall)}
       {lead.phone && item(
-        'wa', t('contact.whatsapp', { name: lead.name }), waLink(lead.phone, message), <MessageCircle />,
+        'whatsapp', waLink(lead.phone, message), <MessageCircle />,
         () => { if (mayLog) logContact(lead.id, { channel: 'whatsapp', text: message }) },
         'text-success hover:bg-success-soft hover:text-success',
       )}
-      {showEmail && lead.email && item('mail', t('contact.email', { name: lead.name }), mailtoLink(lead.email), <Mail />)}
+      {showEmail && lead.email && item('email', mailtoLink(lead.email), <Mail />)}
     </div>
   )
 }

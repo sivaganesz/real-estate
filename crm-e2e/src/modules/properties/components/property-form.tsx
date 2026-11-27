@@ -625,8 +625,8 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
         {editing && dirty && <p className="text-meta text-muted-foreground max-xl:hidden">{t('properties:form.unsaved')}</p>}
       </aside>
 
-      {/* sticky save bar below xl */}
-      <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur xl:hidden md:-mx-6 md:px-6">
+      {/* sticky save bar below xl (md:pr-22 keeps the Save button clear of the floating AI button) */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur xl:hidden md:-mx-6 md:px-6 md:pr-22">
         <Button variant="secondary" className="flex-1" onClick={() => navigate(editing ? paths.property(propertyId) : paths.properties())}>{t('common:actions.cancel')}</Button>
         <Button className="flex-1" onClick={() => save()} disabled={saving} aria-busy={saving || undefined} data-testid="property-save-mobile">
           {saving && <Loader2 className="animate-spin" />}{editing ? t('properties:form.saveChanges') : t('properties:form.save')}

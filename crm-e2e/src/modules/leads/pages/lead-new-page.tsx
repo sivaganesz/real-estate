@@ -14,7 +14,7 @@ export default function LeadNewPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <PageHeader title={t('add.title')} subtitle={t('add.pageSubtitle')} />
       <LeadEditorBody ed={ed} layout="page" />
-      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-popover/95 p-3 shadow-lg backdrop-blur md:bottom-4">
+      <div className="sticky bottom-20 z-10 fab-clear flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-popover/95 p-3 shadow-lg backdrop-blur md:bottom-4">
         <LeadEditorFooter ed={ed} layout="page" onCancel={() => navigate(paths.leads())} />
       </div>
     </div>

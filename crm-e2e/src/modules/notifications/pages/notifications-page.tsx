@@ -38,7 +38,7 @@ import {
 
 export default function NotificationsPage() {
   const { t, i18n } = useTranslation(['notifications', 'common', 'domain'])
-  const now = useNow()
+  const now = useNow(15_000)
   const navigate = useNavigate()
   const user = useCurrentUser()
   const all = useDb((db) => db.notifications)

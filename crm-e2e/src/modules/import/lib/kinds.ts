@@ -12,6 +12,9 @@ export const KIND_ICON: Record<ImportKind, LucideIcon> = {
 export const KIND_TONE: Record<ImportKind, Tone> = {
   leads: 'primary', apartments: 'info', villas: 'success', plots: 'warning', commercial: 'violet', document: 'ai',
 }
+/** The i18n key of a kind's one-line description: leads promise auto-assignment only while it is switched on. */
+export const kindBodyKey = (kind: ImportKind, autoAssign: boolean) =>
+  kind === 'leads' && !autoAssign ? 'import:kind.leads.bodyManual' : `import:kind.${kind}.body`
 export const kindPermission = (kind: ImportKind): Action =>
   kind === 'leads' ? 'import.leads' : kind === 'document' ? 'import.document' : 'import.properties'
 

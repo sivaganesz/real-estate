@@ -53,7 +53,7 @@ export function LeadDialogsProvider({ children, onDeleted }: { children: ReactNo
       {cur?.kind === 'visit' && <AppointmentFormDialog key={n} open onOpenChange={(o) => !o && close()} leadId={cur.leadId} propertyIds={cur.propertyIds} type="siteVisit" />}
       {cur?.kind === 'task' && <TaskFormDialog key={n} open onOpenChange={(o) => !o && close()} leadId={cur.leadId} />}
       {cur?.kind === 'stage' && <StageChangeDialog key={n} open onOpenChange={(o) => !o && close()} leadId={cur.leadId} to={cur.to} />}
-      {cur?.kind === 'assign' && <AssignDialog key={n} open onOpenChange={(o) => !o && close()} leadIds={cur.leadIds} />}
+      {cur?.kind === 'assign' && <AssignDialog key={n} open onOpenChange={(o) => !o && close()} leadIds={cur.leadIds} onDone={cur.onDone} />}
       {cur?.kind === 'requestReassign' && (
         <Dialog open onOpenChange={(o) => !o && close()}>
           <DialogContent className="sm:max-w-md">

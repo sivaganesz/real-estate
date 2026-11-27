@@ -26,7 +26,10 @@
     "welcome": "RealSpec CRM-க்கு வரவேற்கிறோம். டெமோ தரவு ஏற்றப்பட்டது.",
     "assignmentBatch": "உங்களுக்கு {{count}} புதிய லீட்கள் ஒதுக்கப்பட்டன",
     "rescheduled": "{{name}} இன் சந்திப்பு {{time}} க்கு மாற்றப்பட்டது",
-    "reassignRequest": "{{name}} ஐ மாற்றி ஒதுக்க {{owner}} கேட்கிறார்"
+    "reassignRequest": "{{name}} ஐ மாற்றி ஒதுக்க {{owner}} கேட்கிறார்",
+    "reassignedBatch_one": "{{from}} அவர்களிடமிருந்து {{count}} லீட் உங்களுக்கு மாற்றப்பட்டது",
+    "reassignedBatch_other": "{{from}} அவர்களிடமிருந்து {{count}} லீட்கள் உங்களுக்கு மாற்றப்பட்டன",
+    "reassignRequestNote": "{{name}} ஐ மாற்றி ஒதுக்க {{owner}} கேட்கிறார்: “{{note}}”"
   },
   "text": {
     "slaQueue": "ஒதுக்கப்படாத {{count}} லீட்கள் {{mins}} நிமிடங்களுக்கு மேல் காத்திருக்கின்றன",
@@ -35,7 +38,8 @@
     "propertyUnavailable": "{{property}} இப்போது {{statusLabel}}: {{name}} அவர்களுக்கு மாற்று வழிகளைப் பாருங்கள்",
     "booking": "முன்பதிவு: {{name}} {{property}} க்கு {{amount}} செலுத்தினார் ({{owner}})",
     "importFinished": "இறக்குமதி முடிந்தது: {{fileName}} · {{imported}} சேர்க்கப்பட்டன",
-    "reassignedAway": "{{name}} உங்களிடமிருந்து {{to}} அவர்களுக்கு மாற்றப்பட்டது"
+    "reassignedAway": "{{name}} உங்களிடமிருந்து {{to}} அவர்களுக்கு மாற்றப்பட்டது",
+    "escalation": "{{owner}} {{name}} அவர்களை {{age}} ஆக அழைக்கவில்லை"
   },
   "select": "தேர்ந்தெடு: {{text}}",
   "selectAll": "அனைத்தையும் தேர்ந்தெடு",
@@ -157,5 +161,12 @@
     "body": "அவை உங்கள் பட்டியலிலிருந்து மறையும். சில விநாடிகளுக்குள் செயல்தவிர்க்கலாம்.",
     "confirm_one": "நீக்கு",
     "confirm_other": "{{count}} ஐ நீக்கு"
+  },
+  "duration": {
+    "mins_one": "{{count}} நிமிடம்",
+    "mins_other": "{{count}} நிமிடங்கள்",
+    "hours": "{{h}} மணி {{m}} நிமிடம்",
+    "days_one": "{{count}} நாள்",
+    "days_other": "{{count}} நாட்கள்"
   }
 }

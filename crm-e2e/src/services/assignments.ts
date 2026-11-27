@@ -47,7 +47,7 @@ export function assignLeads(ids: ID[], target: ID | 'auto', note?: string, opts:
       }
     }
     return out
-  }, { undoable: ids.length > 1, via: opts.via })
+  }, { undoable: true, via: opts.via })
 }
 
 export const assignLead = (id: ID, target: ID | 'auto', note?: string, opts: { via?: Origin } = {}) => assignLeads([id], target, note, opts)

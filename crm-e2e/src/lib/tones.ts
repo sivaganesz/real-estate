@@ -27,7 +27,7 @@ export const TONE: Record<Tone, ToneClasses> = {
   violet: { solid: 'bg-violet', soft: 'bg-violet-soft', text: 'text-violet', ring: 'ring-violet' },
   neutral: { solid: 'bg-neutral', soft: 'bg-neutral-soft', text: 'text-neutral', ring: 'ring-neutral' },
   ai: { solid: 'bg-ai', soft: 'bg-ai-soft', text: 'text-ai', ring: 'ring-ai' },
-  highlight: { solid: 'bg-highlight', soft: 'bg-highlight-soft', text: 'text-highlight-foreground', ring: 'ring-highlight' },
+  highlight: { solid: 'bg-highlight', soft: 'bg-highlight-soft', text: 'text-highlight-foreground dark:text-highlight', ring: 'ring-highlight' },
   hot: { solid: 'bg-hot', soft: 'bg-hot-soft', text: 'text-hot', ring: 'ring-hot' },
   warm: { solid: 'bg-warm', soft: 'bg-warm-soft', text: 'text-warm', ring: 'ring-warm' },
   cold: { solid: 'bg-cold', soft: 'bg-cold-soft', text: 'text-cold', ring: 'ring-cold' },

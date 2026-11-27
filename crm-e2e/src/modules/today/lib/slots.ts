@@ -72,7 +72,7 @@ export function reasonParams(item: Pick<TodayItem, 'params'>, format: (key: stri
 export type PriorityFilter = 'all' | 'new' | 'visits' | 'followUps' | 'leads'
 export const PRIORITY_FILTERS: PriorityFilter[] = ['all', 'new', 'visits', 'followUps', 'leads']
 const GROUP: Record<TodayKind, Exclude<PriorityFilter, 'all'>> = {
-  uncalledNew: 'new', visitSoon: 'visits', overdueTask: 'followUps', postVisitCall: 'followUps', dueToday: 'followUps', hotNoContact: 'leads', stale: 'leads',
+  uncalledNew: 'new', visitSoon: 'visits', visitOutcome: 'visits', overdueTask: 'followUps', postVisitCall: 'followUps', dueToday: 'followUps', hotNoContact: 'leads', stale: 'leads',
 }
 export const groupOf = (kind: TodayKind) => GROUP[kind]
 

@@ -107,6 +107,8 @@
     "final": "Final stage",
     "avgDays": "avg {{days}} d / {{target}} d",
     "noDays": "No time data yet",
+    "scrollMore": "Show later stages",
+    "scrollBack": "Show earlier stages",
     "tileLabel": "{{stage}}: {{reached}} reached, {{conv}}% moved on, average {{days}} days",
     "tileLabelNoData": "{{stage}}: {{reached}} reached, not enough data yet"
   },
@@ -134,7 +136,7 @@
     "show": "Show",
     "failed": "The assistant couldn't read the pipeline. Try again.",
     "none": "No stalled deals. Every open deal is within twice its stage target.",
-    "overdue": "{{days}} days in stage · target {{target}}",
+    "overdue": "{{days}} days in stage · target\u00a0{{target}}\u00a0d",
     "recommend": "Recommended:",
     "nextTip": "The assistant's next best action for this lead",
     "plan": "Plan it",
@@ -175,6 +177,7 @@
     "applied": "Change applied",
     "again": "Ask something else",
     "exMove": "Move {{name}} to {{stage}}",
+    "exMoveLabel": "Move {{name}} to {{stage}}",
     "exStalled": "Show stalled deals",
     "exConversions": "Who is close to booking?",
     "stageWord": {

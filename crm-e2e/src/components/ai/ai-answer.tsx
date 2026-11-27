@@ -45,7 +45,7 @@ export function StatBars({ stats }: { stats: AIStat[] }) {
               <span className="shrink-0 font-semibold tabular-nums">{s.display ?? s.value}</span>
             </span>
             <span aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <span className={cn('block h-full rounded-full transition-[width] duration-(--dur-slower) ease-out', tone.solid)} style={{ width: `${Math.max(3, Math.min(100, pct))}%` }} />
+              <span className={cn('block h-full rounded-full transition-[width] duration-(--dur-slower) ease-out', tone.solid)} style={{ width: `${pct > 0 ? Math.max(3, Math.min(100, pct)) : 0}%` }} />
             </span>
           </li>
         )

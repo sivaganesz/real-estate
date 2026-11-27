@@ -26,7 +26,10 @@
     "welcome": "Welcome to RealSpec CRM. Demo data is loaded.",
     "assignmentBatch": "{{count}} new leads assigned to you",
     "rescheduled": "{{name}}'s appointment moved to {{time}}",
-    "reassignRequest": "{{owner}} asks to reassign {{name}}"
+    "reassignRequest": "{{owner}} asks to reassign {{name}}",
+    "reassignedBatch_one": "{{count}} lead reassigned to you from {{from}}",
+    "reassignedBatch_other": "{{count}} leads reassigned to you from {{from}}",
+    "reassignRequestNote": "{{owner}} asks to reassign {{name}}: “{{note}}”"
   },
   "text": {
     "slaQueue": "{{count}} unassigned leads are waiting over {{mins}} minutes",
@@ -35,7 +38,8 @@
     "propertyUnavailable": "{{property}} is now {{statusLabel}}: see alternatives for {{name}}",
     "booking": "Booking: {{name}} paid {{amount}} for {{property}} ({{owner}})",
     "importFinished": "Import finished: {{fileName}} · {{imported}} added",
-    "reassignedAway": "{{name}} moved from you to {{to}}"
+    "reassignedAway": "{{name}} moved from you to {{to}}",
+    "escalation": "{{owner}} has not called {{name}} for {{age}}"
   },
   "select": "Select: {{text}}",
   "selectAll": "Select all",
@@ -157,5 +161,12 @@
     "body": "They disappear from your list. You can undo for a few seconds.",
     "confirm_one": "Remove",
     "confirm_other": "Remove {{count}}"
+  },
+  "duration": {
+    "mins_one": "{{count}} min",
+    "mins_other": "{{count}} min",
+    "hours": "{{h}} h {{m}} min",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
   }
 }

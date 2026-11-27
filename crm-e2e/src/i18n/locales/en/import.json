@@ -49,7 +49,7 @@
     "myDrafts": "My drafts to review"
   },
   "kind": {
-    "leads": { "title": "Leads", "short": "Leads", "body": "Portal exports, ad leads and enquiry lists. Auto-assigned on import.", "wizardTitle": "Import leads" },
+    "leads": { "title": "Leads", "short": "Leads", "body": "Portal exports, ad leads and enquiry lists. Auto-assigned on import.", "bodyManual": "Portal exports, ad leads and enquiry lists. New leads wait in the unassigned queue.", "wizardTitle": "Import leads" },
     "apartments": { "title": "Apartments / Flats", "short": "Apartments", "body": "Builder price lists and resale flats, with carpet and super built-up areas.", "wizardTitle": "Import apartments" },
     "villas": { "title": "Villas / Houses", "short": "Villas & houses", "body": "Villas, independent and row houses, with built-up and plot areas.", "wizardTitle": "Import villas and houses" },
     "plots": { "title": "Plots / Land", "short": "Plots & land", "body": "Layout plots and land in sq ft, cents or acres, with dimensions and road width.", "wizardTitle": "Import plots and land" },
@@ -229,6 +229,12 @@
     "assignedTitle": "Auto-assigned",
     "assignedBody": "Who the new leads went to. Each executive got one notification for the batch.",
     "unassigned": "Unassigned",
+    "queueTitle": "Waiting to be assigned",
+    "queueBody_one": "Auto-assignment is off, so the new lead is waiting in the unassigned queue.",
+    "queueBody_other": "Auto-assignment is off, so the {{count}} new leads are waiting in the unassigned queue.",
+    "queueBodyNoOne_one": "No executive could take the new lead, so it is waiting in the unassigned queue.",
+    "queueBodyNoOne_other": "No executive could take the {{count}} new leads, so they are waiting in the unassigned queue.",
+    "assignNow": "Assign now",
     "reason": { "error": "Needs fixing", "skipped": "Skipped by you", "duplicate": "Duplicate (skipped)" }
   },
   "form": {

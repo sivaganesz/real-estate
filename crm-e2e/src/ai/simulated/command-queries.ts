@@ -20,9 +20,9 @@ import {
   activityCounts, conversionRate, leadsBySource, periodStart, pipelineValueByStage, scopeUserIds, summaryKpis, targetProgress, teamBoard,
 } from '@/services/queries/stats'
 import type { AIStat, CommandPlan } from '../types'
-import { first, leadFor, propertyIn, refuse, say, t, type Env } from './command-kit'
+import { first, leadFor, notYoursReply, propertyIn, refuse, say, t, type Env } from './command-kit'
 import { daysIn, lostReasonIn, periodIn } from './intents'
-import { amountsIn } from './parse'
+import { amountsIn, norm } from './parse'
 import { summarizeSim } from './summarize'
 
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0)
@@ -140,6 +140,9 @@ export function followUpLeadsPlan(env: Env): CommandPlan {
 
 /* ---------- performance ---------- */
 
+/** "12 of 40" against a target; just the count when no target is set (an admin has none: never "49 of 0"). */
+const ofTarget = (v: { done: number; target: number }) => (v.target > 0 ? t('ai:stat.ofTarget', { done: v.done, target: v.target }) : String(v.done))
+
 export function performancePlan(env: Env): CommandPlan {
   const period = periodIn(env.text, 'month')
   const done = activityCounts(env.db, [env.user.id], period, env.now)
@@ -147,9 +150,9 @@ export function performancePlan(env: Env): CommandPlan {
   const mine = env.leads.filter((l) => l.ownerId === env.user.id)
   const stats: AIStat[] = period === 'month'
     ? [
-      { label: t('ai:stat.calls'), value: p.calls.done, display: t('ai:stat.ofTarget', { done: p.calls.done, target: p.calls.target }), pct: p.calls.pct, tone: p.calls.pct >= 100 ? 'success' : 'primary' },
-      { label: t('ai:stat.visits'), value: p.siteVisits.done, display: t('ai:stat.ofTarget', { done: p.siteVisits.done, target: p.siteVisits.target }), pct: p.siteVisits.pct, tone: p.siteVisits.pct >= 100 ? 'success' : 'primary' },
-      { label: t('ai:stat.bookings'), value: p.bookings.done, display: t('ai:stat.ofTarget', { done: p.bookings.done, target: p.bookings.target }), pct: p.bookings.pct, tone: p.bookings.pct >= 100 ? 'success' : 'primary' },
+      { label: t('ai:stat.calls'), value: p.calls.done, display: ofTarget(p.calls), pct: p.calls.pct, tone: p.calls.pct >= 100 ? 'success' : 'primary' },
+      { label: t('ai:stat.visits'), value: p.siteVisits.done, display: ofTarget(p.siteVisits), pct: p.siteVisits.pct, tone: p.siteVisits.pct >= 100 ? 'success' : 'primary' },
+      { label: t('ai:stat.bookings'), value: p.bookings.done, display: ofTarget(p.bookings), pct: p.bookings.pct, tone: p.bookings.pct >= 100 ? 'success' : 'primary' },
     ]
     : [
       { label: t('ai:stat.calls'), value: done.calls, tone: 'primary' },
@@ -206,7 +209,7 @@ export function targetLeftPlan(env: Env): CommandPlan {
   return {
     mode: 'simulated', intent: 'targetLeft', proposals: [],
     reply: { mode: 'simulated', text: t('ai:reply.targetLeft', { days: daysLeft }), bullets },
-    stats: rows.map((r) => ({ label: t(`ai:stat.${r.key}`), value: r.v.done, display: t('ai:stat.ofTarget', { done: r.v.done, target: r.v.target }), pct: r.v.pct, tone: r.v.pct >= 100 ? 'success' as const : 'primary' as const })),
+    stats: rows.map((r) => ({ label: t(`ai:stat.${r.key}`), value: r.v.done, display: ofTarget(r.v), pct: r.v.pct, tone: r.v.pct >= 100 ? 'success' as const : 'primary' as const })),
     followUps: [{ label: t('ai:followUp.nextCall'), command: 'Who should I call next?' }],
   }
 }
@@ -219,9 +222,15 @@ export function workloadPlan(env: Env): CommandPlan {
   if (!rows.length) return say('workload', t('ai:reply.noTeam'))
   const avg = rows.reduce((n, r) => n + r.openLeads, 0) / rows.length
   const cap = env.db.settings.assignment.maxActivePerExec
-  const over = rows.filter((r) => (cap ? r.openLeads > cap : r.openLeads > avg * 1.25) || r.overdue >= 3).sort((a, b) => b.openLeads - a.openLeads)
+  const avgOverdue = rows.reduce((n, r) => n + r.overdue, 0) / rows.length
+  const light = [...rows].filter((r) => r.user.availability !== 'onLeave').sort((a, b) => a.openLeads - b.openLeads || a.overdue - b.overdue)[0]
+  // overloaded = clearly above the team: over the configured cap, well above the average open load, or with clearly more
+  // overdue work than the others (a team where everyone has 3 overdue tasks is behind, not unevenly loaded). The person
+  // with the lightest load is never called overloaded.
+  const over = rows
+    .filter((r) => r !== light && ((cap && r.openLeads > cap) || r.openLeads > avg * 1.25 || (r.overdue >= 3 && r.overdue > avgOverdue * 1.5)))
+    .sort((a, b) => b.openLeads - a.openLeads)
   const max = Math.max(1, ...rows.map((r) => r.openLeads))
-  const light = [...rows].filter((r) => r.user.availability !== 'onLeave').sort((a, b) => a.openLeads - b.openLeads)[0]
   return {
     mode: 'simulated', intent: 'workload', proposals: [], results: { kind: 'user', ids: rows.map((r) => r.user.id) },
     reply: {
@@ -383,9 +392,26 @@ export function duplicatesPlan(env: Env): CommandPlan {
 
 /* ---------- records ---------- */
 
+/** Words after "summarise" / "tell me about" that are not a person ("my day", "today's visits", "this lead"). */
+const NOT_A_NAME = /^(?:my|the|this|that|these|today'?s?|todays|day|week|month|lead|leads|client|appointments?|visits?|schedule|calendar|before|call|calls|sales|performance|team|business|pipeline|tasks?|it|him|her|them|please|pls|for|me|us|so|far|now|quickly|briefly|everything|all|what|happened|status|progress|update|updates|deal|deals|and|of|on|in|a|an)$/i
+
+/** A name asked about that matches no lead at all ("summarise Ramesh Babu"): the words as typed, title-cased. */
+function unknownNameAsked(text: string): string | undefined {
+  const rest = /\b(?:summari[sz]e|summary of|brief me (?:on|about)|tell me about|recap|overview of|background on|history of|who is)\s+(.+)$/i.exec(norm(text))?.[1]
+  if (!rest) return undefined
+  const words = rest.replace(/[?.!,]+/g, ' ').split(/\s+/).filter(Boolean)
+  if (!words.length || words.length > 3 || words.some((w) => NOT_A_NAME.test(w) || !/^[a-z][a-z.'-]*$/i.test(w))) return undefined
+  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export function summarizeLeadPlan(env: Env): CommandPlan {
-  const { lead } = leadFor(env.text, env)
-  if (!lead) return { mode: 'simulated', intent: 'summarizeLead', proposals: [], reply: summarizeSim({ kind: 'day' }, env.db, env.user, env.now) }
+  const { lead, notYours } = leadFor(env.text, env)
+  if (!lead) {
+    // "summarise Divya Menon" for a lead that isn't mine (or doesn't exist) is not a request for my day
+    const missing = notYours ?? unknownNameAsked(env.text)
+    if (missing) return notYoursReply('summarizeLead', missing)
+    return { mode: 'simulated', intent: 'summarizeLead', proposals: [], reply: summarizeSim({ kind: 'day' }, env.db, env.user, env.now) }
+  }
   const reply = summarizeSim({ kind: 'lead', id: lead.id }, env.db, env.user, env.now)
   return {
     mode: 'simulated', intent: 'summarizeLead', proposals: [], reply,
@@ -400,7 +426,8 @@ export function summarizeLeadPlan(env: Env): CommandPlan {
 export function findMatchesPlan(env: Env): CommandPlan {
   const intent = 'findMatches'
   if (!can(env.user, 'matching.run')) return refuse(intent, 'matching.run', env.user)
-  const { lead, others } = leadFor(env.text.replace(/\b(propert(?:y|ies)|matching|matches|options|units)\b/gi, ' '), env)
+  const { lead, others, notYours } = leadFor(env.text.replace(/\b(propert(?:y|ies)|matching|matches|options|units)\b/gi, ' '), env)
+  if (!lead && notYours && !propertyIn(env.text, env)) return notYoursReply(intent, notYours)
   // on a property page (or a property named): the buyers who fit it
   // "Which buyers match Aranya Greens?" asks for buyers even when a lead's name looks alike ("Aranya" ~ "Ananya")
   const asksBuyers = /\b(buyers?|leads?|clients?)\b.*\b(for|match(?:es)?|fit(?:s)?|want(?:s)?|suit(?:s)?)\b|\bwho (?:fits|wants|matches)\b/.test(env.s)
@@ -419,7 +446,7 @@ export function findMatchesPlan(env: Env): CommandPlan {
   }
   if (!lead) return say(intent, t('ai:reply.whichLead'), { followUps: (others.length ? others : env.open.slice(0, 3)).map((l) => ({ label: l.name, command: `Find matching properties for ${l.name}` })) })
   const capAmount = /\b(under|below|within|upto|up to|max|less than)\b/.test(env.s) ? amountsIn(env.text)[0]?.value : undefined
-  const withinBudget = /\bwithin\b.*\bbudget\b|\bin (?:his|her|their) budget\b/.test(env.s)
+  const withinBudget = /\b(?:within|in|fits?|suits?|fitting|matching)\b.*\bbudget\b/.test(env.s)
   const cap = capAmount ?? (withinBudget ? lead.requirement.budgetMax : undefined)
   const all = propertiesForLead(lead, env.db.properties, env.db.settings, env.now, { limit: 20 })
   const matches = all.filter((m) => !cap || m.property.price <= cap).slice(0, 5)

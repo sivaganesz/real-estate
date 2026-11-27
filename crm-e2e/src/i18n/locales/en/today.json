@@ -111,6 +111,13 @@
       "phoneCall": "Call at {{time}}",
       "videoCall": "Video call at {{time}}",
       "documentation": "Documentation at {{time}}"
+    },
+    "outcome": {
+      "siteVisit": "Site visit over: record the outcome",
+      "officeMeeting": "Office meeting over: record the outcome",
+      "phoneCall": "Call over: record the outcome",
+      "videoCall": "Video call over: record the outcome",
+      "documentation": "Documentation over: record the outcome"
     }
   },
   "due": {
@@ -174,6 +181,8 @@
   "toast": {
     "logged": "Logged: {{name}} · {{result}}",
     "nextPlanned": "Next follow-up: {{when}}",
+    "keptOpen": "“{{title}}” stays open, moved to {{when}}",
+    "keptOpenNow": "“{{title}}” stays open: not done until they are reached",
     "done": "Done: {{title}}",
     "rescheduled": "Moved to {{when}}",
     "visitMoved": "Appointment moved to {{when}}",
@@ -323,6 +332,9 @@
       "highValue": "{{name}} · {{budget}} budget, untouched",
       "highValueBody": "Owner {{owner}}",
       "highValueQueue": "Still in the unassigned queue",
+      "reassignRequest": "{{owner}} asks to reassign {{name}}",
+      "reassignRequestBody": "Reason: “{{note}}”",
+      "reassignRequestNoNote": "No reason given",
       "leave_one": "{{name}} is on leave with {{count}} open lead",
       "leave_other": "{{name}} is on leave with {{count}} open leads",
       "deactivated_one": "{{name}} is deactivated but holds {{count}} open lead",
@@ -330,6 +342,7 @@
       "proposalBody": "Suggested: reassign them with auto-assign (lowest workload). You can undo.",
       "reassign": "Reassign with auto-assign",
       "assign": "Reassign",
+      "assignNew": "Assign",
       "emptyTitle": "Nothing needs you right now",
       "emptyBody": "Escalations, missed post-visit calls and leave reassignments show up here."
     },

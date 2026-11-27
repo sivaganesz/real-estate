@@ -4,14 +4,16 @@
  * Nothing here is stored: the Today page recomputes it on every write, so a click re-ranks the list at once.
  *
  * Executive ranking (ROLE_RESEARCH §5.1):
- *  1 uncalled new leads (first-response clock) · 2 visits within 2 h · 3 overdue follow-ups · 4 post-visit calls due
- *  5 hot leads not contacted for N days · 6 stale leads · then the rest of today's follow-ups.
+ *  1 uncalled new leads (first-response clock) · 2 visits within 2 h · 3 overdue follow-ups · 4 appointments that are
+ *  over but have no outcome yet (visit feedback, ROLE_RESEARCH §1) · 5 post-visit calls due · 6 hot leads not contacted
+ *  for N days · 7 stale leads · then the rest of today's follow-ups.
  * Inside a rank: hot leads first, then the earliest due time.
  * A hot or stale lead with a follow-up already planned (an open task due later) is not repeated: it was handled.
  */
 import type { Appointment, DB, EntityRef, ID, ImportJob, Lead, Task, User } from '@/domain/types'
 import { OPEN_STAGES, UPCOMING_APPOINTMENT_STATUSES } from '@/domain/catalogue'
-import { addMinutesIso, clockTime, localDay } from '@/lib/dates'
+import { addMinutesIso, localDay } from '@/lib/dates'
+import { fmtTime } from '@/lib/format'
 import { findDuplicates } from '@/lib/duplicates'
 import { previewAssignments } from '@/lib/assignment'
 import { bestMatchesToday, type Match } from '@/lib/matching'
@@ -25,8 +27,8 @@ import {
   teamRank, between, lostReasonsIn, type ExecRow,
 } from './stats'
 
-export type TodayAction = 'call' | 'whatsapp' | 'logOutcome' | 'reschedule' | 'done' | 'openLead' | 'openAppointment' | 'assign' | 'navigate'
-export type TodayKind = 'uncalledNew' | 'visitSoon' | 'overdueTask' | 'postVisitCall' | 'hotNoContact' | 'stale' | 'dueToday'
+export type TodayAction = 'call' | 'whatsapp' | 'logOutcome' | 'reschedule' | 'done' | 'openLead' | 'openAppointment' | 'recordOutcome' | 'assign' | 'navigate'
+export type TodayKind = 'uncalledNew' | 'visitSoon' | 'overdueTask' | 'visitOutcome' | 'postVisitCall' | 'hotNoContact' | 'stale' | 'dueToday'
 export type TodayItem = {
   kind: TodayKind
   rank: number
@@ -40,8 +42,10 @@ export type TodayItem = {
   overdue?: boolean
 }
 
-export const TODAY_KINDS: TodayKind[] = ['uncalledNew', 'visitSoon', 'overdueTask', 'postVisitCall', 'hotNoContact', 'stale', 'dueToday']
-const RANK: Record<TodayKind, number> = { uncalledNew: 1, visitSoon: 2, overdueTask: 3, postVisitCall: 4, hotNoContact: 5, stale: 6, dueToday: 7 }
+export const TODAY_KINDS: TodayKind[] = ['uncalledNew', 'visitSoon', 'overdueTask', 'visitOutcome', 'postVisitCall', 'hotNoContact', 'stale', 'dueToday']
+const RANK: Record<TodayKind, number> = { uncalledNew: 1, visitSoon: 2, overdueTask: 3, visitOutcome: 4, postVisitCall: 5, hotNoContact: 6, stale: 7, dueToday: 8 }
+/** How far back a visit without an outcome still asks for one on Today. */
+const OUTCOME_LOOKBACK_DAYS = 14
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
 
@@ -85,7 +89,16 @@ export function priorityItems(db: DB, user: User, now: Date): TodayItem[] {
     if (a.ownerId !== user.id || !UPCOMING_APPOINTMENT_STATUSES.includes(a.status)) continue
     const start = new Date(a.start).getTime()
     if (start < now.getTime() || start > now.getTime() + 2 * HOUR) continue
-    push({ kind: 'visitSoon', reasonKey: `soon.${a.type}`, params: { name: lead(a.leadId)?.name ?? '', mins: Math.round((start - now.getTime()) / 60_000), time: clockTime(a.start) }, dueAt: a.start, ref: { kind: 'appointment', id: a.id }, leadId: a.leadId, actions: ['call', 'whatsapp', 'reschedule', 'openAppointment'] })
+    push({ kind: 'visitSoon', reasonKey: `soon.${a.type}`, params: { name: lead(a.leadId)?.name ?? '', mins: Math.round((start - now.getTime()) / 60_000), time: fmtTime(a.start) }, dueAt: a.start, ref: { kind: 'appointment', id: a.id }, leadId: a.leadId, actions: ['call', 'whatsapp', 'reschedule', 'openAppointment'] })
+  }
+  for (const a of db.appointments) {
+    if (!UPCOMING_APPOINTMENT_STATUSES.includes(a.status)) continue
+    const end = new Date(a.start).getTime() + a.durationMin * 60_000
+    if (end > now.getTime() || now.getTime() - end > OUTCOME_LOOKBACK_DAYS * DAY) continue
+    const l = lead(a.leadId)
+    // the lead's current owner records it (after a reassignment the visit stays with the old owner, the follow-up moves)
+    if (a.leadId ? !l || l.ownerId !== user.id || !OPEN_STAGES.includes(l.stage) : a.ownerId !== user.id) continue
+    push({ kind: 'visitOutcome', reasonKey: `outcome.${a.type}`, overdue: true, params: { name: l?.name ?? '' }, dueAt: a.start, ref: { kind: 'appointment', id: a.id }, leadId: a.leadId, actions: ['recordOutcome', 'call', 'whatsapp', 'openAppointment'] })
   }
   for (const t of tasks) {
     if (t.autoReason === 'slaFirstCall' && lead(t.leadId)?.stage === 'new') continue
@@ -190,12 +203,35 @@ export function executiveBriefFacts(t: Pick<ExecutiveToday, 'items' | 'appointme
 
 export type UnassignedRow = { lead: Lead; suggestion?: ReturnType<typeof previewAssignments>[number]; ageMins: number; breached: boolean }
 
+/** An executive's open request to move a lead (ROLE_RESEARCH §5.2): the lead, who asked, why, and when. */
+export type ReassignRequestRow = { lead: Lead; from: string; note: string; at: string }
+
+/**
+ * Reassignment requests sent to this manager that are still pending: the lead is open and has not been reassigned
+ * since the request (the latest request per lead wins).
+ */
+export function pendingReassignRequests(db: Pick<DB, 'notifications' | 'leads' | 'assignments'>, user: Pick<User, 'id'>): ReassignRequestRow[] {
+  const byLead = new Map<ID, ReassignRequestRow>()
+  for (const n of db.notifications) {
+    if (n.userId !== user.id || n.params.variant !== 'reassignRequest' || n.ref?.kind !== 'lead') continue
+    const lead = db.leads.find((l) => l.id === n.ref!.id)
+    if (!lead || !OPEN_STAGES.includes(lead.stage)) continue
+    if (db.assignments.some((a) => a.leadId === lead.id && a.at >= n.at)) continue
+    const prev = byLead.get(lead.id)
+    if (!prev || prev.at < n.at) byLead.set(lead.id, { lead, from: String(n.params.owner ?? ''), note: String(n.params.note ?? '').trim(), at: n.at })
+  }
+  return [...byLead.values()].sort((a, b) => b.at.localeCompare(a.at))
+}
+
 export function managerToday(db: DB, user: User, now: Date) {
   const nowIso = now.toISOString()
   const leads = visible.leads(db, user)
   const open = leads.filter((l) => OPEN_STAGES.includes(l.stage))
   const unassignedLeads = open.filter((l) => l.ownerId === null).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-  const suggestions = previewAssignments(db, unassignedLeads.map((l) => l.id), user.role === 'manager' ? user.id : undefined)
+  // Each row's suggestion is what auto-assign would pick for that lead alone, right now (MGR-1): rows are assigned in
+  // any order, so a row must not assume the rows above it were assigned first. "Auto-assign all" previews the sequence.
+  const managerId = user.role === 'manager' ? user.id : undefined
+  const suggestions = unassignedLeads.flatMap((l) => previewAssignments(db, [l.id], managerId))
   const team: ExecRow[] = teamBoard(db, user, now)
   const teamIds = team.map((r) => r.user.id)
   const onLeave = team.filter((r) => r.user.availability === 'onLeave' && r.user.status === 'active' && r.openLeads > 0)
@@ -205,6 +241,7 @@ export function managerToday(db: DB, user: User, now: Date) {
   const highValueUntouched = open.filter((l) => (l.requirement.budgetMax ?? 0) >= 15_000_000 && (!l.firstContactAt || Math.floor((now.getTime() - new Date(l.lastContactAt ?? l.createdAt).getTime()) / DAY) >= db.settings.sla.hotNoContactDays))
   const overdueTasks = visible.tasks(db, user).filter((t) => t.status === 'open' && t.dueAt < nowIso).sort((a, b) => a.dueAt.localeCompare(b.dueAt))
   const missedPostVisit = overdueTasks.filter((t) => t.autoReason === 'postVisitCall')
+  const reassignRequests = pendingReassignRequests(db, user)
   return {
     unassigned: unassignedLeads.map((l): UnassignedRow => {
       const ageMins = Math.max(0, Math.floor((now.getTime() - new Date(l.createdAt).getTime()) / 60_000))
@@ -217,7 +254,7 @@ export function managerToday(db: DB, user: User, now: Date) {
     visits: todaysAppointments(db, teamIds, now),
     stalled: open.filter((l) => agingOf(l, db.settings, now).tone === 'danger').sort((a, b) => a.stageSince.localeCompare(b.stageSince)),
     negotiation: open.filter((l) => l.stage === 'negotiation'),
-    attention: { escalations, highValueUntouched, onLeave, deactivatedOwners, missedPostVisit },
+    attention: { escalations, highValueUntouched, onLeave, deactivatedOwners, missedPostVisit, reassignRequests },
     targets: targetProgress(db, user, now),
     funnel: funnel(leads),
     autoAssignedToday: db.assignments.filter((a) => a.mode === 'auto' && localDay(a.at) === localDay(now) && (!a.toUserId || teamIds.includes(a.toUserId))).length,

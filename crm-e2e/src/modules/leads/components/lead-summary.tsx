@@ -7,6 +7,8 @@
 import { useState, type ReactNode } from 'react'
 import { Building2, CalendarDays, Gem, HelpCircle, IndianRupee, Lock, Mail, MapPin, Pencil, Phone, Tag, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { getAI } from '@/ai'
+import { DemoAIBadge } from '@/components/ai/demo-ai-badge'
 import { ContactActions } from '@/components/domain/contact-actions'
 import { PriorityPill, SourcePill, StagePill, TemperaturePill } from '@/components/domain/lead-pills'
 import { AmountInput } from '@/components/shared/amount-input'
@@ -44,7 +46,10 @@ export function ScoreWhy({ score, trigger }: { score: LeadScore; trigger?: React
         )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80">
-        <p className="text-sm font-semibold">{t('leads:score.whyTitle', { score: score.score })}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold">{t('leads:score.whyTitle', { score: score.score })}</p>
+          <DemoAIBadge mode={getAI().mode} />
+        </div>
         <p className="mb-3 text-meta text-muted-foreground">{t('leads:score.whyBody')}</p>
         <ul className="flex flex-col gap-2.5">
           {score.factors.map((f) => {

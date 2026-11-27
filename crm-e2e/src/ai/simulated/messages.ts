@@ -15,6 +15,20 @@ function visitFor(db: DB, leadId: string, purpose: MessageRequest['purpose']) {
   return mine.filter((a) => a.status === 'scheduled' || a.status === 'confirmed').sort((a, b) => a.start.localeCompare(b.start))[0]
 }
 
+/**
+ * A sentence built around a date or time we don't have ("This offer holds until {{date}}.") is left out rather than
+ * sent half-filled ("This offer holds until ."). Nothing in the CRM records an offer's validity date, so the offer
+ * template's date clause is dropped unless a value is given.
+ */
+function withoutEmptyClauses(body: string, values: Record<string, string | number | undefined>): string {
+  let out = body
+  for (const key of ['date', 'time']) {
+    if (values[key] != null && values[key] !== '') continue
+    out = out.replace(new RegExp(String.raw`(?:[^.!?\s][^.!?\n]*)?\{\{${key}\}\}[^.!?\n]*[.!?]?[ \t]*`, 'g'), '')
+  }
+  return out
+}
+
 export function generateMessageSim(req: MessageRequest, db: DB, actor: Pick<User, 'name'>): AIText {
   const lead = db.leads.find((l) => l.id === req.leadId)
   if (!lead) return { mode: 'simulated', text: '' }
@@ -49,6 +63,6 @@ export function generateMessageSim(req: MessageRequest, db: DB, actor: Pick<User
     date: '',
     count: properties.length,
   }
-  const body = tpl ? fillTemplate(tpl.body, values) : `Hi ${values.firstName}, ${agent} here. Just checking in. When is a good time to talk?`
+  const body = tpl ? fillTemplate(withoutEmptyClauses(tpl.body, values), values) : `Hi ${values.firstName}, ${agent} here. Just checking in. When is a good time to talk?`
   return { mode: 'simulated', text: body, links: property ? [...links, { kind: 'property', id: property.id }] : links }
 }

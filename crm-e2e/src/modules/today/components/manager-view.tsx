@@ -6,7 +6,7 @@
  */
 import { useMemo, useState, type ReactNode } from 'react'
 import {
-  AlarmClock, AlertTriangle, ArrowUpRight, Building2, ChevronDown, Crown, Handshake, Inbox, PhoneMissed, Shuffle,
+  AlarmClock, AlertTriangle, ArrowUpRight, Building2, ChevronDown, Crown, Hand, Handshake, Inbox, PhoneMissed, Shuffle,
   Sparkles, UserMinus, Users, Wand2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -149,11 +149,13 @@ function UnassignedQueue({ data, db, onAutoAll }: { data: ManagerToday; db: DB; 
   const { t } = useTranslation(['today', 'catalogue'])
   const { can, user } = usePermission()
   const pool = useMemo(() => assignableUsers(db, user), [db, user])
-  const assign = (lead: Lead, to: ID) => {
+  /** A person (picked from the menu, recorded as manual) or 'auto' (the accepted suggestion: the engine runs, so the history keeps its reason). */
+  const assign = (lead: Lead, to: ID | 'auto') => {
     try {
-      assignLead(lead.id, to)
-      const name = db.users.find((u) => u.id === to)?.name ?? ''
-      toast.success(t('today:toast.assigned', { name: lead.name, to: name }))
+      const { result, undoToken } = assignLead(lead.id, to)
+      const name = db.users.find((u) => u.id === result[0]?.to)?.name
+      if (name) toastUndo(t('today:toast.assigned', { name: lead.name, to: name }), undoToken)
+      else toast.message(t('today:toast.leftUnassigned', { count: 1 }))
     } catch (e) {
       toastError(e)
     }
@@ -197,7 +199,7 @@ function UnassignedQueue({ data, db, onAutoAll }: { data: ManagerToday; db: DB; 
                         </span>
                       ) : <span className="text-meta text-muted-foreground">{t('today:manager.queue.nobody')}</span>}
                       <div className="flex">
-                        {sug && <Button size="sm" variant="secondary" className="rounded-r-none" onClick={() => assign(lead, sug.id)} data-testid="assign-suggested">{t('today:manager.queue.assign')}</Button>}
+                        {sug && <Button size="sm" variant="secondary" className="rounded-r-none" onClick={() => assign(lead, 'auto')} data-testid="assign-suggested">{t('today:manager.queue.assign')}</Button>}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size={sug ? 'icon-sm' : 'sm'} variant="secondary" className={cn('h-8', sug && 'rounded-l-none border-l-0')} aria-label={t('today:manager.queue.choose')}>
@@ -298,6 +300,9 @@ function AttentionCard({ data, db, now }: { data: ManagerToday; db: DB; now: Dat
   }
   const owner = (id: ID | null) => db.users.find((u) => u.id === id)?.name ?? ''
   const rows: { key: string; icon: typeof AlarmClock; tone: 'danger' | 'warning' | 'violet' | 'info'; title: string; body: string; lead?: Lead; action?: ReactNode }[] = []
+  for (const r of a.reassignRequests) {
+    rows.push({ key: `rr-${r.lead.id}`, icon: Hand, tone: 'info', lead: r.lead, title: t('manager.attention.reassignRequest', { name: r.lead.name, owner: r.from }), body: r.note ? t('manager.attention.reassignRequestBody', { note: r.note }) : t('manager.attention.reassignRequestNoNote') })
+  }
   for (const l of a.escalations) {
     const mins = Math.floor((now.getTime() - new Date(l.createdAt).getTime()) / 60_000)
     const s = splitMins(mins)
@@ -341,7 +346,7 @@ function AttentionCard({ data, db, now }: { data: ManagerToday; db: DB; now: Dat
                     <p className="truncate text-meta text-muted-foreground">{row.body}</p>
                   </div>
                   {row.lead && can('lead.assign', row.lead) && (
-                    <Button size="sm" variant="ghost" onClick={() => setAssignIds([row.lead!.id])}>{t('manager.attention.assign')}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setAssignIds([row.lead!.id])}>{t(row.lead.ownerId ? 'manager.attention.assign' : 'manager.attention.assignNew')}</Button>
                   )}
                 </li>
               ))}

@@ -51,7 +51,7 @@ function EditForm({ lead }: { lead: Lead }) {
         }}
       />
       <LeadEditorBody ed={ed} layout="page" />
-      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-popover/95 p-3 shadow-lg backdrop-blur md:bottom-4">
+      <div className="sticky bottom-20 z-10 fab-clear flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-popover/95 p-3 shadow-lg backdrop-blur md:bottom-4">
         <LeadEditorFooter ed={ed} layout="page" onCancel={() => navigate(paths.lead(lead.id))} />
       </div>
     </div>

@@ -64,7 +64,7 @@ export function TargetsCard({ data, now }: { data: Pick<ExecutiveToday, 'targets
       )}
       <div className="mt-4 flex flex-wrap gap-2">
         {data.rank && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-highlight-soft px-2.5 py-1 text-meta font-medium text-highlight-foreground" data-testid="today-rank">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-highlight-soft px-2.5 py-1 text-meta font-medium text-highlight-foreground dark:text-highlight" data-testid="today-rank">
             <Award className="size-3.5" aria-hidden="true" />{t('targets.rank', { rank: data.rank.rank, of: data.rank.of })}
           </span>
         )}

@@ -80,12 +80,15 @@ export function nameIn(text: string): { value: string; confidence: number } | un
     `\\b(?:i am|i'm|im|my name is|my name's|name is|this is|myself|it's|its)\\s+${hon}(${NAME_WORD}(?:\\s+${NAME_WORD}){0,3})`,
     'i',
   )
-  const labelled = new RegExp(`\\b(?:name|client|customer|lead|buyer|contact person|enquiry from|inquiry from|call from|spoke to|spoke with)\\s*[:\\-]?\\s+${hon}(${NAME_WORD}(?:\\s+${NAME_WORD}){0,3})`, 'i')
-  const honorific = new RegExp(`\\b(?:mr|mrs|ms|dr|shri|smt)\\.?\\s+(${NAME_WORD}(?:\\s+${NAME_WORD}){0,2})`, 'i')
+  // "Name: …", "client …", "new enquiry: Meena Pillai, …", "create a lead for Sanjay Mehra 99887 …", "enquiry from …"
+  const labelled = new RegExp(`\\b(?:name|client|customer|buyer|contact person|call from|spoke to|spoke with|(?:lead|enquiry|inquiry)(?:\\s+(?:for|from))?)\\s*[:\\-]?\\s+${hon}(${NAME_WORD}(?:\\s+${NAME_WORD}){0,3})`, 'gi')
+  const honorific = new RegExp(`\\b(?:mr|mrs|ms|dr|shri|smt)\\.?\\s+(${NAME_WORD}(?:\\s+${NAME_WORD}){0,2})`, 'gi')
   for (const re of [explicit, labelled, honorific]) {
-    const m = re.exec(t)
-    const name = m && takeName(m[1])
-    if (name) return { value: name, confidence: 0.9 }
+    // every match, not just the first: "lead from this message, client Asha Rao" skips "from this…" and reads "Asha Rao"
+    for (const m of re.global ? t.matchAll(re) : [re.exec(t)]) {
+      const name = m && takeName(m[1])
+      if (name) return { value: name, confidence: 0.9 }
+    }
   }
   const here = /(?:^|[,.!]\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\s+here\b/m.exec(t)
   if (here) {
@@ -202,7 +205,9 @@ export type AreaReading = { min?: number; max?: number; value?: number; unit: Ar
 
 /** "1200 sqft", "1,200 sq.ft", "1200-1500 sft", "30x40" (plot, sq ft), "2.5 acres", "10 cents", "200 sq yd". */
 export function areaIn(text: string): AreaReading | undefined {
+  // the portal 99acres is not an area: "from 99acres", "99acres.com", "saw it on 99 acres", "99acres lead"
   const t = withoutPhones(norm(text)).toLowerCase()
+    .replace(/\b99acres\b(?:\.com)?|\b99\s+acres\.com\b|\b(?:from|on|via|through|thru|at|in|source|portal)\s*:?\s+99\s+acres\b|\b99\s+acres\s+(?:portal|website|site|app|ad|ads|listing|lead|leads|enquiry|inquiry|post)\b/g, ' ')
   const range = new RegExp(`(\\d[\\d,]*(?:\\.\\d+)?)\\s*(?:-|to)\\s*(\\d[\\d,]*(?:\\.\\d+)?)\\s*${AREA_UNIT_SRC}`).exec(t)
   const kindOf = (i: number): AreaReading['kind'] => {
     const near = t.slice(Math.max(0, i - 24), i + 60)
@@ -399,8 +404,9 @@ export function decisionIn(text: string): { makers: DecisionMaker[]; authority?:
 export function loanIn(text: string): LoanStatus | undefined {
   const t = norm(text).toLowerCase()
   if (/\bpre[- ]?approved\b|\bpre[- ]?sanctioned\b|\bloan (?:is )?(?:sanctioned|approved)\b/.test(t)) return 'preApproved'
-  if (/\b(no loan|without (?:a )?loan|full cash|cash (?:buyer|payment|down)|self[- ]funded|own funds|loan not needed|not taking (?:a )?loan)\b/.test(t)) return 'notNeeded'
-  if (/\b(home loan|need(?:s)? (?:a )?loan|loan (?:needed|required)|via loan|with loan|bank loan|financing|emi)\b/.test(t)) return 'needed'
+  // Hinglish too: "loan nahi chahiye" (no loan), "loan lagega" / "loan chahiye" / "loan lenge" (loan needed)
+  if (/\b(no loan|without (?:a )?loan|full cash|cash (?:buyer|payment|down)|self[- ]funded|own funds|loan not needed|not taking (?:a )?loan|loan (?:ki )?(?:nahi|nahin|nai)|loan (?:ki )?(?:zarurat|zaroorat|jarurat) (?:nahi|nahin))\b/.test(t)) return 'notNeeded'
+  if (/\b(home loan|need(?:s)? (?:a )?loan|loan (?:needed|required)|via loan|with loan|bank loan|financing|emi|wants? (?:a )?loan|loan (?:lagega|lagegi|lagenge|chahiye|chaiye|chahie|wants|lenge|lena hai|lena padega|karwana|karwayenge|karayenge|se lenge|ki zarurat|ki zaroorat))\b/.test(t)) return 'needed'
   return undefined
 }
 

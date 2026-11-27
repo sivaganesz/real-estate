@@ -16,9 +16,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import type { ID, LostReason, PipelineStageKey } from '@/domain/types'
-import { LOST_REASONS, STAGES } from '@/domain/catalogue'
+import { STAGES } from '@/domain/catalogue'
+import { useDb } from '@/hooks/use-db'
 import { usePermission } from '@/hooks/use-permission'
 import { bulkChangeStage } from '@/services/leads'
+import { enabledLostReasons } from '@/services/settings'
 import { downloadLeadsCsv } from './export-csv'
 import { useLeadDialogs } from './lead-dialogs-context'
 import type { LeadRow } from './use-lead-items'
@@ -42,7 +44,7 @@ export function LeadsBulk({ selected, rows, onClear }: { selected: ReadonlySet<s
     <>
       <BulkBar count={ids.length} onClear={onClear}>
         {scope('lead.assign') !== false && (
-          <Button variant="ghost" size="sm" disabled={!chosen.every((r) => can('lead.assign', r.lead))} onClick={() => dialogs.open({ kind: 'assign', leadIds: ids })} data-testid="bulk-assign">
+          <Button variant="ghost" size="sm" disabled={!chosen.every((r) => can('lead.assign', r.lead))} onClick={() => dialogs.open({ kind: 'assign', leadIds: ids, onDone: onClear })} data-testid="bulk-assign">
             <UserPlus />{t('leads:bulk.assign')}
           </Button>
         )}
@@ -68,6 +70,7 @@ function BulkStageDialog({ ids, onClose }: { ids: ID[]; onClose: (done: boolean)
   const { t } = useTranslation(['leads', 'catalogue', 'common', 'domain'])
   const [to, setTo] = useState<PipelineStageKey>('contacted')
   const [reason, setReason] = useState<LostReason | undefined>()
+  const lostReasons = useDb((db) => enabledLostReasons(db.settings))
   const [note, setNote] = useState('')
   const [forwardOnly, setForwardOnly] = useState(true)
   const submit = () => {
@@ -100,7 +103,7 @@ function BulkStageDialog({ ids, onClose }: { ids: ID[]; onClose: (done: boolean)
               <FormField label={t('domain:stage.reason')} required>
                 {() => (
                   <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('domain:stage.reason')}>
-                    {LOST_REASONS.map((r) => <Chip key={r} size="sm" pressed={reason === r} onClick={() => setReason(r)}>{t(`catalogue:lostReason.${r}`)}</Chip>)}
+                    {lostReasons.map((r) => <Chip key={r} size="sm" pressed={reason === r} onClick={() => setReason(r)}>{t(`catalogue:lostReason.${r}`)}</Chip>)}
                   </div>
                 )}
               </FormField>

@@ -100,20 +100,22 @@ export default function LeadPage() {
             </>
           }
         />
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-1" aria-label={t('leads:detail.summary')}>
+        {/* three zones (summary rail 320 · main · related 360) from 2xl; from xl to 2xl the related cards sit under the
+            summary rail, so the main column keeps room for its tabs and the next best action next to the sidebar */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:grid-rows-[auto_1fr] 2xl:grid-cols-[320px_minmax(0,1fr)_360px] 2xl:grid-rows-[auto]">
+          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-1 xl:col-start-1 xl:row-start-1" aria-label={t('leads:detail.summary')}>
             <LeadHeroCard lead={lead} score={facts.score} temperature={facts.temperature} priority={facts.priority} ownerName={facts.owner} />
             <RequirementCard lead={lead} />
             <ClassificationCard lead={lead} />
           </aside>
-          <div className="flex min-w-0 flex-col gap-4 max-xl:order-2">
+          <div className="flex min-w-0 flex-col gap-4 max-xl:order-2 xl:col-start-2 xl:row-span-2 xl:row-start-1 2xl:row-span-1">
             <StageSteps lead={lead} />
             <NextActionCard lead={lead} next={facts.next} />
             <QuickActions lead={lead} onMatches={goMatches} />
             <AISummaryCard lead={lead} />
             <LeadTabs lead={lead} tab={tab} onTab={setTab} />
           </div>
-          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-3 md:max-xl:grid md:max-xl:grid-cols-[repeat(2,minmax(0,1fr))] md:max-xl:items-start" aria-label={t('leads:detail.related')}>
+          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-3 xl:col-start-1 xl:row-start-2 xl:self-start 2xl:col-start-3 2xl:row-start-1 2xl:self-stretch md:max-xl:grid md:max-xl:grid-cols-[repeat(2,minmax(0,1fr))] md:max-xl:items-start" aria-label={t('leads:detail.related')}>
             <QualificationCard lead={lead} />
             <ModuleAssistant module="followUp" leadId={lead.id} />
             <MessageComposer lead={lead} />

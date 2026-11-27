@@ -12,17 +12,19 @@ import { ErrorState } from '@/components/shared/error-state'
 import { IconTile } from '@/components/shared/icon-tile'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
+import { useDb } from '@/hooks/use-db'
 import { fileKind } from '@/ai/document'
 import { DocumentFlow } from '../components/document-flow'
 import { SheetWizard } from '../components/sheet-wizard'
 import { isPropertyKind, isSheetKind } from '../lib/fields'
-import { KIND_ICON, KIND_TONE } from '../lib/kinds'
+import { KIND_ICON, KIND_TONE, kindBodyKey } from '../lib/kinds'
 import { loadSample } from '../lib/browser'
 
 export default function ImportWizardPage() {
   const { t } = useTranslation(['import', 'common'])
   const { kind = '' } = useParams()
   const [search, setSearch] = useSearchParams()
+  const autoAssign = useDb((db) => db.settings.assignment.autoAssign)
   const sample = search.get('sample')
   const [file, setFile] = useState<File | null>(null)
   const [docFile, setDocFile] = useState<File | null>(null)
@@ -67,7 +69,7 @@ export default function ImportWizardPage() {
       <PageHeader
         eyebrow={<Link to={paths.import()} className="inline-flex items-center gap-1 hover:text-foreground"><ArrowLeft className="size-3.5" aria-hidden="true" />{t('import:title')}</Link>}
         title={<span className="flex items-center gap-3"><IconTile icon={Icon} tone={KIND_TONE[kind as keyof typeof KIND_TONE]} size="lg" />{isDoc && kind !== 'document' ? t('import:kind.document.title') : t(`import:kind.${kind}.wizardTitle`)}</span>}
-        subtitle={isDoc ? t('import:kind.document.body') : t(`import:kind.${kind}.body`)}
+        subtitle={isDoc ? t('import:kind.document.body') : t(kindBodyKey(kind as keyof typeof KIND_ICON, autoAssign))}
         actions={(sample || docFile) && (
           <Button variant="ghost" onClick={() => { setSearch({}); setFile(null); setDocFile(null) }}>{t('import:wizard.clearSample')}</Button>
         )}

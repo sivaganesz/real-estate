@@ -134,7 +134,9 @@ export function buildLead(values: Record<string, Cell>): Built<LeadRecord> {
   if (r.budgetMin && r.budgetMax && r.budgetMin > r.budgetMax) issues.push({ field: 'requirement.budgetMin', key: 'budgetOrder', level: 'error' })
   const timeline: Timeline | undefined = read('qualification.timeline', readTimeline)
   const enquired = read('enquiredAt', readDate)
-  const notes = [enquired ? `[${enquired}]` : '', cellText(values.notes)].filter(Boolean).join(' ')
+  // the enquiry date only tags a message: a row with an empty notes cell adds no note
+  const message = cellText(values.notes)
+  const notes = message ? [enquired ? `[${enquired}]` : '', message].filter(Boolean).join(' ') : ''
   const record: LeadRecord = {
     name, source: source ?? ('' as LeadSource), isNri: false, ownerId: null,
     ...(phone ? { phone } : {}), ...(email ? { email } : {}), ...(altPhone ? { altPhone } : {}),

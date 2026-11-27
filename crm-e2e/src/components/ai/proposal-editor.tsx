@@ -12,19 +12,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { APPOINTMENT_TYPES, LOST_REASONS, STAGES } from '@/domain/catalogue'
+import { APPOINTMENT_TYPES, STAGES } from '@/domain/catalogue'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useDb } from '@/hooks/use-db'
+import { enabledLostReasons } from '@/services/settings'
 
 export function ProposalEditor({ proposal, onApply, onCancel }: { proposal: ActionProposal; onApply: (p: ActionProposal) => void; onCancel: () => void }) {
   const { t } = useTranslation(['ai', 'catalogue', 'common'])
   const user = useCurrentUser()
   const users = useDb((db) => db.users)
+  const settings = useDb((db) => db.settings)
   const fields = editableFields(proposal)
   const [v, setV] = useState<ProposalEdits>(() => editValues(proposal))
   const people = users.filter((u) => u.role === 'executive' && u.status === 'active' && (user.role === 'admin' || u.managerId === user.id))
   const id = (f: string) => `pe-${proposal.id}-${f}`
   const set = (patch: ProposalEdits) => setV((x) => ({ ...x, ...patch }))
+  // the reasons switched on in Settings; the proposal's own reason stays listed so the select can show it
+  const lostReasons = enabledLostReasons(settings, v.lostReason ?? 'other')
 
   return (
     <form
@@ -91,7 +95,7 @@ export function ProposalEditor({ proposal, onApply, onCancel }: { proposal: Acti
           <Label htmlFor={id('reason')}>{t('ai:field.reason')}</Label>
           <Select value={v.lostReason ?? 'other'} onValueChange={(x) => set({ lostReason: x as ProposalEdits['lostReason'] })}>
             <SelectTrigger id={id('reason')} className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{LOST_REASONS.map((r) => <SelectItem key={r} value={r}>{t(`catalogue:lostReason.${r}`)}</SelectItem>)}</SelectContent>
+            <SelectContent>{lostReasons.map((r) => <SelectItem key={r} value={r}>{t(`catalogue:lostReason.${r}`)}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       )}

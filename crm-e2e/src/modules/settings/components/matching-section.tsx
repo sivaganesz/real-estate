@@ -98,7 +98,7 @@ export function MatchingSection() {
       <SaveBar
         dirty={dirty} valid={ok && minOk && capOk} invalidText={!ok ? t('matching.sumBad') : t('errors.range', { min: 1, max: 10 })}
         onSave={save} onDiscard={() => setD(saved)} testId="matching-save"
-        className="sticky bottom-20 z-10 rounded-lg border bg-card/95 p-3 shadow-md backdrop-blur md:bottom-4"
+        className="sticky bottom-20 z-10 fab-clear rounded-lg border bg-card/95 p-3 shadow-md backdrop-blur md:bottom-4"
       />
     </div>
   )

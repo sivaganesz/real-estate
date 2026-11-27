@@ -36,6 +36,11 @@ const RULES: [RegExp, IntentKey][] = [
   [/\b(duplicates?|dupes?|duplicate leads|same (?:phone|number|mobile))\b/, 'duplicates'],
   // a new listing ("add property 2.5BHK 1200 sqft east facing in Kondapur 85 L") before searches and assignment
   [/^(?:please |pls )?(?:add|create|list|post|save|enter|register|new)\s+(?:a |an |this |my |the |new )*(?:property|listing|resale (?:flat|property)|flat for sale|villa for sale|plot for sale)\b/, 'createProperty'],
+  // an explicit new lead ("create a lead for Sanjay Mehra 99887 76655, villa in Sarjapur under 2 Cr", "new enquiry: …")
+  // before the searches, whose "(leads|clients) for … villa" would read it as a match question about another lead
+  [/^(?:please |pls )?(?:add|create|new|save|enter|capture|register|log)\s+(?:a |an |the |this |new )*(?:lead|enquiry|inquiry|prospect)\b/, 'createLead'],
+  // an explicit task ("create task: send brochure to Deepak tomorrow") before sharing, messages and appointments
+  [/^(?:please |pls )?(?:(?:create|add|make|new|set)\s+(?:a |an |new )*(?:task|to-?do|reminder)\b|(?:task|todo|to-do)\s*:|remind me\b)/, 'createTask'],
   // assignment
   [/\b(request|ask (?:my |the )?manager|ask for)\b.*\b(reassign(?:ment)?|transfer|hand ?over)\b/, 'requestReassign'],
   [/\b(reassign|redistribute|transfer|move|shift|hand ?over|share out)\b.*\b(?:\w+'s|\w+s'|of \w+)\s*(?:open |active |all |pending |current )?leads\b|\b(reassign|redistribute)\b.*\bleads\b.*\b(on leave|leave|away|sick|left|resigned|deactivated)\b|\bredistribute\b/, 'reassignFrom'],
@@ -52,10 +57,22 @@ const RULES: [RegExp, IntentKey][] = [
   [/\b(share|send|forward|whatsapp)\b.*\b(propert(?:y|ies)|listings?|options|matches|brochure|prp[- ]?\d{4}|flat|villa|plot|apartment|project)\b/, 'shareProperties'],
   [/\b(draft|write|compose|prepare|craft|send|type)\b.*\b(message|msg|whatsapp|sms|text|e-?mail|mail|confirmation|reminder|greeting|reply|note to)\b|\bvisit confirmation\b|\b(confirmation|reminder) (?:message )?for\b/, 'draftMessage'],
   [/^(?:please )?(share|forward)\b.+\b(with|to)\b/, 'shareProperties'],
+  // wider phrasings of the §12.5 questions (XAI-10); before the generic follow-up/todo/task rules below read their words
+  [/\bleads?\b.*\b(?:no|without|missing|forgot(?:ten)?|need(?:s|ing)?|waiting for|overdue|pending|lacking)\b.*\b(?:follow[- ]?ups?|follow up|callbacks?)\b|\bwho (?:needs?|needed|is due for) (?:a )?follow[- ]?ups?\b|^(?:show |list |any |view |see )?(?:me )?(?:my )?(?:overdue|missed|pending) follow[- ]?ups?\b|\bforgot(?:ten)? to follow up\b|\bleads? (?:going|gone|getting|turning) cold\b|\bgoing cold\b/, 'followUpLeads'],
+  [/\bpending (?:work|items?|jobs?|activities|stuff)\b|\bwhat (?:do i have|have i got|is|'?s|is there) (?:pending|left|due|to do)\b|\bleft to do\b|\b(?:to ?do|todo)\b.*\btoday\b|\bwhat (?:do i|should i) (?:need to )?do (?:today|now|next)\b/, 'todayTasks'],
+  [/\bwhat'?s (?:my|the) (?:schedule|agenda|calendar)\b|\bwhat do i have (?:on )?today\b.*\b(?:visits?|meetings?|appointments?)\b|\bany (?:site ?)?(?:visits?|meetings?|appointments?) (?:today|scheduled today)\b/, 'todayAppointments'],
+  [/\bhow (?:did|am|have|was) (?:i|my (?:month|week))\b.*\b(?:do|doing|done|perform(?:ing|ed)?|going|been)\b|\bhow'?s my (?:month|week|performance)\b|\b(?:give|show) me my (?:sales |monthly |weekly )?(?:summary|results?|report)\b|\bmy (?:sales )?(?:summary|results)\b|\breview my (?:month|week|performance)\b/, 'performance'],
+  [/\b(?:top|best) (?:performers?|executives?|sellers?|closers?)\b|\bwho is (?:the )?(?:best|top) (?:performer|executive|seller|closer)\b|\bcompare\b.*\b(?:executives?|team|agents?|reps?)\b|\bhow are (?:my|the) (?:executives?|reps?|agents?|sales ?people) (?:doing|performing)\b|\bteam (?:summary|stats|report)\b/, 'teamPerformance'],
+  [/\b(?:need|needs|deserve|deserves|require|requires)\b.*\b(?:my |immediate |urgent )?attention\b|\bmost promising\b|\bprioriti[sz]e\b|\bleads? (?:to|i should) (?:call|work|chase) first\b|\bwho (?:is|are) (?:my )?(?:hottest|best) leads?\b/, 'priorityLeads'],
+  [/\b(?:under|below|within|inside|as per|according to|for)\s+[a-z]+(?:\s[a-z]+)?'?s?\s+budget\b|\bcan afford\b|\bwhat can \w+ afford\b|\bwithin (?:his|her|their) (?:budget|range)\b/, 'findMatches'],
+  [/\b(?:leads?|deals?|clients?)\b.*\b(?:will|likely to|going to|expected to|ready to|about to)\b.*\b(?:close|book|convert)\b/, 'conversions'],
+  [new RegExp(String.raw`^(?:please |pls )?${FOLLOW}\s+(?:with |for |to )?[a-z]+(?:\s[a-z]+)?\s+${WHEN}`), 'createTask'],
   // appointments and follow-ups
   [/\b(schedule|book|fix|arrange|set ?up|plan|organi[sz]e|add|create|confirm)\b.*\b(site ?visit|visit|meeting|appointment|video call|registration|zoom|office visit)\b/, 'createAppointment'],
   [new RegExp(String.raw`\b(site ?visit|meeting|video call)\b.*\b${WHEN}`), 'createAppointment'],
   [new RegExp(String.raw`\b(remind me|reminder|${FOLLOW} with|${FOLLOW} for|create (?:a )?task|add (?:a )?task|new task|todo|to-do|call back|callback|schedule (?:a )?${FOLLOW}|set (?:a )?${FOLLOW}|add (?:a )?${FOLLOW}|plan (?:a )?${FOLLOW})\b`), 'createTask'],
+  // a question about contact that did NOT happen ("show me leads I have not called in a week") before "called X"
+  [/\b(not|never|haven'?t|hasn'?t|didn'?t|did not|have not|has not)\s+(?:been\s+)?(called|contacted|spoken (?:to|with)|reached|followed up|messaged|touched)\b/, 'followUpLeads'],
   // a contact that happened, or a change to a lead's details
   [/^(?:i |just )?(called|spoke|talked|whatsapped|messaged|met|emailed|phoned|rang)\b|\b(called|spoke (?:to|with)|talked (?:to|with)|whatsapped|messaged|phoned|met with)\b \w+|\b(no answer|didn'?t pick|did not pick|not reachable|switched off|not picking)\b/, 'updateLead'],
   [/\b(update|change|set|edit|increase|reduce|revise|raise|lower|correct)\b.*\b(budget|phone|number|mobile|e-?mail|timeline|requirement|bhk|configuration|location|area|locality|source|name|decision|loan)\b|\b\w+'s (budget|phone|number|timeline|requirement)\b.*\b(is|to|now)\b|\b(now wants|budget (?:is )?now|can (?:go|stretch)|increased (?:the |his |her |their )?budget|wants? (?:a )?\d\s?bhk now)\b|\badd (?:a )?note\b|\bnote (?:for|on|to)\b/, 'updateLead'],
@@ -70,13 +87,13 @@ const RULES: [RegExp, IntentKey][] = [
   [/\bbusiness (?:summary|overview|snapshot|update|report|today)\b|\bhow is (?:the )?business\b|\bcompany (?:summary|overview)\b/, 'businessSummary'],
   [/\b(today'?s?|pending|my|open|due|overdue)\b.*\btasks?\b|\btasks?\b.*\b(today|pending|due|overdue)\b|what (?:should|do) i do today|\bmy day\b|\bplan my day\b|\bwhat'?s on my plate\b|\bto ?do list\b/, 'todayTasks'],
   [/\b(today'?s?)\b.*\b(appointments?|visits?|meetings?|schedule|calendar)\b|\b(appointments?|visits?|meetings?)\b.*\btoday\b|\bsummari[sz]e (?:my )?(?:appointments|visits|schedule)\b/, 'todayAppointments'],
-  [/\b(potential|likely|probable|near|close to|closest to|ready to)\b.*\b(conversions?|bookings?|closures?|book|convert|close)\b|\bwho (?:will|might|may) (?:book|convert|close)\b/, 'conversions'],
-  [/\b(team'?s?|my team|our team|executives'?)\b.*\b(performance|doing|numbers|summary|stats|report|progress)\b|\bteam performance\b|\bhow is (?:my|the) team\b/, 'teamPerformance'],
+  [/\b(potential|likely|probable|near|close to|closest to|ready to)\b.*\b(conversions?|bookings?|closures?|book|convert|close)\b|\bwho (?:will|might|may) (?:book|convert|close)\b|\b(?:close|closest|near|nearest) to (?:closing|booking|converting|conversion)\b|\babout to (?:book|close|convert)\b/, 'conversions'],
+  [/\b(team'?s?|my team|our team|executives'?)\b.*\b(performance|doing|numbers|summary|stats|report|progress)\b|\bteam performance\b|\bhow is (?:my|the) team\b|\b(?:which|who|what) (?:executive|sales ?person|agent|team member|rep)s?\b.*\b(?:convert|conversion|bookings?|perform|performing|performance|best|top|most)\b/, 'teamPerformance'],
   [/\b(how am i doing|my performance|sales performance|my numbers|my stats|my progress|my month|my week|performance summary)\b|\bsummari[sz]e (?:my )?(?:sales|performance|month|week)\b/, 'performance'],
   [new RegExp(String.raw`\bleads?\b.*\b(need(?:ing)?|require|due for|pending|without)\b.*\b${FOLLOW}\b|\b(not contacted|no contact|haven'?t (?:called|contacted)|untouched|not called|no response|silent)\b|\b${FOLLOW}s? (?:due|pending|needed)\b`), 'followUpLeads'],
-  [/\b(highest|top|best|most important|hot(?:test)?|priority|urgent|important)\b.*\b(leads?|clients?|buyers?|prospects?)\b/, 'priorityLeads'],
+  [/\b(highest|top|best|most important|hot(?:test)?|priority|urgent|important)\b.*\b(leads?|clients?|buyers?|prospects?)\b|\b(leads?|clients?|buyers?|prospects?)\b.*\b(hot|hottest|urgent|priority)\b|\b(?:what|who|which leads?) should i (?:focus|concentrate|work) on\b|\bwhere should i focus\b/, 'priorityLeads'],
   [/\b(summari[sz]e|summary of|brief me|tell me about|recap|overview of|background on|history of)\b|\bbefore my call\b|\bwho is\b/, 'summarizeLead'],
-  [/\bwithin\b.*\bbudget\b|\b(match(?:ing|es)?|suitable|recommend(?:ed|ations)?|options|propert(?:y|ies)|units)\b.*\bfor\b|\bmatch\b|\b(buyers?|leads?|clients?) (?:for|who (?:fit|want|match))\b.*\b(propert(?:y|ies)|listing|unit|flat|villa|plot|this)\b/, 'findMatches'],
+  [/\bwithin\b.*\bbudget\b|\b(fits?|suits?|fitting|suiting|matching)\b.*\bbudget\b|\b(propert(?:y|ies)|options|units|flats|homes|listings|projects)\b.*\b(suits?|fits?|good for|right for|works? for)\b|\bwhat (?:suits|fits)\b|\b(match(?:ing|es)?|suitable|recommend(?:ed|ations)?|options|propert(?:y|ies)|units)\b.*\bfor\b|\bmatch\b|\b(buyers?|leads?|clients?) (?:for|who (?:fit|want|match))\b.*\b(propert(?:y|ies)|listing|unit|flat|villa|plot|this)\b/, 'findMatches'],
   [/\b(add|create|new|save|enter|capture|register|log)\b.*\b(lead|enquiry|inquiry|client|buyer|customer|prospect)\b|\bfrom this (?:whatsapp )?message\b/, 'createLead'],
 ]
 
