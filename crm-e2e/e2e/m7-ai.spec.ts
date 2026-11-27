@@ -87,6 +87,8 @@ test('manager: shortcuts, context chip, role chips and a stage move that runs on
   await again.getByTestId('proposal-confirm').click()
   await again.getByTestId('proposal-done').getByRole('link', { name: /Priya Sharma/ }).first().click()
   await expect(page).toHaveURL(/\/leads\/LEAD-1001$/)
+  // below 1920 px the panel overlays, so following a link closes it (M7 R5); open it again
+  await openPanel(page)
 
   // Cancel leaves the data alone
   const cancelled = (await ask(page, 'reassign Sanjay Gupta -> Vikram')).getByTestId('action-proposal')

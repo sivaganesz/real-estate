@@ -27,6 +27,7 @@ import { downloadText } from '../components/download'
 import { DrillDrawer } from '../components/drill-drawer'
 import { csvFileName, toCsvSections } from '../lib/csv'
 import { bucketLabel, buildReport, isReportTab, REPORT_TABS, type Drill, type ReportData, type ReportTab } from '../lib/report-data'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 const isPeriod = (s: string | null): s is ReportPeriod => !!s && (REPORT_PERIODS as string[]).includes(s)
 
@@ -99,6 +100,7 @@ export default function ReportsPage() {
       <div key={`${tab}-${subjectKey(subject)}-${period}`} className="animate-fade-up">
         <Tab data={data} db={db} onDrill={setDrill} />
       </div>
+      <ModuleAssistant module="insights" />
       <DrillDrawer drill={drill} onClose={() => setDrill(null)} data={data} db={db} now={now} />
       <span className="sr-only" aria-live="polite">{t('reports:updated', { when: bucketLabel(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`, i18n.language) })}</span>
     </div>

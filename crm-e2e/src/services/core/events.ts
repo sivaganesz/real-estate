@@ -4,7 +4,7 @@
  * `via` overrides the commit's origin for the activity (for example 'automation' for an auto-created task).
  */
 import type {
-  AssignmentMode, AssignmentReasonKey, ID, Lead, Origin, PipelineStageKey, Property, PropertyStatus, ShortlistStatus, Task, Availability,
+  Appointment, AssignmentMode, AssignmentReasonKey, ID, Lead, Origin, PipelineStageKey, Property, PropertyStatus, ShortlistStatus, Task, Availability,
 } from '@/domain/types'
 
 export type ContactChannel = 'call' | 'whatsapp' | 'email' | 'sms'
@@ -28,9 +28,15 @@ type Ev =
   | { type: 'appointment.completed'; id: ID }
   | { type: 'appointment.cancelled'; id: ID }
   | { type: 'appointment.noShow'; id: ID }
+  /** Edited fields (confirming is a 'status' change); a reschedule has its own event. */
+  | { type: 'appointment.updated'; id: ID; fields: string[] }
+  | { type: 'appointment.deleted'; appointment: Appointment }
   | { type: 'task.created'; id: ID }
   | { type: 'task.completed'; id: ID }
   | { type: 'task.cancelled'; id: ID }
+  /** Edited fields: a reschedule is ['dueAt'], a reopen ['status']. */
+  | { type: 'task.updated'; id: ID; fields: string[] }
+  | { type: 'task.deleted'; task: Task }
   | { type: 'property.created'; id: ID }
   | { type: 'property.updated'; id: ID; fields: string[] }
   | { type: 'property.statusChanged'; id: ID; from: PropertyStatus; to: PropertyStatus }

@@ -30,3 +30,12 @@ const target = rule.id ? tx.db.settings.assignment.rules.find((r) => r.id === ru
 if (target && !isSystem(tx.actor) && scopeOf(tx.actor, 'rules.configure') === 'team' && (target.scope === 'global' || target.scope.managerId !== tx.actor.id)) throw new PermissionError('rules.configure', explainDenied(tx.actor, 'rules.configure'))
 ```
 The same applies to `setAutoAssign` / the `maxActivePerExec` cap: managers can currently change these company-wide values (see assumption 4). Decide whether they should become admin-only, or stay company-wide with the warning the UI shows now.
+
+## Integrator status (Phase 3)
+- **R1 follow-up — APPLIED.** `applyStageLabels()` in `i18n/index.ts` overrides `catalogue:stage.*` / `stageShort.*` with the admin's labels (cleared label restores the catalogue name); `app/providers.tsx` keeps it in sync, so a rename shows on every screen (test `i18n/stage-labels.test.ts`).
+- **R2 — APPLIED.** The board already hid disabled stages; the stage-change dialog now does too.
+- **R3 — APPLIED.** `shell:bell.*` removed (en + ta).
+- **R4 — APPLIED.** `AppRoute.titleKeyFor(params)`; settings sections and report tabs name themselves in the breadcrumb and document title.
+- **R5 — APPLIED.** `user.updated` activities carry `fields`.
+- **R6 — APPLIED** (rules part): `saveRule` / `deleteRule` / `setRuleEnabled` share `assertMayChangeRule` — a manager cannot edit, delete or toggle a company-wide or another team's rule (test in `services/interconnections.test.ts`). The auto-assign switch and cap stay company-wide with the UI warning (assumption 4 kept; DECLINED to change permissions).
+- Review E — APPLIED: the "Not in your team" / "Not found" member states have an (sr-only) `<h1>`.

@@ -46,7 +46,7 @@ export function DrillDrawer({ drill, onClose, data, db, now }: { drill: Drill | 
       footer={
         <div className="flex w-full items-center justify-between gap-2">
           {can('export.data') && count > 0 ? <Button variant="secondary" size="sm" onClick={exportCsv}><Download />{t('reports:export')}</Button> : <span />}
-          <Button asChild size="sm"><Link to={props ? paths.properties() : drill.kind === 'stage' || drill.kind === 'stalled' ? paths.pipeline() : paths.leads()}>{props ? t('reports:drill.openProperties') : drill.kind === 'stage' || drill.kind === 'stalled' ? t('reports:drill.openPipeline') : t('reports:drill.openLeads')}<ArrowUpRight /></Link></Button>
+          <Button asChild size="sm"><Link to={drillLink(drill).to} data-testid="drill-open">{t(drillLink(drill).labelKey)}<ArrowUpRight /></Link></Button>
         </div>
       }
     >
@@ -87,6 +87,25 @@ export function DrillDrawer({ drill, onClose, data, db, now }: { drill: Drill | 
       </div>
     </Drawer>
   )
+}
+
+/** Where the drawer's "Open in …" button goes: the module list filtered to the same records where the URL can say so. */
+function drillLink(d: Drill): { to: string; labelKey: string } {
+  const leads = 'reports:drill.openLeads'
+  const pipeline = 'reports:drill.openPipeline'
+  const properties = 'reports:drill.openProperties'
+  switch (d.kind) {
+    // "open now in stage X" is exactly the pipeline column; "ever reached X" has no list filter, so the whole board
+    case 'stage': return d.scope === 'open' ? { to: paths.pipeline({ stage: d.stage }), labelKey: pipeline } : { to: paths.pipeline(), labelKey: pipeline }
+    case 'stalled': return { to: paths.pipeline({ stalled: '1' }), labelKey: pipeline }
+    case 'source': return { to: paths.leads({ source: d.source }), labelKey: leads }
+    case 'lost': return { to: paths.leads({ lostReason: d.reason }), labelKey: leads }
+    case 'owner': return { to: paths.leads({ owner: d.userId }), labelKey: leads }
+    case 'booked': return { to: paths.leads({ stage: 'booked,converted' }), labelKey: leads }
+    case 'bucket': case 'cohort': return { to: paths.leads(), labelKey: leads }
+    case 'propertyStatus': return { to: paths.properties({ status: d.status }), labelKey: properties }
+    case 'propertyType': return { to: paths.properties({ type: d.type }), labelKey: properties }
+  }
 }
 
 function drillTitle(d: Drill, t: (k: string, o?: Record<string, unknown>) => string, db: DB): string {

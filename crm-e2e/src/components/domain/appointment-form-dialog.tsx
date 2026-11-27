@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import type { Extraction } from '@/ai/types'
 import { AIField, AIFieldMarker } from '@/components/ai/ai-field'
 import { DemoAIBadge } from '@/components/ai/demo-ai-badge'
-import { PasteAndFillBox } from '@/components/ai/paste-and-fill-box'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 import { useAIFields } from '@/components/ai/use-ai-fields'
 import { Callout } from '@/components/shared/callout'
 import { Chip } from '@/components/shared/chip'
@@ -218,7 +218,7 @@ function FormBody({ onOpenChange, leadId: initialLead, propertyIds: initialProps
           <Button type="button" variant="ghost" size="sm" className="text-ai hover:bg-ai-soft hover:text-ai"><Sparkles />{t('ai:paste.toggle')}</Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-2">
-          <PasteAndFillBox kind="appointment" onFill={fill} defaultText={undefined} />
+          <ModuleAssistant module="appointmentCreate" onFill={fill} />
         </CollapsibleContent>
       </Collapsible>
       <div className="flex flex-col gap-4">

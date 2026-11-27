@@ -39,7 +39,8 @@ export function MappingTable({ mapping, fields, samples, onChange, className }: 
           <tbody>
             {mapping.map((m, i) => {
               const pct = Math.round(m.confidence * 100)
-              const auto = m.method !== 'manual' && m.field
+              // only guesses (synonym / fuzzy / sample values) get the AI mark; template and saved-mapping hits are exact
+              const auto = (m.method === 'synonym' || m.method === 'fuzzy' || m.method === 'value') && m.field
               const low = auto && m.confidence < 0.8
               return (
                 <tr key={m.column} className="border-b last:border-b-0">

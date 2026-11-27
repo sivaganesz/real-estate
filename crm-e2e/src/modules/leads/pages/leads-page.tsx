@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { usePermission } from '@/hooks/use-permission'
 import { useIsPhone } from '@/hooks/use-media-query'
-import { LEAD_TABS, filterCount, inTab, isActive, matchesLead, sortLeads, tabCounts, type LeadFilters, type LeadSort, type LeadTab } from '@/lib/lead-queries'
+import { LEAD_TABS, filterCount, inTab, isActive, leadFiltersFromParams, matchesLead, sortLeads, tabCounts, type LeadFilters, type LeadSort, type LeadTab } from '@/lib/lead-queries'
 import { AddLeadSheet } from '../components/add-lead-sheet'
 import { downloadLeadsCsv } from '../components/export-csv'
 import { LeadDialogsProvider } from '../components/lead-dialogs'
@@ -47,6 +47,10 @@ const readView = (): View | null => {
   }
 }
 const SORTS: LeadSort[] = ['score', 'followUp', 'newest', 'name']
+/** Filter params a link can carry (Reports / Today chart click-throughs, paths.leads({ stage, source, … })). */
+const URL_FILTERS = ['stage', 'source', 'owner', 'temp', 'lostReason', 'attn'] as const
+const urlFilterKey = (p: URLSearchParams) => URL_FILTERS.map((k) => p.get(k) ?? '').join('|')
+const NO_URL_FILTERS = URL_FILTERS.map(() => '').join('|')
 
 export default function LeadsPage() {
   const { t } = useTranslation(['leads', 'common'])
@@ -57,7 +61,13 @@ export default function LeadsPage() {
   const manager = scope('lead.assign') !== false
   const tab = (params.get('tab') as Tab | null) ?? 'all'
   const view: View = (params.get('view') as View | null) ?? readView() ?? (manager ? 'table' : 'focus')
-  const [filters, setFilters] = useState<LeadFilters>({ sort: 'score' })
+  const [filters, setFilters] = useState<LeadFilters>(() => ({ sort: 'score', ...leadFiltersFromParams(params) }))
+  // a new filtered link while the page is open (bell, assistant) replaces the filters, like a fresh visit would
+  const [linkKey, setLinkKey] = useState(() => urlFilterKey(params))
+  if (linkKey !== urlFilterKey(params)) {
+    setLinkKey(urlFilterKey(params))
+    setFilters({ sort: filters.sort, ...leadFiltersFromParams(params) })
+  }
   const [dir, setDir] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
@@ -77,7 +87,17 @@ export default function LeadsPage() {
     try { window.localStorage.setItem(VIEW_KEY, v) } catch { /* storage blocked: the URL keeps the view */ }
     setParam('view', v)
   }
-  const changeFilters = (f: LeadFilters) => { setFilters(f); setPage(0) }
+  const changeFilters = (f: LeadFilters) => {
+    setFilters(f)
+    setPage(0)
+    // once the user edits the filters, the link's params no longer describe the list: drop them
+    if (linkKey !== NO_URL_FILTERS) {
+      const next = new URLSearchParams(params)
+      URL_FILTERS.forEach((k) => next.delete(k))
+      setLinkKey(NO_URL_FILTERS)
+      setParams(next, { replace: true })
+    }
+  }
 
   const counts = useMemo(() => ({ ...tabCounts(rows, now), unassigned: rows.filter((r) => isActive(r.lead) && !r.lead.ownerId).length }), [rows, now])
   const filtered = useMemo(() => {
@@ -92,7 +112,15 @@ export default function LeadsPage() {
   const spark = useMemo(() => weeklyNew(rows.map((r) => r.lead), now), [rows, now])
   const active = filterCount(filters)
 
-  const clearAll = () => { changeFilters({ sort: filters.sort }); setParam('tab', null) }
+  const clearAll = () => {
+    setFilters({ sort: filters.sort })
+    setPage(0)
+    const next = new URLSearchParams(params)
+    URL_FILTERS.forEach((k) => next.delete(k))
+    next.delete('tab')
+    setLinkKey(NO_URL_FILTERS)
+    setParams(next, { replace: true })
+  }
   const empty = rows.length === 0
     ? (
       <EmptyState
@@ -132,7 +160,7 @@ export default function LeadsPage() {
               />
               {can('lead.create') && (
                 <>
-                  <Button variant="secondary" onClick={() => setAdding(true)} data-testid="leads-paste"><Sparkles className="text-ai" />{t('leads:add.paste')}</Button>
+                  <Button variant="ai-outline" onClick={() => setAdding(true)} data-testid="leads-paste"><Sparkles />{t('leads:add.paste')}</Button>
                   <Button onClick={() => setAdding(true)} data-testid="leads-add"><Plus />{t('leads:add.cta')}</Button>
                 </>
               )}

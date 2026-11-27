@@ -3,7 +3,7 @@
  * (image thumbnails, file icon + size otherwise) with remove buttons. Refuses clearly instead of failing silently
  * (Known limitation K3: images are capped). The page decides what to do with the files.
  */
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useRef, useState } from 'react'
 import { FileSpreadsheet, FileText, ImageIcon, Upload, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -19,10 +19,15 @@ function matches(file: File, accept: string[]): boolean {
   return accept.some((a) => (a.startsWith('.') ? file.name.toLowerCase().endsWith(a.toLowerCase()) : a.endsWith('/*') ? file.type.startsWith(a.slice(0, -1)) : file.type === a))
 }
 
+/** The object URL lives exactly as long as the <img> (a ref cleanup), so Strict Mode's double effects never leave it revoked. */
 function Thumb({ file }: { file: File }) {
-  const url = useMemo(() => URL.createObjectURL(file), [file])
-  useEffect(() => () => URL.revokeObjectURL(url), [url])
-  return <img src={url} alt="" className="size-10 rounded-md object-cover" />
+  const ref = useCallback((el: HTMLImageElement | null) => {
+    if (!el) return
+    const url = URL.createObjectURL(file)
+    el.src = url
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+  return <img ref={ref} alt="" className="size-10 rounded-md object-cover" />
 }
 
 export function FileUploader({ files, onFilesChange, accept = [], maxSizeMb = 10, maxFiles = 1, hint, disabled, className, label }: {

@@ -42,7 +42,7 @@ import { PipelineList } from '../components/pipeline-list'
 import { PipelineMobile } from '../components/pipeline-mobile'
 import { StageProgressStrip } from '../components/stage-progress-strip'
 import {
-  activeFilterCount, boardStages, buildDeals, columnSummaries, dealValue, EMPTY_FILTERS, matchesDeal, NEEDS_DIALOG, pipelineTotals,
+  activeFilterCount, boardStages, buildDeals, columnSummaries, dealValue, EMPTY_FILTERS, matchesDeal, NEEDS_DIALOG, pipelineFiltersFromParams, pipelineTotals,
   sortDeals, stageAnalytics, UNASSIGNED, VALUE_BANDS, weeklySeries, wonDates, type DealSort, type PipelineFilters, type ValueBand,
 } from '../lib/pipeline'
 
@@ -71,12 +71,18 @@ export default function PipelinePage() {
   const { can, scope } = usePermission()
   const [params, setParams] = useSearchParams()
   const view: View = params.get('view') === 'list' ? 'list' : 'board'
-  const ownerParam = params.get('owner')
-  const [filters, setFilters] = useState<PipelineFilters>(() => ({ ...EMPTY_FILTERS, owners: ownerParam ? [ownerParam] : [] }))
+  const [filters, setFilters] = useState<PipelineFilters>(() => pipelineFiltersFromParams(params))
+  // a new click-through link while the board is open replaces the filters, as a fresh visit would
+  const linkKey = ['stage', 'source', 'stalled'].map((k) => params.get(k) ?? '').join('|')
+  const [seenLink, setSeenLink] = useState(linkKey)
+  if (seenLink !== linkKey) {
+    setSeenLink(linkKey)
+    if (linkKey !== '||') setFilters(pipelineFiltersFromParams(params))
+  }
   const [sort, setSort] = useState<DealSort>({ key: 'value', dir: 'desc' })
   const [stageDialog, setStageDialog] = useState<StageDialog | null>(null)
   const [visitFor, setVisitFor] = useState<ID | null>(null)
-  const [mobileStage, setMobileStage] = useState<PipelineStageKey | null>(null)
+  const [mobileStage, setMobileStage] = useState<PipelineStageKey | null>(() => filters.stages[0] ?? null)
   const [aiOpen, setAiOpenState] = useState(readAiOpen)
   const setAiOpen = (o: boolean) => {
     setAiOpenState(o)
@@ -123,14 +129,17 @@ export default function PipelinePage() {
   )
   const setF = (patch: Partial<PipelineFilters>) => {
     setFilters((f) => ({ ...f, ...patch }))
-    if (patch.owners) {
-      setParams((p) => {
-        const n = new URLSearchParams(p)
-        if (patch.owners?.length === 1) n.set('owner', patch.owners[0])
+    // the URL keeps the owner; click-through params (stage, source, stalled) are dropped once the user edits filters
+    setParams((p) => {
+      const n = new URLSearchParams(p)
+      if (patch.owners) {
+        if (patch.owners.length === 1) n.set('owner', patch.owners[0])
         else n.delete('owner')
-        return n
-      }, { replace: true })
-    }
+      }
+      for (const k of ['stage', 'source', 'stalled']) n.delete(k)
+      return n
+    }, { replace: true })
+    setSeenLink('||')
   }
   const clearFilters = () => setF({ ...EMPTY_FILTERS })
   const setView = (v: View) => setParams((p) => {
@@ -261,6 +270,11 @@ export default function PipelinePage() {
         filters={
           <>
             {seeTeam && <FilterPill label={t('pipeline:filters.owner')} options={ownerOptions} selected={filters.owners} onChange={(owners) => setF({ owners })} />}
+            <FilterPill
+              label={t('pipeline:filters.stage')}
+              options={stages.map((x) => ({ value: x, label: t(`catalogue:stage.${x}`), count: deals.filter((d) => d.lead.stage === x).length }))}
+              selected={filters.stages} onChange={(v) => setF({ stages: v as PipelineStageKey[] })}
+            />
             <FilterPill label={t('pipeline:filters.source')} options={sourceOptions} selected={filters.sources} onChange={(v) => setF({ sources: v as PipelineFilters['sources'] })} />
             <FilterPill
               label={t('pipeline:filters.temperature')}

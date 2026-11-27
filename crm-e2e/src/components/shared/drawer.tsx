@@ -44,7 +44,8 @@ export function Drawer({ open, onOpenChange, title, subtitle, headerActions, foo
           side={bottom ? 'bottom' : 'right'}
           className={cn(
             'gap-0 p-0 shadow-xl',
-            bottom ? 'max-h-[90svh] rounded-t-2xl' : isPhone ? 'w-full max-w-none sm:max-w-none' : size === 'lg' ? 'w-[640px] sm:max-w-[640px]' : 'w-[480px] sm:max-w-[480px]',
+            bottom ? 'max-h-[90svh] rounded-t-2xl' : // prefixed like the Sheet primitive's own data-[side=right]:w-3/4 sm:max-w-sm, or those would win and every drawer would be ~384 px
+            isPhone ? 'data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:max-w-none' : size === 'lg' ? 'data-[side=right]:w-[640px] data-[side=right]:sm:max-w-[640px]' : 'data-[side=right]:w-[480px] data-[side=right]:sm:max-w-[480px]',
             className,
           )}
         >

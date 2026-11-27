@@ -47,13 +47,6 @@
     "open": "Open the AI assistant",
     "panelSoon": "The AI assistant arrives with the AI module. Ctrl+K will open it here."
   },
-  "bell": {
-    "label": "Notifications",
-    "unread": "{{count}} unread",
-    "empty": "You're all caught up",
-    "soon": "The full notification centre arrives with the Notifications module.",
-    "viewAll": "View all notifications"
-  },
   "theme": {
     "label": "Theme",
     "light": "Light",

@@ -27,3 +27,11 @@
 
 ## Reviewer note (independent M5 review)
 - **R1 is no longer needed.** The sidebar's "Import" link failed the foundation smoke test (`e2e/smoke.spec.ts`, "every profile can open every nav item"): executives landed on NoAccess. The reviewer fixed it inside M5's own files instead of changing `app/nav.ts`. `/import` now needs `import.document`, and executives get a **limited hub**: document extraction, the document samples, their drafts KPI and their own document jobs, plus a note that bulk import is for admins and managers. Sheet wizards (`/import/leads`, property kinds) and `/import/history` stay NoAccess for executives. This also gives executives a way to reach `/import/drafts`, which R1 alone would have removed. If the Parent still applies R1, nothing breaks.
+
+## Integrator status (Phase 3)
+- **R1 — DECLINED.** The reviewer's limited executive hub (document extraction + drafts) is kept; the nav item stays on `import.document` and the smoke test passes.
+- **R2 — DECLINED** (kept as is: the ESM build import works in dev and build).
+- **R3 — APPLIED.** `file-uploader.tsx` thumbnails use a ref-callback cleanup for the object URL.
+- **R4 — APPLIED.** `EmptyState` renders its body in a `<div>`, so a `<details>` in the route error page is valid HTML.
+- **R5 — APPLIED.** `MappingTable` marks only synonym / fuzzy / value guesses with the AI sparkle.
+- The shared `<ModuleAssistant module="import" />` is mounted on the `/import` hub.

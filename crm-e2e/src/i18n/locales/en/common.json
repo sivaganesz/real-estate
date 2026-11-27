@@ -29,11 +29,6 @@
     "inVisit": "In a visit",
     "onLeave": "On leave"
   },
-  "comingSoon": {
-    "badge": "Coming soon",
-    "title": "Coming in Phase 2",
-    "body": "This screen is being built. Navigation, permissions and demo data are already in place."
-  },
   "error": {
     "title": "Something went wrong",
     "body": "This page hit a problem. Your data is safe. Try again, or go back to Today.",

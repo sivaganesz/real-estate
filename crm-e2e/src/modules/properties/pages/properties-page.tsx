@@ -26,8 +26,8 @@ import { toastError, toastUndo } from '@/components/shared/undo-toast'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PROPERTY_STATUSES } from '@/domain/catalogue'
-import type { PropertyStatus } from '@/domain/types'
+import { PROPERTY_STATUSES, PROPERTY_TYPES } from '@/domain/catalogue'
+import type { PropertyStatus, PropertyType } from '@/domain/types'
 import { useWholeDb } from '@/hooks/use-db'
 import { useNow } from '@/hooks/use-now'
 import { usePermission } from '@/hooks/use-permission'
@@ -79,12 +79,19 @@ export default function PropertiesPage() {
   const [view, setViewState] = useState<View>(readView)
   const [query, setQuery] = useState(params.get('q') ?? '')
   const [parsed, setParsed] = useState<Filters>(() => (params.get('q') ? parsePropertyQuery(params.get('q')!) : EMPTY_PROPERTY_FILTERS))
-  const [pills, setPills] = useState<Pills>(EMPTY_PILLS)
+  // ?type= and ?city= come from chart click-throughs (Reports → Inventory) and preselect those pills
+  const [pills, setPills] = useState<Pills>(() => ({
+    ...EMPTY_PILLS,
+    types: (params.get('type') ?? '').split(',').filter((x): x is PropertyType => Object.hasOwn(PROPERTY_TYPES, x)),
+    cities: (params.get('city') ?? '').split(',').filter(Boolean),
+  }))
   const [tab, setTab] = useState<StatusTab>(() => (STATUS_TABS.includes(params.get('status') as StatusTab) ? (params.get('status') as StatusTab) : 'all'))
   const [sort, setSort] = useState<PropertySort>('')
   const [attention, setAttention] = useState(params.get('attention') === '1')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Booked / Sold take listings out of every match list: ask first, like the property page does
+  const [confirmStatus, setConfirmStatus] = useState<PropertyStatus | null>(null)
 
   const setView = (v: View) => {
     setViewState(v)
@@ -186,7 +193,7 @@ export default function PropertiesPage() {
             />
             {can('property.create') && (
               <>
-                <Button variant="ghost" className="text-ai hover:bg-ai-soft hover:text-ai" onClick={() => navigate(`${paths.newProperty()}?paste=1`)} data-testid="paste-property"><Wand2 />{t('properties:actions.paste')}</Button>
+                <Button variant="ai-outline" onClick={() => navigate(`${paths.newProperty()}?paste=1`)} data-testid="paste-property"><Wand2 />{t('properties:actions.paste')}</Button>
                 <Button asChild data-testid="add-property"><Link to={paths.newProperty()}><Plus />{t('properties:actions.add')}</Link></Button>
               </>
             )}
@@ -260,7 +267,7 @@ export default function PropertiesPage() {
             <DropdownMenuContent align="center">
               <DropdownMenuLabel>{t('properties:bulk.statusTo')}</DropdownMenuLabel>
               {PROPERTY_STATUSES.map((s) => (
-                <DropdownMenuItem key={s} onSelect={() => bulkStatus(s)}>
+                <DropdownMenuItem key={s} onSelect={() => (s === 'booked' || s === 'sold' ? setConfirmStatus(s) : bulkStatus(s))}>
                   <span aria-hidden="true" className={cn('size-2 rounded-full', propertyStatusTone[s].solid)} />{t(`catalogue:propertyStatus.${s}`)}
                 </DropdownMenuItem>
               ))}
@@ -275,6 +282,13 @@ export default function PropertiesPage() {
           <Button variant="ghost" size="sm" onClick={exportCsv}><Download />{t('properties:bulk.exportShown', { count: shown.length })}</Button>
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirmStatus} onOpenChange={(o) => { if (!o) setConfirmStatus(null) }}
+        title={t('properties:bulk.statusConfirmTitle', { count: selectedRows.length, status: confirmStatus ? t(`catalogue:propertyStatus.${confirmStatus}`) : '' })}
+        description={t('properties:bulk.statusConfirmBody')}
+        confirmLabel={t('properties:bulk.statusConfirm', { count: selectedRows.length })}
+        onConfirm={() => { if (confirmStatus) bulkStatus(confirmStatus); setConfirmStatus(null) }}
+      />
       <ConfirmDialog
         open={confirmDelete} onOpenChange={setConfirmDelete} tone="danger"
         title={t('properties:bulk.deleteTitle', { count: selectedRows.length })} description={t('properties:bulk.deleteBody')}

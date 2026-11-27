@@ -58,11 +58,14 @@ export function crumbsFor(pathname: string): { titleKey: string; to: string }[] 
   let guard = 0
   while (current && guard++ < 5) {
     const to = fillPath(current.path, found.params)
-    trail.unshift({ titleKey: current.titleKey, to })
+    trail.unshift({ titleKey: titleKeyOf(current, found.params), to })
     const parentPath: string | undefined = current.parent
     current = parentPath ? ROUTES.find((r) => r.path === parentPath) : undefined
   }
   return trail
 }
+
+/** The route's title key for these params (titleKeyFor when it knows the value, else the static key). */
+export const titleKeyOf = (route: AppRoute, params: Params) => route.titleKeyFor?.(params) ?? route.titleKey
 
 const fillPath = (path: string, params: Params) => path.replace(/:(\w+)/g, (_, k: string) => params[k] ?? k)

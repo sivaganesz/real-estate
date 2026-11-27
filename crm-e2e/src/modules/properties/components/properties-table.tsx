@@ -25,7 +25,7 @@ export function PropertiesTable({ rows, selected, onSelectedChange, sort, onSort
 }) {
   const { t } = useTranslation(['properties', 'catalogue'])
   const navigate = useNavigate()
-  const { can } = usePermission()
+  const { can, explain } = usePermission()
   const columns: Column<Property>[] = [
     {
       key: 'title', header: t('properties:table.property'), cell: (p) => {
@@ -63,7 +63,14 @@ export function PropertiesTable({ rows, selected, onSelectedChange, sort, onSort
       rowActions={(p) => (
         <span className="flex items-center gap-1">
           <Button asChild variant="ghost" size="icon-sm" title={t('properties:actions.findBuyers')}><Link to={paths.matching({ property: p.id })} aria-label={t('properties:actions.findBuyersFor', { title: p.title })} onClick={(e) => e.stopPropagation()}><Target /></Link></Button>
-          {can('property.edit', p) && <Button asChild variant="ghost" size="icon-sm" title={t('properties:actions.edit')}><Link to={paths.editProperty(p.id)} aria-label={t('properties:actions.editTitle', { title: p.title })} onClick={(e) => e.stopPropagation()}><Pencil /></Link></Button>}
+          {can('property.edit', p) ? (
+            <Button asChild variant="ghost" size="icon-sm" title={t('properties:actions.edit')}><Link to={paths.editProperty(p.id)} aria-label={t('properties:actions.editTitle', { title: p.title })} onClick={(e) => e.stopPropagation()}><Pencil /></Link></Button>
+          ) : can('property.edit') && (
+            // the role edits listings, just not this one (CONVENTIONS §6: disable with the reason, don't hide)
+            <span title={t(explain('property.edit').reasonKey, explain('property.edit').params)} onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon-sm" disabled aria-label={t('properties:actions.editTitle', { title: p.title })}><Pencil /></Button>
+            </span>
+          )}
         </span>
       )}
     />

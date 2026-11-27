@@ -6,15 +6,29 @@ const q = (params: Record<string, string | undefined>) => {
   return s ? `?${s}` : ''
 }
 
+/** Query params the Leads page reads (stage / source / owner / temp / lostReason accept comma-separated lists). */
+export type LeadListParams = {
+  tab?: 'all' | 'overdue' | 'today' | 'upcoming' | 'unassigned' | 'closed'
+  view?: 'focus' | 'table' | 'cards'
+  add?: '1'
+  stage?: string
+  source?: string
+  owner?: ID
+  temp?: string
+  lostReason?: string
+  attn?: string
+}
+
 export const paths = {
   today: () => '/today',
-  leads: () => '/leads',
+  /** The leads list, optionally filtered (chart click-throughs, notifications); the Leads page honours every param. */
+  leads: (f: LeadListParams = {}) => `/leads${q(f)}`,
   newLead: () => '/leads/new',
   lead: (id: ID) => `/leads/${id}`,
   editLead: (id: ID) => `/leads/${id}/edit`,
   clients: () => '/clients',
   client: (id: ID) => `/clients/${id}`,
-  properties: () => '/properties',
+  properties: (f: { status?: string; type?: string; city?: string; q?: string; attention?: '1' } = {}) => `/properties${q(f)}`,
   newProperty: () => '/properties/new',
   property: (id: ID) => `/properties/${id}`,
   editProperty: (id: ID) => `/properties/${id}/edit`,
@@ -22,7 +36,7 @@ export const paths = {
   appointments: (opts: { view?: 'day' | 'week' | 'month' | 'list'; date?: string } = {}) => `/appointments${q(opts)}`,
   appointment: (id: ID) => `/appointments/${id}`,
   tasks: () => '/tasks',
-  pipeline: (opts: { view?: 'board' | 'list'; owner?: ID } = {}) => `/pipeline${q(opts)}`,
+  pipeline: (opts: { view?: 'board' | 'list'; owner?: ID; stage?: string; source?: string; stalled?: '1' } = {}) => `/pipeline${q(opts)}`,
   import: () => '/import',
   importKind: (kind: string) => `/import/${kind}`,
   importHistory: () => '/import/history',

@@ -73,6 +73,7 @@
       "30": "Last 30 days"
     },
     "attention": "Needs attention",
+    "lostReason": "Lost reason",
     "sentenceRead": "Read as filters:",
     "sentenceApply": "Apply filters",
     "nri": "NRI",

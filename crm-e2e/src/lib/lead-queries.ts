@@ -4,8 +4,8 @@
  * Ported from wireframe-rebuild/src/features/leads/lead-list.ts and adapted to the new model: the next follow-up is
  * derived from the lead's earliest open task, readiness became the score + temperature, stages are the new keys.
  */
-import type { Appointment, Classification, ID, Lead, LeadSource, PipelineStageKey, Priority, PropertyType, SavedView, Settings, Task, Temperature } from '@/domain/types'
-import { CITIES, OPEN_STAGES } from '@/domain/catalogue'
+import type { Appointment, Classification, ID, Lead, LeadSource, LostReason, PipelineStageKey, Priority, PropertyType, SavedView, Settings, Task, Temperature } from '@/domain/types'
+import { CITIES, LEAD_SOURCES, LOST_REASONS, OPEN_STAGES, STAGES, TEMPERATURES } from '@/domain/catalogue'
 import { daysSince, localDay, minutesBetween } from './dates'
 
 /** One row of the list: the lead and what is worked out about it (scores come from lib/scoring, memoised by the caller). */
@@ -109,6 +109,8 @@ export type LeadFilters = {
   localities?: string[]
   /** Created within the last N days (1 = today). */
   createdWithin?: number
+  /** Lost leads with one of these reasons (Reports click-through). */
+  lostReasons?: LostReason[]
   sort?: LeadSort
 }
 
@@ -133,6 +135,7 @@ export function matchesLead(x: LeadItem, f: LeadFilters, now: Date): boolean {
   if (f.priorities?.length && (!x.priority || !f.priorities.includes(x.priority))) return false
   if (f.localities?.length && !r.localities.some((loc) => f.localities!.includes(loc))) return false
   if (f.createdWithin && daysSince(l.createdAt, now) >= f.createdWithin) return false
+  if (f.lostReasons?.length && (!l.lost || !f.lostReasons.includes(l.lost.reason))) return false
   return true
 }
 
@@ -147,7 +150,7 @@ export function sortLeads(list: LeadItem[], by: LeadSort = 'score'): LeadItem[] 
 /** Filters that are set (for "Clear all"); the sort does not count. */
 export const filterCount = (f: LeadFilters) =>
   (['q', 'cls', 'nri', 'maxBudget', 'minBudget', 'attn', 'createdWithin'] as const).filter((k) => f[k] !== undefined && f[k] !== '').length +
-  (['stages', 'owners', 'sources', 'types', 'cities', 'temperatures', 'priorities', 'localities'] as const).filter((k) => f[k]?.length).length
+  (['stages', 'owners', 'sources', 'types', 'cities', 'temperatures', 'priorities', 'localities', 'lostReasons'] as const).filter((k) => f[k]?.length).length
 
 /** Counts per tab, with the same rules everywhere. */
 export const tabCounts = (items: LeadItem[], now: Date): Record<LeadTab, number> =>
@@ -270,4 +273,27 @@ export function csvCell(v: string | number | undefined | null): string {
 
 export function toCsv(header: string[], rows: (string | number | undefined | null)[][]): string {
   return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')
+}
+
+/* ---------- URL filters (chart click-throughs: /leads?stage=…&source=…&owner=…&lostReason=…) ---------- */
+
+const listParam = <T extends string>(v: string | null, allowed?: readonly T[]): T[] =>
+  (v ?? '').split(',').map((x) => x.trim()).filter((x): x is T => !!x && (!allowed || (allowed as readonly string[]).includes(x)))
+
+/** The filters a /leads URL carries; unknown values are ignored so a stale link never shows an impossible filter. */
+export function leadFiltersFromParams(params: URLSearchParams): LeadFilters {
+  const f: LeadFilters = {}
+  const stages = listParam(params.get('stage'), STAGES)
+  const sources = listParam(params.get('source'), LEAD_SOURCES)
+  const owners = listParam<ID>(params.get('owner'))
+  const temperatures = listParam(params.get('temp'), TEMPERATURES)
+  const lostReasons = listParam(params.get('lostReason'), LOST_REASONS)
+  const attn = params.get('attn')
+  if (stages.length) f.stages = stages
+  if (sources.length) f.sources = sources
+  if (owners.length) f.owners = owners
+  if (temperatures.length) f.temperatures = temperatures
+  if (lostReasons.length) { f.lostReasons = lostReasons; f.stages ??= ['lost'] }
+  if (attn && (LEAD_ATTENTION as string[]).includes(attn)) f.attn = attn as LeadAttention
+  return f
 }

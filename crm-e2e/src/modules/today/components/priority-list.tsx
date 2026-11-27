@@ -74,7 +74,7 @@ export function PriorityList({ items, db, scores, now }: { items: TodayItem[]; d
       ) : shown.length === 0 ? (
         <FilteredEmpty title={t('priority.filteredEmpty')} onClear={() => setFilter('all')} />
       ) : (
-        <ol className="flex flex-col divide-y divide-border/70" aria-label={t('priority.title')}>
+        <ol className="@container flex flex-col divide-y divide-border/70" aria-label={t('priority.title')}>
           {visibleItems.map((it, i) => (
             <PriorityRow key={itemKey(it)} item={it} index={items.indexOf(it) + 1} stagger={i} lead={db.leads.find((l) => l.id === it.leadId)} score={it.leadId ? scores.get(it.leadId) : undefined} now={now} db={db} />
           ))}
@@ -119,7 +119,7 @@ function PriorityRow({ item, index, stagger, lead, score, now, db }: { item: Tod
       id={`today-item-${itemKey(item)}`}
       data-testid="priority-item"
       data-kind={item.kind}
-      className={cn('group flex scroll-mt-28 flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3', !reduced && stagger < 8 && 'animate-fade-up')}
+      className={cn('group flex scroll-mt-28 flex-col gap-2 py-3 first:pt-0 last:pb-0 @3xl:flex-row @3xl:items-center @3xl:gap-3', !reduced && stagger < 8 && 'animate-fade-up')}
       style={!reduced && stagger < 8 ? { animationDelay: `${stagger * 30}ms`, animationFillMode: 'both' } : undefined}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -141,24 +141,25 @@ function PriorityRow({ item, index, stagger, lead, score, now, db }: { item: Tod
             <span className={cn('inline-flex min-h-5 items-center rounded-full px-2 py-0.5 text-meta leading-tight font-medium', TONE[item.overdue ? 'danger' : k.tone].soft, TONE[item.overdue ? 'danger' : k.tone].text)} data-testid="reason-chip">{reason}</span>
             {/* below sm the due time sits with the reason, so the name keeps the full row width */}
             {dueText && (
-              <span className={cn('text-meta font-medium tabular-nums sm:hidden', due.state === 'overdue' ? 'text-danger' : due.state === 'soon' ? 'text-warning' : 'text-muted-foreground')}>{dueText}</span>
+              <span className={cn('text-meta font-medium tabular-nums @3xl:hidden', due.state === 'overdue' ? 'text-danger' : due.state === 'soon' ? 'text-warning' : 'text-muted-foreground')}>{dueText}</span>
             )}
-            {item.params.title && item.ref.kind === 'task' && <span className="min-w-0 truncate text-meta text-muted-foreground max-sm:basis-full">{String(item.params.title)}</span>}
+            {item.params.title && item.ref.kind === 'task' && <span className="min-w-0 truncate text-meta text-muted-foreground @max-3xl:basis-full">{String(item.params.title)}</span>}
           </div>
         </div>
+        {score && <span className="shrink-0 @3xl:hidden"><ScoreRing score={score.score} size={34} label={t('today:priority.score')} /></span>}
       </div>
-      <div className="flex items-center justify-between gap-2 pl-8 sm:justify-end sm:pl-0">
+      <div className="flex items-center justify-end gap-2 pl-8 @3xl:justify-end @3xl:pl-0">
         {dueText && (
-          <span className={cn('hidden w-36 shrink-0 text-right text-meta leading-tight font-medium tabular-nums sm:inline', due.state === 'overdue' ? 'text-danger' : due.state === 'soon' ? 'text-warning' : 'text-muted-foreground')}>{dueText}</span>
+          <span className={cn('hidden w-36 shrink-0 text-right text-meta leading-tight font-medium tabular-nums @3xl:inline', due.state === 'overdue' ? 'text-danger' : due.state === 'soon' ? 'text-warning' : 'text-muted-foreground')}>{dueText}</span>
         )}
-        {score && <ScoreRing score={score.score} size={30} label={t('today:priority.score')} />}
+        {score && <span className="hidden @3xl:inline-flex"><ScoreRing score={score.score} size={30} label={t('today:priority.score')} /></span>}
         <div className="flex flex-wrap items-center justify-end gap-0.5">
           {has('call') && lead?.phone && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild size="sm" variant="secondary" className="h-8">
                   <a href={telLink(lead.phone)} onClick={() => { if (mayEditLead && has('logOutcome')) window.setTimeout(() => setLogOpen(true), 300) }} data-testid="today-call">
-                    <Phone /> <span className="hidden md:inline">{t('today:actions.call')}</span>
+                    <Phone /> <span className="hidden @md:inline">{t('today:actions.call')}</span>
                   </a>
                 </Button>
               </TooltipTrigger>
@@ -186,7 +187,7 @@ function PriorityRow({ item, index, stagger, lead, score, now, db }: { item: Tod
           {has('done') && (
             mayTask ? (
               <Button size="sm" variant="ghost" onClick={() => act.done(item)} data-testid="today-done" className="text-success hover:bg-success-soft hover:text-success">
-                <Check /> <span className="hidden lg:inline">{t('today:actions.done')}</span>
+                <Check /> <span className="hidden @md:inline">{t('today:actions.done')}</span>
               </Button>
             ) : null
           )}

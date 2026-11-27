@@ -19,9 +19,10 @@ import type { Extraction } from '@/ai/types'
 import { paths } from '@/app/paths'
 import { AIField, AIFieldMarker } from '@/components/ai/ai-field'
 import { EffortSaved } from '@/components/ai/effort-saved'
-import { PasteAndFillBox } from '@/components/ai/paste-and-fill-box'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 import { useAIFields } from '@/components/ai/use-ai-fields'
 import { AmountInput } from '@/components/shared/amount-input'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Chip } from '@/components/shared/chip'
 import { FormField } from '@/components/shared/form-field'
 import { PhoneInput } from '@/components/shared/phone-input'
@@ -164,13 +165,19 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
     ai.clear(path)
   }
 
-  const save = () => {
+  // closing a listing (Booked / Sold) from the form asks first, as the property page's status control does
+  const [confirmClose, setConfirmClose] = useState(false)
+  const save = (confirmed = false) => {
     const input = cleanForSave(form)
     const problems = validateProperty(input)
     if (problems.length) {
       setErrors(problems)
       toast.error(t('properties:form.fixErrors', { count: problems.length }))
       focusField(problems[0].field)
+      return
+    }
+    if (editing && !confirmed && (input.status === 'booked' || input.status === 'sold') && input.status !== initial.status) {
+      setConfirmClose(true)
       return
     }
     setSaving(true)
@@ -222,7 +229,7 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
       <div className="flex min-w-0 flex-col gap-5">
         {/* AI first on small screens: paste a listing or speak it */}
         <div className="xl:hidden">
-          <PasteAndFillBox kind="property" onFill={fill} onAnswer={answer} answered={answered} onFocusField={focusField} />
+          <ModuleAssistant module="propertyCreate" onFill={fill} onAnswer={answer} answered={answered} onFocusField={focusField} />
         </div>
 
         <SectionCard title={t('properties:form.section.basics')} icon={Building2}>
@@ -585,7 +592,7 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
       {/* right rail: AI, live summary, save */}
       <aside className="flex flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
         <div className="max-xl:hidden">
-          <PasteAndFillBox kind="property" onFill={fill} onAnswer={answer} answered={answered} onFocusField={focusField} />
+          <ModuleAssistant module="propertyCreate" onFill={fill} onAnswer={answer} answered={answered} onFocusField={focusField} />
         </div>
         <section aria-label={t('properties:form.summary')} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-card">
           <div className="flex items-center gap-3">
@@ -609,7 +616,7 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
             </ul>
           )}
           <div className="flex flex-col gap-2 max-xl:hidden">
-            <Button onClick={save} disabled={saving} aria-busy={saving || undefined} data-testid="property-save">
+            <Button onClick={() => save()} disabled={saving} aria-busy={saving || undefined} data-testid="property-save">
               {saving && <Loader2 className="animate-spin" />}{editing ? t('properties:form.saveChanges') : t('properties:form.save')}
             </Button>
             <Button variant="secondary" onClick={() => navigate(editing ? paths.property(propertyId) : paths.properties())}>{t('common:actions.cancel')}</Button>
@@ -621,10 +628,17 @@ export function PropertyForm({ initial, propertyId, initialMeta }: { initial: Pr
       {/* sticky save bar below xl */}
       <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur xl:hidden md:-mx-6 md:px-6">
         <Button variant="secondary" className="flex-1" onClick={() => navigate(editing ? paths.property(propertyId) : paths.properties())}>{t('common:actions.cancel')}</Button>
-        <Button className="flex-1" onClick={save} disabled={saving} aria-busy={saving || undefined} data-testid="property-save-mobile">
+        <Button className="flex-1" onClick={() => save()} disabled={saving} aria-busy={saving || undefined} data-testid="property-save-mobile">
           {saving && <Loader2 className="animate-spin" />}{editing ? t('properties:form.saveChanges') : t('properties:form.save')}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmClose} onOpenChange={setConfirmClose}
+        title={t('properties:status.confirmTitle', { status: t(`catalogue:propertyStatus.${form.status}`) })}
+        description={t('properties:bulk.statusConfirmBody')}
+        confirmLabel={t('properties:status.confirm', { status: t(`catalogue:propertyStatus.${form.status}`) })}
+        onConfirm={() => { setConfirmClose(false); save(true) }}
+      />
     </div>
   )
 }

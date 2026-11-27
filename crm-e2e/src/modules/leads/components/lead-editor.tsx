@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { paths } from '@/app/paths'
 import { AIField, AIFieldMarker } from '@/components/ai/ai-field'
-import { PasteAndFillBox } from '@/components/ai/paste-and-fill-box'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 import { AmountInput } from '@/components/shared/amount-input'
 import { Chip } from '@/components/shared/chip'
 import { FormField } from '@/components/shared/form-field'
@@ -147,8 +147,8 @@ function WhoStep({ ed }: { ed: LeadEditor }) {
   return (
     <div className="flex flex-col gap-4">
       {!ed.isEdit && (
-        <PasteAndFillBox
-          kind="lead" onFill={ed.fill} onAnswer={ed.answer} answered={ed.answered}
+        <ModuleAssistant
+          module="leadCreate" onFill={ed.fill} onAnswer={ed.answer} answered={ed.answered}
           onFocusField={(f) => document.getElementById(`lf-${f}`)?.focus()}
         />
       )}

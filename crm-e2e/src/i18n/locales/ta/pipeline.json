@@ -17,6 +17,7 @@
     "search": "டீல்களைத் தேடு",
     "searchPlaceholder": "பெயர், தொலைபேசி, சொத்து அல்லது நிர்வாகி",
     "owner": "நிர்வாகி",
+    "stage": "நிலை",
     "source": "மூலம்",
     "temperature": "நிலைமை",
     "value": "டீல் மதிப்பு",
@@ -106,7 +107,8 @@
     "final": "இறுதி நிலை",
     "avgDays": "சராசரி {{days}} / {{target}} நா",
     "noDays": "இன்னும் நேரத் தரவு இல்லை",
-    "tileLabel": "{{stage}}: {{reached}} அடைந்தன, {{conv}}% முன்னேறின, சராசரி {{days}} நாட்கள்"
+    "tileLabel": "{{stage}}: {{reached}} அடைந்தன, {{conv}}% முன்னேறின, சராசரி {{days}} நாட்கள்",
+    "tileLabelNoData": "{{stage}}: {{reached}} அடைந்தன, இன்னும் போதுமான தரவு இல்லை"
   },
   "list": {
     "label": "டீல்கள்",

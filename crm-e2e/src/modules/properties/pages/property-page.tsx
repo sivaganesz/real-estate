@@ -41,6 +41,7 @@ import { LegalCard } from '../components/legal-card'
 import { ListingCopyCard, ListingHealthCard } from '../components/listing-health-card'
 import { PriceCheckCard } from '../components/price-check-card'
 import { StatusControl } from '../components/status-control'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 export default function PropertyPage() {
   const { t } = useTranslation(['properties', 'catalogue', 'matching', 'common'])
@@ -147,6 +148,7 @@ export default function PropertyPage() {
         </div>
 
         <aside className="flex min-w-0 flex-col gap-5">
+          {editable && <ModuleAssistant module="propertyEdit" propertyId={p.id} />}
           <SectionCard
             title={t('properties:detail.matched', { count: data.matches.length })} icon={Target} data-testid="matched-leads"
             action={data.matches.length > 0 ? <Button asChild variant="ghost" size="sm"><Link to={paths.matching({ property: p.id })}>{t('common:actions.viewAll')}</Link></Button> : undefined}

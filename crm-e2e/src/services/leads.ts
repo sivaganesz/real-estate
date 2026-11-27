@@ -155,7 +155,7 @@ export function deleteLeads(ids: ID[]) {
 export const deleteLead = (id: ID) => deleteLeads([id])
 
 /** An executive asks the manager to move a lead to someone else. */
-export function requestReassign(leadId: ID, note?: string) {
+export function requestReassign(leadId: ID, note?: string, opts: { via?: Origin } = {}) {
   return commit('lead.requestReassign', (tx) => {
     const lead = must(tx.db.leads, leadId, 'lead')
     assertActorCan(tx.actor, 'lead.requestReassign', lead, tx.db)
@@ -163,7 +163,7 @@ export function requestReassign(leadId: ID, note?: string) {
       notify(tx, m, 'system', { variant: 'reassignRequest', name: lead.name, owner: tx.actor.name, note: note ?? '' }, { ref: { kind: 'lead', id: lead.id }, priority: 'high' })
     }
     tx.emit({ type: 'lead.noted', leadId, text: note ?? '' })
-  })
+  }, { via: opts.via })
 }
 
 /** Records the HNI status (managers and admins only). */

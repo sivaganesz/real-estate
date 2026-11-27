@@ -122,6 +122,11 @@
     "healthLabel": "Listing {{score}}% complete"
   },
   "bulk": {
+    "statusConfirmTitle_one": "Mark {{count}} property as {{status}}?",
+    "statusConfirmTitle_other": "Mark {{count}} properties as {{status}}?",
+    "statusConfirmBody": "They drop out of every match list and the owners of interested leads are told. You can undo for a few seconds.",
+    "statusConfirm_one": "Update {{count}} property",
+    "statusConfirm_other": "Update {{count}} properties",
     "status": "Change status",
     "statusTo": "Set status to",
     "statusDone_one": "{{count}} property set to {{status}}",

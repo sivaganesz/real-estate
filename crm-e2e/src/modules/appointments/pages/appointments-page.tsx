@@ -115,7 +115,7 @@ export default function AppointmentsPage() {
         subtitle={t('subtitle')}
         actions={mayBook && (
           <>
-            <Button variant="secondary" className="text-ai" onClick={() => setBooking({ aiOpen: true })} data-testid="book-ai"><Sparkles />{t('page.bookAi')}</Button>
+            <Button variant="ai-outline" onClick={() => setBooking({ aiOpen: true })} data-testid="book-ai"><Sparkles />{t('page.bookAi')}</Button>
             <Button onClick={() => setBooking({})} data-testid="book-appointment"><Plus />{t('page.book')}</Button>
           </>
         )}
@@ -188,7 +188,7 @@ export default function AppointmentsPage() {
         {nothingAtAll ? (
           <EmptyState illustration={EmptyCalendar} title={t('empty.title')} body={t('empty.body')}
             primary={mayBook && <Button onClick={() => setBooking({})}><Plus />{t('page.book')}</Button>}
-            secondary={mayBook && <Button variant="secondary" className="text-ai" onClick={() => setBooking({ aiOpen: true })}><Sparkles />{t('page.bookAi')}</Button>} />
+            secondary={mayBook && <Button variant="ai-outline" onClick={() => setBooking({ aiOpen: true })}><Sparkles />{t('page.bookAi')}</Button>} />
         ) : filteredEmpty && view !== 'day' && view !== 'week' ? (
           <FilteredEmpty title={t('empty.filtered')} onClear={() => setFilters(EMPTY_FILTERS)} />
         ) : view === 'month' ? (

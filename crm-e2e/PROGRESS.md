@@ -5,11 +5,13 @@ Branch: `feature/crm-e2e` (from `spec-system-wireframe` @ 10bc8c74ed5b1d9c12d8e8
 New folder: `crm-e2e/`
 
 ## Current phase
-Phase 2 — module work (M1–M8)
+Phase 4 — role-based QA (5 QA agents) → fixes → re-test
 
 ## Status by module
 | Module | Status |
 |---|---|
+| Phase 3 integration | DONE — requests applied, §7 interconnections tested, 10 assistants mounted, UI unified, 648 unit + 87 e2e green; DEMO_SCRIPT.md written. Paused 10:33 IST on owner request, resumed. |
+| Phase 2 modules M1–M8 | DONE — built + independently reviewed, 631 unit tests, per-module e2e (commit d76d351) |
 | Foundation | DONE — verify + 11 e2e green, independent review passed (commit "foundation") |
 
 ## Assumptions

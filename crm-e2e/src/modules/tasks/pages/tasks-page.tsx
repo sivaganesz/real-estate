@@ -122,7 +122,7 @@ export default function TasksPage() {
         actions={
           <>
             {mayManage && (
-              <Button variant="secondary" className="text-ai" onClick={() => setAssistant({ open: true })} data-testid="open-assistant">
+              <Button variant="ai-outline" onClick={() => setAssistant({ open: true })} data-testid="open-assistant">
                 <Sparkles />{t('assistant.open')}
               </Button>
             )}

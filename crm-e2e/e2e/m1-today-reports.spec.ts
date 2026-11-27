@@ -68,13 +68,13 @@ test('executive Today: one-click actions change data and the list re-ranks at on
   expect(await rowNames(page)).not.toContain(newName)
   expect((await readDb(page)).activities.length).toBeGreaterThan(callsBefore)
 
-  // Reschedule the top row to tomorrow: it leaves today's list and the stored due time moves
-  const top = (await rowNames(page))[0]
+  // Reschedule the top row to tomorrow: that item leaves today's list (by item id: one lead can own two rows) and the stored due time moves
+  const top = await items.first().getAttribute('id')
   const tasksBefore = (await readDb(page)).tasks.length
   await items.first().getByTestId('today-reschedule').click()
   await page.locator('[data-testid^="slot-"]').filter({ hasText: /tomorrow/i }).first().click()
   await expect(items).toHaveCount(start - 2)
-  expect(await rowNames(page)).not.toContain(top)
+  expect(await items.evaluateAll((els) => els.map((e) => e.id))).not.toContain(top)
   const after = await readDb(page)
   expect(after.tasks.length >= tasksBefore).toBe(true)
 
@@ -93,6 +93,8 @@ test('executive Today: one-click actions change data and the list re-ranks at on
 test('the inline Today assistant changes data only after Confirm', async ({ page, consoleProblems }) => {
   await page.goto('/today')
   await switchTo(page, 'profile-u-arjun')
+  // count() does not wait: let the list render first
+  await expect(page.getByTestId('priority-item').first()).toBeVisible()
   const before = await page.getByTestId('priority-item').count()
   const name = (await rowNames(page)).find((n, i, all) => all.indexOf(n) === i && n.includes('Karthik')) ?? 'Karthik'
   await page.getByTestId('today-ai-input').fill(`Reschedule ${name.split(' ')[0]}'s follow-up to tomorrow 5 PM`)

@@ -59,7 +59,11 @@ export function deleteClient(id: ID) {
     assertActorCan(tx.actor, 'lead.delete', c, tx.db)
     tx.db.clients = tx.db.clients.filter((x) => x.id !== id)
     const lead = tx.db.leads.find((l) => l.clientId === id)
-    if (lead) lead.clientId = undefined
+    if (lead) {
+      lead.clientId = undefined
+      // the removal shows on the lead's timeline and in the activity log
+      tx.emit({ type: 'lead.updated', leadId: lead.id, fields: ['clientId'] })
+    }
   }, { undoable: true })
 }
 

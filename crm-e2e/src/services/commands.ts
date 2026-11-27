@@ -42,15 +42,15 @@ function run(p: ActionProposal): Omit<ProposalOutcome, 'undoToken'> & { undoToke
     return { links: [{ kind: 'lead', id: p.payload.leadId }], undoToken: r.undoToken }
   }
   if (isKind(p, 'assignLead')) {
-    const r = assignLead(p.payload.leadId, p.payload.to)
+    const r = assignLead(p.payload.leadId, p.payload.to, undefined, via)
     return { links: [{ kind: 'lead', id: p.payload.leadId }, ...r.result.filter((x) => x.to).map((x) => ({ kind: 'user' as const, id: x.to! }))], undoToken: r.undoToken }
   }
   if (isKind(p, 'assignLeads')) {
-    const r = assignLeads(p.payload.leadIds, p.payload.to, p.payload.note)
+    const r = assignLeads(p.payload.leadIds, p.payload.to, p.payload.note, { via: 'ai' })
     return { links: p.payload.leadIds.slice(0, 6).map((id) => ({ kind: 'lead' as const, id })), undoToken: r.undoToken, count: r.result.filter((x) => x.to).length }
   }
   if (isKind(p, 'requestReassign')) {
-    requestReassign(p.payload.leadId, p.payload.note)
+    requestReassign(p.payload.leadId, p.payload.note, { via: 'ai' })
     return { links: [{ kind: 'lead', id: p.payload.leadId }] }
   }
   if (isKind(p, 'moveStage')) {

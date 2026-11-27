@@ -55,7 +55,11 @@ export function shareMessage(
   const first = firstName(lead.name)
   const list = properties.map(propertyLine).join('\n')
   const tpl = opts.templates?.find((t) => t.purpose === 'share' && t.tone === (opts.tone ?? 'english'))
-  if (tpl) return fillTemplate(tpl.body, { firstName: first, count: properties.length, list, agent: opts.agent })
+  // the stored templates say "here are {{count}} options"; with one property that must read "here is 1 option"
+  const body = tpl && properties.length === 1
+    ? tpl.body.replace(/\bare \{\{count\}\} options\b/g, 'is {{count}} option').replace(/\{\{count\}\} options\b/g, '{{count}} option')
+    : tpl?.body
+  if (body) return fillTemplate(body, { firstName: first, count: properties.length, list, agent: opts.agent })
   const intro = properties.length === 1 ? 'here is an option' : `here are ${properties.length} options`
   return `Hi ${first}, as discussed, ${intro} that fit what you're looking for:\n\n${list}\n\nHappy to arrange a visit at your convenience.`
 }

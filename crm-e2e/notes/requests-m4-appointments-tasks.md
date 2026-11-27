@@ -19,3 +19,12 @@
 - `catalogue`: `callResult.*` and `visitResult.*` labels so Today / Activity can show them (M4 uses `tasks:callResult.*`, `appointments:result.*`).
 - `Drawer` (shared): pressing Escape while focus is inside a textarea in the drawer sometimes did not close it during automated runs — worth a look.
 - `ai/simulated/messages.ts`: the `visitConfirm` template prints "to  at ." when called without `appointmentId`; M4 now always passes it, but a guard there would help other callers.
+
+## Integrator status (Phase 3)
+- §4 `common` yes/no keys — DECLINED (module keys work; no second caller).
+- §4 `catalogue` callResult / visitResult labels — DECLINED for now (only M4 renders them).
+- §4 Drawer Escape in a textarea — DECLINED (not reproducible; Radix handles Escape on the dialog content).
+- §4 `visitConfirm` guard — APPLIED already in `ai/simulated/messages.ts` (falls back to a follow-up message without a visit).
+- Review #5 (automatic task titles in English) — APPLIED at display time: `task-row.tsx` shows `domain:task.autoTitle.<reason>` (en + ta) for automatic tasks.
+- Review #1 (phone checkboxes), #2 (cancel reason language), #3 (reschedule Undo; `rescheduleTasks` already has one) — left to the UI unifier / documented assumptions.
+- Activity log: `updateTask`, `rescheduleTasks`, `reopenTask`, `deleteTask`, `updateAppointment`, `confirmAppointment`, `deleteAppointment` now emit `task.updated` / `task.deleted` / `appointment.updated` / `appointment.deleted` (new activity kinds, en + ta), so these changes show on timelines and in the log.

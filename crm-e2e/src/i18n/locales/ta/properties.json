@@ -99,6 +99,11 @@
     "healthLabel": "பட்டியல் {{score}}% முழுமை"
   },
   "bulk": {
+    "statusConfirmTitle_one": "{{count}} சொத்தை {{status}} எனக் குறிக்கவா?",
+    "statusConfirmTitle_other": "{{count}} சொத்துகளை {{status}} எனக் குறிக்கவா?",
+    "statusConfirmBody": "அவை எல்லா பொருத்தப் பட்டியல்களிலிருந்தும் நீங்கும்; ஆர்வமுள்ள லீட்களின் உரிமையாளர்களுக்குத் தெரிவிக்கப்படும். சில விநாடிகளுக்குள் திரும்பப் பெறலாம்.",
+    "statusConfirm_one": "{{count}} சொத்தைப் புதுப்பி",
+    "statusConfirm_other": "{{count}} சொத்துகளைப் புதுப்பி",
     "status": "நிலையை மாற்று",
     "statusTo": "நிலையை இதற்கு மாற்று",
     "statusDone_one": "{{count}} சொத்து {{status}} ஆக மாற்றப்பட்டது",

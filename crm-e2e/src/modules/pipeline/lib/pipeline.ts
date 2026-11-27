@@ -3,7 +3,7 @@
  * analytics strip all count deals the same way. Nothing here is stored: values, ageing and predictions are derived.
  */
 import type { ID, Lead, LeadSource, PipelineStageKey, Property, Settings, Task, Temperature, User } from '@/domain/types'
-import { CLOSED_STAGES, STAGES } from '@/domain/catalogue'
+import { CLOSED_STAGES, LEAD_SOURCES, STAGES } from '@/domain/catalogue'
 import { CRORE, LAKH } from '@/lib/amount'
 import { agingOf, stalledDeals, type AgingTone } from '@/lib/stalled'
 
@@ -87,8 +87,22 @@ export type PipelineFilters = {
   temperatures: Temperature[]
   values: ValueBand[]
   stalledOnly: boolean
+  /** Only these stages (a Reports / Today funnel click-through); empty = every stage. */
+  stages: PipelineStageKey[]
 }
-export const EMPTY_FILTERS: PipelineFilters = { q: '', owners: [], sources: [], temperatures: [], values: [], stalledOnly: false }
+export const EMPTY_FILTERS: PipelineFilters = { q: '', owners: [], sources: [], temperatures: [], values: [], stalledOnly: false, stages: [] }
+
+/** The filters a /pipeline URL carries (?stage=, ?source=, ?owner=, ?stalled=1); unknown values are ignored. */
+export function pipelineFiltersFromParams(params: URLSearchParams): PipelineFilters {
+  const list = (k: string) => (params.get(k) ?? '').split(',').map((x) => x.trim()).filter(Boolean)
+  return {
+    ...EMPTY_FILTERS,
+    owners: list('owner'),
+    sources: list('source').filter((x): x is LeadSource => (LEAD_SOURCES as string[]).includes(x)),
+    stages: list('stage').filter((x): x is PipelineStageKey => (STAGES as string[]).includes(x)),
+    stalledOnly: params.get('stalled') === '1',
+  }
+}
 
 /** "unassigned" in the owner filter matches deals without an owner. */
 export const UNASSIGNED = 'unassigned'
@@ -105,11 +119,12 @@ export function matchesDeal(d: DealItem, f: PipelineFilters): boolean {
   if (f.temperatures.length && !f.temperatures.includes(d.temperature)) return false
   if (f.values.length && !f.values.some((b) => inBand(d.value, b))) return false
   if (f.stalledOnly && !d.stalled) return false
+  if (f.stages.length && !f.stages.includes(d.lead.stage)) return false
   return true
 }
 
 export const activeFilterCount = (f: PipelineFilters) =>
-  (f.q.trim() ? 1 : 0) + f.owners.length + f.sources.length + f.temperatures.length + f.values.length + (f.stalledOnly ? 1 : 0)
+  (f.q.trim() ? 1 : 0) + f.owners.length + f.sources.length + f.temperatures.length + f.values.length + (f.stalledOnly ? 1 : 0) + f.stages.length
 
 /* ---------- columns ---------- */
 

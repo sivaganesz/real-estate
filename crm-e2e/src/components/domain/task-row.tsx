@@ -63,6 +63,8 @@ export function TaskRow({ task, showLead = true, className, selected, onSelected
   const now = useNow()
   const { can, explain } = usePermission()
   const lead = useDb((db) => db.leads.find((l) => l.id === task.leadId))
+  // automatic tasks are stored with an English title; show them in the UI language (M4 review #5)
+  const title = task.autoReason && lead ? t(`domain:task.autoTitle.${task.autoReason}`, { name: lead.name }) : task.title
   const owner = useDb((db) => db.users.find((u) => u.id === task.ownerId))
   const [asking, setAsking] = useState(false)
   const [note, setNote] = useState('')
@@ -170,7 +172,7 @@ export function TaskRow({ task, showLead = true, className, selected, onSelected
               <TooltipContent>{t(task.origin === 'ai' ? 'domain:task.byAi' : 'domain:task.byAutomation')}</TooltipContent>
             </Tooltip>
           )}
-          <span className="line-clamp-2 sm:truncate">{task.title}</span>
+          <span className="line-clamp-2 sm:truncate">{title}</span>
         </p>
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-muted-foreground">
           {done && task.completedAt ? (

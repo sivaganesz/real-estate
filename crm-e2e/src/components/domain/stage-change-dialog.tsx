@@ -35,6 +35,9 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
   const { t } = useTranslation(['domain', 'common', 'catalogue', 'pipeline'])
   const lead = useDb((db) => db.leads.find((l) => l.id === leadId))
   const properties = useDb((db) => db.properties)
+  const stageDefs = useDb((db) => db.settings.pipeline.stages)
+  // stages switched off in Settings → Pipeline are not offered (the lead's own stage stays listed so it reads right)
+  const offered = STAGES.filter((s) => s === lead?.stage || s === initialTo || stageDefs.find((d) => d.key === s)?.enabled !== false)
   const { can } = usePermission()
   const [to, setTo] = useState<PipelineStageKey>(initialTo ?? lead?.stage ?? 'contacted')
   const [reason, setReason] = useState<LostReason | undefined>()
@@ -87,7 +90,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
               <Select value={to} onValueChange={(v) => { setTo(v as PipelineStageKey); setErrors([]) }}>
                 <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STAGES.map((s) => (
+                  {offered.map((s) => (
                     <SelectItem key={s} value={s} disabled={!allowed(s) || s === lead.stage}>
                       <span aria-hidden="true" className={cn('size-2 rounded-full', stageTone[s].solid)} />
                       {t(`catalogue:stage.${s}`)}

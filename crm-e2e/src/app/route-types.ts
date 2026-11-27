@@ -13,6 +13,8 @@ export interface AppRoute {
   Component: ComponentType
   /** i18n key for the breadcrumb and the document title. */
   titleKey: string
+  /** A title that depends on the URL (for example the settings section's name); falls back to titleKey. */
+  titleKeyFor?: (params: Params) => string | undefined
   /** The parent route's path, for breadcrumbs (for example '/leads' for '/leads/:id'). */
   parent?: string
 }

@@ -96,8 +96,8 @@ export default function TeamPage() {
         title={t('team:title')} subtitle={t('team:subtitle')}
         actions={(
           <>
-            <Button variant="secondary" onClick={askInsight} disabled={thinking} aria-busy={thinking} data-testid="team-insight">
-              {thinking ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles className="text-ai" aria-hidden="true" />}
+            <Button variant="ai-outline" onClick={askInsight} disabled={thinking} aria-busy={thinking} data-testid="team-insight">
+              {thinking ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
               {t('team:insight.button')}
             </Button>
             {can('user.manage') && (

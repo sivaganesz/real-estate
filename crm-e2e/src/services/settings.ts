@@ -5,7 +5,7 @@
 import type { AssignmentRule, ID, MessageTemplate, SavedView, Settings } from '@/domain/types'
 import { PermissionError, explainDenied, type Action } from '@/lib/permissions'
 import { assertActorCan, isSystem } from './core/actor'
-import { commit, must } from './core/commit'
+import { commit, must, type Tx } from './core/commit'
 
 export const SECTION_PERMISSION: Record<keyof Settings, Action> = {
   assignment: 'rules.configure',
@@ -37,6 +37,12 @@ export function updateSettings<K extends keyof Settings>(section: K, value: Sett
 
 export const setAutoAssign = (on: boolean) => updateSettings('assignment', { autoAssign: on })
 
+/** A manager only changes their own team's rules (never a company-wide one or another team's): M8 R6. */
+function assertMayChangeRule(tx: Tx, rule: AssignmentRule | undefined) {
+  if (!rule || isSystem(tx.actor) || tx.actor.role !== 'manager') return
+  if (rule.scope === 'global' || rule.scope.managerId !== tx.actor.id) throw new PermissionError('rules.configure', explainDenied(tx.actor, 'rules.configure'))
+}
+
 export function saveRule(rule: Omit<AssignmentRule, 'id'> & { id?: ID }) {
   return commit('settings.rule', (tx) => {
     assertActorCan(tx.actor, 'rules.configure')
@@ -44,6 +50,7 @@ export function saveRule(rule: Omit<AssignmentRule, 'id'> & { id?: ID }) {
     const scope = !isSystem(tx.actor) && tx.actor.role === 'manager' ? { managerId: tx.actor.id } : rule.scope
     const rules = tx.db.settings.assignment.rules
     const existing = rule.id ? rules.find((r) => r.id === rule.id) : undefined
+    assertMayChangeRule(tx, existing)
     if (existing) Object.assign(existing, { ...rule, scope })
     else rules.push({ ...rule, scope, id: tx.id('RULE') })
     tx.emit({ type: 'settings.changed', section: 'assignment' })
@@ -53,6 +60,7 @@ export function saveRule(rule: Omit<AssignmentRule, 'id'> & { id?: ID }) {
 export function deleteRule(id: ID) {
   return commit('settings.ruleDelete', (tx) => {
     assertActorCan(tx.actor, 'rules.configure')
+    assertMayChangeRule(tx, tx.db.settings.assignment.rules.find((r) => r.id === id))
     tx.db.settings.assignment.rules = tx.db.settings.assignment.rules.filter((r) => r.id !== id)
     tx.emit({ type: 'settings.changed', section: 'assignment' })
   }, { undoable: true })
@@ -116,9 +124,7 @@ export function setRuleEnabled(id: ID, enabled: boolean) {
     assertActorCan(tx.actor, 'rules.configure')
     const rule = must(tx.db.settings.assignment.rules, id, 'rule')
     // a manager only changes their own team's rules
-    if (!isSystem(tx.actor) && tx.actor.role === 'manager' && (rule.scope === 'global' || rule.scope.managerId !== tx.actor.id)) {
-      throw new PermissionError('rules.configure', explainDenied(tx.actor, 'rules.configure'))
-    }
+    assertMayChangeRule(tx, rule)
     rule.enabled = enabled
     tx.emit({ type: 'settings.changed', section: 'assignment' })
   })

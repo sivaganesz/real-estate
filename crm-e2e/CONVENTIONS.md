@@ -14,8 +14,7 @@ crm-e2e/
    ├─ main.tsx  index.css            entry; DESIGN_SYSTEM §12 tokens
    ├─ app/                           App, providers, router, routes.ts (registry), nav.ts, paths.ts,
    │  ├─ guards/                     RequirePermission, NoAccessPage
-   │  ├─ shell/                      app shell, sidebar, topbar, bottom tabs, profile switcher, toggles, bell
-   │  └─ dev/                        /__kit (dev-only component gallery; removed before delivery)
+   │  └─ shell/                      app shell, sidebar, topbar, bottom tabs, profile switcher, toggles, bell
    ├─ components/
    │  ├─ ui/                         shadcn primitives
    │  ├─ shared/                     domain-agnostic building blocks (+ charts/)
@@ -62,7 +61,7 @@ File names are kebab-case (`lead-card.tsx`). Components are PascalCase named exp
 | **M7 AI Assistants** | `src/ai/**` (except `ai/document`), `components/ai/**`, `services/commands.ts` | — (global panel) | `ai` |
 | **M8 Team, Settings, Notifications & Activity** | `modules/team/**`, `modules/settings/**`, `modules/notifications/**`, `modules/activity/**`, `components/domain/assign-dialog.tsx`, `notification-item.tsx`, `app/shell/notification-bell.tsx`, `lib/assignment.ts`; additive in `services/users.ts`, `services/settings.ts`, `services/notifications.ts`, `services/assignments.ts` | `/team`, `/team/:id`, `/settings`, `/settings/:section`, `/notifications`, `/activity` | `team`, `settings`, `notifications`, `activity` |
 
-**Foundation / Parent-owned (change by request only):** `domain/**`, `store/**`, `services/core/**`, `services/queries/visibility.ts` and `lookups.ts`, `services/demo.ts`, `services/automation.ts`, `services/activities.ts`, `data/seed/**`; `app/**` (except `notification-bell.tsx`); `components/ui/**`, `components/shared/**`, `components/illustrations/**`, `components/domain/entity-link.tsx` and `activity-timeline.tsx`; `lib/permissions.ts`, `tones.ts`, `theme.ts`, `format.ts`, `dates.ts`, `phone.ts`, `amount.ts`, `whatsapp.ts`, `validation.ts`, `classification.ts`, `places.ts`, `utils.ts`; `hooks/**`; `i18n/index.ts`; namespaces `common`, `shell`, `catalogue`, `ui`, `domain`, `kit`, `activity`, `notifications` (the last two co-owned with M8, which may add keys).
+**Foundation / Parent-owned (change by request only):** `domain/**`, `store/**`, `services/core/**`, `services/queries/visibility.ts` and `lookups.ts`, `services/demo.ts`, `services/automation.ts`, `services/activities.ts`, `data/seed/**`; `app/**` (except `notification-bell.tsx`); `components/ui/**`, `components/shared/**`, `components/illustrations/**`, `components/domain/entity-link.tsx` and `activity-timeline.tsx`; `lib/permissions.ts`, `tones.ts`, `theme.ts`, `format.ts`, `dates.ts`, `phone.ts`, `amount.ts`, `whatsapp.ts`, `validation.ts`, `classification.ts`, `places.ts`, `utils.ts`; `hooks/**`; `i18n/index.ts`; namespaces `common`, `shell`, `catalogue`, `ui`, `domain`, `activity`, `notifications` (the last two co-owned with M8, which may add keys).
 
 **"Additive in services/x.ts"** = you may add new exported functions built on `commit()` and existing events. You may not change existing signatures, `effects.ts` or `domain/types.ts`.
 
@@ -94,7 +93,7 @@ export function createTask(input: NewTask, opts: { via?: Origin } = {}) {
 
 - Every visible string goes through `useTranslation()` / `t('ns:key')`, in **English and Tamil**. Data people type (names, notes, titles) is never translated.
 - One JSON file per namespace and language: `src/i18n/locales/{en,ta}/<ns>.json`. New files are picked up automatically by `import.meta.glob`; `src/i18n/locales.test.ts` checks that en and ta have the same keys.
-- Namespaces: `common` (buttons, validation, errors), `shell` (nav, topbar, switcher), `catalogue` (stages, sources, types…), `ui` (shared components), `domain` (domain widgets), `kit` (dev page), `ai`, `activity`, `notifications`, and one per module: `today leads clients properties matching appointments tasks pipeline import reports team settings`.
+- Namespaces: `common` (buttons, validation, errors), `shell` (nav, topbar, switcher), `catalogue` (stages, sources, types…), `ui` (shared components), `domain` (domain widgets), `ai`, `activity`, `notifications`, and one per module: `today leads clients properties matching appointments tasks pipeline import reports team settings`.
 - Use i18next plurals (`_one` / `_other`) and interpolation (`{{name}}`); never concatenate translated fragments.
 - Format numbers, money, phones and dates only through `lib/format.ts` / `lib/amount.ts` (₹45,00,000, ₹45 L, ₹1.2 Cr, `+91 98450 12345`, `DD MMM YYYY`).
 - Tamil is drafted and flagged for review by a fluent speaker.

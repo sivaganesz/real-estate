@@ -17,6 +17,7 @@
     "search": "Search deals",
     "searchPlaceholder": "Name, phone, property or executive",
     "owner": "Executive",
+    "stage": "Stage",
     "source": "Source",
     "temperature": "Temperature",
     "value": "Deal value",
@@ -106,7 +107,8 @@
     "final": "Final stage",
     "avgDays": "avg {{days}} d / {{target}} d",
     "noDays": "No time data yet",
-    "tileLabel": "{{stage}}: {{reached}} reached, {{conv}}% moved on, average {{days}} days"
+    "tileLabel": "{{stage}}: {{reached}} reached, {{conv}}% moved on, average {{days}} days",
+    "tileLabelNoData": "{{stage}}: {{reached}} reached, not enough data yet"
   },
   "list": {
     "label": "Deals",

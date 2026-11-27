@@ -17,3 +17,11 @@ Handled for other modules (no action needed by them):
 - **M6 R1** (Lost without a reason): `executeProposal` refuses Lost without a reason and Booked / Converted with a validation error (test added).
 
 No foundation-owned file was edited by M7.
+
+## Integrator status (Phase 3)
+- **R1 — APPLIED.** `assignLeads(ids, target, note?, { via })` / `assignLead(…, { via })`; `services/commands.ts` passes `via: 'ai'` (test in `services/interconnections.test.ts`).
+- **R2 — APPLIED.** `requestReassign(leadId, note?, { via })`; commands pass `via: 'ai'`.
+- **R3 — DECLINED.** The manager queue's subtitle already says "N auto-assigned today"; a second chip would repeat it.
+- **R4 — APPLIED.** Shared `<ModuleAssistant>` mounted: leadCreate (Add lead form / sheet), propertyCreate (Add/Edit property form), appointmentCreate (appointment form dialog), followUp (lead page), propertyEdit (property page, when editable), import (`/import` hub), insights (Reports for every role, manager and executive Today). leadEdit / leadQualify / propertyMatch: the lead page keeps M2's Edit-with-AI and qualification cards and M3's matching assistant, which call the same AIService; the shared versions are on those pages through the panel's Assistants tab (see assumptions-integration.md).
+- **R5 — APPLIED.** The panel docks only from 1920 px (`min-[1920px]:pr-[440px]` in the shell and the same query in `ai-panel.tsx`); below that it overlays, so a 1440 px lead page keeps its full width (e2e `integration.spec.ts`).
+- Follow-up of R5: the lead page grid no longer widens past a phone screen with the follow-up assistant mounted (552 → 412 px at Pixel 7); `m7-ai.spec.ts` reopens the overlay panel after following a link.

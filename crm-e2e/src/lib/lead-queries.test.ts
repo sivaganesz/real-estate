@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildSeed } from '@/data/seed'
 import { classificationOf } from './classification'
-import { attentionOf, contactAging, filterCount, filtersFromView, inTab, leadItems, matchesLead, parseLeadSentence, sameFilters, sortLeads, tabCounts, toCsv, viewFromFilters } from './lead-queries'
+import { attentionOf, contactAging, filterCount, filtersFromView, inTab, leadFiltersFromParams, leadItems, matchesLead, parseLeadSentence, sameFilters, sortLeads, tabCounts, toCsv, viewFromFilters } from './lead-queries'
 import { leadScore, priorityFor } from './scoring'
 
 const now = new Date(2026, 10, 27, 10, 30)
@@ -87,5 +87,23 @@ describe('lead-queries: aging, saved views, CSV, extra filters', () => {
 
   it('writes safe CSV', () => {
     expect(toCsv(['Name', 'Note'], [['Rahul, V', 'said "hi"'], ['=SUM(A1)', -5]])).toBe('Name,Note\r\n"Rahul, V","said ""hi"""\r\n\'=SUM(A1),-5')
+  })
+})
+
+describe('lead-queries: URL filters (chart click-throughs)', () => {
+  it('reads stage, source, owner, temperature and lost reason from the URL and ignores unknown values', () => {
+    const f = leadFiltersFromParams(new URLSearchParams('stage=negotiation,bogus&source=website&owner=u-1&temp=hot&attn=overdue'))
+    expect(f).toEqual({ stages: ['negotiation'], sources: ['website'], owners: ['u-1'], temperatures: ['hot'], attn: 'overdue' })
+    expect(filterCount(f)).toBe(5)
+    expect(leadFiltersFromParams(new URLSearchParams('stage=nope'))).toEqual({})
+  })
+  it('a lost-reason link shows exactly the lost leads with that reason', () => {
+    const lost = items.find((x) => x.lead.lost)
+    expect(lost).toBeDefined()
+    const f = leadFiltersFromParams(new URLSearchParams({ lostReason: lost!.lead.lost!.reason }))
+    expect(f.stages).toEqual(['lost'])
+    const shown = items.filter((x) => matchesLead(x, f, now))
+    expect(shown.length).toBeGreaterThan(0)
+    expect(shown.every((x) => x.lead.stage === 'lost' && x.lead.lost?.reason === lost!.lead.lost!.reason)).toBe(true)
   })
 })

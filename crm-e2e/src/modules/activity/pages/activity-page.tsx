@@ -163,9 +163,9 @@ export default function ActivityPage() {
 
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <KpiCard label={t('activity:log.kpi.entries')} value={stats.total} icon={History} tone="primary" spark={spark} hint={t('activity:log.kpi.entriesHint')} />
-        <KpiCard label={t('activity:log.kpi.ai')} value={stats.ai} icon={Sparkles} tone="ai" hint={t('activity:log.kpi.share', { pct: stats.total ? Math.round((stats.ai / stats.total) * 100) : 0 })} onClick={() => set({ via: ['ai'] })} className="flex flex-col justify-start" />
-        <KpiCard label={t('activity:log.kpi.automation')} value={stats.automation + stats.import} icon={Bot} tone="info" hint={t('activity:log.kpi.automationHint', { auto: stats.automation, imported: stats.import })} onClick={() => set({ via: ['automation', 'import'] })} className="flex flex-col justify-start" />
-        <KpiCard label={t('activity:log.kpi.top')} value={stats.topActor ? nameOf(stats.topActor) : '–'} icon={Users} tone="success" hint={t('activity:log.kpi.people', { count: stats.people })} onClick={stats.topActor ? () => set({ actors: [stats.topActor as string] }) : undefined} className="flex flex-col justify-start" />
+        <KpiCard label={t('activity:log.kpi.ai')} value={stats.ai} icon={Sparkles} tone="ai" hint={t('activity:log.kpi.share', { pct: stats.total ? Math.round((stats.ai / stats.total) * 100) : 0 })} onClick={() => set({ via: ['ai'] })} />
+        <KpiCard label={t('activity:log.kpi.automation')} value={stats.automation + stats.import} icon={Bot} tone="info" hint={t('activity:log.kpi.automationHint', { auto: stats.automation, imported: stats.import })} onClick={() => set({ via: ['automation', 'import'] })} />
+        <KpiCard label={t('activity:log.kpi.top')} value={stats.topActor ? nameOf(stats.topActor) : '–'} icon={Users} tone="success" hint={t('activity:log.kpi.people', { count: stats.people })} onClick={stats.topActor ? () => set({ actors: [stats.topActor as string] }) : undefined} />
       </div>
 
       <section className="flex flex-col gap-2 rounded-xl border border-dashed border-ai-border bg-ai-soft/30 p-3 md:p-4" aria-label={t('activity:log.ask.title')}>

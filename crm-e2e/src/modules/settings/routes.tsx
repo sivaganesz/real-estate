@@ -15,5 +15,6 @@ function sectionPermission(section: string | undefined): Action {
 
 export const routes: AppRoute[] = [
   { path: '/settings', permission: 'settings.preferences', Component: lazy(() => import('./pages/settings-page')), titleKey: 'settings:title' },
-  { path: '/settings/:section', permission: (params) => sectionPermission(params.section), Component: lazy(() => import('./pages/settings-section-page')), titleKey: 'settings:sectionTitle', parent: '/settings' },
+  { path: '/settings/:section', permission: (params) => sectionPermission(params.section), Component: lazy(() => import('./pages/settings-section-page')), titleKey: 'settings:sectionTitle', parent: '/settings',
+    titleKeyFor: (params) => { const key = SECTION_ALIASES[params.section ?? ''] ?? params.section; return SECTIONS.some((s) => s.key === key) ? `settings:section.${key}.title` : undefined } },
 ]

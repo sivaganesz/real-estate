@@ -55,6 +55,7 @@ export function updateAppointment(id: ID, patch: AppointmentPatch, opts: { via?:
     if (patch.ownerId && patch.ownerId !== a.ownerId) assertActorCan(tx.actor, 'appointment.manage', { ownerId: patch.ownerId }, tx.db)
     Object.assign(a, patch)
     a.updatedAt = tx.now
+    tx.emit({ type: 'appointment.updated', id, fields: Object.keys(patch) })
   }, opts)
 }
 
@@ -82,6 +83,7 @@ export function confirmAppointment(id: ID) {
     assertActorCan(tx.actor, 'appointment.manage', a, tx.db)
     a.status = 'confirmed'
     a.updatedAt = tx.now
+    tx.emit({ type: 'appointment.updated', id, fields: ['status'] })
   })
 }
 
@@ -122,6 +124,7 @@ export function deleteAppointment(id: ID) {
   return commit('appointment.delete', (tx) => {
     const a = must(tx.db.appointments, id, 'appointment')
     assertActorCan(tx.actor, 'appointment.manage', a, tx.db)
+    tx.emit({ type: 'appointment.deleted', appointment: { ...a } })
     tx.db.appointments = tx.db.appointments.filter((x) => x.id !== id)
   }, { undoable: true })
 }

@@ -302,7 +302,7 @@ export const tasksOnDay = (db: DB, userId: ID, day: string): Task[] =>
 /* ---------- AI business insights (simulated: rules over the real data, shown with the Demo AI badge) ---------- */
 
 export type InsightLink =
-  | { to: 'reports'; tab?: string } | { to: 'leads' } | { to: 'pipeline' } | { to: 'properties' } | { to: 'import' }
+  | { to: 'reports'; tab?: string } | { to: 'leads'; tab?: 'unassigned' } | { to: 'pipeline'; stalled?: boolean } | { to: 'properties'; locality?: string } | { to: 'import' }
   | { to: 'lead'; id: ID } | { to: 'team' }
 export type Insight = {
   key: string
@@ -332,16 +332,16 @@ export function businessInsights(db: DB, now: Date): Insight[] {
   const unassigned = open.filter((l) => l.ownerId === null)
   if (unassigned.length) {
     const oldest = Math.max(...unassigned.map((l) => Math.floor((now.getTime() - new Date(l.createdAt).getTime()) / HOUR)))
-    out.push({ key: 'unassigned', params: { count: unassigned.length, hours: oldest }, tone: 'danger', link: { to: 'leads' } })
+    out.push({ key: 'unassigned', params: { count: unassigned.length, hours: oldest }, tone: 'danger', link: { to: 'leads', tab: 'unassigned' } })
   }
   // 4. stalled deals and the value at risk
   const stalled = open.filter((l) => agingOf(l, db.settings, now).tone === 'danger')
-  if (stalled.length) out.push({ key: 'stalled', params: { count: stalled.length, value: stalled.reduce((n, l) => n + (l.deal?.value ?? l.requirement.budgetMax ?? 0), 0) }, tone: 'warning', link: { to: 'pipeline' } })
+  if (stalled.length) out.push({ key: 'stalled', params: { count: stalled.length, value: stalled.reduce((n, l) => n + (l.deal?.value ?? l.requirement.budgetMax ?? 0), 0) }, tone: 'warning', link: { to: 'pipeline', stalled: true } })
   // 5. where unsold inventory piles up
   const byLocality = new Map<string, number>()
   for (const p of db.properties) if (p.status === 'available' && p.listing === 'live') byLocality.set(p.location.locality, (byLocality.get(p.location.locality) ?? 0) + 1)
   const pile = [...byLocality.entries()].sort((a, b) => b[1] - a[1])[0]
-  if (pile && pile[1] >= 2) out.push({ key: 'inventory', params: { count: pile[1], locality: pile[0] }, tone: 'info', link: { to: 'properties' } })
+  if (pile && pile[1] >= 2) out.push({ key: 'inventory', params: { count: pile[1], locality: pile[0] }, tone: 'info', link: { to: 'properties', locality: pile[0] } })
   // 6. conversion this month against the closed-deal average
   const rate = conversionRate(leads)
   const closedThisMonth = leads.filter((l) => between(closedAt(l) ?? l.deal?.bookedAt, periodBounds('month', now).from, now)).length

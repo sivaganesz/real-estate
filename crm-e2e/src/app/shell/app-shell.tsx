@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { navCounts } from '@/services/queries/lookups'
 import { useSessionStore } from '@/store/session-store'
 import { RouteErrorBoundary } from '../error-boundary'
-import { findRoute } from '../routes'
+import { findRoute, titleKeyOf } from '../routes'
 import { AiLauncher } from './ai-launcher'
 import { BottomTabs, MobileMenuButton, MobileNavSheet, MobileProfileButton } from './mobile-nav'
 import { NotificationBell } from './notification-bell'
@@ -58,7 +58,7 @@ export function AppShell() {
 
   // Document title follows the page (registry title + product name).
   const found = findRoute(pathname)
-  const pageTitle = found ? t(found.route.titleKey) : t('common:notFound.title')
+  const pageTitle = found ? t(titleKeyOf(found.route, found.params)) : t('common:notFound.title')
   useEffect(() => {
     document.title = `${pageTitle} · ${t('common:appName')}`
   }, [pageTitle, t])
@@ -70,7 +70,7 @@ export function AppShell() {
       </a>
       <Sidebar counts={counts} collapsed={collapsed} />
       <MobileNavSheet open={menuOpen} onOpenChange={setMenuOpen} counts={counts} />
-      <div className={cn('flex min-h-dvh flex-col transition-[padding] duration-(--dur-slow) ease-in-out', collapsed ? 'md:pl-16' : 'md:pl-[248px]', aiOpen && 'xl:pr-[440px]')}>
+      <div className={cn('flex min-h-dvh flex-col transition-[padding] duration-(--dur-slow) ease-in-out', collapsed ? 'md:pl-16' : 'md:pl-[248px]', aiOpen && 'min-[1920px]:pr-[440px]')}>
         <header
           data-testid="topbar"
           className={cn(

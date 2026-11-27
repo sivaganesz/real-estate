@@ -43,9 +43,9 @@ import { useToday } from './use-today'
 function insightPath(l: InsightLink): string {
   switch (l.to) {
     case 'reports': return paths.reports(l.tab)
-    case 'leads': return paths.leads()
-    case 'pipeline': return paths.pipeline()
-    case 'properties': return paths.properties()
+    case 'leads': return paths.leads({ tab: l.tab })
+    case 'pipeline': return paths.pipeline({ stalled: l.stalled ? '1' : undefined })
+    case 'properties': return paths.properties({ q: l.locality })
     case 'import': return paths.importHistory()
     case 'lead': return paths.lead(l.id)
     case 'team': return paths.team()
@@ -155,7 +155,7 @@ function SourceFunnel({ data }: { data: AdminToday }) {
       <BarSeriesChart
         data={rows} xKey="label" horizontal height={Math.max(200, rows.length * 38)} label={t('today:admin.sources.title')}
         series={[{ key: 'leads', label: t('today:admin.sources.leads') }, { key: 'visited', label: t('today:admin.sources.visited') }, { key: 'booked', label: t('today:admin.sources.booked') }]}
-        onBarClick={() => navigate(paths.reports('sources'))}
+        onBarClick={(r) => navigate(paths.leads({ source: r.key }))}
       />
     </SectionCard>
   )

@@ -24,7 +24,7 @@ export function FilterBar({ search, onSearch, searchLabel, placeholder, filters,
   const { t } = useTranslation('ui')
   return (
     <div className={cn('flex flex-col gap-3 lg:flex-row lg:items-center', className)}>
-      {onSearch && <SearchInput value={search ?? ''} onChange={onSearch} label={searchLabel ?? t('filter.search')} placeholder={placeholder} className="lg:w-72" />}
+      {onSearch && <SearchInput value={search ?? ''} onChange={onSearch} label={searchLabel ?? t('filter.search')} placeholder={placeholder} className="lg:w-72 lg:shrink-0" />}
       {(filters || activeCount > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           {filters}

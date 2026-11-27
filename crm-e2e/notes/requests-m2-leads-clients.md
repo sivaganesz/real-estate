@@ -9,3 +9,9 @@
 Additive service functions added (allowed by plan §8.2, not requests):
 - `services/leads.ts`: `LeadFieldPatch`, `updateLeadFields()` (partial requirement / qualification patches, merged by the existing `mergePatch`).
 - `services/clients.ts`: `changeClientStatus()` (undoable), `removeClientDocument()` (undoable), `addClientDocuments()` (undoable).
+
+## Integrator status (Phase 3)
+- **R1 — APPLIED.** `components/shared/drawer.tsx` widths are prefixed `data-[side=right]:` so 480 / 640 px drawers render at their width (phones full width).
+- **R2 — APPLIED** (wider than asked): `paths.leads(LeadListParams)` with tab / view / add plus filter params (stage, source, owner, temp, lostReason, attn); the Leads page applies them and drops them once the user edits the filters.
+- **R3 — APPLIED (by M7).**
+- Review OPEN 1–4 (phone KPI labels, tab strip clipping, phone column order, narrow search at 1440): handed to the UI unifier (layout polish, no behaviour change).

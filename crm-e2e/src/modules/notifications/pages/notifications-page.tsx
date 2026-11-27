@@ -101,7 +101,7 @@ export default function NotificationsPage() {
         actions={(
           <>
             {counts.unread > 0 && (
-              <Button variant="ai" onClick={() => setShowDigest((v) => !v)} data-testid="notifications-digest" aria-expanded={showDigest}>
+              <Button variant="ai-outline" onClick={() => setShowDigest((v) => !v)} data-testid="notifications-digest" aria-expanded={showDigest}>
                 <Sparkles aria-hidden="true" />
                 {t('notifications:digest.button')}
               </Button>
@@ -115,10 +115,10 @@ export default function NotificationsPage() {
       />
 
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-        <KpiCard label={t('notifications:kpi.unread')} value={counts.unread} icon={Bell} tone="primary" hint={t('notifications:kpi.ofTotal', { count: counts.all })} onClick={() => set({ read: 'unread' })} className="flex flex-col justify-start" />
-        <KpiCard label={t('notifications:kpi.urgent')} value={counts.high} icon={Siren} tone="danger" hint={t('notifications:kpi.urgentHint')} onClick={() => set({ read: 'unread', highOnly: true })} className="flex flex-col justify-start" />
-        <KpiCard label={t('notifications:kpi.assignments')} value={assignmentsUnread} icon={UserPlus} tone="info" hint={t('notifications:kpi.unreadHint')} onClick={() => set({ read: 'unread', categories: ['assignments'] })} className="flex flex-col justify-start" />
-        <KpiCard label={t('notifications:kpi.schedule')} value={scheduleUnread} icon={AlarmClock} tone="warning" hint={t('notifications:kpi.today', { count: todayCount })} onClick={() => set({ read: 'unread', categories: ['schedule'] })} className="flex flex-col justify-start" />
+        <KpiCard label={t('notifications:kpi.unread')} value={counts.unread} icon={Bell} tone="primary" hint={t('notifications:kpi.ofTotal', { count: counts.all })} onClick={() => set({ read: 'unread' })} />
+        <KpiCard label={t('notifications:kpi.urgent')} value={counts.high} icon={Siren} tone="danger" hint={t('notifications:kpi.urgentHint')} onClick={() => set({ read: 'unread', highOnly: true })} />
+        <KpiCard label={t('notifications:kpi.assignments')} value={assignmentsUnread} icon={UserPlus} tone="info" hint={t('notifications:kpi.unreadHint')} onClick={() => set({ read: 'unread', categories: ['assignments'] })} />
+        <KpiCard label={t('notifications:kpi.schedule')} value={scheduleUnread} icon={AlarmClock} tone="warning" hint={t('notifications:kpi.today', { count: todayCount })} onClick={() => set({ read: 'unread', categories: ['schedule'] })} />
       </div>
 
       {showDigest && (

@@ -1,6 +1,6 @@
 /**
  * The global assistant (master prompt §12.5, DESIGN_SYSTEM §11.9): a 440 px right panel, docked (pushing the content)
- * at ≥ 1280 px and overlaying below that. Ctrl/Cmd+K, `/` or the floating button opens it. It knows the role, the page
+ * at ≥ 1920 px and overlaying below that. Ctrl/Cmd+K, `/` or the floating button opens it. It knows the role, the page
  * and the selected record (context chip), suggests role prompts (ROLE_RESEARCH §5), answers with links, graphics and
  * next-question chips, proposes changes as cards that run only on Confirm (with Edit, Cancel and Undo), and refuses what
  * the role may not do, with the reason. A second tab holds the module assistants that fit the page. Every answer carries
@@ -90,7 +90,9 @@ export function AIPanel({ open, onClose, pageTitle }: { open: boolean; onClose: 
   const user = useCurrentUser()
   const db = useWholeDb()
   const now = useNow()
-  const docked = useMediaQuery('(min-width: 1280px)')
+  // docks only where the page keeps a full desktop width beside it (1920 - 248 sidebar - 440 panel ≈ 1230 px); below
+  // that it overlays, because page grids switch on the viewport width and would squeeze (M7 R5)
+  const docked = useMediaQuery('(min-width: 1920px)')
   const selection = useAIContextSelection()
   const selLabel = useDb((d) => selectionLabel(d, selection))
   const messages = useChatStore((s) => s.messages)

@@ -36,6 +36,7 @@ import { JobCountsBar, JobStatusBadge } from '../components/job-bits'
 import { FILE_ICON } from '../lib/kinds'
 import { SampleList } from '../components/sample-list'
 import { TemplateCard } from '../components/template-card'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 /** Where a recent job opens: the history drawer, or (executives have no history) the draft or drafts it made. */
 const jobHref = (j: ImportJob, bulk: boolean) =>
@@ -142,6 +143,8 @@ export default function ImportPage() {
           <SampleList only={bulk ? undefined : (s) => s.kind === 'document'} />
         </SectionCard>
       </div>
+
+      <ModuleAssistant module="import" />
 
       <SectionCard
         icon={History} title={t(bulk ? 'hub.recentTitle' : 'hub.recentDocsTitle')} description={t(bulk ? 'hub.recentBody' : 'hub.recentDocsBody')}

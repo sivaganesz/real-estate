@@ -27,6 +27,7 @@ export function updateTask(id: ID, patch: TaskPatch, opts: { via?: Origin } = {}
     assertActorCan(tx.actor, 'task.manage', t, tx.db)
     if (patch.ownerId && patch.ownerId !== t.ownerId) assertActorCan(tx.actor, 'task.manage', { ownerId: patch.ownerId }, tx.db)
     Object.assign(t, patch)
+    tx.emit({ type: 'task.updated', id, fields: Object.keys(patch) })
   }, opts)
 }
 
@@ -60,6 +61,7 @@ export function reopenTask(id: ID) {
     assertActorCan(tx.actor, 'task.manage', t, tx.db)
     t.status = 'open'
     t.completedAt = undefined
+    tx.emit({ type: 'task.updated', id, fields: ['status'] })
   })
 }
 
@@ -76,6 +78,7 @@ export function deleteTask(id: ID) {
   return commit('task.delete', (tx) => {
     const t = must(tx.db.tasks, id, 'task')
     assertActorCan(tx.actor, 'task.manage', t, tx.db)
+    tx.emit({ type: 'task.deleted', task: { ...t } })
     tx.db.tasks = tx.db.tasks.filter((x) => x.id !== id)
   }, { undoable: true })
 }
@@ -89,6 +92,7 @@ export function rescheduleTasks(ids: ID[], dueAt: string | ((t: Task) => string)
       assertActorCan(tx.actor, 'task.manage', t, tx.db)
       if (t.status !== 'open') continue
       t.dueAt = typeof dueAt === 'function' ? dueAt(t) : dueAt
+      tx.emit({ type: 'task.updated', id, fields: ['dueAt'] })
       n++
     }
     return n

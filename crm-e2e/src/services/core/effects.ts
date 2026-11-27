@@ -182,6 +182,28 @@ function activityFor(tx: Tx, e: DomainEvent): Omit<Activity, 'id' | 'at' | 'acto
         params: { type: a.type, result: a.outcome?.result ?? null, name: leadOf(tx, a.leadId)?.name ?? '', start: a.start }, text, via,
       }
     }
+    case 'appointment.updated': {
+      const a = appointmentOf(tx, e.id)
+      if (!a) return null
+      return {
+        kind: 'appointment.updated', refs: [{ kind: 'appointment', id: a.id }, ...(a.leadId ? [leadRef(a.leadId)] : []), ...(a.clientId ? [{ kind: 'client' as const, id: a.clientId }] : [])],
+        params: { type: a.type, name: leadOf(tx, a.leadId)?.name ?? '', start: a.start, fields: e.fields.join(','), status: a.status }, via,
+      }
+    }
+    case 'appointment.deleted': {
+      const a = e.appointment
+      return { kind: 'appointment.deleted', refs: [{ kind: 'appointment', id: a.id }, ...(a.leadId ? [leadRef(a.leadId)] : [])], params: { type: a.type, name: leadOf(tx, a.leadId)?.name ?? '', start: a.start }, via }
+    }
+    case 'task.updated': {
+      const t = taskOf(tx, e.id)
+      if (!t) return null
+      return {
+        kind: 'task.updated', refs: [{ kind: 'task', id: t.id }, ...(t.leadId ? [leadRef(t.leadId)] : []), ...(t.clientId ? [{ kind: 'client' as const, id: t.clientId }] : [])],
+        params: { title: t.title, type: t.type, fields: e.fields.join(','), dueAt: t.dueAt }, via,
+      }
+    }
+    case 'task.deleted':
+      return { kind: 'task.deleted', refs: [{ kind: 'task', id: e.task.id }, ...(e.task.leadId ? [leadRef(e.task.leadId)] : [])], params: { title: e.task.title, type: e.task.type }, via }
     case 'task.created': case 'task.completed': case 'task.cancelled': {
       const t = taskOf(tx, e.id)
       if (!t) return null
@@ -214,7 +236,7 @@ function activityFor(tx: Tx, e: DomainEvent): Omit<Activity, 'id' | 'at' | 'acto
       return { kind: 'draft.saved', refs: [{ kind: 'draft', id: e.id }, ...(d?.savedAs ? [d.savedAs] : [])], params: { title: d?.title ?? '' }, via }
     }
     case 'user.created': case 'user.updated': case 'user.deactivated': case 'user.activated':
-      return { kind: e.type, refs: [{ kind: 'user', id: e.id }], params: { name: userName(tx, e.id) }, via }
+      return { kind: e.type, refs: [{ kind: 'user', id: e.id }], params: { name: userName(tx, e.id), fields: e.type === 'user.updated' ? e.fields.join(',') : null }, via }
     case 'user.availabilityChanged':
       return { kind: 'user.availability', refs: [{ kind: 'user', id: e.id }], params: { name: userName(tx, e.id), from: e.from, to: e.to }, via }
     case 'settings.changed':

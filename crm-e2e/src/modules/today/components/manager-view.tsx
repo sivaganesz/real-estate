@@ -44,6 +44,7 @@ import { AIQuickCommand } from './ai-quick-command'
 import { AppointmentsTimeline } from './appointments-timeline'
 import { TodayHero } from './today-hero'
 import { useToday } from './use-today'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 export function ManagerView() {
   const { t } = useTranslation('today')
@@ -93,6 +94,7 @@ export function ManagerView() {
             <AppointmentsTimeline appointments={data.visits} db={db} now={now} ownerColor={ownerColor} canPlan={false} title={t('manager.visits.title')} description={t('manager.visits.subtitle', { count: data.visits.length })} />
           </div>
           <TeamTargets data={data} />
+          <ModuleAssistant module="insights" scope="team" />
         </div>
       </div>
       <AutoAssignConfirm open={autoOpen} onOpenChange={setAutoOpen} ids={data.unassigned.map((u) => u.lead.id)} db={db} />
@@ -459,7 +461,7 @@ function TeamTargets({ data }: { data: ManagerToday }) {
         <FunnelChart
           label={t('manager.targets.funnel')}
           steps={data.funnel.filter((f) => f.stage !== 'converted').map((f, i, all) => ({ stage: f.stage, count: f.reached, dropOffPct: i > 0 ? all[i - 1].dropOffPct : undefined }))}
-          onStageClick={() => navigate(paths.pipeline())}
+          onStageClick={(stage) => navigate(paths.pipeline({ stage }))}
         />
       </div>
     </SectionCard>

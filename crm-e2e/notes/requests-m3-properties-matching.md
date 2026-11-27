@@ -10,3 +10,8 @@
 `components/domain/lead-select.tsx` passes `value={undefined}` first; Radix warns when it later gets a value. Proposed: `value={value ?? ''}`. Owner: foundation.
 
 No blocking requests; nothing applied to foundation files. Additive service functions added: `services/properties.ts` → `changePropertiesStatus(ids, status)` and `replaceProperty(id, input, opts)`.
+
+## Integrator status (Phase 3)
+- **R1 — APPLIED.** `lib/whatsapp.shareMessage` turns "here are {{count}} options" into "here is 1 option" for one property, also for templates already stored in a browser (test `lib/whatsapp.test.ts`).
+- **R2 — APPLIED (by M7).** **R3 — APPLIED (by M4).**
+- Review OPEN 1 — APPLIED: the edit form asks before saving a new Booked / Sold status. OPEN 2 — APPLIED: bulk Booked / Sold asks first (`statusConfirm*` keys). OPEN 3 — APPLIED: the table's edit pencil is disabled with the reason on someone else's listing.

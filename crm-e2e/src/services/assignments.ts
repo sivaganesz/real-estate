@@ -3,7 +3,7 @@
  * a tie, rules narrow the pool, on-leave and deactivated users skipped). The engine runs once per lead and sees the
  * workloads change between leads. E3 writes the history, moves open tasks and future appointments, and notifies.
  */
-import type { Assignment, DB, ID, User } from '@/domain/types'
+import type { Assignment, DB, ID, Origin, User } from '@/domain/types'
 import { OPEN_STAGES } from '@/domain/catalogue'
 import { assignablePool, previewAssignments } from '@/lib/assignment'
 import { PermissionError, can, explainDenied } from '@/lib/permissions'
@@ -15,7 +15,7 @@ export type AssignOutcome = { leadId: ID; to: ID | null; reasonKey: Assignment['
 
 const managerScope = (actor: Actor) => (!isSystem(actor) && actor.role === 'manager' ? actor.id : undefined)
 
-export function assignLeads(ids: ID[], target: ID | 'auto', note?: string): { result: AssignOutcome[]; undoToken?: string } {
+export function assignLeads(ids: ID[], target: ID | 'auto', note?: string, opts: { via?: Origin } = {}): { result: AssignOutcome[]; undoToken?: string } {
   return commit('lead.assign', (tx) => {
     const out: AssignOutcome[] = []
     if (target !== 'auto') {
@@ -47,10 +47,10 @@ export function assignLeads(ids: ID[], target: ID | 'auto', note?: string): { re
       }
     }
     return out
-  }, { undoable: ids.length > 1 })
+  }, { undoable: ids.length > 1, via: opts.via })
 }
 
-export const assignLead = (id: ID, target: ID | 'auto', note?: string) => assignLeads([id], target, note)
+export const assignLead = (id: ID, target: ID | 'auto', note?: string, opts: { via?: Origin } = {}) => assignLeads([id], target, note, opts)
 
 /** Open, unassigned leads the user may assign. */
 export const unassignedLeadIds = (db: DB, user: User) =>

@@ -53,6 +53,8 @@ export default function TeamMemberPage() {
     return (
       <div className="flex flex-col gap-4">
         {back}
+        {/* every page keeps one h1 for screen readers, also when it cannot show the person */}
+        <h1 className="sr-only">{t('team:member.notFound')}</h1>
         <section className="rounded-lg border bg-card shadow-card">
           <EmptyState illustration={EmptyTeam} title={t('team:member.notFound')} body={t('team:member.notFoundBody')} primary={<Button asChild><Link to={paths.team()}>{t('team:member.back')}</Link></Button>} />
         </section>
@@ -63,6 +65,8 @@ export default function TeamMemberPage() {
     return (
       <div className="flex flex-col gap-4">
         {back}
+        {/* every page keeps one h1 for screen readers, also when it cannot show the person */}
+        <h1 className="sr-only">{t('team:member.notInTeam')}</h1>
         <section className="rounded-lg border bg-card shadow-card">
           <EmptyState illustration={NoAccess} title={t('team:member.notInTeam')} body={t('team:member.notInTeamBody')} primary={<Button asChild><Link to={paths.team()}>{t('team:member.back')}</Link></Button>} />
         </section>

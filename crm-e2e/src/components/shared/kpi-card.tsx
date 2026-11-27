@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import type { Tone } from '@/lib/tones'
+import { TONE, type Tone } from '@/lib/tones'
 import { cn } from '@/lib/utils'
 import { IconTile } from './icon-tile'
 import { Meter } from './meter'
@@ -66,25 +66,34 @@ export function KpiCard({ label, value, icon, tone = 'primary', delta, spark, ri
 }) {
   if (loading) return <KpiCardSkeleton className={className} />
   const pct = progress && progress.max > 0 ? Math.min(100, Math.round((progress.value / progress.max) * 100)) : 0
+  const hasVisual = !!ring || !!progress || (!!spark && spark.length > 1)
+  const Watermark = icon
   const body = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          {icon && (highlight
-            ? <HighlightIcon icon={icon} />
-            : <IconTile icon={icon} tone={tone} />)}
-          <span className={cn('line-clamp-2 text-label font-semibold tracking-[0.04em] uppercase [:lang(ta)_&]:tracking-normal [:lang(ta)_&]:normal-case', highlight ? 'text-primary-foreground/85' : 'text-muted-foreground')}>{label}</span>
+      {/* A card without a chart still carries a picture: the metric's icon, large and faint, in the corner (decorative). */}
+      {!hasVisual && Watermark && (
+        <Watermark
+          aria-hidden="true" strokeWidth={1.25}
+          className={cn('pointer-events-none absolute -right-2 -bottom-3 size-20', highlight ? 'text-primary-foreground opacity-15' : cn(TONE[tone].text, 'opacity-[0.07] dark:opacity-[0.12]'))}
+        />
+      )}
+      <div className="relative flex min-h-8 min-w-0 items-center gap-2.5">
+        {icon && (highlight
+          ? <HighlightIcon icon={icon} />
+          : <IconTile icon={icon} tone={tone} />)}
+        <span className={cn('line-clamp-2 min-w-0 text-label font-semibold tracking-[0.04em] uppercase [:lang(ta)_&]:tracking-normal [:lang(ta)_&]:normal-case', highlight ? 'text-primary-foreground/85' : 'text-muted-foreground')}>{label}</span>
+      </div>
+      <div className="relative mt-3 flex items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-kpi font-[650] tracking-[-0.02em] tabular-nums">{value}</span>
+          {delta && <DeltaChip delta={delta} onDark={highlight} />}
         </div>
-        {ring && <ProgressRing value={ring.value} targetMet={ring.targetMet} tone={tone} label={ring.label} onDark={highlight} />}
+        {ring && <ProgressRing value={ring.value} targetMet={ring.targetMet} tone={tone} label={ring.label} onDark={highlight} size={44} />}
       </div>
-      <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-kpi font-[650] tracking-[-0.02em] tabular-nums">{value}</span>
-        {delta && <DeltaChip delta={delta} onDark={highlight} />}
-      </div>
-      {hint && <p className={cn('mt-1 text-meta', highlight ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{hint}</p>}
-      {spark && spark.length > 1 && <div className="mt-2 -mx-1"><Sparkline data={spark} tone={tone} onDark={highlight} /></div>}
+      {hint && <p className={cn('relative mt-1 text-meta', highlight ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{hint}</p>}
+      {spark && spark.length > 1 && <div className="relative -mx-1 mt-auto pt-2"><Sparkline data={spark} tone={tone} onDark={highlight} /></div>}
       {progress && (
-        <div className="mt-3 flex flex-col gap-1.5">
+        <div className="relative mt-auto flex flex-col gap-1.5 pt-3">
           <div className={cn('flex items-center justify-between text-meta', highlight ? 'text-primary-foreground/85' : 'text-muted-foreground')}>
             <span>{progress.caption}</span>
             <span className="font-semibold tabular-nums">{pct}%</span>
@@ -95,9 +104,10 @@ export function KpiCard({ label, value, icon, tone = 'primary', delta, spark, ri
     </>
   )
   const cls = cn(
-    'block rounded-lg border p-4 text-left shadow-card md:p-5',
+    'relative flex h-full flex-col overflow-hidden rounded-lg border p-4 text-left shadow-card md:p-5',
     highlight ? 'border-transparent bg-[linear-gradient(135deg,var(--primary),var(--primary-strong))] text-primary-foreground' : 'bg-card text-card-foreground',
-    (to || onClick) && 'transition-[transform,box-shadow] duration-(--dur-fast) hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+    (to || onClick) && 'transition-[transform,box-shadow,border-color] duration-(--dur-fast) hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+    (to || onClick) && !highlight && 'hover:border-[color-mix(in_oklch,var(--primary)_35%,var(--border))]',
     className,
   )
   if (to) return <Link to={to} className={cls}>{body}</Link>

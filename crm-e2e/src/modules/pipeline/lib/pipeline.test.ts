@@ -3,7 +3,7 @@ import { buildSeed } from '@/data/seed'
 import { leadScore } from '@/lib/scoring'
 import { makeLead, settingsWith, T_NOW } from '@/test/factories'
 import {
-  activeFilterCount, boardStages, buildDeals, columnSummaries, dealValue, EMPTY_FILTERS, inBand, matchesDeal, pipelineTotals,
+  activeFilterCount, boardStages, buildDeals, columnSummaries, dealValue, EMPTY_FILTERS, inBand, matchesDeal, pipelineFiltersFromParams, pipelineTotals,
   sortColumn, sortDeals, stageAnalytics, UNASSIGNED, weeklySeries, type DealItem,
 } from './pipeline'
 
@@ -109,6 +109,8 @@ describe('pipeline: filters and sorting', () => {
     expect(f({ temperatures: ['hot', 'warm'] })).toEqual(['Asha Rao', 'Chitra M'])
     expect(f({ values: ['l50to1Cr'] })).toEqual(['Chitra M'])
     expect(f({ stalledOnly: true })).toEqual(['Asha Rao'])
+    expect(f({ stages: [a.lead.stage] })).toContain(a.lead.name)
+    expect(f({ stages: ['converted'] }).includes(a.lead.name)).toBe(a.lead.stage === 'converted')
     expect(f({ q: 'chit' })).toEqual(['Chitra M'])
     expect(f({ q: '98450' })).toEqual(['Bala K'])
     expect(activeFilterCount({ ...EMPTY_FILTERS, owners: ['x', 'y'], stalledOnly: true })).toBe(3)
@@ -136,5 +138,17 @@ describe('pipeline: filters and sorting', () => {
 
   it('buckets dates into weekly counts, oldest first', () => {
     expect(weeklySeries([ago(1), ago(2), ago(8), ago(100), undefined], T_NOW, 4)).toEqual([0, 0, 1, 2])
+  })
+})
+
+describe('pipeline URL filters', () => {
+  it('reads stage, source, owner and stalled from a click-through link', () => {
+    const f = pipelineFiltersFromParams(new URLSearchParams('stage=negotiation,nope&source=website&owner=u1&stalled=1'))
+    expect(f.stages).toEqual(['negotiation'])
+    expect(f.sources).toEqual(['website'])
+    expect(f.owners).toEqual(['u1'])
+    expect(f.stalledOnly).toBe(true)
+    expect(activeFilterCount(f)).toBe(4)
+    expect(pipelineFiltersFromParams(new URLSearchParams(''))).toEqual(EMPTY_FILTERS)
   })
 })

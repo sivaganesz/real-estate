@@ -78,6 +78,14 @@
       "meeting": "{{name}}-ஐச் சந்தி",
       "document": "{{name}}-இடமிருந்து ஆவணங்களைச் சேகரி",
       "other": "{{name}}-க்கான பணி"
+    },
+    "autoTitle": {
+      "slaFirstCall": "{{name}} அவர்களை அழைக்கவும்",
+      "postVisitCall": "வருகைக்குப் பிந்தைய அழைப்பு: {{name}}",
+      "noAnswerRetry": "{{name}} அவர்களை மீண்டும் அழைக்கவும்",
+      "noShowReschedule": "தவறிய வருகை: மறு நேரம் குறிக்க {{name}} அவர்களை அழைக்கவும்",
+      "visitCancelledReschedule": "{{name}} உடன் மறு நேரம் குறிக்கவும்",
+      "bookingDocs": "{{name}} அவர்களிடமிருந்து முன்பதிவு ஆவணங்களைப் பெறவும்"
     }
   },
   "assign": {

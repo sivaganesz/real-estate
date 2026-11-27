@@ -14,6 +14,8 @@ const buttonVariants = cva(
         secondary:
           "border-border bg-card text-foreground shadow-xs hover:bg-muted aria-expanded:bg-muted",
         ai: "bg-ai text-ai-foreground hover:bg-[color-mix(in_oklch,var(--ai),var(--foreground)_12%)]",
+        /** The page-header AI action next to the one primary button (paste, assistant, insight): AI-coded but secondary. */
+        "ai-outline": "border-ai-border bg-card text-ai shadow-xs hover:bg-ai-soft hover:text-ai aria-expanded:bg-ai-soft",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:

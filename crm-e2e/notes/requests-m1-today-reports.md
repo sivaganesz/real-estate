@@ -15,3 +15,9 @@ pipeline: (opts: { view?: 'board' | 'list'; owner?: ID; stage?: string } = {}) =
 **Why:** today it opens the panel empty. **Urgency:** nice.
 
 No foundation files were edited by M1.
+
+## Integrator status (Phase 3)
+- **R1 — APPLIED.** `paths.leads({ stage, source, owner, temp, lostReason, attn, tab, view, add })`, `paths.pipeline({ stage, source, stalled, owner, view })` and `paths.properties({ status, type, city, q, attention })`. Leads (`lib/lead-queries.leadFiltersFromParams`, new `lostReasons` filter + pill), Pipeline (`pipelineFiltersFromParams`, new Stage pill) and Properties (`?type=`, `?city=`) honour them. The Reports drill drawer's "Open in …" button now goes to the filtered list (`drill-open`); admin Today's source chart and insights, and the manager's funnel, link to filtered lists.
+- **R2 — APPLIED (by M7).** `askAssistant(command, { prefill })` from `components/ai/chat-store`.
+- Review OPEN 3 (Segmented aria / heatmap hue): already in place (`aria-pressed` / `aria-current`, single-hue primary scale). Breadcrumb on `/reports/:tab`: APPLIED via `AppRoute.titleKeyFor` (M8 R4).
+- Review OPEN 2 (Activity tab drill-down): DECLINED — the drawer lists leads/properties only; heatmap cells are activities. Left as is.

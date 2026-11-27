@@ -21,7 +21,7 @@ export function EmptyState({ illustration: Art, title, body, primary, secondary,
       {Art && <Art size={compact ? 80 : 120} />}
       {badge && <div className="mt-4">{badge}</div>}
       <h2 className={cn('text-base font-semibold text-foreground', badge ? 'mt-2' : 'mt-4')}>{title}</h2>
-      {body && <p className="mt-1 max-w-md text-sm text-muted-foreground">{body}</p>}
+      {body && <div className="mt-1 max-w-md text-sm text-muted-foreground">{body}</div>}
       {(primary || secondary) && (
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {primary}

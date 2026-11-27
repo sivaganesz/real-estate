@@ -11,8 +11,8 @@ import { DemoAIBadge } from '@/components/ai/demo-ai-badge'
 import { FilterBar } from '@/components/shared/filter-bar'
 import { FilterPill, type FilterOption } from '@/components/shared/filter-pill'
 import { Button } from '@/components/ui/button'
-import type { LeadSource, PipelineStageKey, Priority, Temperature } from '@/domain/types'
-import { CITY_NAMES, LEAD_SOURCES, PRIORITIES, STAGES, TEMPERATURES } from '@/domain/catalogue'
+import type { LeadSource, LostReason, PipelineStageKey, Priority, Temperature } from '@/domain/types'
+import { CITY_NAMES, LEAD_SOURCES, LOST_REASONS, PRIORITIES, STAGES, TEMPERATURES } from '@/domain/catalogue'
 import { getAI } from '@/ai'
 import { useDb } from '@/hooks/use-db'
 import { usePermission } from '@/hooks/use-permission'
@@ -56,6 +56,7 @@ export function LeadsFilters({ rows, filters, onChange, end }: {
       owner: count((r) => r.lead.ownerId ?? '__none'),
       city: count((r) => r.lead.requirement.cities),
       locality: count((r) => r.lead.requirement.localities),
+      lost: count((r) => r.lead.lost?.reason),
     }
   }, [rows])
   const opts = (values: readonly string[], label: (v: string) => string, m: Map<string, number>): FilterOption[] =>
@@ -112,6 +113,9 @@ export function LeadsFilters({ rows, filters, onChange, end }: {
               selected={filters.createdWithin ? [String(filters.createdWithin)] : []}
               onChange={(v) => set('createdWithin', v[0] ? Number(v[0]) : undefined)}
             />
+            {(filters.lostReasons?.length || filters.stages?.includes('lost')) && (
+              <FilterPill label={t('filters.lostReason')} options={opts(LOST_REASONS, (v) => t(`catalogue:lostReason.${v}`), counts.lost)} selected={filters.lostReasons ?? []} onChange={(v) => set('lostReasons', v as LostReason[])} />
+            )}
             <FilterPill
               single label={t('filters.attention')}
               options={LEAD_ATTENTION.map((a) => ({ value: a, label: t(`attention.${a}`) }))}

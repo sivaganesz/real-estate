@@ -30,6 +30,7 @@ import { EditWithAI, MessageComposer, QualificationCard } from '../components/le
 import { ClassificationCard, LeadHeroCard, RequirementCard } from '../components/lead-summary'
 import { LeadTabs, type LeadTabKey } from '../components/lead-tabs'
 import { useNavigate } from 'react-router'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 const TABS: LeadTabKey[] = ['activity', 'matches', 'appointments', 'tasks', 'assignments']
 
@@ -99,8 +100,8 @@ export default function LeadPage() {
             </>
           }
         />
-        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-          <aside className="flex flex-col gap-4 max-xl:order-1" aria-label={t('leads:detail.summary')}>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
+          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-1" aria-label={t('leads:detail.summary')}>
             <LeadHeroCard lead={lead} score={facts.score} temperature={facts.temperature} priority={facts.priority} ownerName={facts.owner} />
             <RequirementCard lead={lead} />
             <ClassificationCard lead={lead} />
@@ -112,8 +113,9 @@ export default function LeadPage() {
             <AISummaryCard lead={lead} />
             <LeadTabs lead={lead} tab={tab} onTab={setTab} />
           </div>
-          <aside className="flex flex-col gap-4 max-xl:order-3 md:max-xl:grid md:max-xl:grid-cols-2 md:max-xl:items-start" aria-label={t('leads:detail.related')}>
+          <aside className="flex min-w-0 flex-col gap-4 max-xl:order-3 md:max-xl:grid md:max-xl:grid-cols-[repeat(2,minmax(0,1fr))] md:max-xl:items-start" aria-label={t('leads:detail.related')}>
             <QualificationCard lead={lead} />
+            <ModuleAssistant module="followUp" leadId={lead.id} />
             <MessageComposer lead={lead} />
             <EditWithAI lead={lead} />
           </aside>

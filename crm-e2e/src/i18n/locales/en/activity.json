@@ -21,12 +21,16 @@
     "rescheduled": "Appointment rescheduled",
     "completed": "Appointment completed",
     "cancelled": "Appointment cancelled",
-    "noShow": "Marked as no-show"
+    "noShow": "Marked as no-show",
+    "updated": "Appointment updated",
+    "deleted": "Appointment deleted"
   },
   "task": {
     "created": "Task added",
     "completed": "Task completed",
-    "cancelled": "Task cancelled"
+    "cancelled": "Task cancelled",
+    "updated": "Task updated",
+    "deleted": "Task deleted"
   },
   "property": {
     "created": "Property added",

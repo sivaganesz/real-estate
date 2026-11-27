@@ -73,10 +73,9 @@ export function StageAnalyticsStrip({ rows, targets, onPick }: {
                 type="button"
                 onClick={() => onPick(r.stage)}
                 className="flex w-40 flex-col gap-1 rounded-md border bg-background/60 p-2.5 text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                aria-label={t('pipeline:analytics.tileLabel', {
-                  stage: t(`catalogue:stage.${r.stage}`), reached: r.reached,
-                  conv: r.conversionPct ?? '—', days: r.avgDays ?? '—',
-                })}
+                aria-label={r.conversionPct == null || r.avgDays == null
+                  ? t('pipeline:analytics.tileLabelNoData', { stage: t(`catalogue:stage.${r.stage}`), reached: r.reached })
+                  : t('pipeline:analytics.tileLabel', { stage: t(`catalogue:stage.${r.stage}`), reached: r.reached, conv: r.conversionPct, days: r.avgDays })}
               >
                 <span className="flex items-center gap-1.5 text-meta font-medium">
                   <span className={cn('size-2 shrink-0 rounded-full', stageTone[r.stage].solid)} aria-hidden="true" />

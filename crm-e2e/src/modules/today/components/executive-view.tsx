@@ -16,6 +16,7 @@ import { PriorityList } from './priority-list'
 import { TodayHero } from './today-hero'
 import { useToday } from './use-today'
 import { firstName } from '@/lib/format'
+import { ModuleAssistant } from '@/components/ai/module-assistant'
 
 /** Scrolls to a priority row and flashes it (the hero's "Start here" chips). */
 function focusRow(id: string) {
@@ -75,6 +76,7 @@ export function ExecutiveView() {
             <AppointmentsTimeline appointments={data.appointments} db={db} now={now} title={t('appointments.title')} description={t('appointments.subtitle', { count: data.appointments.length })} />
           </div>
           <TargetsCard data={data} now={now} />
+          <ModuleAssistant module="insights" scope="personal" />
           <MatchesCard matches={data.matches} db={db} />
         </div>
         <div className="min-w-0 lg:col-span-7">

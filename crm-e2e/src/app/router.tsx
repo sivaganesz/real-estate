@@ -20,8 +20,6 @@ const children: RouteObject[] = [
       ),
     }),
   ),
-  // dev-only component kit (foundation-plan §9); never in production builds or the nav
-  ...(import.meta.env.DEV ? [{ path: '__kit', hydrateFallbackElement: <span hidden />, lazy: async () => ({ Component: (await import('./dev/kit-page')).default }) }] : []),
   { path: '*', hydrateFallbackElement: <span hidden />, lazy: async () => ({ Component: (await import('./not-found-page')).default }) },
 ]
 

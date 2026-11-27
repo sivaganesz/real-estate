@@ -17,8 +17,10 @@ import { EmptyMatches } from '@/components/illustrations'
 import { Chip } from '@/components/shared/chip'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PageHeader } from '@/components/shared/page-header'
+import { ScoreRing } from '@/components/shared/progress-ring'
 import { SectionCard } from '@/components/shared/section-card'
 import { Segmented } from '@/components/shared/segmented'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -155,10 +157,13 @@ export default function MatchingPage() {
               <ul className="flex flex-col gap-1.5">
                 {fresh.map((m) => (
                   <li key={m.lead.id}>
-                    <button type="button" onClick={() => setTarget({ lead: m.lead.id })} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted">
-                      <span className="min-w-0 flex-1 truncate font-medium">{m.lead.name}</span>
-                      <span className="truncate text-meta text-muted-foreground">{m.property.title}</span>
-                      <span className="text-meta font-semibold tabular-nums">{Math.round(m.score)}%</span>
+                    <button type="button" onClick={() => setTarget({ lead: m.lead.id })} className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors duration-(--dur-fast) hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                      <UserAvatar name={m.lead.name} size="sm" />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-medium">{m.lead.name}</span>
+                        <span className="flex min-w-0 items-center gap-1 text-meta text-muted-foreground"><Building2 className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{m.property.title}</span></span>
+                      </span>
+                      <ScoreRing score={m.score} kind="match" size={42} label={t('fresh.title')} />
                     </button>
                   </li>
                 ))}

@@ -78,6 +78,14 @@
       "meeting": "Meet {{name}}",
       "document": "Collect documents from {{name}}",
       "other": "Task for {{name}}"
+    },
+    "autoTitle": {
+      "slaFirstCall": "Call {{name}}",
+      "postVisitCall": "Post-visit call: {{name}}",
+      "noAnswerRetry": "Call {{name}} again",
+      "noShowReschedule": "Missed visit: call {{name}} to reschedule",
+      "visitCancelledReschedule": "Reschedule with {{name}}",
+      "bookingDocs": "Collect booking documents from {{name}}"
     }
   },
   "assign": {
