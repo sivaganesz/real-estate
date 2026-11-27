@@ -130,9 +130,12 @@ test.describe('sales manager', () => {
   test('sees each deal’s step and what happens next', async ({ page }) => {
     await signIn(page, 'Sales manager');
     await page.goto('/deals');
-    await expect(page.getByText('A deal is one customer buying one property')).toBeVisible();
-    await page.getByRole('button', { name: /^Step 1: Agree the price/ }).click();
-    await expect(page.getByText(/Step 1: Agree the price/)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Deals' })).toBeVisible();
+    // The step tabs: "Price" holds the deals still agreeing a price, each saying what happens next.
+    const price = page.getByRole('tab', { name: /Price/ });
+    await price.click();
+    await expect(price).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText(/1 · Agree the price/).first()).toBeVisible();
     await expect(page.getByText(/Your move:/).first()).toBeVisible();
   });
 

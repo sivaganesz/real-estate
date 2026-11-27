@@ -1,6 +1,6 @@
 # EstateOS — Status
 
-Last updated: 2026-11-27
+Last updated: 2026-11-27 (with a Next up checklist)
 
 **Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed). The demo is deployed: web on Vercel, API on Render (free plan, data resets to the demo data on restart). Since 25 Nov the property page, Properties list, Leads list, lead page and Pipeline were redesigned, leads got a 0–100 score, and demo accounts can switch role.
 
@@ -63,6 +63,13 @@ Last updated: 2026-11-27
 - Today greets by first name: "Good morning, Priya.", with the day and date above.
 
 **Scrollbars** (`a50f2d1`): thin, light grey across the app.
+
+**Deals, Calendar and Settings** (27 Nov, not committed yet)
+
+- **Deals:** tiles for negotiating, waiting for approval, booked this month and payments due (each narrows the list); "Needs your action" kept; the list has step tabs (Price, Approval, Booking, Payments, Registered, Dropped) and rows with a step bar and price; a preview panel with the price track (offer, counter, asking), payments, the next step and *Open deal* (the existing drawer for every action).
+- **Calendar:** tiles for today, overdue, left this week and site visits; a Today card (overdue, then the day on a time rail with "Now") beside the week grid; on phones the Today card keeps only what's overdue.
+- **Settings:** tiles for people, roles, discount limits and the unit hold; the team beside the approval rules shown as a ladder (executive, manager, admin); the permissions table with check icons.
+- The offer / counter / asking track is shared (`components/DealSteps.tsx`). Tests: 18 e2e journeys pass.
 
 **Fixes (27 Nov)**
 
@@ -137,21 +144,52 @@ Last updated: 2026-11-27
 
 ## Next up
 
-- **Demo to the team**, for UI approval. Checklist:
-  - don't push on demo day (it redeploys Render and resets the data);
-  - wake the site about 5 minutes before;
-  - try one AI quick action;
-  - use desktop Chrome and show Admin, then Manager, then Executive.
-- **After approval, from the frontend review** (about 8–10 hours in batches):
-  - High: dialog focus and Esc, and the project wizard's retry guard.
-  - Medium: error states with retry, labels and screen-reader support, a phone "More" menu, keeping views fresh after changes, and shared pieces for duplicated code.
-  - Low: cleanup.
+A running checklist: ticked when done, new items added as they come up, updated with each commit.
+
+**To commit**
+
+- [ ] Deals, Calendar and Settings redesign (built and tested, see above)
+
+**Deploy (on Render and Vercel)**
+
+- [ ] Render: set `ROLE_SWITCH=1` on `estateos-api` so *Switch role* shows on the demo
+- [ ] Redeploy Render and Vercel: the Assistant crash fix, the new pages and the seven new demo leads go live (Render reloads the demo data on restart)
+
+**Demo to the team**, for UI approval
+
+- [ ] Don't push on demo day (it redeploys Render and resets the data)
+- [ ] Wake the site about 5 minutes before
+- [ ] Try one AI quick action
+- [ ] Use desktop Chrome; show Admin, then Manager, then Executive (*Switch role* makes this one click)
+
+**Waiting on you**
+
+- [ ] **Bulk import:** what comes after the *Bulk import* button rename
+- [ ] **Lead score weights:** confirm requirement 30, timeline 20, payment 15, stage 25, interest 10 (and −5 each for overdue or stuck), or change them
+- [ ] **Lead page parts we skipped** (each needs a new field): consent to follow up, price preferences ("prefers ₹85 L / can stretch 5%"), an HNI tab
+
+**Smaller improvements**
+
+- [ ] Property page and buyer share page: a consistency pass with the new style (search bar, switch, tiles)
+- [ ] Settings: show each person's last sign-in (stored, but the API doesn't send it yet)
+- [ ] Pipeline on phones: dragging doesn't work on touch; the ⋯ *Move to* menu covers it. Decide whether that's enough
+- [ ] Prettier isn't installed: add it to the repo, or drop the format step
+
+**From the frontend review** (about 8–10 hours in batches, after approval)
+
+- [ ] High: dialog focus and Esc; the project wizard's retry guard
+- [ ] Medium: error states with retry, labels and screen-reader support, a phone "More" menu, keeping views fresh after changes, shared pieces for duplicated code
+- [ ] Low: cleanup
+
+**Known risks**
+
+- [ ] *Find more places* uses OpenStreetMap's free public servers, which are often busy. For heavy use, set `OVERPASS_URL` to a paid or self-hosted Overpass server
+- [ ] Render's free plan resets data and uploads on every restart; set `MONGODB_URI` (e.g. Atlas) to keep real data
 
 **Projects, not built yet** (doc 08 §7): plot sizes edited one by one (only via the layout map today), a site plan drawn from the actual drawing, more than one flat plan per tower (e.g. penthouse floors), project photos and brochure.
 
 **Deferred by design** (documented in `docs/`, not planned for this build):
 
-- Google Maps and nearby places
 - Tamil/English language switch
 - Public website
 - Sending WhatsApp/SMS messages and reminders
@@ -161,10 +199,10 @@ Last updated: 2026-11-27
 
 | # | Decision | Why it matters |
 |---|---|---|
-| 1 | **Confirm discount limits** — executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
-| 2 | **Google Maps budget** for nearby places | Maps/nearby places is deferred; it needs a paid Google Maps key before it can be built. |
-| 3 | **Keep data permanently?** MongoDB Atlas plus cloud file storage | On Render's free plan, data and uploaded files reset to the demo data on every restart or redeploy. |
-| 4 | **Remove the one-click demo sign-in** before real use | Anyone with the link can sign in as a demo user while it is there. |
+| 1 | **Confirm discount limits**: executive 1%, manager 5%, above that admin approval | Built into Phase 7 approvals. Admins can change them in Settings, but the defaults should be right. |
+| 2 | **Keep data permanently?** MongoDB Atlas plus cloud file storage | On Render's free plan, data and uploaded files reset to the demo data on every restart or redeploy. |
+| 3 | **Remove the one-click demo sign-in and switch role off** before real use | Anyone with the link can sign in as a demo user while it is there; leave `ROLE_SWITCH` unset (off) in production. |
+| 4 | **Lead score weights** (see Next up) | The score decides "Hot leads", the 80+ tile and the order of the Pipeline columns. |
 
 ## How to run
 

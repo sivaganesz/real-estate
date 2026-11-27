@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { ArrowRight, CircleSlash } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { formatINR } from '@estate/shared';
 import { DEAL_STEPS, dealNextStep, dealStep, type Deal } from '../lib/deals';
 
 /** Who is looking, in the terms the next-step text needs. */
@@ -51,4 +52,45 @@ export function NextStepNote({ d, className }: { d: Deal; className?: string }) 
       </span>
     </p>
   );
+}
+
+/** Their offer, our counter and the asking price on one line, so the gap is plain to see. */
+export function PriceTrack({ d }: { d: Deal }) {
+  const theirs = [...d.offers].reverse().find((o) => o.by === 'customer')?.amount;
+  // Our side: the agreed price, else our last counter. Without either there is nothing to show between offer and asking.
+  const ours = d.agreedPrice ?? [...d.offers].reverse().find((o) => o.by === 'us')?.amount;
+  const ask = d.listPrice;
+  const points = [theirs, ours, ask].filter((v): v is number => v != null);
+  const low = Math.min(...points) * 0.98;
+  const high = Math.max(...points);
+  const at = (v: number) => `${Math.max(0, Math.min(100, ((v - low) / (high - low || 1)) * 100))}%`;
+  return (
+    <>
+      <div className="relative my-2 h-1.5 rounded-full bg-slate-200">
+        {theirs != null && <span className="absolute inset-y-0 rounded-full bg-amber-200" style={/* scan-ok: track spans their offer to our price */ { left: at(theirs), width: `calc(${at(ours ?? ask)} - ${at(theirs)})` }} />}
+        {theirs != null && <Dot left={at(theirs)} className="bg-blue-600" />}
+        {ours != null && <Dot left={at(ours)} className="bg-amber-600" />}
+        <Dot left={at(ask)} className="bg-slate-500" />
+      </div>
+      <p className="flex flex-wrap gap-x-3 text-xs text-slate-500">
+        {theirs != null && (
+          <span>
+            <b className="font-semibold text-blue-700">{formatINR(theirs)}</b> offer
+          </span>
+        )}
+        {ours != null && (
+          <span>
+            <b className="font-semibold text-amber-700">{formatINR(ours)}</b> {d.agreedPrice ? 'agreed' : 'counter'}
+          </span>
+        )}
+        <span>
+          <b className="font-semibold text-slate-700">{formatINR(ask)}</b> asking
+        </span>
+      </p>
+    </>
+  );
+}
+
+function Dot({ left, className }: { left: string; className: string }) {
+  return <span className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white ${className}`} style={/* scan-ok: position on the price track */ { left }} />;
 }
