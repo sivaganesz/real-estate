@@ -22,6 +22,8 @@ Demo sign-ins (password `demo1234`):
 
 `pnpm seed` resets the database to the demo data.
 
+**Switch role:** signed in as any demo account, the profile menu has *Switch role* to jump straight into another demo account's view (Admin, Sales manager, each Sales executive). It only works between the demo accounts, is on outside production, and in production only with `ROLE_SWITCH=1` on the API.
+
 ## AI
 
 Set `GEMINI_API_KEY` in `apps/api/.env` to use Google Gemini (`gemini-2.5-flash` by default; change it with `GEMINI_MODEL`, since Google renames Flash models often). Without a key the assistant runs in a clearly labelled offline mode that understands common requests.

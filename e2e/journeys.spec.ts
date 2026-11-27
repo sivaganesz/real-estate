@@ -196,12 +196,16 @@ test.describe('assistant page', () => {
     await expect(page.getByText(/How can I help with your/)).toBeVisible();
     await page.getByRole('button', { name: 'Leads needing attention' }).click();
     await expect(page.getByText('Which of my leads need attention today?')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Mohammed Irfan/ }).first()).toBeVisible();
+    // The answer lists her leads as links. Which ones depends on the day and on earlier journeys,
+    // so remember the first and check the same one comes back with the saved chat.
+    const firstLead = page.locator('main a[href^="/leads/"]').first();
+    await expect(firstLead).toBeVisible({ timeout: 15_000 });
+    const name = (await firstLead.locator('span').first().innerText()).trim();
     await page.getByRole('button', { name: 'New chat' }).click();
     await expect(page.getByText(/How can I help with your/)).toBeVisible();
     await page.getByRole('button', { name: 'Past chats' }).click();
     await page.getByRole('button', { name: /^Which of my leads need attention today/ }).click();
-    await expect(page.getByRole('link', { name: /Mohammed Irfan/ }).first()).toBeVisible();
+    await expect(page.locator('main a[href^="/leads/"]', { hasText: name }).first()).toBeVisible();
   });
 });
 

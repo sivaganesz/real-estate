@@ -1,8 +1,8 @@
 # EstateOS — Status
 
-Last updated: 2026-11-25
+Last updated: 2026-11-27
 
-**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed). The demo is deployed: web on Vercel, API on Render (free plan, data resets to the demo data on restart).
+**Overall:** Phases 0–8 are complete, committed and tested. Phase 8 brought in your wireframes 8–11 (projects). The AI assistant now runs on real Gemini. Admin and manager now each have their own Today dashboard. The git remote is set; work goes on branch `feat/estate-platform` (main is not pushed). The demo is deployed: web on Vercel, API on Render (free plan, data resets to the demo data on restart). Since 25 Nov the property page, Properties list, Leads list, lead page and Pipeline were redesigned, leads got a 0–100 score, and demo accounts can switch role.
 
 ## Phases
 
@@ -23,6 +23,53 @@ Last updated: 2026-11-25
 | 8 · Projects v2 | From your wireframes 8–11: layout described once (towers or blocks of plots), master plan, draft/publish with completion %, protected units, deals started from the layout | ✅ Done | `a885a80` | [08-projects-v2.md](docs/08-projects-v2.md) |
 
 ## Done since last update
+
+**Property page** (`99df1d2`, `3da0739`, `98f51b8`, `04eb266`)
+
+- Header with key facts per type, five tabs, an adaptive photo collage with a viewer, and a details card with the description (clamped, Expand) and collapsible type sections.
+- Land listed in acres, cents or grounds shows its rate in that unit (₹34 L/acre).
+- **Explore the neighbourhood:** places by commute, schools, hospitals and shopping, with a distance sketch, Team and Customer views, "route checked" and "OK to advertise". *Find more places* looks them up on OpenStreetMap (Overpass, `OVERPASS_URL`); new places start unchecked. The buyer share page lists only advertised places.
+
+**Leads list** (`9e9a96d`, `36a3e8a`)
+
+- Tiles: Active leads (of the total, with the active / booked / lost split), Overdue, Due today, Hot (score 80+), New this week.
+- Tabs: Active, Hot leads, Investors, HNI, Closed / Lost. Open leads grouped by when the follow-up is due.
+- Rows show what and where, budget and buyer type; Call, WhatsApp and Done on hover.
+- A preview panel on wide screens: score ring and band, timeline, buyer type, stage, what they want with the agent, next step, best match (expand to the top 3 with scores), last contact, and Call, WhatsApp, Done or plan the next step.
+- **Lead score (0–100)** from requirement 30, timeline 20, payment 15, stage 25 and interest 10, less 5 each for an overdue follow-up or a stuck stage (`packages/shared/src/leadScore.ts`). **Buyer type:** Potential HNI (budget ₹2 Cr+), Investor, Qualified buyer, General lead.
+- New requirement field **Buying for** (own use or investment): editor, lead page, AI and rule-based reading.
+- Seven more demo leads (`LD-0027`–`LD-0033`) across stages, agents and buyer types, with follow-ups.
+
+**Lead page** (`24e4ddc`)
+
+- Left: a sales stage card with arrow steps (click to move, same checks), a Next step card (Reschedule and Done, or Plan next step), and tabs for Activity, Matches and Qualification.
+- Right: a profile card with the agent, phone, Property fit / Ready to buy / HNI dials, Looking for, Money, Negotiating (offer, counter, asking) and Site visits.
+- Feature modules plug in through new slots (`next`, `tabs`); shared helpers are in `components/leadBits.tsx`.
+
+**Pipeline** (`1c0ede9`)
+
+- Top row: status tiles (open leads, win rate, weakest step, needs attention, the last two act on the board), Booked (agreed-price total, build-up chart, recent bookings as avatars) and Lost (budgets lost, where leads were lost by stage).
+- *How leads flow*: a 90-day band with conversion per step and rose markers for leads lost at each stage.
+- Focus chips over five stage columns; cards with score, buyer type, next step and agent, and a *Move to* menu for keyboard and phones. While dragging, a drop bar offers *Book it* and *Close as lost*.
+
+**Properties list** (`080b4f7`)
+
+- All properties / Projects switch on the search row; one shared `SearchBar`; filters, sort and view beside the status tabs.
+- Table: *Price* column; area with beds and toilets (icons and counts) for homes and length × width for plots. *Import* is now *Bulk import*.
+
+**Switch role and greeting** (`2288b91`)
+
+- *Switch role* in the profile menu (executive avatar menu, sidebar, a Role tab on phones) between the demo accounts; it opens that account's Today with its permissions. Demo accounts only, on outside production, in production only with `ROLE_SWITCH=1`; every switch is audited.
+- Today greets by first name: "Good morning, Priya.", with the day and date above.
+
+**Scrollbars** (`a50f2d1`): thin, light grey across the app.
+
+**Fixes (27 Nov)**
+
+- **Assistant page crash:** newer Chrome returns a Promise from a smooth `scrollTo`; one effect returned it, so React crashed the page when an answer arrived. Effects now never return a value. The e2e journey checks the answer's lead links instead of a lead that changes with the date.
+- A seeded meeting moved to 9:30 so it can't clash with Lakshmi's Saturday visit on a Friday.
+- Tests: 93 API, 18 e2e journeys pass.
+
 
 **Demo polish** (`ce40bbd`)
 

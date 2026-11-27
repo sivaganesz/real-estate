@@ -12,3 +12,11 @@ coverage
 .vite
 test-results
 playwright-report
+
+# Locally installed third-party skills (taste-skill); the project's own review skill in .claude/skills/frontend-review stays tracked.
+.agents
+.claude/skills/design-taste-frontend
+skills-lock.json
+.claude/settings.local.json
+# The project uses pnpm; a stray npm lock file is not used.
+/package-lock.json

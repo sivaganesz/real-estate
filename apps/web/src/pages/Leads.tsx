@@ -646,7 +646,9 @@ function PreviewSection({ title, action, children }: { title: string; action?: R
 function SearchBox({ q, onSearch, className }: { q: string; onSearch: (q: string) => void; className?: string }) {
   const [draft, setDraft] = useState(q);
   const assistant = useAssistant();
-  useEffect(() => setDraft(q), [q]);
+  useEffect(() => {
+    setDraft(q);
+  }, [q]);
   return (
     <form
       role="search"
