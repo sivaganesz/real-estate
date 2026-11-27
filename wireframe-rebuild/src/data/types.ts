@@ -4,6 +4,7 @@
  * Reused from the old wireframe (spec-system-wireframe/data.js), reshaped and typed.
  */
 import type { AssistantThread } from '@/lib/assistant'
+import type { ImportBatch, ImportFormat } from '@/lib/import'
 
 export type Role = 'admin' | 'manager' | 'executive'
 
@@ -296,4 +297,10 @@ export type Database = {
   settings: Settings
   /** Demo leads added to the seed later that this data already has (data/seed.ts → addMissingSeedLeads). */
   seedAdded?: string[]
+  /** Bulk imports, newest first (Bulk import → Past imports). */
+  imports?: ImportBatch[]
+  /** Each sender's sheet format, recognised next time (Bulk import → Saved formats). */
+  importFormats?: ImportFormat[]
+  /** Column matches the team confirmed, by normalised heading — used for any next file. */
+  importMemory?: Record<string, string>
 }

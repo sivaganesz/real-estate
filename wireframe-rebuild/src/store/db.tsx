@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { addMissingSeedLeads, DATA_VERSION, DEMO_TODAY, seedDatabase } from '@/data/seed'
 import type { Database, Lead, Property, Role, User } from '@/data/types'
 import { hasFollowUpConsent } from '@/lib/consent'
+import type { ImportBatch } from '@/lib/import'
 
 const DB_KEY = 'realspec-rebuild-db'
 const ROLE_KEY = 'realspec-rebuild-role'
@@ -62,6 +63,11 @@ export type Store = {
   deleteProperty: (id: string, leadNote?: string) => void
   /** PATCH /api/settings — master data such as approval badges. Admin / Sales manager only. */
   updateSettings: (change: (s: Database['settings']) => void) => void
+  /**
+   * POST /api/imports — one bulk import as a single change: `run` gets a copy of the data, the user, today and the next
+   * property id, adds and updates properties on it and returns the batch record (kept under Past imports).
+   */
+  importBatch: (run: (next: Database, o: { by: string; at: string; newPropId: () => string }) => ImportBatch) => ImportBatch
   resetDemo: () => void
 }
 
@@ -207,13 +213,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const importBatch = useCallback<Store['importBatch']>((run) => {
+    const next = structuredClone(db)
+    let max = Math.max(1000, ...db.properties.map((p) => Number(p.id.replace(/\D/g, '')) || 0))
+    const batch = run(next, { by: user.id, at: DEMO_TODAY, newPropId: () => `PROP-${++max}` })
+    next.imports = [batch, ...(next.imports ?? [])]
+    setDb(next)
+    return batch
+  }, [db, user.id])
+
   const resetDemo = useCallback(() => setDb(seedDatabase()), [])
   const checkpoint = useCallback(() => db, [db])
   const restore = useCallback((snapshot: Database) => setDb(snapshot), [])
 
   const value = useMemo<Store>(
-    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo, checkpoint, restore }),
-    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, resetDemo, checkpoint, restore],
+    () => ({ db, today: DEMO_TODAY, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, importBatch, resetDemo, checkpoint, restore }),
+    [db, user, role, setRole, updateProperty, addProperty, shareProperty, recommendProperty, updateLead, addLead, noteOnLeads, deleteProperty, updateSettings, importBatch, resetDemo, checkpoint, restore],
   )
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

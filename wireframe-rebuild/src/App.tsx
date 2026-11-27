@@ -12,6 +12,7 @@ import { LeadFormPage } from '@/features/leads/lead-form'
 import { ModulePlaceholderPage } from '@/pages/module-placeholder-page'
 import { UiKitPage } from '@/pages/ui-kit-page'
 import { SettingsPage } from '@/features/settings/settings-page'
+import { ImportPage } from '@/features/import/import-page'
 import { LeadsPage } from '@/features/leads/leads-page'
 import { LeadPage } from '@/features/leads/lead-page'
 import { StoreProvider } from '@/store/db'
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="leads/new" element={<LeadFormPage />} />
               <Route path="leads/:id/edit" element={<LeadFormPage />} />
               <Route path="leads/:id/:tab?" element={<LeadPage />} />
+              <Route path="import" element={<ImportPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="ui-kit" element={<UiKitPage />} />
               {ALL_NAV_ITEMS.filter((i) => !i.ready).map((i) => (
