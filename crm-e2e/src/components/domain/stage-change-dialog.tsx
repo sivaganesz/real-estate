@@ -32,7 +32,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
   onDone?: (to: PipelineStageKey) => void
   onCancel?: () => void
 }) {
-  const { t } = useTranslation(['domain', 'common', 'catalogue'])
+  const { t } = useTranslation(['domain', 'common', 'catalogue', 'pipeline'])
   const lead = useDb((db) => db.leads.find((l) => l.id === leadId))
   const properties = useDb((db) => db.properties)
   const { can } = usePermission()
@@ -101,7 +101,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
             <>
               <FormField label={t('domain:stage.reason')} required error={err('lost.reason')}>
                 {({ id, invalid }) => (
-                  <Select value={reason} onValueChange={(v) => setReason(v as LostReason)}>
+                  <Select value={reason ?? ''} onValueChange={(v) => setReason(v as LostReason)}>
                     <SelectTrigger id={id} aria-invalid={invalid || undefined} className="w-full"><SelectValue placeholder={t('domain:stage.chooseReason')} /></SelectTrigger>
                     <SelectContent>{LOST_REASONS.map((r) => <SelectItem key={r} value={r}>{t(`catalogue:lostReason.${r}`)}</SelectItem>)}</SelectContent>
                   </Select>
@@ -116,7 +116,7 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
             <>
               <FormField label={t('domain:stage.property')} required error={err('deal.propertyId')}>
                 {({ id, invalid }) => (
-                  <Select value={propertyId} onValueChange={setPropertyId}>
+                  <Select value={propertyId ?? ''} onValueChange={setPropertyId}>
                     <SelectTrigger id={id} aria-invalid={invalid || undefined} className="w-full"><SelectValue placeholder={t('domain:stage.chooseProperty')} /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {candidates.map((p) => <SelectItem key={p.id} value={p.id}>{p.title} · {inrShort(p.price)}</SelectItem>)}
@@ -130,8 +130,11 @@ export function StageChangeDialog({ open, onOpenChange, leadId, to: initialTo, o
               <FormField label={t('domain:stage.dealValue')} optional hint={t('domain:stage.dealValueHint')}>
                 {({ id, describedBy }) => <AmountInput id={id} value={value} onChange={setValue} describedBy={describedBy} />}
               </FormField>
+              <p className="text-meta text-muted-foreground">{t('pipeline:dialog.bookedHint')}</p>
             </>
           )}
+          {to === 'lost' && <p className="text-meta text-muted-foreground">{t('pipeline:dialog.lostHint')}</p>}
+          {to === 'converted' && <p className="text-meta text-muted-foreground" data-testid="converted-hint">{t('pipeline:dialog.convertedHint')}</p>}
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={() => close(false)}>{t('common:actions.cancel')}</Button>

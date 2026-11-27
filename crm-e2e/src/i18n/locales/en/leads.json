@@ -1,30 +1,580 @@
 {
   "title": "Leads",
   "subtitle": "Every enquiry, from first call to booking.",
-  "stub": {
-    "index": {
-      "title": "Lead list",
-      "body": "Search, filter and act on leads: call, WhatsApp, schedule a visit or log an outcome without leaving the list."
+  "subtitleCount_one": "{{count}} open lead · {{week}} new this week",
+  "subtitleCount_other": "{{count}} open leads · {{week}} new this week",
+  "route": {
+    "new": "Add lead",
+    "detail": "Lead",
+    "edit": "Edit lead"
+  },
+  "kpi": {
+    "open": "Open leads",
+    "openHint_one": "{{count}} new in the last 7 days",
+    "openHint_other": "{{count}} new in the last 7 days",
+    "hot": "Hot leads",
+    "hotHint": "Score 70 or above, or marked hot",
+    "overdue": "Overdue follow-ups",
+    "overdueHint": "Follow-ups past their time",
+    "unassigned": "Unassigned",
+    "slaHint_one": "{{count}} past the first-call SLA",
+    "slaHint_other": "{{count}} past the first-call SLA",
+    "sla": "Not called in time",
+    "slaExecHint": "New leads past the first-call SLA",
+    "hotShare": "Share of open leads that are hot",
+    "overdueShare": "Share of open leads overdue",
+    "unassignedShare": "Share of open leads unassigned",
+    "slaShare": "Share of open leads past the SLA"
+  },
+  "view": {
+    "label": "View",
+    "focus": "Today design",
+    "table": "Table",
+    "cards": "Cards"
+  },
+  "tabs": {
+    "label": "Follow-ups",
+    "all": "All",
+    "overdue": "Overdue",
+    "today": "Due today",
+    "upcoming": "Upcoming",
+    "unassigned": "Unassigned",
+    "closed": "Closed"
+  },
+  "sort": {
+    "label": "Sort",
+    "score": "Highest score",
+    "followUp": "Next follow-up",
+    "newest": "Newest first",
+    "name": "Name A–Z"
+  },
+  "filters": {
+    "search": "Search leads",
+    "placeholder": "Name, phone, place — or a sentence like “hot NRI leads in Gurugram under 4 cr”",
+    "stage": "Stage",
+    "temperature": "Temperature",
+    "priority": "Priority",
+    "source": "Source",
+    "owner": "Executive",
+    "unassigned": "Unassigned",
+    "city": "City",
+    "locality": "Locality",
+    "budget": "Budget",
+    "budgetBand": {
+      "u50": "Under {{max}}",
+      "50to100": "{{min}} – {{max}}",
+      "100to200": "{{min}} – {{max}}",
+      "a200": "Above {{min}}"
     },
-    "new": {
-      "title": "Add a lead",
-      "body": "Fill the form by hand or paste a WhatsApp message and let the AI fill it for you."
+    "created": "Created",
+    "createdWithin": {
+      "1": "Today",
+      "7": "Last 7 days",
+      "30": "Last 30 days"
     },
-    "detail": {
-      "title": "Lead profile",
-      "body": "Summary, next best action, qualification, matches, visits and the full timeline for one lead."
+    "attention": "Needs attention",
+    "sentenceRead": "Read as filters:",
+    "sentenceApply": "Apply filters",
+    "nri": "NRI",
+    "upTo": "up to {{amount}}",
+    "from": "from {{amount}}"
+  },
+  "attention": {
+    "overdue": "Overdue follow-up",
+    "uncontacted": "Not called yet",
+    "noFollowUp": "No follow-up planned",
+    "hotNoVisit": "Hot, no site visit"
+  },
+  "aging": {
+    "title": "Days since the last contact",
+    "never": "Never contacted",
+    "today": "Contacted today",
+    "days_one": "{{count}} day since contact",
+    "days_other": "{{count}} days since contact",
+    "sla": "SLA breached",
+    "slaTitle": "Not called within the first-response time"
+  },
+  "views": {
+    "label": "Saved views",
+    "mine": "My views",
+    "none": "No saved views yet",
+    "saveCurrent": "Save current view…",
+    "saveTitle": "Save this view",
+    "saveBody": "Keeps the filters and sort that are on now, for you only.",
+    "name": "View name",
+    "namePlaceholder": "e.g. Hot in Whitefield",
+    "save": "Save view",
+    "saved": "View “{{name}}” saved",
+    "deleted": "View “{{name}}” deleted",
+    "delete": "Delete view {{name}}",
+    "applied": "Showing “{{name}}”"
+  },
+  "list": {
+    "label": "Leads",
+    "select": "Select {{name}}",
+    "noFollowUp": "None planned",
+    "overdueSince": "Overdue · {{date}}",
+    "todayAt": "Today {{time}}",
+    "showing_one": "Showing {{count}} of {{total}} lead",
+    "showing_other": "Showing {{count}} of {{total}} leads"
+  },
+  "col": {
+    "lead": "Lead",
+    "stage": "Stage",
+    "score": "Score",
+    "temperature": "Temperature",
+    "priority": "Priority",
+    "budget": "Budget",
+    "location": "Location",
+    "source": "Source",
+    "owner": "Executive",
+    "followUp": "Next follow-up",
+    "aging": "Last contact",
+    "created": "Created"
+  },
+  "focus": {
+    "group": {
+      "overdue": {
+        "title": "Overdue follow-ups",
+        "body": "Promised a call and it is late. Start here."
+      },
+      "uncontacted": {
+        "title": "Not called yet",
+        "body": "New enquiries waiting for the first call."
+      },
+      "dueToday": {
+        "title": "Due later today",
+        "body": "Follow-ups planned for today."
+      },
+      "hotNoVisit": {
+        "title": "Hot, no site visit yet",
+        "body": "Ready buyers: book a visit."
+      },
+      "noFollowUp": {
+        "title": "No follow-up planned",
+        "body": "Open leads with nothing scheduled."
+      },
+      "upcoming": {
+        "title": "Coming up",
+        "body": "Follow-ups on later days."
+      }
     },
-    "edit": {
-      "title": "Edit lead",
-      "body": "Change requirement, budget and qualification details."
+    "reason": {
+      "overdue": "Overdue since {{date}}",
+      "uncontacted": "Waiting for the first call"
+    },
+    "showAll": "Show all {{count}}",
+    "showLess": "Show less"
+  },
+  "empty": {
+    "title": "No leads yet",
+    "body": "Add your first lead by hand, or paste a WhatsApp message and let the AI fill the form.",
+    "filteredTitle": "No leads match these filters"
+  },
+  "actions": {
+    "open": "Open lead",
+    "edit": "Edit",
+    "log": "Log activity",
+    "logFor": "Log activity for {{name}}",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "scheduleVisit": "Schedule site visit",
+    "scheduleVisitShort": "Site visit",
+    "addFollowUp": "Add follow-up",
+    "followUpShort": "Follow-up",
+    "match": "Match properties",
+    "matchShort": "Match",
+    "changeStage": "Change stage",
+    "stageShort": "Stage",
+    "markLost": "Mark as lost",
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "requestReassign": "Request reassignment",
+    "requestShort": "Request",
+    "delete": "Delete lead",
+    "moreFor": "More actions for {{name}}"
+  },
+  "bulk": {
+    "assign": "Assign",
+    "stage": "Change stage",
+    "export": "Export",
+    "exportAll_one": "Export {{count}} lead as CSV",
+    "exportAll_other": "Export {{count}} leads as CSV",
+    "delete": "Delete",
+    "exported_one": "{{count}} lead exported",
+    "exported_other": "{{count}} leads exported",
+    "stageTitle_one": "Move {{count}} lead",
+    "stageTitle_other": "Move {{count}} leads",
+    "stageBody": "Pick the new stage. Lost needs a reason.",
+    "forwardOnly": "Skip leads that are already at or past this stage",
+    "bookedNote": "Booked and Converted need a property and amount for each lead, so move those from the lead page.",
+    "stageConfirm_one": "Move {{count}} lead",
+    "stageConfirm_other": "Move {{count}} leads",
+    "stageDone_one": "{{count}} lead moved to {{stage}}",
+    "stageDone_other": "{{count}} leads moved to {{stage}}",
+    "stageSkipped_one": "{{count}} skipped (already there)",
+    "stageSkipped_other": "{{count}} skipped (already there)"
+  },
+  "delete": {
+    "title_one": "Delete {{name}}?",
+    "title_other": "Delete {{count}} leads?",
+    "body_one": "Its open follow-ups and future visits are cancelled. You can undo for a few seconds.",
+    "body_other": "Their open follow-ups and future visits are cancelled. You can undo for a few seconds.",
+    "confirm_one": "Delete lead",
+    "confirm_other": "Delete {{count}} leads",
+    "done_one": "{{name}} deleted",
+    "done_other": "{{count}} leads deleted"
+  },
+  "reassign": {
+    "title": "Ask to reassign {{name}}",
+    "body": "Your manager gets a notification and decides who takes it.",
+    "note": "Reason",
+    "placeholder": "e.g. Client prefers Telugu; I'm in Pune all week",
+    "send": "Send request",
+    "sent": "Request sent to your manager"
+  },
+  "add": {
+    "cta": "Add lead",
+    "paste": "Paste a message",
+    "title": "Add a lead",
+    "subtitle": "Paste or speak the enquiry, or fill it in by hand. Only name, phone or e-mail, and source are needed.",
+    "pageSubtitle": "Paste or speak the enquiry and the AI fills the form, or type it in. Nothing is saved until you click Save.",
+    "fullPage": "Open as page"
+  },
+  "edit": {
+    "title": "Edit {{name}}",
+    "subtitle": "Change the details by hand, or tell the assistant what changed."
+  },
+  "form": {
+    "stepsLabel": "Steps",
+    "step": {
+      "who": "Who",
+      "want": "What they want",
+      "money": "Budget & readiness"
+    },
+    "name": "Name",
+    "phone": "Mobile",
+    "phoneHint": "Phone or e-mail is needed",
+    "email": "E-mail",
+    "altPhone": "Other number",
+    "source": "Source",
+    "otherSource": "Other source…",
+    "sourceDetail": "Campaign, partner or referrer",
+    "sourceDetailHint": "e.g. Diwali campaign, Sunrise Realty, Priya's colleague",
+    "language": "Preferred language",
+    "choose": "Choose",
+    "familySize": "Family size",
+    "contactPref": "Best way to reach",
+    "pref": {
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail"
+    },
+    "nri": "NRI buyer",
+    "nriCountry": "Country",
+    "owner": "Assign to",
+    "ownerAuto": "Auto-assign (recommended)",
+    "ownerAutoNow": "Auto-assign now",
+    "ownerNone": "Leave unassigned",
+    "autoPreview": "Goes to {{name}} · {{reason}}",
+    "autoNobody": "Nobody is available: it stays in the unassigned queue",
+    "autoOff": "Auto-assign is off in Settings; the engine runs once for this lead",
+    "unassignedHint": "It goes to the unassigned queue",
+    "moreContact": "More contact details",
+    "purpose": "Buy, rent or lease",
+    "types": "Property type",
+    "configurations": "Configuration",
+    "cities": "Cities",
+    "localities": "Localities",
+    "localitiesHint": "Pick a city to narrow the list",
+    "possession": "Possession",
+    "moreRequirement": "More details",
+    "areaMin": "Carpet area from (sq ft)",
+    "areaMax": "Carpet area up to (sq ft)",
+    "facing": "Facing",
+    "furnishing": "Furnishing",
+    "parking": "Parking",
+    "parkingOpt": {
+      "required": "Must have",
+      "preferred": "Nice to have",
+      "notNeeded": "Not needed"
+    },
+    "transaction": "New or resale",
+    "amenities": "Amenities",
+    "vastu": "Vastu compliant",
+    "mustHaves": "Must-haves",
+    "mustHavesHint": "Comma separated, e.g. near metro, school within 2 km",
+    "fits_one": "{{count}} property already fits ({{strong}} strong or good)",
+    "fits_other": "{{count}} properties already fit ({{strong}} strong or good)",
+    "noFits": "No property fits yet — it will be matched as inventory comes in",
+    "budgetMin": "Budget from",
+    "budgetPreferred": "Comfortable at",
+    "budgetMax": "Budget up to",
+    "budgetBasis": "What the budget includes",
+    "basis": {
+      "propertyOnly": "Property price only",
+      "allIn": "All-in (stamp duty, registration)",
+      "withLoan": "Including the home loan"
+    },
+    "timeline": "When will they buy?",
+    "decisionMakers": "Who decides?",
+    "need": "How clear is the requirement?",
+    "moreReadiness": "Loan, purpose and authority",
+    "loan": "Home loan",
+    "buyerPurpose": "Self-use or investment",
+    "authority": "Decision authority",
+    "funding": "Funds ready",
+    "consent": "Agreed to follow-ups by call and WhatsApp",
+    "consentHint": "Recorded with today's date. They can withdraw any time.",
+    "firstNote": "First note",
+    "addNote": "Add a note",
+    "notePlaceholder": "What did they say? Anything the next person should know.",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save lead",
+    "saveChanges": "Save changes",
+    "aiFilled_one": "{{count}} field filled by AI",
+    "aiFilled_other": "{{count}} fields filled by AI",
+    "fixErrors_one": "Please fix {{count}} field",
+    "fixErrors_other": "Please fix {{count}} fields",
+    "created": "{{name}} added",
+    "assignedTo": "Assigned to {{name}} · {{reason}}",
+    "yours": "It's on your list",
+    "unassigned": "Waiting in the unassigned queue",
+    "updated": "{{name}} updated"
+  },
+  "dup": {
+    "title_one": "Possible duplicate",
+    "title_other": "{{count}} possible duplicates",
+    "by": {
+      "phone": "same phone",
+      "email": "same e-mail"
+    },
+    "owner": "with {{name}}",
+    "noOwner": "unassigned",
+    "open": "Open existing",
+    "askManager": "Not on your list — ask your manager",
+    "saveAnyway": "It's a different person or a new enquiry — save anyway (a note is added and the admin is told)",
+    "confirmFirst": "This looks like a duplicate. Open the existing lead, or tick “save anyway”.",
+    "note": "Saved despite a possible duplicate: {{names}}"
+  },
+  "detail": {
+    "subtitle": "{{id}} · lead profile",
+    "summary": "Lead summary",
+    "related": "Qualification and messages",
+    "created": "Added",
+    "viaAi": "by AI",
+    "viaImport": "from an import",
+    "requirement": "What they want",
+    "budget": "Budget",
+    "places": "Locations",
+    "config": "Configuration",
+    "notSet": "Not known yet",
+    "area": "{{min}}–{{max}} sq ft",
+    "classification": "Buyer type",
+    "restricted": "Restricted: managers handle high-net-worth buyers",
+    "suggested": "suggested",
+    "setClass": "Set buyer type",
+    "classSaved": "Buyer type saved",
+    "hniStatus": "HNI status",
+    "hniSaved": "HNI status saved",
+    "consentYes": "Agreed to follow-ups on {{date}}",
+    "consentNo": "No follow-up consent recorded",
+    "stages": "Stage",
+    "reopen": "Reopen",
+    "moveTo": "Move to {{stage}}",
+    "lostBanner": "Lost · {{reason}} · {{date}}",
+    "nextBest": "Next best action",
+    "quickActions": "Quick actions",
+    "aiSummary": "AI summary",
+    "aiUnavailable": "The summary isn't available right now. Everything else works as usual.",
+    "refresh": "Refresh",
+    "tabs": "Lead details",
+    "tab": {
+      "activity": "Activity",
+      "matches": "Matches",
+      "appointments": "Appointments",
+      "tasks": "Tasks",
+      "assignments": "Assignment history"
+    },
+    "noActivity": "Nothing logged yet",
+    "noActivityBody": "Calls, messages, notes and changes appear here.",
+    "matchesHint": "Ranked by budget, location, size, amenities and preferences.",
+    "openMatching": "Open in Matching",
+    "shortlisted": "{{title}} shortlisted",
+    "shared": "{{title}} shared — WhatsApp opened",
+    "notInterested": "{{title}} won't be suggested again",
+    "noAppointments": "No appointments yet",
+    "noAppointmentsBody": "Schedule a site visit to move the deal forward.",
+    "noTasks": "No follow-ups",
+    "noTasksBody": "Add one so this lead isn't forgotten.",
+    "noAssignments": "No assignment history",
+    "noAssignmentsBody": "Assignments and reassignments will be listed here.",
+    "nobody": "Unassigned",
+    "by": "by {{name}}",
+    "bySystem": "automatically",
+    "notFound": "Lead not found",
+    "notFoundBody": "{{id}} may have been deleted or merged.",
+    "notYours": "This lead isn't on your list",
+    "notYoursBody": "A {{role}} sees only the leads they may work on.",
+    "back": "Back to leads",
+    "backTo": "Back to {{name}}",
+    "cannotEdit": "You can't edit this lead",
+    "cannotEditBody": "Ask its owner or your manager to make the change."
+  },
+  "assignMode": {
+    "auto": "Auto",
+    "manual": "Manual",
+    "self": "Self",
+    "import": "Import",
+    "redistribution": "Redistributed"
+  },
+  "hni": {
+    "notDetermined": "Not determined",
+    "potential": "Potential HNI",
+    "consentInProgress": "Consent in progress",
+    "verified": "Verified HNI",
+    "declined": "Declined"
+  },
+  "inline": {
+    "edit": "Edit {{what}}",
+    "saved": "{{what}} saved"
+  },
+  "composer": {
+    "label": "Log what happened",
+    "placeholder": "Type a note or paste what the client said… the AI reads it for timeline, budget and who decides.",
+    "note": "Save note",
+    "call": "Log call",
+    "whatsapp": "Log WhatsApp",
+    "aiHint": "Notes feed the qualification card",
+    "saved": {
+      "note": "Note saved",
+      "call": "Call logged",
+      "whatsapp": "WhatsApp logged"
     }
   },
+  "msg": {
+    "title": "Message",
+    "purpose": "Purpose",
+    "channel": "Channel",
+    "tone": "Language",
+    "ch": {
+      "whatsapp": "WhatsApp",
+      "sms": "SMS",
+      "email": "E-mail"
+    },
+    "toneOpt": {
+      "english": "English",
+      "hinglish": "Hinglish"
+    },
+    "text": "Message text",
+    "send": {
+      "whatsapp": "Open WhatsApp",
+      "sms": "Open SMS",
+      "email": "Open e-mail"
+    },
+    "copy": "Copy",
+    "copied": "Message copied",
+    "copyFailed": "Couldn't copy — select the text instead",
+    "logged": "{{channel}} opened and logged on the timeline",
+    "noEmail": "Add an e-mail address to send by e-mail.",
+    "hint": "Drafted by the AI from your templates. Edit freely; it's only sent when you send it."
+  },
+  "aiEdit": {
+    "title": "Edit with AI",
+    "placeholder": "e.g. change budget to 1.5 Cr and add Hebbal",
+    "read": "Read changes",
+    "nothing": "No change found in that message. Try “budget 1.5 Cr”, “add Hebbal”, “wife will decide”.",
+    "review_one": "{{count}} change to review",
+    "review_other": "{{count}} changes to review",
+    "apply_one": "Apply {{count}} change",
+    "apply_other": "Apply {{count}} changes",
+    "fill": "Fill the form",
+    "applied_one": "{{count}} change applied",
+    "applied_other": "{{count}} changes applied",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "field": {
+    "name": "Name",
+    "phone": "Mobile",
+    "altPhone": "Other number",
+    "email": "E-mail",
+    "source": "Source",
+    "isNri": "NRI",
+    "nriCountry": "Country",
+    "preferredLanguage": "Language",
+    "familySize": "Family size",
+    "contactPref": "Best way to reach",
+    "requirement": {
+      "budgetMin": "Budget from",
+      "budgetPreferred": "Comfortable at",
+      "budgetMax": "Budget up to",
+      "localities": "Localities",
+      "cities": "Cities",
+      "configurations": "Configuration",
+      "propertyTypes": "Property type",
+      "possession": "Possession",
+      "possessionBy": "Possession by",
+      "facing": "Facing",
+      "furnishing": "Furnishing",
+      "amenities": "Amenities",
+      "vastu": "Vastu",
+      "parking": "Parking",
+      "transaction": "New or resale",
+      "purpose": "Buy, rent or lease",
+      "areaMinSqft": "Area from",
+      "areaMaxSqft": "Area up to"
+    },
+    "qualification": {
+      "timeline": "Timeline",
+      "decisionMakers": "Decision makers",
+      "authority": "Decision authority",
+      "loan": "Home loan",
+      "buyerPurpose": "Self-use or investment",
+      "need": "Requirement clarity"
+    }
+  },
+  "readiness": {
+    "budget": "Budget fits a property",
+    "requirement": "Clear requirement",
+    "timeline": "Timeline",
+    "funding": "Funding",
+    "authority": "Decision authority",
+    "engagement": "Engagement"
+  },
   "qualify": {
+    "title": "Qualification",
+    "known_one": "{{count}} of 4 known",
+    "known_other": "{{count}} of 4 known",
+    "isKnown": "known",
+    "isMissing": "not known yet",
+    "ask": "Ask next",
+    "essential": "Key",
+    "saved": "Answer saved",
+    "fromNotes": "The AI read this in your notes",
+    "apply": "Apply",
+    "appliedFromNotes_one": "{{count}} answer applied from notes",
+    "appliedFromNotes_other": "{{count}} answers applied from notes",
+    "complete": "All four known — the score is using them",
+    "readiness": "Readiness {{score}} / 100 — see details",
+    "field": {
+      "need": "Requirement",
+      "timeline": "Timeline",
+      "authority": "Decision authority",
+      "decisionMakers": "Decides with",
+      "buyerPurpose": "Purpose",
+      "loan": "Home loan",
+      "fundingReady": "Funds"
+    },
     "question": {
       "budget": "What is the most they want to spend?",
       "authority": "Who else decides on the purchase?",
       "need": "How clear is what they are looking for?",
-      "timeline": "When do they plan to buy?"
+      "timeline": "When is the client planning to buy?",
+      "loan": "Will they need a home loan?",
+      "purpose": "Is it for self-use or investment?",
+      "possession": "Ready to move, or under construction is fine?"
     },
     "chip": {
       "budget5000000": "₹50 L",
@@ -38,10 +588,16 @@
       "authority": "Decision maker",
       "need": "Requirement",
       "timeline": "Timeline"
-    },
-    "known": "{{count}} of 4 known"
+    }
   },
   "score": {
+    "title": "Lead score",
+    "why": "Why this score?",
+    "whyTitle": "Score {{score}} / 100",
+    "whyBody": "Five parts add up to the score. It updates as you log calls and fill in details.",
+    "thresholds": "Hot at 70 and above, warm at 45 and above.",
+    "probability": "{{pct}}% chance to convert",
+    "probabilityLabel": "Conversion probability",
     "factor": {
       "qualification": "Qualification",
       "engagement": "Engagement and recency",
@@ -51,16 +607,16 @@
     },
     "detail": {
       "band": {
-        "high": "Ready to buy",
-        "qualified": "Qualified",
-        "developing": "Developing",
-        "early": "Early stage"
+        "high": "Ready to buy (readiness {{readiness}})",
+        "qualified": "Qualified (readiness {{readiness}})",
+        "developing": "Developing (readiness {{readiness}})",
+        "early": "Early stage (readiness {{readiness}})"
       },
       "idle": "No contact for {{days}} days",
       "recent": "In touch recently",
       "bestMatch": "Best match {{title}} ({{score}}%)",
       "noMatch": "No matching property yet",
-      "source": "Lead source quality",
+      "source": "{{source}} leads convert at this rate",
       "timeline": {
         "immediate": "Buying immediately",
         "m1to3": "Buying in 1–3 months",
@@ -87,6 +643,20 @@
     "bookVisit": "Book a site visit to {{property}}",
     "shareMatch": "Share {{property}} ({{score}}% match)",
     "followUpOn": "Next: {{title}} on {{date}}",
-    "checkIn": "Check in: last contact {{days}} days ago"
+    "checkIn": "Check in: last contact {{days}} days ago",
+    "done": "Follow-up marked done",
+    "button": {
+      "assignLead": "Assign",
+      "call": "Call now",
+      "logOutcome": "Record outcome",
+      "openAppointment": "Open visit",
+      "completeTask": "Mark done",
+      "collectDocs": "Open client",
+      "negotiate": "Update deal",
+      "postVisitCall": "Call now",
+      "scheduleVisit": "Book visit",
+      "shareProperties": "Share matches",
+      "createTask": "Plan follow-up"
+    }
   }
 }

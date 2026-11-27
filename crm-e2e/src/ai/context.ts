@@ -25,6 +25,34 @@ export function useAISelection(ref: EntityRef | undefined) {
   }, [kind, id])
 }
 
+const RECORD_ROUTES: [RegExp, EntityRef['kind']][] = [
+  [/^\/leads\/((?!new$)[^/]+)(?:\/edit)?\/?$/, 'lead'],
+  [/^\/clients\/([^/]+)\/?$/, 'client'],
+  [/^\/properties\/((?!new$)[^/]+)(?:\/edit)?\/?$/, 'property'],
+  [/^\/appointments\/([^/]+)\/?$/, 'appointment'],
+  [/^\/team\/([^/]+)\/?$/, 'user'],
+  [/^\/import\/drafts\/([^/]+)\/?$/, 'draft'],
+]
+
+/**
+ * The record a page shows, read from its path ("/leads/LEAD-1001" → lead LEAD-1001), so the assistant knows the
+ * selected record on every record page even when the page does not call useAISelection. `?lead=` on Matching counts too.
+ */
+export function selectionFromRoute(pathname: string, search = ''): EntityRef | undefined {
+  for (const [re, kind] of RECORD_ROUTES) {
+    const m = re.exec(pathname)
+    if (m) return { kind, id: decodeURIComponent(m[1]) }
+  }
+  const lead = new URLSearchParams(search).get('lead')
+  if (lead) return { kind: 'lead', id: lead }
+  const property = new URLSearchParams(search).get('property')
+  if (property) return { kind: 'property', id: property }
+  return undefined
+}
+
+/** The page's own selection (useAISelection) wins; otherwise the record in the path. */
+export const effectiveSelection = (explicit: EntityRef | undefined, pathname: string, search = '') => explicit ?? selectionFromRoute(pathname, search)
+
 export function buildAIContext(input: { actor: User; route: string; selection?: EntityRef; now?: Date; db: () => DB }): AIContext {
   return { actor: input.actor, role: input.actor.role, route: input.route, selection: input.selection, now: input.now ?? new Date(), db: input.db }
 }

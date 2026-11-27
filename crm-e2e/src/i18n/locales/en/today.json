@@ -7,8 +7,98 @@
       "body": "Uncalled new leads, visits in the next two hours, overdue follow-ups and post-visit calls will appear here in priority order."
     }
   },
+  "greeting": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}"
+  },
+  "brief": {
+    "exec": {
+      "summary": "Today you have {{visits}}, {{followUps}} and {{newLeads}}.",
+      "summaryOverdue": "Today you have {{visits}} and {{followUps}} ({{overdue}} overdue), plus {{newLeads}}.",
+      "n": {
+        "visits_one": "{{count}} site visit",
+        "visits_other": "{{count}} site visits",
+        "followUps_one": "{{count}} follow-up",
+        "followUps_other": "{{count}} follow-ups",
+        "newLeads_one": "{{count}} new lead",
+        "newLeads_other": "{{count}} new leads"
+      },
+      "clear": "Nothing is due right now: a good moment to call warm leads or share new matches.",
+      "start": "Start with {{name}}:",
+      "startHot": "Start with {{name}}, a hot lead:"
+    },
+    "manager": {
+      "summary": "{{unassigned}} leads are waiting for an owner, the team has {{overdue}} overdue follow-ups and {{visits}} visits today.",
+      "calm": "The team is on track today.",
+      "escalations_one": "{{count}} new lead has not been called past the escalation time.",
+      "escalations_other": "{{count}} new leads have not been called past the escalation time.",
+      "onLeave_one": "{{count}} executive on leave still holds open leads.",
+      "onLeave_other": "{{count}} executives on leave still hold open leads.",
+      "stalled_one": "{{count}} deal is stalled.",
+      "stalled_other": "{{count}} deals are stalled."
+    },
+    "admin": {
+      "summary": "{{newLeads}} new leads and {{visits}} site visits today, {{bookings}} bookings this month and {{pipeline}} in the open pipeline.",
+      "noAlerts": "No system alerts.",
+      "alerts_one": "{{count}} system alert needs a look.",
+      "alerts_other": "{{count}} system alerts need a look."
+    }
+  },
+  "hero": {
+    "startHere": "Start here",
+    "chip": "{{name}}: {{reason}}",
+    "visits": "Visits today",
+    "followUps": "Follow-ups",
+    "overdue": "Overdue",
+    "newLeads": "New leads"
+  },
+  "assistant": {
+    "label": "Tell the assistant what happened or what you need",
+    "placeholder": "e.g. Called Priya, no answer · Reschedule Rahul's follow-up to tomorrow 5 PM",
+    "run": "Ask",
+    "try": "Try:",
+    "youAsked": "You: {{text}}",
+    "clear": "Clear",
+    "openPanel": "Open the assistant",
+    "chips": {
+      "next": "Who should I call next?",
+      "reschedule": "Move {{name}}'s follow-up to tomorrow",
+      "tasks": "Today's pending tasks",
+      "target": "What's left for my target?",
+      "assign": "Assign the new leads",
+      "overloaded": "Who is overloaded today?",
+      "reassign": "Reassign {{name}}'s leads",
+      "teamWeek": "Team performance this week",
+      "business": "Business summary for today",
+      "lostBudget": "Leads lost to budget this month",
+      "unsold": "Most unsold inventory",
+      "duplicates": "Find duplicate leads"
+    }
+  },
+  "priority": {
+    "title": "Your priorities",
+    "subtitle": "{{count}} things, most urgent first. Each one leaves the list when it is done.",
+    "filter": "Filter priorities",
+    "filters": {
+      "all": "All",
+      "new": "New leads",
+      "visits": "Visits",
+      "followUps": "Follow-ups",
+      "leads": "Re-engage"
+    },
+    "rank": "Priority {{n}}",
+    "score": "Lead score",
+    "emptyTitle": "All caught up!",
+    "emptyBody": "Nothing urgent is left. Plan tomorrow or reach out to warm leads.",
+    "emptyLeads": "Open my leads",
+    "emptyTasks": "Plan follow-ups",
+    "filteredEmpty": "Nothing in this group right now",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show fewer"
+  },
   "reason": {
-    "slaBreached": "Not called yet: {{mins}} min since the enquiry",
+    "slaBreached": "Not called yet: {{age}} since the enquiry",
     "newLead": "New enquiry: call within the first-response time",
     "postVisit": "Post-visit call due",
     "overdue": "Overdue follow-up",
@@ -16,11 +106,369 @@
     "stale": "No contact for {{days}} days",
     "dueToday": "Due today",
     "soon": {
-      "siteVisit": "Site visit in {{mins}} min",
-      "officeMeeting": "Office meeting in {{mins}} min",
-      "phoneCall": "Call in {{mins}} min",
-      "videoCall": "Video call in {{mins}} min",
-      "documentation": "Documentation in {{mins}} min"
+      "siteVisit": "Site visit at {{time}}",
+      "officeMeeting": "Office meeting at {{time}}",
+      "phoneCall": "Call at {{time}}",
+      "videoCall": "Video call at {{time}}",
+      "documentation": "Documentation at {{time}}"
     }
+  },
+  "due": {
+    "overdue": "Overdue {{time}}",
+    "inMins": "In {{time}}",
+    "at": "At {{time}}",
+    "later": "Later",
+    "mins_one": "{{count}} min",
+    "mins_other": "{{count}} min",
+    "hours": "{{h}} h {{m}} min",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
+  },
+  "actions": {
+    "call": "Call",
+    "callTip": "Call {{name}} (then log the outcome)",
+    "whatsapp": "WhatsApp",
+    "whatsappTip": "WhatsApp {{name}} with a follow-up message",
+    "logOutcome": "Log outcome",
+    "reschedule": "Reschedule",
+    "done": "Done",
+    "open": "Open",
+    "openLead": "Open lead",
+    "openAppointment": "Open appointment"
+  },
+  "log": {
+    "title": "What happened with {{name}}?",
+    "result": "Call result",
+    "results": {
+      "connected": "Connected",
+      "notReachable": "Not reachable",
+      "busy": "Busy",
+      "wrongNumber": "Wrong number"
+    },
+    "retryHint": "A retry call will be planned automatically.",
+    "note": "Note (optional)",
+    "notePlaceholder": "What did they say?",
+    "next": "Next follow-up",
+    "follow": {
+      "none": "None",
+      "tomorrow": "Tomorrow",
+      "in3days": "In 3 days",
+      "nextWeek": "Next week"
+    },
+    "save": "Save"
+  },
+  "reschedule": {
+    "title": "Move to",
+    "now": "Now: {{when}}",
+    "back": "Back to the list",
+    "pick": "Pick a date…",
+    "at10": "The new time is 10:00 on the day you pick.",
+    "slot": {
+      "in2h": "In 2 hours",
+      "tomorrowMorning": "Tomorrow morning",
+      "tomorrowEvening": "Tomorrow evening",
+      "in3days": "In 3 days",
+      "nextWeek": "Next Monday"
+    }
+  },
+  "toast": {
+    "logged": "Logged: {{name}} · {{result}}",
+    "nextPlanned": "Next follow-up: {{when}}",
+    "done": "Done: {{title}}",
+    "rescheduled": "Moved to {{when}}",
+    "visitMoved": "Appointment moved to {{when}}",
+    "conflicts_one": "It overlaps {{count}} other appointment.",
+    "conflicts_other": "It overlaps {{count}} other appointments.",
+    "planned": "Follow-up with {{name}} planned for {{when}}",
+    "whatsapp": "WhatsApp to {{name}} logged",
+    "confirmationSent": "Confirmation sent to {{name}}; the visit is marked confirmed",
+    "assigned": "{{name}} assigned to {{to}}",
+    "autoAssigned_one": "{{count}} lead auto-assigned",
+    "autoAssigned_other": "{{count}} leads auto-assigned",
+    "leftUnassigned_one": "{{count}} lead stays in the queue: no executive available.",
+    "leftUnassigned_other": "{{count}} leads stay in the queue: no executive available.",
+    "reassigned_one": "{{count}} lead of {{name}} reassigned",
+    "reassigned_other": "{{count}} leads of {{name}} reassigned"
+  },
+  "appointments": {
+    "title": "Today's appointments",
+    "subtitle_one": "{{count}} appointment, in time order",
+    "subtitle_other": "{{count}} appointments, in time order",
+    "plan": "Plan",
+    "now": "Now",
+    "map": "Map",
+    "confirm": "Send confirmation",
+    "confirmed": "Confirmed",
+    "needsOutcome": "Needs outcome",
+    "recordOutcome": "Record outcome",
+    "open": "Open",
+    "noLead": "No client linked",
+    "emptyTitle": "No appointments today",
+    "emptyBody": "Plan a site visit for a hot lead, or look at the week ahead.",
+    "week": "See the week"
+  },
+  "targets": {
+    "title": "My targets",
+    "subtitle": "This month",
+    "calls": "Calls",
+    "visits": "Site visits",
+    "bookings": "Bookings",
+    "revenue": "Booked value",
+    "rank": "#{{rank}} of {{of}} in the team",
+    "streak_one": "{{count}} day streak",
+    "streak_other": "{{count}} day streak",
+    "today": "Today: {{calls}} calls · {{wa}} WhatsApp",
+    "pace_one": "About {{count}} call a day meets your calls target.",
+    "pace_other": "About {{count}} calls a day meets your calls target."
+  },
+  "sections": {
+    "title": "My leads",
+    "hot": "Hot",
+    "overdue": "Overdue",
+    "new": "New today",
+    "idle": "No contact {{days}}+ days",
+    "empty": {
+      "hot": "No hot leads right now",
+      "overdue": "No overdue follow-ups",
+      "new": "No new leads today",
+      "idle": "Everyone has been contacted recently"
+    },
+    "emptyBody": "This list updates as you work.",
+    "taskLine": "{{title}} · due {{when}}",
+    "idleDays_one": "{{count}} day without contact",
+    "idleDays_other": "{{count}} days without contact",
+    "more": "{{count}} more"
+  },
+  "visited": {
+    "title": "Visited, not booked",
+    "subtitle": "Site visits in the last 14 days with no booking yet: a quick call keeps the momentum.",
+    "week": "This week",
+    "twoWeeks": "Last 2 weeks",
+    "daysAgo_zero": "visited today",
+    "daysAgo_one": "visited {{count}} day ago",
+    "daysAgo_other": "visited {{count}} days ago",
+    "liked_one": "Liked {{count}} property",
+    "liked_other": "Liked {{count}} properties",
+    "more": "More options"
+  },
+  "matches": {
+    "title": "New matches to send",
+    "subtitle": "The best fits for your leads that have not been shared yet.",
+    "all": "Matching",
+    "for": "For {{name}} · {{price}} · {{place}}",
+    "score": "Match",
+    "share": "Share",
+    "shortlist": "Shortlist",
+    "shared": "{{property}} shared with {{name}} on WhatsApp",
+    "shortlisted": "Added to the shortlist",
+    "emptyTitle": "No new matches",
+    "emptyBody": "When a new property fits one of your leads, it shows up here."
+  },
+  "manager": {
+    "chips": {
+      "autoAssign_one": "Auto-assign {{count}} new lead",
+      "autoAssign_other": "Auto-assign {{count}} new leads",
+      "reassign": "Reassign {{name}}'s {{count}} leads",
+      "stalled_one": "Review {{count}} stalled deal",
+      "stalled_other": "Review {{count}} stalled deals"
+    },
+    "stats": {
+      "unassigned": "Unassigned",
+      "overdue": "Team overdue",
+      "visits": "Team visits",
+      "calls": "Calls today"
+    },
+    "auto": {
+      "title_one": "Auto-assign {{count}} lead?",
+      "title_other": "Auto-assign {{count}} leads?",
+      "body": "Each lead goes to the matching executive with the lowest workload (rules first, round-robin on a tie). People on leave are skipped. You can undo for a few seconds.",
+      "confirm": "Assign {{count}}"
+    },
+    "queue": {
+      "title": "Unassigned queue",
+      "subtitle": "{{count}} waiting · {{auto}} auto-assigned today",
+      "autoAll": "Auto-assign all",
+      "aiNote": "Suggested owner from rules and workload",
+      "assign": "Assign",
+      "choose": "Choose",
+      "assignTo": "Assign to",
+      "load_one": "{{count}} open",
+      "load_other": "{{count}} open",
+      "nobody": "No one available",
+      "emptyTitle": "The queue is clear",
+      "emptyBody": "New enquiries without an owner will wait here."
+    },
+    "team": {
+      "title": "Team board",
+      "subtitle": "Availability, load, today's work and overdue",
+      "view": "Team",
+      "open_one": "{{count}} open",
+      "open_other": "{{count}} open",
+      "deactivated": "Deactivated",
+      "loadAria": "{{name}}: {{count}} open leads",
+      "calls_one": "{{count}} call",
+      "calls_other": "{{count}} calls",
+      "visits_one": "{{count}} visit",
+      "visits_other": "{{count}} visits",
+      "overdue": "{{count}} overdue",
+      "breaches_one": "{{count}} TAT breach",
+      "breaches_other": "{{count}} TAT breaches"
+    },
+    "attention": {
+      "title": "Needs your attention",
+      "escalation": "{{name}} not called yet",
+      "escalationBody": "Owner {{owner}} · waiting {{time}}",
+      "postVisit": "Post-visit call missed: {{name}}",
+      "postVisitBody": "Owner {{owner}} · was due {{when}}",
+      "highValue": "{{name}} · {{budget}} budget, untouched",
+      "highValueBody": "Owner {{owner}}",
+      "highValueQueue": "Still in the unassigned queue",
+      "leave_one": "{{name}} is on leave with {{count}} open lead",
+      "leave_other": "{{name}} is on leave with {{count}} open leads",
+      "deactivated_one": "{{name}} is deactivated but holds {{count}} open lead",
+      "deactivated_other": "{{name}} is deactivated but holds {{count}} open leads",
+      "proposalBody": "Suggested: reassign them with auto-assign (lowest workload). You can undo.",
+      "reassign": "Reassign with auto-assign",
+      "assign": "Reassign",
+      "emptyTitle": "Nothing needs you right now",
+      "emptyBody": "Escalations, missed post-visit calls and leave reassignments show up here."
+    },
+    "deals": {
+      "title": "Deals to push",
+      "pipeline": "Pipeline",
+      "stalled": "Stalled",
+      "negotiation": "Negotiation",
+      "days_one": "{{count}} day in stage",
+      "days_other": "{{count}} days in stage",
+      "empty": {
+        "stalled": "No stalled deals",
+        "negotiation": "No deals in negotiation"
+      }
+    },
+    "overdue": {
+      "title": "Overdue follow-ups by executive",
+      "subtitle": "{{count}} overdue across the team",
+      "all": "Tasks",
+      "emptyTitle": "No overdue follow-ups"
+    },
+    "visits": {
+      "title": "Team visits today",
+      "subtitle": "{{count}} appointments, coloured by executive"
+    },
+    "targets": {
+      "title": "Team target",
+      "subtitle": "This month",
+      "bookings": "Bookings",
+      "revenue": "Booked value",
+      "revenueOf": "of {{target}}",
+      "funnel": "Funnel: leads that reached each stage"
+    }
+  },
+  "admin": {
+    "kpis": "Business KPIs",
+    "stats": {
+      "alerts": "Alerts",
+      "unassigned": "Unassigned",
+      "imports": "Rows imported",
+      "drafts": "Open drafts"
+    },
+    "kpi": {
+      "newLeads": "New leads today",
+      "visits": "Visits today",
+      "bookings": "Bookings (month)",
+      "pipeline": "Pipeline value",
+      "conversion": "Conversion",
+      "inventory": "Inventory",
+      "available": "available",
+      "vsYesterday": "vs yesterday",
+      "vsLastMonth": "vs last month",
+      "pts": " pts",
+      "vs4Weeks": "vs 4 weeks ago"
+    },
+    "sources": {
+      "title": "Source funnel",
+      "subtitle": "Leads → site visits → bookings by source",
+      "report": "Sources report",
+      "leads": "Leads",
+      "visited": "Visited",
+      "booked": "Booked"
+    },
+    "team": {
+      "title": "Team snapshot",
+      "subtitle": "{{count}} leads unassigned",
+      "exec": "Executive",
+      "open": "Open",
+      "calls": "Calls today",
+      "visits": "Visits today",
+      "overdue": "Overdue",
+      "conversion": "Conversion"
+    },
+    "alerts": {
+      "title": "System alerts",
+      "unassigned_one": "{{count}} lead without an owner",
+      "unassigned_other": "{{count}} leads without an owner",
+      "oldest": "Oldest waiting {{time}}",
+      "autoAssign": "Auto-assign",
+      "autoTitle_one": "Auto-assign {{count}} lead?",
+      "autoTitle_other": "Auto-assign {{count}} leads?",
+      "deactivated_one": "{{name}} is deactivated and still owns {{count}} open lead",
+      "deactivated_other": "{{name}} is deactivated and still owns {{count}} open leads",
+      "deactivatedBody": "Redistribute them so no client is left waiting.",
+      "redistribute": "Redistribute",
+      "redistributeTitle": "Redistribute {{name}}'s open leads?",
+      "confirmBody": "The leads go to active executives with the lowest workload. Their open tasks and future appointments move with them. You can undo for a few seconds.",
+      "confirm": "Assign {{count}}",
+      "duplicates_one": "{{count}} possible duplicate",
+      "duplicates_other": "{{count}} possible duplicates",
+      "missingLeads_one": "{{count}} open lead is missing a budget or location",
+      "missingLeads_other": "{{count}} open leads are missing a budget or location",
+      "missingLeadsBody": "Matching and scoring need them.",
+      "properties_one": "{{count}} live listing is missing required details",
+      "properties_other": "{{count}} live listings are missing required details",
+      "review": "Review",
+      "emptyTitle": "No alerts",
+      "emptyBody": "Data quality and ownership look good."
+    },
+    "insights": {
+      "title": "AI business insights",
+      "empty": "Not enough data for insights yet."
+    },
+    "imports": {
+      "title": "Import activity",
+      "subtitle": "This month: {{jobs}} imports, {{rows}} rows, {{dupes}} duplicates caught",
+      "history": "History",
+      "imported": "{{count}} imported",
+      "dupes": "{{count}} duplicates",
+      "emptyTitle": "No imports yet",
+      "start": "Import a file",
+      "kind": {
+        "leads": "Leads",
+        "apartments": "Apartments",
+        "villas": "Villas",
+        "plots": "Plots",
+        "commercial": "Commercial",
+        "document": "Document"
+      }
+    }
+  },
+  "insight": {
+    "bestSource": "{{source}} converts best: {{pct}}% of its {{count}} leads booked.",
+    "conversion": "Overall conversion is {{pct}}%, with {{count}} deals closed this month.",
+    "short": {
+      "bestSource": "{{source}} converts best",
+      "lostReason": "Lost to {{reason}}: {{count}}",
+      "unassigned": "{{count}} leads need an owner",
+      "stalled": "{{count}} stalled deals",
+      "inventory": "Unsold in {{locality}}",
+      "conversion": "Conversion {{pct}}%"
+    },
+    "lostReason_one": "{{count}} lead lost to “{{reason}}” in the last 90 days.",
+    "lostReason_other": "{{count}} leads lost to “{{reason}}” in the last 90 days.",
+    "unassigned_one": "{{count}} lead is waiting for an owner; for {{hours}} h.",
+    "unassigned_other": "{{count}} leads are waiting for an owner; the oldest for {{hours}} h.",
+    "stalled_one": "{{count}} deal is stalled, worth {{value}}.",
+    "stalled_other": "{{count}} deals are stalled, worth {{value}}.",
+    "inventory_one": "{{count}} unsold unit in {{locality}}.",
+    "inventory_other": "{{count}} unsold units are piling up in {{locality}}."
   }
 }

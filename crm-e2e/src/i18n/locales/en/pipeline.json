@@ -1,10 +1,195 @@
 {
   "title": "Pipeline",
-  "subtitle": "Deals by stage, with ageing and value.",
-  "stub": {
-    "index": {
-      "title": "Pipeline board",
-      "body": "Drag deals between stages, spot stalled deals and see the value at each stage."
+  "subtitle": "Deals by stage, with ageing, value and AI predictions.",
+  "addLead": "Add lead",
+  "view": {
+    "label": "Pipeline view",
+    "board": "Board",
+    "list": "List"
+  },
+  "empty": {
+    "title": "No deals in your pipeline yet",
+    "body": "Add a lead by typing or pasting a client's message, or import a list. Every lead shows up here as a deal.",
+    "import": "Import leads"
+  },
+  "filteredEmpty": "No deals match these filters",
+  "filters": {
+    "search": "Search deals",
+    "searchPlaceholder": "Name, phone, property or executive",
+    "owner": "Executive",
+    "source": "Source",
+    "temperature": "Temperature",
+    "value": "Deal value",
+    "stalledOnly": "Stalled only"
+  },
+  "valueBand": {
+    "under50L": "Under ₹50 L",
+    "l50to1Cr": "₹50 L – ₹1 Cr",
+    "cr1to2": "₹1 – 2 Cr",
+    "over2Cr": "Above ₹2 Cr"
+  },
+  "move": {
+    "title": "Move to…",
+    "button": "Move to…",
+    "menuFor": "Move {{name}} to another stage",
+    "sheetTitle": "Move {{name}}",
+    "from": "Now in {{stage}}",
+    "current": "Current",
+    "asks": "Asks for details",
+    "denied": "You can't move {{name}}: it isn't one of your deals.",
+    "bookVisit": "{{name}} has no site visit booked yet. Book it now.",
+    "cancelled": "Move cancelled. The deal stays where it was."
+  },
+  "card": {
+    "todayAt": "Today {{time}}",
+    "noProperty": "No property chosen yet",
+    "valueTip": "Deal value (or the top of the budget until a property is chosen)",
+    "noValue": "Value not known",
+    "prediction": "{{pct}}%",
+    "predictionTip": "AI prediction: {{pct}}% chance to convert, from the stage and the lead score ({{score}}).",
+    "unassigned": "Unassigned",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "stalled_one": "Stalled · {{count}} day",
+    "stalled_other": "Stalled · {{count}} days",
+    "daysTip": "{{days}} days in this stage (target {{target}})",
+    "stalledTip": "AI: stalled for {{days}} days, more than twice the {{target}}-day target for this stage.",
+    "stalledShort": "Stalled deal",
+    "overdue": "Follow-up overdue",
+    "nextFollowUp": "Next follow-up",
+    "open": "Open lead"
+  },
+  "dnd": {
+    "instructions": "To move a deal, press Space to pick it up. Use the arrow keys to choose a stage, then press Space again to drop it, or Escape to cancel.",
+    "roleDescription": "draggable deal",
+    "cardLabel": "Deal: {{name}}",
+    "start": "Picked up {{name}} from {{stage}}.",
+    "over": "{{name}} is over {{stage}}.",
+    "outside": "{{name}} is not over a stage.",
+    "end": "Dropped {{name}} on {{stage}}.",
+    "cancel": "Move cancelled. {{name}} stays where it was."
+  },
+  "board": {
+    "label": "Pipeline board",
+    "column_one": "{{stage}}: {{count}} deal",
+    "column_other": "{{stage}}: {{count}} deals",
+    "share": "{{pct}}% of value",
+    "shareLabel": "{{pct}}% of the open pipeline value",
+    "dropHere": "Drop a deal here",
+    "addLead": "Add lead"
+  },
+  "strip": {
+    "label": "Deals per stage",
+    "segment": "{{stage}}: {{count}} deals, {{value}}",
+    "tip": "{{count}} deals · {{value}}"
+  },
+  "kpi": {
+    "open": "Open pipeline",
+    "openHint_one": "{{count}} open deal",
+    "openHint_other": "{{count}} open deals",
+    "forecast": "Weighted forecast",
+    "forecastHint": "Each deal's value × its predicted chance to convert",
+    "forecastRing": "Share of open value expected to convert",
+    "stalled": "Stalled deals",
+    "stalledHint": "Over 2× the stage target. Click to show only these.",
+    "stalledOn": "Showing stalled deals only. Click to show all.",
+    "winRate": "Win rate",
+    "winHint": "{{won}} won ({{value}}) · {{lost}} lost"
+  },
+  "analytics": {
+    "title": "Stage conversion",
+    "lost_one": "{{count}} deal lost",
+    "lost_other": "{{count}} deals lost",
+    "reached": "reached this stage",
+    "conv": "↗ {{pct}}% move on",
+    "drop": "↘ {{pct}}% drop",
+    "final": "Final stage",
+    "avgDays": "avg {{days}} d / {{target}} d",
+    "noDays": "No time data yet",
+    "tileLabel": "{{stage}}: {{reached}} reached, {{conv}}% moved on, average {{days}} days"
+  },
+  "list": {
+    "label": "Deals",
+    "client": "Client",
+    "stage": "Stage",
+    "value": "Value",
+    "owner": "Executive",
+    "days": "In stage",
+    "followUp": "Next follow-up",
+    "prediction": "✦ Conversion"
+  },
+  "mobile": {
+    "tabs": "Stages",
+    "summary_one": "{{count}} deal",
+    "summary_other": "{{count}} deals",
+    "emptyStage": "No deals in this stage."
+  },
+  "ai": {
+    "title": "Stalled deals",
+    "count_one": "{{count}} stalled",
+    "count_other": "{{count}} stalled",
+    "hide": "Hide",
+    "show": "Show",
+    "failed": "The assistant couldn't read the pipeline. Try again.",
+    "none": "No stalled deals. Every open deal is within twice its stage target.",
+    "overdue": "{{days}} days in stage · target {{target}}",
+    "recommend": "Recommended:",
+    "nextTip": "The assistant's next best action for this lead",
+    "plan": "Plan it",
+    "needsOwner": "Assign this lead first, then plan the follow-up.",
+    "more_one": "{{count}} more stalled deal. Turn on \"Stalled only\" to see it.",
+    "more_other": "{{count}} more stalled deals. Turn on \"Stalled only\" to see them.",
+    "planned": "Follow-up task added"
+  },
+  "advice": {
+    "firstCall": "Make the first call now: new leads go cold within hours.",
+    "qualify": "Call to confirm budget, timeline and who decides, then move to Qualified.",
+    "bookVisit": "Share the best match and book a site visit this week.",
+    "confirmVisit": "Confirm the visit on WhatsApp, or reschedule it.",
+    "postVisitCall": "Call for feedback on the visit and ask what would make them book.",
+    "closeGap": "Meet to close the price gap: bring the payment plan and loan options.",
+    "collectDocs": "Collect the booking documents and set the agreement date."
+  },
+  "adviceTask": {
+    "firstCall": "First call: {{name}}",
+    "qualify": "Qualify {{name}}: budget, timeline, decision maker",
+    "bookVisit": "Book a site visit with {{name}}",
+    "confirmVisit": "Confirm the site visit with {{name}}",
+    "postVisitCall": "Post-visit call: {{name}}",
+    "closeGap": "Negotiation meeting with {{name}}",
+    "collectDocs": "Collect booking documents from {{name}}"
+  },
+  "proposal": {
+    "task": "Task",
+    "due": "Due",
+    "owner": "For",
+    "why": "Why"
+  },
+  "assistant": {
+    "title": "Pipeline assistant",
+    "label": "Ask the pipeline assistant",
+    "placeholder": "e.g. Move Priya Sharma to negotiation",
+    "send": "Ask",
+    "applied": "Change applied",
+    "again": "Ask something else",
+    "exMove": "Move {{name}} to {{stage}}",
+    "exStalled": "Show stalled deals",
+    "exConversions": "Who is close to booking?",
+    "stageWord": {
+      "new": "new",
+      "contacted": "contacted",
+      "qualified": "qualified",
+      "siteVisitScheduled": "visit scheduled",
+      "siteVisitDone": "visit done",
+      "negotiation": "negotiation",
+      "booked": "booked",
+      "converted": "won",
+      "lost": "lost"
     }
+  },
+  "dialog": {
+    "bookedHint": "Booking marks the property as Booked, creates the client record and a documents task.",
+    "lostHint": "Open tasks and future visits for this lead are cancelled.",
+    "convertedHint": "Marks the deal as won: the client becomes Converted and the property Sold."
   }
 }

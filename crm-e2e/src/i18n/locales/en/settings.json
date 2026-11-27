@@ -1,14 +1,331 @@
 {
   "title": "Settings",
-  "subtitle": "Preferences and business rules.",
-  "stub": {
-    "index": {
-      "title": "Settings",
-      "body": "Theme, language, pipeline stages, templates, assignment rules and demo data."
+  "subtitle": "Your preferences and the business rules behind assignment, the pipeline, messages and matching.",
+  "subtitleProfile": "Your profile, availability, theme and language.",
+  "sectionTitle": "Settings section",
+  "allSettings": "All settings",
+  "notFound": "This settings page doesn't exist",
+  "notFoundBody": "Pick a section from the list.",
+  "nav": {
+    "label": "Settings sections"
+  },
+  "section": {
+    "profile": {
+      "title": "Profile and preferences",
+      "body": "Your details, availability, theme and language."
     },
-    "section": {
-      "title": "Settings section",
-      "body": "One group of settings."
+    "assignment": {
+      "title": "Assignment rules",
+      "body": "Auto-assignment on or off, workload cap and rules by location, type, language and source."
+    },
+    "pipeline": {
+      "title": "Pipeline stages",
+      "body": "Stage names, which stages are used, target days, win probability and lost reasons."
+    },
+    "templates": {
+      "title": "Message templates",
+      "body": "WhatsApp, SMS and email texts for intros, follow-ups, visits and offers."
+    },
+    "matching": {
+      "title": "Matching weights",
+      "body": "How budget, location, size, amenities and preferences count in a match."
+    },
+    "sla": {
+      "title": "Response times and scoring",
+      "body": "First-call time, escalation, stale and hot-lead rules, and the hot / warm thresholds."
+    },
+    "users": {
+      "title": "Users",
+      "body": "Who is on the team. Add, edit, activate and deactivate people on the Team page."
+    },
+    "demo": {
+      "title": "Demo data",
+      "body": "Start again with a fresh set of sample leads, properties and visits."
     }
+  },
+  "summary": {
+    "autoOn": "Auto-assign on",
+    "autoOff": "Auto-assign off",
+    "rules_one": "{{count}} rule on",
+    "rules_other": "{{count}} rules on",
+    "stages_one": "{{count}} stage",
+    "stages_other": "{{count}} stages",
+    "lostReasons_one": "{{count}} lost reason",
+    "lostReasons_other": "{{count}} lost reasons",
+    "templates_one": "{{count}} template",
+    "templates_other": "{{count}} templates",
+    "weights": "Weights {{list}}",
+    "sla": "First call in {{mins}} min · hot at {{hot}}",
+    "users_one": "{{count}} active user",
+    "users_other": "{{count}} active users",
+    "demo": "Reset to fresh sample data"
+  },
+  "save": {
+    "unsaved": "Unsaved changes",
+    "invalid": "Fix the highlighted values to save",
+    "saved": "All changes saved",
+    "discard": "Discard",
+    "save": "Save changes"
+  },
+  "errors": {
+    "range": "Enter a whole number from {{min}} to {{max}}",
+    "escalateAfter": "Escalation must come after the first-call time",
+    "warmBelowHot": "Warm must be below hot",
+    "tooLong": "Keep it under {{max}} characters"
+  },
+  "language": {
+    "English": "English",
+    "Hindi": "Hindi",
+    "Tamil": "Tamil",
+    "Kannada": "Kannada",
+    "Telugu": "Telugu",
+    "Marathi": "Marathi",
+    "Malayalam": "Malayalam",
+    "Bengali": "Bengali",
+    "Urdu": "Urdu",
+    "Gujarati": "Gujarati"
+  },
+  "profile": {
+    "you": "Your details",
+    "youHint": "Shown to your team and on messages you send. Your email and role are set by an admin.",
+    "name": "Full name",
+    "phone": "Mobile",
+    "languages": "Languages you speak",
+    "saved": "Your details are saved",
+    "availability": "Availability",
+    "availabilityHint": "Auto-assignment skips you while you are on leave; your manager is told about your open leads.",
+    "availabilityChanged": "You are now: {{status}}",
+    "backOn": "Back on",
+    "prefs": "Theme and language",
+    "prefsHint": "Saved in this browser.",
+    "themeHint": "Pick how the CRM looks.",
+    "languageHint": "Menus and labels. Names and notes stay as typed.",
+    "theme": {
+      "light": "Bright and clear for daytime.",
+      "dark": "Easy on the eyes in the evening.",
+      "system": "Follows your device setting."
+    }
+  },
+  "assignment": {
+    "autoTitle": "Automatic assignment",
+    "autoBody": "When on, every new lead (typed, imported or created by the assistant) goes to the executive with the lowest workload. Ties go round-robin; people on leave are skipped.",
+    "autoLabel": "Auto-assign new leads",
+    "autoOnHint": "On: new leads are assigned the moment they arrive.",
+    "autoOffHint": "Off: new leads wait in the manager's unassigned queue.",
+    "autoOn": "Auto-assignment is on",
+    "autoOff": "Auto-assignment is off",
+    "managerNote": "This switch applies to the whole company in this demo.",
+    "cap": "Most open leads per executive",
+    "capNone": "No limit",
+    "capHint": "People at the cap are skipped unless everyone is at it.",
+    "capSaved": "Workload cap saved",
+    "noneToday": "No leads auto-assigned yet today."
+  },
+  "rules": {
+    "title": "Rules",
+    "body": "A rule sends matching leads to chosen people first. If none of them can take it, the normal workload rule applies.",
+    "add": "Add rule",
+    "addTitle": "New assignment rule",
+    "editTitle": "Edit rule",
+    "editorBody": "Pick what the rule matches and who gets those leads.",
+    "added": "Rule added",
+    "updated": "Rule updated",
+    "deleted": "Rule deleted",
+    "enabled": "Rule switched on",
+    "disabled": "Rule switched off",
+    "edit": "Edit rule",
+    "delete": "Delete rule",
+    "deleteTitle": "Delete this rule?",
+    "deleteBody": "Matching leads will be assigned by workload only. You can undo for a few seconds.",
+    "toggle": "Rule on or off",
+    "on": "On",
+    "off": "Off",
+    "readOnly": "Company-wide rule: only an admin can change it",
+    "goesTo": "Goes to",
+    "nobody": "No one (add people)",
+    "scopeGlobal": "Company-wide",
+    "scopeTeam": "{{name}}'s team",
+    "order": "Rules are checked in this order: location, property type, language, source. The first one that matches narrows the pool.",
+    "emptyTitle": "No rules yet",
+    "emptyBody": "Without rules, leads go to whoever has the lowest workload.",
+    "kind": {
+      "location": "Location",
+      "propertyType": "Property type",
+      "language": "Language",
+      "source": "Lead source"
+    },
+    "field": {
+      "kind": "Match leads by",
+      "values": "Values",
+      "userIds": "Send to"
+    },
+    "ai": {
+      "title": "Describe the rule",
+      "placeholder": "e.g. Send Chennai and Hyderabad leads to Sneha",
+      "read": "Fill",
+      "missing": "Still needed: {{fields}}",
+      "nothing": "Couldn't read a rule. Pick the values by hand.",
+      "alsoFound": "One condition per rule: I also saw {{kinds}}. Add a second rule for it."
+    }
+  },
+  "simulator": {
+    "title": "Who would get a new lead?",
+    "body": "Try the engine on a sample lead. Nothing is saved or assigned.",
+    "city": "City",
+    "type": "Property type",
+    "language": "Language",
+    "source": "Source",
+    "goesTo": "It would go to {{name}}",
+    "queue": "It would wait in the unassigned queue",
+    "nobody": "No one",
+    "pool": "Who was considered",
+    "open_one": "{{count}} open",
+    "open_other": "{{count}} open",
+    "note": "Uses today's workloads, the rules above and the round-robin turn."
+  },
+  "pipeline": {
+    "stagesTitle": "Stages",
+    "stagesBody": "Rename a stage by typing a label. Target days decide when a deal looks stalled; probability feeds the forecast.",
+    "defaults": "Restore defaults",
+    "col": {
+      "stage": "Stage",
+      "label": "Shown as",
+      "on": "Used",
+      "days": "Target days",
+      "probability": "Win chance"
+    },
+    "renameAria": "Label for {{stage}}",
+    "enableAria": "Use {{stage}}",
+    "daysAria": "Target days for {{stage}}",
+    "probAria": "Win chance for {{stage}} in percent",
+    "always": "Always",
+    "lockedTip": "New, Booked, Converted and Lost are always used.",
+    "stripAria": "Win chance rises through the stages",
+    "lostTitle": "Lost reasons",
+    "lostBody": "The reasons people choose when a lead is lost, in this order.",
+    "up": "Move up",
+    "down": "Move down",
+    "needOneReason": "Keep at least one reason on",
+    "saved": "Pipeline settings saved"
+  },
+  "templates": {
+    "title": "Templates",
+    "body": "Placeholders like {{p1}} and {{p2}} are filled for each lead when a message is drafted.",
+    "add": "Add template",
+    "addTitle": "New template",
+    "editTitle": "Edit template",
+    "editorBody": "Write it yourself or let the assistant draft it, then edit freely.",
+    "added": "Template added",
+    "updated": "Template updated",
+    "deleted": "Template deleted",
+    "edit": "Edit template",
+    "delete": "Delete template",
+    "deleteTitle": "Delete this template?",
+    "deleteBody": "It will no longer be offered when drafting messages. You can undo for a few seconds.",
+    "channel": "Channel",
+    "channels": {
+      "whatsapp": "WhatsApp",
+      "sms": "SMS",
+      "email": "Email"
+    },
+    "tone": "Language style",
+    "tones": {
+      "english": "English",
+      "hinglish": "Hinglish"
+    },
+    "purpose": "Purpose",
+    "message": "Message",
+    "draftAi": "Draft with AI",
+    "insert": "Insert:",
+    "length_one": "{{count}} character",
+    "length_other": "{{count}} characters",
+    "smsParts_one": "{{count}} SMS",
+    "smsParts_other": "{{count}} SMS",
+    "unknown": "These placeholders won't be filled: {{list}}",
+    "preview": "Preview",
+    "previewEmpty": "Your message will appear here.",
+    "count_one": "{{count}} template",
+    "count_other": "{{count}} templates",
+    "noneForChannel": "No templates for this channel.",
+    "emptyTitle": "No templates",
+    "emptyBody": "Add one so the follow-up assistant can draft messages.",
+    "sample": {
+      "firstName": "Priya",
+      "property": "Prestige Lakeside 3 BHK",
+      "time": "Sat 11:00 AM"
+    }
+  },
+  "matching": {
+    "weightsTitle": "Weights",
+    "weightsBody": "Match score = Σ weight × part score. The five weights must add up to 1.00.",
+    "defaults": "Restore defaults",
+    "w": {
+      "budget": "Budget",
+      "location": "Location",
+      "size": "Size",
+      "amenities": "Amenities",
+      "preferences": "Preferences"
+    },
+    "mixAria": "Weight mix: {{list}}",
+    "sum": "Total {{sum}}",
+    "sumOk": "Ready to save.",
+    "sumBad": "The weights must add up to 1.00",
+    "balance": "Balance to 1.00 (keep {{name}})",
+    "limitsTitle": "Limits",
+    "limitsBody": "What counts as a match worth showing.",
+    "minScore": "Minimum match score",
+    "minScoreHint": "Matches below this are hidden from suggestions.",
+    "cap": "Most matches per project",
+    "capHint": "Stops one big project filling the whole list.",
+    "saved": "Matching settings saved"
+  },
+  "sla": {
+    "title": "Response times",
+    "body": "Speed wins leads. These drive the first-call task, the breach alerts and the stale and hot-lead lists.",
+    "firstResponseMins": "Call a new lead within",
+    "firstResponseMinsHint": "The first-call task is due then; a breach alerts the owner.",
+    "escalateAfterMins": "Escalate to the manager after",
+    "escalateAfterMinsHint": "If the lead is still not called.",
+    "staleDays": "A lead is stale after",
+    "staleDaysHint": "Without any contact.",
+    "hotNoContactDays": "Contact hot leads at least every",
+    "hotNoContactDaysHint": "Hot leads past this show first on Today.",
+    "unit": {
+      "mins": "minutes",
+      "days": "days"
+    },
+    "saved": "Response times saved"
+  },
+  "scoring": {
+    "title": "Hot, warm and cold",
+    "body": "A lead's score (0–100) sets its temperature. Overrides by hand still win.",
+    "warmAt": "Warm from score",
+    "hotAt": "Hot from score",
+    "bandAria": "Cold below {{warm}}, warm from {{warm}}, hot from {{hot}}",
+    "saved": "Thresholds saved"
+  },
+  "users": {
+    "title": "People",
+    "body": "Active users by role.",
+    "open": "Open Team",
+    "deactivated_one": "{{count}} deactivated user keeps their history.",
+    "deactivated_other": "{{count}} deactivated users keep their history."
+  },
+  "demo": {
+    "title": "Reset demo data",
+    "body": "Replaces everything with a fresh sample dated around today. Your profile, theme and language stay.",
+    "count": {
+      "leads": "Leads",
+      "properties": "Properties",
+      "appointments": "Appointments",
+      "tasks": "Tasks"
+    },
+    "warning": "Every lead, property, visit, task, note and setting you changed is replaced. This can't be undone.",
+    "reset": "Reset demo data",
+    "confirmTitle": "Reset all demo data?",
+    "confirmBody": "All changes made in this browser are replaced by fresh sample data. This can't be undone.",
+    "confirm": "Reset everything",
+    "done": "Demo data reset",
+    "doneHint": "Fresh sample data for today is loaded."
   }
 }

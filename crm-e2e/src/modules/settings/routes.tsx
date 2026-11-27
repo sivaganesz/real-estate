@@ -5,14 +5,15 @@
 import { lazy } from 'react'
 import type { AppRoute } from '@/app/route-types'
 import type { Action } from '@/lib/permissions'
+import { SECTIONS, SECTION_ALIASES } from './lib/sections'
 
-/** Each settings section is guarded by the permission that edits it; preferences are open to everyone. */
-const SECTION_PERMISSION: Record<string, Action> = {
-  pipeline: 'settings.pipeline', templates: 'settings.templates', matching: 'settings.matching', sla: 'settings.matching',
-  scoring: 'settings.matching', assignment: 'rules.configure', users: 'user.manage', demo: 'demo.reset',
+/** Each settings section is guarded by the permission that edits it; preferences (and unknown keys) are open to everyone. */
+function sectionPermission(section: string | undefined): Action {
+  const key = SECTION_ALIASES[section ?? ''] ?? section
+  return SECTIONS.find((s) => s.key === key)?.permission ?? 'settings.preferences'
 }
 
 export const routes: AppRoute[] = [
   { path: '/settings', permission: 'settings.preferences', Component: lazy(() => import('./pages/settings-page')), titleKey: 'settings:title' },
-  { path: '/settings/:section', permission: (params) => SECTION_PERMISSION[params.section ?? ''] ?? 'settings.preferences', Component: lazy(() => import('./pages/settings-section-page')), titleKey: 'settings:stub.section.title', parent: '/settings' },
+  { path: '/settings/:section', permission: (params) => sectionPermission(params.section), Component: lazy(() => import('./pages/settings-section-page')), titleKey: 'settings:sectionTitle', parent: '/settings' },
 ]

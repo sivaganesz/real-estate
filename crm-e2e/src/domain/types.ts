@@ -238,7 +238,7 @@ export interface Draft {
 }
 
 // ── settings
-export interface PipelineStageDef { key: PipelineStageKey; order: number; enabled: boolean; targetDays: number; probability: number /* 0–1 */ }
+export interface PipelineStageDef { key: PipelineStageKey; order: number; enabled: boolean; targetDays: number; probability: number /* 0–1 */; label?: string /* admin rename (Settings → Pipeline); shown as typed, else catalogue:stage.<key> */ }
 export interface AssignmentRule {
   id: ID; kind: 'location' | 'propertyType' | 'language' | 'source'; values: string[]; userIds: ID[]; enabled: boolean
   scope: 'global' | { managerId: ID }

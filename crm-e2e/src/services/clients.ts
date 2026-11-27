@@ -62,3 +62,45 @@ export function deleteClient(id: ID) {
     if (lead) lead.clientId = undefined
   }, { undoable: true })
 }
+
+/** Moves the client along Booked → Agreement → Loan processing → Registered → Converted (or Cancelled). Undoable. */
+export function changeClientStatus(id: ID, status: Client['status'], note?: string) {
+  return commit('client.status', (tx) => {
+    const c = must(tx.db.clients, id, 'client')
+    assertActorCan(tx.actor, 'client.edit', c, tx.db)
+    if (c.status === status) return
+    c.status = status
+    if (note) c.notes = c.notes ? `${c.notes}\n${note}` : note
+    c.updatedAt = tx.now
+    tx.emit({ type: 'client.updated', id, fields: ['status'] })
+  }, { undoable: true })
+}
+
+/** Removes one document line from the checklist. Undoable. */
+export function removeClientDocument(id: ID, name: string) {
+  return commit('client.document.remove', (tx) => {
+    const c = must(tx.db.clients, id, 'client')
+    assertActorCan(tx.actor, 'client.edit', c, tx.db)
+    c.documents = c.documents.filter((d) => d.name !== name)
+    c.updatedAt = tx.now
+    tx.emit({ type: 'client.updated', id, fields: ['documents'] })
+  }, { undoable: true })
+}
+
+/** Adds several documents at once (the standard checklist), skipping names already there. */
+export function addClientDocuments(id: ID, names: string[]) {
+  return commit('client.document.add', (tx) => {
+    const c = must(tx.db.clients, id, 'client')
+    assertActorCan(tx.actor, 'client.edit', c, tx.db)
+    let added = 0
+    for (const name of names) {
+      if (c.documents.some((d) => d.name.toLowerCase() === name.toLowerCase())) continue
+      c.documents.push({ name, status: 'pending' })
+      added++
+    }
+    if (!added) return 0
+    c.updatedAt = tx.now
+    tx.emit({ type: 'client.updated', id, fields: ['documents'] })
+    return added
+  }, { undoable: true })
+}

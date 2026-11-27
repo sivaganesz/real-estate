@@ -11,6 +11,7 @@ import { Link } from 'react-router'
 import { paths } from '@/app/paths'
 import { EmptyProperties } from '@/components/illustrations'
 import { ProgressRing } from '@/components/shared/progress-ring'
+import { Checkbox } from '@/components/ui/checkbox'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import type { Property } from '@/domain/types'
 import { inrShort, num } from '@/lib/format'
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { MatchExplain } from './match-explain'
 import { AvailabilityPill, SpecChip } from './property-pills'
 
-export function PropertyCard({ property: p, match, actions, more, className, to }: {
+export function PropertyCard({ property: p, match, actions, more, className, to, selected, onSelectedChange }: {
   property: Property
   match?: Match
   /** Footer actions (match context: Shortlist, Share, Schedule visit, Not interested). */
@@ -30,8 +31,11 @@ export function PropertyCard({ property: p, match, actions, more, className, to 
   className?: string
   /** Overrides the link target. */
   to?: string
+  /** Selection for bulk actions (a checkbox on the image, top-left). */
+  selected?: boolean
+  onSelectedChange?: (selected: boolean) => void
 }) {
-  const { t } = useTranslation(['domain', 'catalogue'])
+  const { t } = useTranslation(['domain', 'catalogue', 'properties'])
   const cover = coverPhoto(p)
   const area = primaryAreaSqft(p)
   const ppsf = pricePerSqft(p)
@@ -44,7 +48,7 @@ export function PropertyCard({ property: p, match, actions, more, className, to 
   const shown = chips.slice(0, 4)
   const dim = match && (p.status === 'booked' || p.status === 'sold')
   return (
-    <article data-testid="property-card" className={cn('group relative flex flex-col overflow-hidden rounded-lg border bg-card shadow-card transition-[transform,box-shadow] duration-(--dur-fast) hover:-translate-y-0.5 hover:shadow-md', dim && 'opacity-70', className)}>
+    <article data-testid="property-card" className={cn('group relative flex flex-col overflow-hidden rounded-lg border bg-card shadow-card', selected && 'ring-2 ring-primary', 'transition-[transform,box-shadow] duration-(--dur-fast) hover:-translate-y-0.5 hover:shadow-md', dim && 'opacity-70', className)}>
       <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg bg-primary-soft">
         {cover ? (
           <img src={cover.url} alt="" loading="lazy" className="size-full object-cover transition-transform duration-(--dur-slow) group-hover:scale-[1.03]" />
@@ -55,7 +59,12 @@ export function PropertyCard({ property: p, match, actions, more, className, to 
           </div>
         )}
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(to_top,var(--overlay),transparent_55%)]" />
-        <AvailabilityPill status={p.status} overlay className="absolute top-2.5 left-2.5" />
+        {onSelectedChange && (
+          <span className="absolute top-2.5 left-2.5 z-[2] flex size-7 items-center justify-center rounded-md bg-card/90 shadow-sm backdrop-blur">
+            <Checkbox checked={!!selected} onCheckedChange={(v) => onSelectedChange(v === true)} aria-label={t('properties:list.selectOne', { title: p.title })} data-testid="property-card-select" />
+          </span>
+        )}
+        <AvailabilityPill status={p.status} overlay className={cn('absolute top-2.5', onSelectedChange ? 'left-11' : 'left-2.5')} />
         {match && (
           <HoverCard openDelay={150}>
             <HoverCardTrigger asChild>

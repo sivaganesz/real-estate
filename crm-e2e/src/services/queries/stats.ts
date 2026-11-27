@@ -3,9 +3,10 @@
  * Pure functions of (db, …, now). Leads are always passed in already scoped (visibility.ts), so a manager's report
  * counts the team and an executive's counts their own work.
  */
-import type { Activity, DB, ID, Lead, LeadSource, LostReason, PipelineStageKey, Property, PropertyStatus, PropertyType, User } from '@/domain/types'
+import type { Activity, Appointment, DB, ID, Lead, LeadSource, LostReason, PipelineStageKey, Property, PropertyStatus, PropertyType, Settings, User } from '@/domain/types'
 import { LEAD_SOURCES, LOST_REASONS, OPEN_STAGES, PROPERTY_STATUSES, STAGES } from '@/domain/catalogue'
 import { localDay } from '@/lib/dates'
+import { scopeOf } from '@/lib/permissions'
 import { agingOf } from '@/lib/stalled'
 import { visible } from './visibility'
 
@@ -207,4 +208,281 @@ export function summaryKpis(db: DB, user: User, now: Date) {
     availableInventory: db.properties.filter((p) => p.status === 'available' && p.listing === 'live').length,
     avgFirstContactMins: avgFirstContactMins(leads.filter((l) => localDay(l.createdAt) >= localDay(new Date(now.getTime() - 30 * DAY)))),
   }
+}
+
+/* =====================================================================================================================
+ * M1 refinements (Today & Reports). Everything below is additive: the functions above keep their signatures.
+ * ===================================================================================================================== */
+
+export type ReportPeriod = Exclude<Period, 'today'>
+export const REPORT_PERIODS: ReportPeriod[] = ['week', 'month', 'quarter', 'half']
+
+/** An inclusive ISO window check. */
+export const between = (iso: string | undefined, from: Date, to: Date) => !!iso && iso >= from.toISOString() && iso <= to.toISOString()
+
+/**
+ * The period window and the previous one of the same elapsed length (so "this month so far" is compared with
+ * "last month up to the same day": a fair delta on the 5th of the month).
+ */
+export function periodBounds(period: Period, now: Date): { from: Date; to: Date; prevFrom: Date; prevTo: Date } {
+  const from = periodStart(period, now)
+  const prevFrom = new Date(from)
+  if (period === 'today') prevFrom.setDate(prevFrom.getDate() - 1)
+  else if (period === 'week') prevFrom.setDate(prevFrom.getDate() - 7)
+  else if (period === 'month') prevFrom.setMonth(prevFrom.getMonth() - 1)
+  else if (period === 'quarter') prevFrom.setMonth(prevFrom.getMonth() - 3)
+  else prevFrom.setMonth(prevFrom.getMonth() - 6)
+  const prevTo = new Date(prevFrom.getTime() + (now.getTime() - from.getTime()))
+  return { from, to: now, prevFrom, prevTo }
+}
+
+/** Percentage change from `prev` to `cur` (null when there is nothing to compare with). */
+export function pctChange(cur: number, prev: number): number | null {
+  if (!prev) return cur ? null : 0
+  return Math.round(((cur - prev) / prev) * 100)
+}
+
+export type BucketUnit = 'day' | 'week' | 'month'
+export type Bucket = { key: string; from: Date; to: Date; unit: BucketUnit }
+
+/** Time buckets for a trend chart: days for a week or month, weeks for a quarter, months for six months. */
+export function periodBuckets(period: ReportPeriod, now: Date): Bucket[] {
+  const start = periodStart(period, now)
+  const out: Bucket[] = []
+  if (period === 'week' || period === 'month') {
+    for (const d = new Date(start); d <= now; d.setDate(d.getDate() + 1)) {
+      const to = new Date(d)
+      to.setHours(23, 59, 59, 999)
+      out.push({ key: localDay(d), from: new Date(d), to, unit: 'day' })
+    }
+    return out
+  }
+  if (period === 'quarter') {
+    const d = new Date(start)
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // back to the Monday
+    for (; d <= now; d.setDate(d.getDate() + 7)) {
+      const to = new Date(d)
+      to.setDate(to.getDate() + 6)
+      to.setHours(23, 59, 59, 999)
+      out.push({ key: localDay(d), from: new Date(Math.max(d.getTime(), start.getTime())), to, unit: 'week' })
+    }
+    return out
+  }
+  for (let i = 5; i >= 0; i--) {
+    const from = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const to = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999)
+    out.push({ key: `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}`, from, to, unit: 'month' })
+  }
+  return out
+}
+
+export type TrendPoint = { key: string; unit: BucketUnit; leads: number; visits: number; bookings: number; revenue: number }
+type VisitLike = Pick<Appointment, 'type' | 'status' | 'start' | 'outcome'>
+
+/** Leads created, site visits done, bookings and booked value per bucket of the period. */
+export function trendSeries(data: { leads: Lead[]; appointments: VisitLike[] }, period: ReportPeriod, now: Date): TrendPoint[] {
+  return periodBuckets(period, now).map((b) => {
+    const booked = data.leads.filter((l) => between(l.deal?.bookedAt, b.from, b.to))
+    return {
+      key: b.key, unit: b.unit,
+      leads: data.leads.filter((l) => between(l.createdAt, b.from, b.to)).length,
+      visits: data.appointments.filter((a) => a.type === 'siteVisit' && a.status === 'completed' && between(a.outcome?.at ?? a.start, b.from, b.to)).length,
+      bookings: booked.length,
+      revenue: booked.reduce((n, l) => n + (l.deal?.value ?? 0), 0),
+    }
+  })
+}
+
+/** Counts per local day for the last `days` days, oldest first, ending today (sparklines). */
+export function dailySeries(dates: (string | undefined)[], now: Date, days = 14): number[] {
+  const index = new Map<string, number>()
+  const out = Array.from({ length: days }, () => 0)
+  for (let i = 0; i < days; i++) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - (days - 1 - i))
+    index.set(localDay(d), i)
+  }
+  const nowIso = now.toISOString()
+  for (const iso of dates) {
+    if (!iso || iso > nowIso) continue
+    const i = index.get(localDay(iso))
+    if (i != null) out[i]++
+  }
+  return out
+}
+
+/** When a lead left the open pipeline (booked counts as open until converted), from its stage history. */
+export function closedAt(l: Pick<Lead, 'stage' | 'stageHistory' | 'stageSince'>): string | undefined {
+  if (l.stage !== 'converted' && l.stage !== 'lost') return undefined
+  return [...l.stageHistory].reverse().find((h) => h.stage === l.stage)?.at ?? l.stageSince
+}
+
+/** The open pipeline value at the end of each of the last `weeks` weeks (oldest first): a sparkline for the KPI. */
+export function pipelineValueSeries(leads: Lead[], now: Date, weeks = 8): number[] {
+  const out: number[] = []
+  for (let i = weeks - 1; i >= 0; i--) {
+    const at = new Date(now.getTime() - i * 7 * DAY).toISOString()
+    out.push(leads.filter((l) => l.createdAt <= at && (closedAt(l) ?? '9999') > at)
+      .reduce((n, l) => n + (l.deal?.value ?? l.requirement.budgetMax ?? 0), 0))
+  }
+  return out
+}
+
+/** Booked-or-converted share of the leads closed in each of the last `months` months (oldest first). */
+export function conversionSeries(leads: Lead[], now: Date, months = 6): number[] {
+  const out: number[] = []
+  for (let i = months - 1; i >= 0; i--) {
+    const from = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const to = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999)
+    const won = leads.filter((l) => between(l.deal?.bookedAt, from, to)).length
+    const lost = leads.filter((l) => l.stage === 'lost' && between(l.lost?.at ?? closedAt(l), from, to)).length
+    out.push(won + lost ? Math.round((won / (won + lost)) * 100) : 0)
+  }
+  return out
+}
+
+/* ---------- report scope (all / team / personal) ---------- */
+
+export type ReportSubject = { kind: 'all' } | { kind: 'team'; managerId: ID } | { kind: 'user'; userId: ID }
+
+export const subjectKey = (s: ReportSubject) => (s.kind === 'all' ? 'all' : s.kind === 'team' ? `team:${s.managerId}` : `user:${s.userId}`)
+export function parseSubject(key: string | null | undefined): ReportSubject | null {
+  if (key === 'all') return { kind: 'all' }
+  const [kind, id] = (key ?? '').split(':')
+  if (kind === 'team' && id) return { kind: 'team', managerId: id }
+  if (kind === 'user' && id) return { kind: 'user', userId: id }
+  return null
+}
+
+/** The subjects a viewer may report on, widest first: everyone (admin), each team, each executive; or just self. */
+export function subjectOptions(db: Pick<DB, 'users' | 'leads'>, viewer: User): ReportSubject[] {
+  const scope = scopeOf(viewer, 'report.view')
+  if (!scope) return []
+  if (scope === 'own') return [{ kind: 'user', userId: viewer.id }]
+  const execs = (ids: ID[]) => db.users
+    .filter((u) => u.role === 'executive' && ids.includes(u.id) && (u.status === 'active' || db.leads.some((l) => l.ownerId === u.id || l.firstOwnerId === u.id)))
+    .map((u): ReportSubject => ({ kind: 'user', userId: u.id }))
+  if (scope === 'team') {
+    const team = db.users.filter((u) => u.managerId === viewer.id).map((u) => u.id)
+    return [{ kind: 'team', managerId: viewer.id }, ...execs(team)]
+  }
+  const managers = db.users.filter((u) => u.role === 'manager' && u.status === 'active')
+  return [{ kind: 'all' }, ...managers.map((m): ReportSubject => ({ kind: 'team', managerId: m.id })), ...execs(db.users.map((u) => u.id))]
+}
+
+/** The people whose activity a subject covers. */
+export function subjectUserIds(db: Pick<DB, 'users'>, s: ReportSubject): ID[] {
+  if (s.kind === 'all') return db.users.map((u) => u.id)
+  if (s.kind === 'team') return db.users.filter((u) => u.id === s.managerId || u.managerId === s.managerId).map((u) => u.id)
+  return [s.userId]
+}
+
+/**
+ * The leads a subject covers, within what the viewer may see. A lead belongs to a person while they own it and stays
+ * on their record after a handover (`firstOwnerId`), so attribution survives reassignment. A team also covers its
+ * unassigned queue.
+ */
+export function subjectLeads(db: DB, viewer: User, s: ReportSubject): Lead[] {
+  const seen = visible.leads(db, viewer)
+  if (s.kind === 'all') return seen
+  const ids = new Set(subjectUserIds(db, s))
+  return seen.filter((l) => (l.ownerId != null && ids.has(l.ownerId)) || (!!l.firstOwnerId && ids.has(l.firstOwnerId)) || (s.kind === 'team' && l.ownerId === null))
+}
+
+/* ---------- pipeline health ---------- */
+
+export type StageAging = { stage: PipelineStageKey; count: number; value: number; avgDays: number; stalled: number; targetDays: number }
+
+/** Per open stage: leads now, their value, the average days in the stage and how many are stalled (> 2× target). */
+export function stageAging(leads: Lead[], settings: Pick<Settings, 'pipeline'>, now: Date): StageAging[] {
+  return OPEN_STAGES.map((stage) => {
+    const list = leads.filter((l) => l.stage === stage)
+    const ages = list.map((l) => agingOf(l, settings, now))
+    return {
+      stage, count: list.length,
+      value: list.reduce((n, l) => n + (l.deal?.value ?? l.requirement.budgetMax ?? 0), 0),
+      avgDays: ages.length ? Math.round(ages.reduce((n, a) => n + a.days, 0) / ages.length) : 0,
+      stalled: ages.filter((a) => a.tone === 'danger').length,
+      targetDays: settings.pipeline.stages.find((x) => x.key === stage)?.targetDays ?? 0,
+    }
+  })
+}
+
+/** Lost reasons for leads lost inside a window (all time when no window). */
+export function lostReasonsIn(leads: Lead[], from?: Date, to?: Date): { reason: LostReason; count: number; value: number }[] {
+  const lost = leads.filter((l) => l.stage === 'lost' && (!from || !to || between(l.lost?.at ?? closedAt(l), from, to)))
+  return LOST_REASONS.map((reason) => {
+    const list = lost.filter((l) => l.lost?.reason === reason)
+    return { reason, count: list.length, value: list.reduce((n, l) => n + (l.requirement.budgetMax ?? 0), 0) }
+  })
+}
+
+/* ---------- people ---------- */
+
+export type ExecPerf = {
+  userId: ID; newLeads: number; openLeads: number; calls: number; whatsapp: number; visits: number
+  bookings: number; revenue: number; conversionPct: number; avgFirstContactMins: number | null; overdue: number; lost: number
+}
+
+/** One row per executive among `userIds` for the period (the Reports team table and bar chart). */
+export function execPerformance(db: DB, userIds: ID[], period: ReportPeriod, now: Date): ExecPerf[] {
+  const { from, to } = periodBounds(period, now)
+  const nowIso = now.toISOString()
+  return db.users.filter((u) => u.role === 'executive' && userIds.includes(u.id)).map((u) => {
+    const own = db.leads.filter((l) => l.ownerId === u.id || l.firstOwnerId === u.id)
+    const acts = db.activities.filter((a) => a.actorId === u.id && between(a.at, from, to))
+    const booked = own.filter((l) => between(l.deal?.bookedAt, from, to))
+    return {
+      userId: u.id,
+      newLeads: own.filter((l) => between(l.createdAt, from, to)).length,
+      openLeads: own.filter((l) => l.ownerId === u.id && OPEN_STAGES.includes(l.stage)).length,
+      calls: acts.filter((a) => a.kind === 'comm.call').length,
+      whatsapp: acts.filter((a) => a.kind === 'comm.whatsapp').length,
+      visits: db.appointments.filter((a) => a.ownerId === u.id && a.type === 'siteVisit' && a.status === 'completed' && between(a.outcome?.at ?? a.start, from, to)).length,
+      bookings: booked.length,
+      revenue: booked.reduce((n, l) => n + (l.deal?.value ?? 0), 0),
+      conversionPct: conversionRate(own),
+      avgFirstContactMins: avgFirstContactMins(own.filter((l) => between(l.createdAt, from, to))),
+      overdue: db.tasks.filter((t) => t.ownerId === u.id && t.status === 'open' && t.dueAt < nowIso).length,
+      lost: own.filter((l) => l.stage === 'lost' && between(l.lost?.at ?? closedAt(l), from, to)).length,
+    }
+  })
+}
+
+/** Days in a row (ending today, or yesterday when today has nothing yet) with at least one call or message. */
+export function streakDays(activities: Pick<Activity, 'actorId' | 'kind' | 'at'>[], userId: ID, now: Date): number {
+  const nowIso = now.toISOString()
+  const days = new Set(activities.filter((a) => a.actorId === userId && a.kind.startsWith('comm.') && a.at <= nowIso).map((a) => localDay(a.at)))
+  const d = new Date(now)
+  if (!days.has(localDay(d))) d.setDate(d.getDate() - 1)
+  let n = 0
+  while (days.has(localDay(d))) {
+    n++
+    d.setDate(d.getDate() - 1)
+  }
+  return n
+}
+
+/** Where an executive stands among the active executives of the same team this month (bookings, then visits, then calls). */
+export function teamRank(db: DB, user: User, now: Date): { rank: number; of: number } | null {
+  if (user.role !== 'executive' || !user.managerId) return null
+  const peers = db.users.filter((u) => u.role === 'executive' && u.status === 'active' && u.managerId === user.managerId)
+  const score = (id: ID) => {
+    const c = activityCounts(db, [id], 'month', now)
+    return c.bookings * 1_000_000 + c.visits * 1_000 + c.calls
+  }
+  const mine = score(user.id)
+  return { rank: 1 + peers.filter((p) => p.id !== user.id && score(p.id) > mine).length, of: peers.length }
+}
+
+export type ActivityPoint = { key: string; unit: BucketUnit; calls: number; whatsapp: number; notes: number }
+
+/** Calls, WhatsApp messages and notes per bucket of the period, for the given people. */
+export function activityTrend(activities: Pick<Activity, 'actorId' | 'kind' | 'at'>[], userIds: ID[], period: ReportPeriod, now: Date): ActivityPoint[] {
+  const ids = new Set<string>(userIds)
+  const mine = activities.filter((a) => ids.has(a.actorId))
+  return periodBuckets(period, now).map((b) => {
+    const list = mine.filter((a) => between(a.at, b.from, b.to))
+    return { key: b.key, unit: b.unit, calls: list.filter((a) => a.kind === 'comm.call').length, whatsapp: list.filter((a) => a.kind === 'comm.whatsapp').length, notes: list.filter((a) => a.kind === 'note').length }
+  })
 }

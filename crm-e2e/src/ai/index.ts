@@ -3,17 +3,20 @@
  * VITE_AI_PROVIDER=live AND VITE_AI_ENDPOINT is set (foundation-plan §2.3). useAI() gives a component the service and a
  * context builder for the current user, page and selected record.
  */
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router'
+import type { EntityRef } from '@/domain/types'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useDbStore } from '@/store/db-store'
-import { buildAIContext, useSelectionStore } from './context'
+import { buildAIContext, effectiveSelection, useSelectionStore } from './context'
 import { createLiveProvider } from './live/provider'
 import { createSimulatedProvider } from './simulated/provider'
 import type { AIContext, AIService } from './types'
 
 export type * from './types'
-export { useAISelection, selectionLabel } from './context'
+export { useAISelection, selectionLabel, selectionFromRoute } from './context'
+export { MODULE_ASSISTANTS, type ModuleAssistantKey } from './modules'
+export { rolePrompts } from './prompts'
 
 let instance: AIService | undefined
 
@@ -29,10 +32,17 @@ export function getAI(): AIService {
   return instance
 }
 
+/** The record the assistant treats as selected: the page's useAISelection, else the record in the URL. */
+export function useAIContextSelection(): EntityRef | undefined {
+  const { pathname, search } = useLocation()
+  const explicit = useSelectionStore((s) => s.selection)
+  return useMemo(() => effectiveSelection(explicit, pathname, search), [explicit, pathname, search])
+}
+
 export function useAI(): { ai: AIService; context: () => AIContext } {
   const actor = useCurrentUser()
   const { pathname } = useLocation()
-  const selection = useSelectionStore((s) => s.selection)
+  const selection = useAIContextSelection()
   const context = useCallback(
     () => buildAIContext({ actor, route: pathname, selection, db: () => useDbStore.getState().db }),
     [actor, pathname, selection],

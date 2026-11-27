@@ -6,5 +6,163 @@
       "title": "Follow-ups",
       "body": "Overdue, today and upcoming tasks with one-click call and WhatsApp."
     }
+  },
+  "list": "Task list",
+  "tabs": "Task tabs",
+  "page": {
+    "add": "Add follow-up"
+  },
+  "tab": {
+    "overdue": "Overdue",
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "done": "Done"
+  },
+  "kpi": {
+    "overdueHint_one": "{{count}} of them high priority",
+    "overdueHint_other": "{{count}} of them high priority",
+    "noneOverdue": "Nothing overdue. Well done.",
+    "todayHint_one": "{{count}} call to make",
+    "todayHint_other": "{{count}} calls to make",
+    "next7": "Next 7 days",
+    "next7Hint": "Open follow-ups due this week",
+    "doneWeek": "Done this week",
+    "doneToday_one": "{{count}} done today",
+    "doneToday_other": "{{count}} done today"
+  },
+  "quick": {
+    "label": "Quick add",
+    "mode": "How to add",
+    "manual": "Type it",
+    "ai": "Say it in your words",
+    "title": "What to do",
+    "placeholder": "Call Priya about the price sheet",
+    "due": "Due",
+    "preset": {
+      "today": "Later today",
+      "tomorrow": "Tomorrow",
+      "nextWeek": "Next week"
+    },
+    "more": "More options",
+    "add": "Add",
+    "aiHint": "Write it like a note to yourself. The assistant prepares the task; you confirm.",
+    "aiPlaceholder": "Remind me to call Priya Sharma tomorrow at 5 pm about the loan papers",
+    "read": "Prepare task",
+    "aiDone": "Task added",
+    "aiNothing": "I could not read a task from that. Try “Call <name> tomorrow at 11”."
+  },
+  "filter": {
+    "search": "Search tasks",
+    "searchPlaceholder": "Search by task or lead",
+    "owner": "Executive",
+    "type": "Type",
+    "priority": "Priority"
+  },
+  "group": {
+    "label": "Group by",
+    "byDue": "Due date",
+    "byLead": "Lead",
+    "noLead": "Not linked to a lead",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
+  "bulk": {
+    "selectAll": "Select all {{count}}",
+    "complete": "Mark done",
+    "reschedule": "Reschedule",
+    "completed_one": "{{count}} task done",
+    "completed_other": "{{count}} tasks done",
+    "moved_one": "{{count}} task moved",
+    "moved_other": "{{count}} tasks moved"
+  },
+  "empty": {
+    "title": "No tasks yet",
+    "body": "Follow-ups appear here as leads come in and visits happen. Add one yourself any time.",
+    "filtered": "No tasks match these filters",
+    "tab": {
+      "overdue": {
+        "title": "Nothing overdue",
+        "body": "Every follow-up is on time."
+      },
+      "today": {
+        "title": "Nothing due today",
+        "body": "Plan ahead, or pick something from Upcoming."
+      },
+      "upcoming": {
+        "title": "Nothing coming up",
+        "body": "Add the next follow-up so no lead goes quiet."
+      },
+      "done": {
+        "title": "Nothing done yet",
+        "body": "Completed tasks show here with their call result."
+      }
+    }
+  },
+  "callResult": {
+    "connected": "Connected",
+    "notReachable": "Not reachable",
+    "busy": "Busy",
+    "wrongNumber": "Wrong number"
+  },
+  "row": {
+    "select": "Select “{{title}}”",
+    "howDidItGo": "How did the call go?",
+    "howHint": "No answer or busy? A retry call is planned automatically.",
+    "note": "Note",
+    "notePlaceholder": "Optional note (what they said)",
+    "justDone": "Just mark it done",
+    "retryCreated": "No answer: a retry call is planned for {{when}}",
+    "doneAt": "Done {{when}}",
+    "call": "Call {{name}}",
+    "whatsapp": "WhatsApp {{name}}",
+    "assist": "Ask the assistant about “{{title}}”",
+    "pickTime": "Pick a date and time",
+    "move": "Move",
+    "reopen": "Reopen",
+    "reopened": "Reopened: {{title}}"
+  },
+  "assistant": {
+    "open": "Follow-up assistant",
+    "title": "Follow-up assistant",
+    "subtitle": "When to follow up, on which channel, and a message ready to send.",
+    "dueNow": "Due now: {{when}}",
+    "suggested": "Best time: {{when}}",
+    "channel": {
+      "call": "Call",
+      "whatsapp": "WhatsApp"
+    },
+    "draft": "Draft: {{purpose}}",
+    "draftLabel": "Drafted message",
+    "drafting": "Drafting…",
+    "noLeadDraft": "Not linked to a lead, so there is no message to draft.",
+    "useTime": "Use this time",
+    "alreadyGood": "The current time is already good.",
+    "applied": "Moved to {{when}}",
+    "applyAll_one": "Apply {{count}} time",
+    "applyAll_other": "Apply all {{count}} times",
+    "applyAllHint_one": "{{count}} task can move to a better time.",
+    "applyAllHint_other": "{{count}} tasks can move to a better time.",
+    "appliedAll_one": "{{count}} task moved to the suggested time",
+    "appliedAll_other": "{{count}} tasks moved to the suggested times",
+    "send": "Send on WhatsApp",
+    "call": "Call",
+    "openLead": "Open lead",
+    "emptyTitle": "Nothing to follow up",
+    "emptyBody": "No open follow-ups need attention right now.",
+    "reason": {
+      "noLead": "Not linked to a lead: do it within working hours today.",
+      "confirmVisit": "A visit is coming up. Confirm it on WhatsApp about two hours before, with the location.",
+      "switchChannel_one": "{{count}} call went unanswered this week. Switch to WhatsApp in the evening, when people are free.",
+      "switchChannel_other": "{{count}} calls went unanswered this week. Switch to WhatsApp in the evening, when people are free.",
+      "retryEvening": "The morning call was not answered. Try again in the evening.",
+      "retryMorning": "The afternoon call was not answered. Try tomorrow late morning.",
+      "postVisit": "Just visited a site. Call the same evening, while the visit is fresh.",
+      "firstContact": "A new lead: call within minutes. Speed decides who wins the client.",
+      "hot": "A hot lead. Follow up within the hour.",
+      "silent": "No contact for {{days}} days. Reach out today before the lead goes cold.",
+      "warm": "A warm lead. Late morning tomorrow is a good time to talk.",
+      "cold": "A cold lead, {{days}} days since the last contact. A light WhatsApp check-in in three days is enough."
+    }
   }
 }

@@ -52,5 +52,6 @@ export function createLiveProvider(endpoint: string, fallback: AIService, model?
     insights: (scope, ctx) => call('insights', { scope }, ctx, () => fallback.insights(scope, ctx)),
     mapColumns: (headers, sample, kind, ctx) => call('mapColumns', { headers, sample, kind }, ctx, () => fallback.mapColumns(headers, sample, kind, ctx)),
     parseCommand: (text, ctx) => call('parseCommand', { text }, ctx, () => fallback.parseCommand(text, ctx)),
+    readUpdate: (target, text, ctx) => call('readUpdate', { target, text }, ctx, () => fallback.readUpdate(target, text, ctx)),
   }
 }

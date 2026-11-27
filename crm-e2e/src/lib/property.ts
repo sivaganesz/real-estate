@@ -201,3 +201,65 @@ export function linkedLeads(propertyId: ID, db: Pick<DB, 'leads' | 'appointments
   }
   return out
 }
+
+/* ---------- listing copy (simulated AI: rule-based, never invents a fact) ---------- */
+
+const COPY_TYPE: Record<Property['type'], string> = {
+  apartment: 'apartment', villa: 'villa', independentHouse: 'independent house', rowHouse: 'row house', plot: 'plot',
+  agriLand: 'agricultural land', office: 'office space', shop: 'shop', showroom: 'showroom', warehouse: 'warehouse', coworking: 'co-working space',
+}
+const COPY_FACING: Record<string, string> = { N: 'North', E: 'East', S: 'South', W: 'West', NE: 'North-east', NW: 'North-west', SE: 'South-east', SW: 'South-west' }
+const COPY_AMENITY: Record<string, string> = {
+  gatedCommunity: 'gated community', security: '24×7 security', parkOpenSpace: 'park and open space', powerBackup: 'power backup', lift: 'lift',
+  gym: 'gym', swimmingPool: 'swimming pool', clubhouse: 'clubhouse', rainwaterHarvesting: 'rainwater harvesting', cctv: 'CCTV',
+  visitorParking: 'visitor parking', loadingBay: 'loading bay', coveredParking: 'covered parking', kidsPlayArea: "kids' play area",
+  joggingTrack: 'jogging track', evCharging: 'EV charging', water24x7: '24×7 water',
+}
+const cfgWords = (c: string) => c.replace(/^(\d(?:\.5)?)BHK(\+?)$/, '$1$2 BHK')
+const money = (n: number) => (n >= 1e7 ? `₹${+(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${+(n / 1e5).toFixed(1)} L` : `₹${n.toLocaleString('en-IN')}`)
+
+/**
+ * A listing title and a 2–3 sentence description built only from facts on the record (the property assistant's rule:
+ * never invent a fact). Listing text is record data, so it is written in English like the rest of the record.
+ * `facts` counts how many record facts the copy used, so the UI can say what it was based on.
+ */
+export function propertyCopy(p: Property): { title: string; description: string; facts: number } {
+  const place = [p.location.locality, p.location.city].filter(Boolean).join(', ')
+  const kind = COPY_TYPE[p.type]
+  const cfg = p.configuration ? `${cfgWords(p.configuration)} ` : ''
+  const area = primaryAreaSqft(p)
+  let facts = 0
+  const fact = <T>(v: T): T => { if (v) facts++; return v }
+
+  const titleBits = [
+    fact(p.facing) ? `${COPY_FACING[p.facing!]}-facing` : '',
+    `${cfg}${kind}`,
+    fact(p.projectName) ? `at ${p.projectName}` : '',
+    fact(place) ? `in ${p.location.locality || p.location.city}` : '',
+  ].filter(Boolean)
+  const title = titleBits.join(' ').replace(/^./, (c) => c.toUpperCase())
+
+  const s1Parts = [
+    `${p.status === 'available' && p.possession.status === 'ready' ? 'A ready-to-move' : p.possession.status === 'underConstruction' ? 'An under-construction' : 'A'} ${cfg}${kind}`,
+    place ? `in ${place}` : '',
+    fact(area) ? `with ${area.toLocaleString('en-IN')} sq ft${p.area.carpet && area === p.area.carpet ? ' carpet area' : ''}` : '',
+  ].filter(Boolean)
+  const sentences = [`${s1Parts.join(' ')}.`]
+  const s2: string[] = []
+  if (fact(p.floor != null && p.totalFloors)) s2.push(`on floor ${p.floor} of ${p.totalFloors}`)
+  if (fact(p.facing)) s2.push(`${COPY_FACING[p.facing!].toLowerCase()} facing`)
+  if (fact(p.vastuCompliant)) s2.push('Vastu compliant')
+  if (fact(p.corner)) s2.push('a corner unit')
+  if (fact(p.parking.covered)) s2.push(`${p.parking.covered} covered parking`)
+  if (fact(p.furnishing)) s2.push(p.furnishing === 'full' ? 'fully furnished' : p.furnishing === 'semi' ? 'semi-furnished' : 'unfurnished')
+  if (s2.length) sentences.push(`It is ${s2.join(', ')}.`)
+  const amen = p.amenities.slice(0, 5).map((a) => COPY_AMENITY[a] ?? a)
+  if (fact(amen.length)) sentences.push(`Amenities include ${amen.length > 1 ? `${amen.slice(0, -1).join(', ')} and ${amen[amen.length - 1]}` : amen[0]}.`)
+  const tail: string[] = []
+  if (fact(p.rera?.number)) tail.push(p.rera!.verified ? 'RERA registered' : 'RERA number on file')
+  if (fact(p.bankApprovals.length)) tail.push(`loan approved by ${p.bankApprovals.slice(0, 3).join(', ')}`)
+  if (fact(p.possession.status === 'underConstruction' && p.possession.date)) tail.push(`possession ${new Date(p.possession.date! + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`)
+  if (fact(p.price)) tail.push(`asking ${money(p.price)}${p.priceNegotiable ? ' (negotiable)' : ''}`)
+  if (tail.length) sentences.push(`${tail.join(' · ').replace(/^./, (c) => c.toUpperCase())}.`)
+  return { title, description: sentences.join(' '), facts }
+}

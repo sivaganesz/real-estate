@@ -43,7 +43,7 @@ export function AppointmentCard({ appointment: a, showDate, actions, className }
     <article
       data-testid="appointment-card"
       className={cn(
-        'group relative flex items-start gap-3 rounded-md border border-l-[3px] p-3',
+        'group relative flex min-w-0 flex-wrap items-start gap-x-3 gap-y-2 rounded-md border border-l-[3px] p-3',
         type.soft, BORDER[a.type],
         a.status === 'completed' && 'opacity-70',
         a.status === 'noShow' && 'border-dashed border-danger',
@@ -55,7 +55,7 @@ export function AppointmentCard({ appointment: a, showDate, actions, className }
         <p className="font-semibold">{fmtTime(a.start, i18n.language)}</p>
         <p className="text-muted-foreground">{fmtTime(end, i18n.language)}</p>
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <p className="flex items-center gap-1.5 text-meta font-medium">
           {Icon && <Icon className="size-3.5" aria-hidden="true" strokeWidth={1.75} />}
           {t(`catalogue:appointmentType.${a.type}`)}
@@ -76,8 +76,8 @@ export function AppointmentCard({ appointment: a, showDate, actions, className }
           )}
           {owner && <span title={owner.name}><UserAvatar name={owner.name} size="xs" /></span>}
         </span>
-        {actions}
       </div>
+      {actions && <div className="relative z-[1] ml-auto flex shrink-0 items-center">{actions}</div>}
     </article>
   )
 }

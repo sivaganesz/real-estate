@@ -1,39 +1,55 @@
 /**
- * Bell (Phase 1 placeholder, owned by M8 from Phase 2): unread badge and a 380 px popover with the latest
- * notifications for the current user and a link to the notification centre. Read state changes arrive with M8.
+ * Bell (DESIGN_SYSTEM §11.1, owned by M8): unread badge that pops on change, and a 380 px popover with All / Unread
+ * tabs, the latest notifications for the current user (click opens the record and marks it read; the dot toggles
+ * read state), "Mark all read" with Undo-free confirmation by toast, and a link to the notification centre.
  */
-import { Bell } from 'lucide-react'
-import { useMemo } from 'react'
-import type { TFunction } from 'i18next'
+import { useMemo, useState } from 'react'
+import { Bell, CheckCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Link } from 'react-router'
+import { paths } from '@/app/paths'
+import { NotificationItem } from '@/components/domain/notification-item'
 import { EmptyNotifications } from '@/components/illustrations'
 import { EmptyState } from '@/components/shared/empty-state'
+import { Segmented } from '@/components/shared/segmented'
+import { toastError } from '@/components/shared/undo-toast'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import type { Notification } from '@/domain/types'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { useDb } from '@/hooks/use-db'
 import { useNow } from '@/hooks/use-now'
-import { fmtRelative } from '@/lib/dates'
-import { cn } from '@/lib/utils'
+import { markAllRead } from '@/services/notifications'
 
-function notificationText(t: TFunction, n: Notification): string {
-  if (n.kind === 'system' && typeof n.params.variant === 'string') return t(`notifications:system.${n.params.variant}`, n.params)
-  return t(`notifications:kind.${n.kind}`, n.params)
-}
+const SHOWN = 8
 
 export function NotificationBell() {
-  const { t, i18n } = useTranslation(['shell', 'notifications'])
+  const { t } = useTranslation(['notifications', 'shell'])
   const now = useNow()
   const user = useCurrentUser()
   const all = useDb((db) => db.notifications)
+  const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<'all' | 'unread'>('all')
   const mine = useMemo(() => all.filter((n) => n.userId === user.id).sort((a, b) => b.at.localeCompare(a.at)), [all, user.id])
   const unread = mine.filter((n) => !n.readAt).length
+  const list = (tab === 'unread' ? mine.filter((n) => !n.readAt) : mine).slice(0, SHOWN)
+
+  const readAll = () => {
+    try {
+      markAllRead()
+      toast.success(t('notifications:allReadDone', { count: unread }))
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" data-testid="bell" aria-label={unread ? `${t('shell:bell.label')} · ${t('shell:bell.unread', { count: unread })}` : t('shell:bell.label')}>
+        <Button
+          variant="ghost" size="icon" className="relative" data-testid="bell"
+          aria-label={unread ? `${t('notifications:bell.label')} · ${t('notifications:bell.unread', { count: unread })}` : t('notifications:bell.label')}
+        >
           <Bell className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
           {unread > 0 && (
             <span
@@ -46,29 +62,43 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[380px] max-w-[calc(100vw-2rem)] gap-0 p-0 shadow-lg">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="text-sm font-semibold">{t('shell:bell.label')}</span>
-          {unread > 0 && <span className="rounded-full bg-danger-soft px-2 text-meta font-medium text-danger tabular-nums">{t('shell:bell.unread', { count: unread })}</span>}
+      <PopoverContent align="end" className="w-[380px] max-w-[calc(100vw-1rem)] gap-0 p-0 shadow-lg" data-testid="bell-popover">
+        <div className="flex items-center justify-between gap-2 px-4 pt-3">
+          <span className="text-sm font-semibold">{t('notifications:bell.label')}</span>
+          {unread > 0 && (
+            <Button variant="ghost" size="sm" onClick={readAll} className="h-7 px-2 text-meta text-primary" data-testid="bell-mark-all">
+              <CheckCheck className="size-3.5" aria-hidden="true" />
+              {t('notifications:markAllRead')}
+            </Button>
+          )}
         </div>
-        {mine.length === 0 ? (
-          <EmptyState compact illustration={EmptyNotifications} title={t('shell:bell.empty')} />
+        <Segmented
+          value={tab} onChange={setTab} label={t('notifications:bell.tabs')} className="mt-2 px-2"
+          segments={[
+            { value: 'all', label: t('notifications:tabs.all'), count: mine.length },
+            { value: 'unread', label: t('notifications:tabs.unread'), count: unread },
+          ]}
+        />
+        {list.length === 0 ? (
+          <EmptyState
+            compact illustration={EmptyNotifications}
+            title={tab === 'unread' && mine.length ? t('notifications:bell.noneUnread') : t('notifications:bell.empty')}
+            body={t('notifications:bell.emptyBody')}
+          />
         ) : (
-          <ul className="max-h-[360px] overflow-y-auto py-1">
-            {mine.slice(0, 6).map((n) => (
-              <li key={n.id} className="flex items-start gap-3 px-4 py-2.5">
-                <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.readAt ? 'bg-transparent' : n.priority === 'high' ? 'bg-danger' : 'bg-primary')} aria-hidden="true" />
-                <span className="min-w-0 flex-1">
-                  <span className={cn('block text-sm', n.readAt ? 'text-muted-foreground' : 'font-medium text-foreground')}>{notificationText(t, n)}</span>
-                  <span className="block text-meta text-subtle-foreground">{fmtRelative(n.at, now, i18n.resolvedLanguage)}</span>
-                </span>
+          <ul className="max-h-[min(420px,60vh)] overflow-y-auto p-1">
+            {list.map((n) => (
+              <li key={n.id}>
+                <NotificationItem n={n} now={now} dense onOpened={() => setOpen(false)} />
               </li>
             ))}
           </ul>
         )}
-        <div className="flex flex-col gap-1 border-t px-4 py-3">
-          <p className="text-meta text-muted-foreground">{t('shell:bell.soon')}</p>
-          <Link to="/notifications" className="text-sm font-medium text-primary hover:underline">{t('shell:bell.viewAll')}</Link>
+        <div className="flex items-center justify-between gap-2 border-t px-4 py-2.5">
+          <span className="text-meta text-muted-foreground">{t('notifications:bell.showing', { count: list.length, total: tab === 'unread' ? unread : mine.length })}</span>
+          <Link to={paths.notifications()} onClick={() => setOpen(false)} className="text-sm font-medium text-primary hover:underline" data-testid="bell-view-all">
+            {t('notifications:bell.viewAll')}
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

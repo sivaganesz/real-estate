@@ -92,3 +92,60 @@ export function deleteProperties(ids: ID[]) {
 }
 
 export const deleteProperty = (id: ID) => deleteProperties([id])
+
+/**
+ * Bulk status change from the Properties list (M3): one undoable commit for every selected property. Each property
+ * is permission-checked (an executive only changes what they created); E12 tells interested leads' owners.
+ */
+export function changePropertiesStatus(ids: ID[], status: PropertyStatus) {
+  return commit('property.status.bulk', (tx) => {
+    let changed = 0
+    for (const id of ids) {
+      const p = must(tx.db.properties, id, 'property')
+      assertActorCan(tx.actor, 'property.edit', p, tx.db)
+      if (p.status === status) continue
+      setStatusOnDraft(tx, p, status)
+      changed++
+    }
+    return changed
+  }, { undoable: true })
+}
+
+const KEEP_ON_REPLACE = new Set(['id', 'createdBy', 'createdAt', 'updatedAt', 'category', 'listedAt', 'importJobId', 'fieldMeta', 'status'])
+
+/**
+ * Saves the full edit form (M3): every editable field is replaced, so a field the user cleared (RERA, owner, a spec)
+ * is really removed — `updateProperty` only sets the keys it is given. Status changes still go through E12.
+ */
+export function replaceProperty(id: ID, input: PropertyInput, opts: { via?: Origin; fieldMeta?: FieldMetaMap } = {}) {
+  assertValid(validateProperty(input))
+  return commit('property.replace', (tx) => {
+    const p = must(tx.db.properties, id, 'property')
+    assertActorCan(tx.actor, 'property.edit', p, tx.db)
+    const before = current(p) as unknown as Record<string, unknown>
+    const { status, ...rest } = input
+    const next: Record<string, unknown> = {
+      ...rest,
+      owner: rest.owner ? { ...rest.owner, phone: toE164(rest.owner.phone) || rest.owner.phone } : undefined,
+    }
+    const target = p as unknown as Record<string, unknown>
+    const fields: string[] = []
+    for (const k of new Set([...Object.keys(before), ...Object.keys(next)])) {
+      if (KEEP_ON_REPLACE.has(k)) continue
+      const v = next[k]
+      if (JSON.stringify(before[k]) === JSON.stringify(v)) continue
+      if (v === undefined) delete target[k]
+      else target[k] = v
+      fields.push(k)
+    }
+    p.category = categoryOf(p.type)
+    if (p.listing === 'live' && !p.listedAt) p.listedAt = tx.now
+    if (opts.fieldMeta && Object.keys(opts.fieldMeta).length) p.fieldMeta = { ...p.fieldMeta, ...opts.fieldMeta }
+    if (fields.length) {
+      p.updatedAt = tx.now
+      tx.emit({ type: 'property.updated', id, fields })
+    }
+    if (status !== p.status) setStatusOnDraft(tx, p, status)
+    return fields
+  }, { via: opts.via })
+}

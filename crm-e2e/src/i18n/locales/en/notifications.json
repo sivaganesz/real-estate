@@ -13,9 +13,11 @@
     "stageChanged": "{{name}} moved to a new stage",
     "booking": "Booking: {{name}} paid a token for {{property}}",
     "propertyUnavailable": "{{property}} is no longer available: see alternatives",
-    "leaveReassign": "{{name}} is on leave: reassign {{count}} open leads?",
+    "leaveReassign_one": "{{name}} is on leave: reassign {{count}} open lead?",
+    "leaveReassign_other": "{{name}} is on leave: reassign {{count}} open leads?",
     "stalledDeal": "{{name}} has been stuck for {{days}} days",
-    "deactivatedOwner": "{{name}} is deactivated and still owns {{count}} open lead(s)",
+    "deactivatedOwner_one": "{{name}} is deactivated and still owns {{count}} open lead",
+    "deactivatedOwner_other": "{{name}} is deactivated and still owns {{count}} open leads",
     "duplicateFound": "Possible duplicate: {{name}} matches {{other}}",
     "system": "System message"
   },
@@ -26,10 +28,134 @@
     "rescheduled": "{{name}}'s appointment moved to {{time}}",
     "reassignRequest": "{{owner}} asks to reassign {{name}}"
   },
-  "stub": {
-    "index": {
-      "title": "Notification centre",
-      "body": "All your alerts with filters, read state and links to the record."
+  "text": {
+    "slaQueue": "{{count}} unassigned leads are waiting over {{mins}} minutes",
+    "slaNamed": "{{name}} not called within {{mins}} minutes",
+    "stageChanged": "{{name}} moved to {{stageLabel}}",
+    "propertyUnavailable": "{{property}} is now {{statusLabel}}: see alternatives for {{name}}",
+    "booking": "Booking: {{name}} paid {{amount}} for {{property}} ({{owner}})",
+    "importFinished": "Import finished: {{fileName}} · {{imported}} added",
+    "reassignedAway": "{{name}} moved from you to {{to}}"
+  },
+  "select": "Select: {{text}}",
+  "selectAll": "Select all",
+  "priorityHigh": "Urgent",
+  "openRecord": "Open",
+  "markRead": "Mark as read",
+  "markUnread": "Mark as unread",
+  "markAllRead": "Mark all read",
+  "delete": "Remove",
+  "unreadLabel": "Unread",
+  "allReadDone_one": "{{count}} notification marked read",
+  "allReadDone_other": "{{count}} notifications marked read",
+  "markedRead_one": "{{count}} marked read",
+  "markedRead_other": "{{count}} marked read",
+  "markedUnread_one": "{{count}} marked unread",
+  "markedUnread_other": "{{count}} marked unread",
+  "deleted_one": "{{count}} notification removed",
+  "deleted_other": "{{count}} notifications removed",
+  "listLabel": "Your notifications",
+  "bell": {
+    "label": "Notifications",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "tabs": "Show",
+    "empty": "You're all caught up",
+    "noneUnread": "Nothing unread",
+    "emptyBody": "New assignments, reminders and alerts will appear here.",
+    "showing": "{{count}} of {{total}}",
+    "viewAll": "View all"
+  },
+  "tabs": {
+    "label": "Read state",
+    "all": "All",
+    "unread": "Unread",
+    "read": "Read"
+  },
+  "filter": {
+    "category": "Type",
+    "when": "When",
+    "priority": "Priority",
+    "highOnly": "Urgent only"
+  },
+  "category": {
+    "assignments": "Assignments",
+    "schedule": "Visits and follow-ups",
+    "alerts": "Alerts",
+    "deals": "Deals",
+    "system": "Imports and system"
+  },
+  "when": {
+    "today": "Today",
+    "7d": "Last 7 days"
+  },
+  "kpi": {
+    "unread": "Unread",
+    "ofTotal_one": "of {{count}} notification",
+    "ofTotal_other": "of {{count}} notifications",
+    "urgent": "Urgent",
+    "urgentHint": "Unread and marked urgent",
+    "assignments": "New assignments",
+    "unreadHint": "Unread",
+    "schedule": "Visits and follow-ups",
+    "today_one": "{{count}} notification today",
+    "today_other": "{{count}} notifications today"
+  },
+  "digest": {
+    "button": "Catch me up",
+    "title": "Catch-up",
+    "none": "Nothing unread. You're up to date.",
+    "summary_one": "You have {{count}} unread notification.",
+    "summary_other": "You have {{count}} unread notifications.",
+    "urgent_one": "{{count}} of them is urgent.",
+    "urgent_other": "{{count}} of them are urgent.",
+    "first": "Start with:",
+    "kind": {
+      "assignment_one": "{{count}} new lead",
+      "assignment_other": "{{count}} new leads",
+      "reassignment_one": "{{count}} reassignment",
+      "reassignment_other": "{{count}} reassignments",
+      "appointmentCreated_one": "{{count}} new appointment",
+      "appointmentCreated_other": "{{count}} new appointments",
+      "appointmentReminder_one": "{{count}} visit reminder",
+      "appointmentReminder_other": "{{count}} visit reminders",
+      "taskOverdue_one": "{{count}} overdue follow-up",
+      "taskOverdue_other": "{{count}} overdue follow-ups",
+      "slaBreach_one": "{{count}} response-time breach",
+      "slaBreach_other": "{{count}} response-time breaches",
+      "escalation_one": "{{count}} escalation",
+      "escalation_other": "{{count}} escalations",
+      "importFinished_one": "{{count}} finished import",
+      "importFinished_other": "{{count}} finished imports",
+      "stageChanged_one": "{{count}} stage change",
+      "stageChanged_other": "{{count}} stage changes",
+      "booking_one": "{{count}} booking",
+      "booking_other": "{{count}} bookings",
+      "propertyUnavailable_one": "{{count}} property no longer available",
+      "propertyUnavailable_other": "{{count}} properties no longer available",
+      "leaveReassign_one": "{{count}} leave hand-over",
+      "leaveReassign_other": "{{count}} leave hand-overs",
+      "stalledDeal_one": "{{count}} stalled deal",
+      "stalledDeal_other": "{{count}} stalled deals",
+      "deactivatedOwner_one": "{{count}} deactivated owner",
+      "deactivatedOwner_other": "{{count}} deactivated owners",
+      "duplicateFound_one": "{{count}} possible duplicate",
+      "duplicateFound_other": "{{count}} possible duplicates",
+      "system_one": "{{count}} system message",
+      "system_other": "{{count}} system messages"
     }
+  },
+  "empty": {
+    "title": "No notifications yet",
+    "body": "Assignments, visit reminders, overdue follow-ups and alerts for you will show up here.",
+    "filteredTitle": "No notifications match these filters",
+    "filteredBody": "Try another type or time, or clear the filters."
+  },
+  "confirmDelete": {
+    "title_one": "Remove this notification?",
+    "title_other": "Remove {{count}} notifications?",
+    "body": "They disappear from your list. You can undo for a few seconds.",
+    "confirm_one": "Remove",
+    "confirm_other": "Remove {{count}}"
   }
 }

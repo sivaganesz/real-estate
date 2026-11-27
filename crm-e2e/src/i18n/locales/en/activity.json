@@ -58,12 +58,98 @@
   },
   "page": {
     "title": "Activity log",
-    "subtitle": "Who did what, and when, across the CRM.",
-    "stub": {
-      "index": {
-        "title": "Activity log",
-        "body": "Every change across the CRM, filterable by person, record and type."
+    "subtitle": "Who did what, and when, across the CRM."
+  },
+  "log": {
+    "system": "Automation",
+    "subtitleTeam": "What your team did, and when.",
+    "settingsChanged": "Settings changed: {{section}}",
+    "section": {
+      "assignment": "assignment rules",
+      "pipeline": "pipeline stages",
+      "templates": "message templates",
+      "matching": "matching weights",
+      "sla": "response times",
+      "scoring": "hot / warm thresholds",
+      "costs": "purchase costs",
+      "extraAmenities": "amenities",
+      "mappingProfiles": "import mappings"
+    },
+    "availability": "{{name}} is now: {{to}}",
+    "created": "User added: {{name}}",
+    "updated": "User updated: {{name}}",
+    "deactivated": "User deactivated: {{name}}",
+    "activated": "User activated: {{name}}",
+    "via": {
+      "manual": "By hand",
+      "ai": "By AI",
+      "automation": "Automatic",
+      "import": "Import"
+    },
+    "kpi": {
+      "entries": "Entries",
+      "entriesHint": "Per day, last 14 days",
+      "ai": "Done with AI",
+      "share": "{{pct}}% of entries",
+      "automation": "Automatic and imported",
+      "automationHint": "{{auto}} automatic · {{imported}} imported",
+      "top": "Most active",
+      "people_one": "{{count}} person in this view",
+      "people_other": "{{count}} people in this view"
+    },
+    "ask": {
+      "title": "Ask in words",
+      "placeholder": "e.g. AI changes by Arjun this week",
+      "go": "Show",
+      "understood": "Filtered by: {{list}}",
+      "searchOnly": "Searching for those words.",
+      "part": {
+        "via": "how it was done",
+        "range": "time",
+        "actors": "person",
+        "groups": "kind"
       }
-    }
+    },
+    "search": "Search the log",
+    "filter": {
+      "who": "Person",
+      "record": "Record",
+      "kind": "Kind",
+      "how": "How",
+      "when": "When"
+    },
+    "entity": {
+      "lead": "Leads",
+      "client": "Clients",
+      "property": "Properties",
+      "appointment": "Appointments",
+      "task": "Tasks",
+      "user": "Users",
+      "importJob": "Imports",
+      "settings": "Settings"
+    },
+    "group": {
+      "leads": "Leads and stages",
+      "communication": "Calls and messages",
+      "appointments": "Visits and meetings",
+      "tasks": "Tasks",
+      "properties": "Properties",
+      "clients": "Clients and bookings",
+      "imports": "Imports and drafts",
+      "team": "Team",
+      "settings": "Settings"
+    },
+    "range": {
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days"
+    },
+    "emptyTitle": "Nothing logged yet",
+    "emptyBody": "Every change to leads, visits, properties, the team and settings appears here.",
+    "filteredTitle": "No entries match",
+    "filteredBody": "Try another person, kind or time, or clear the filters.",
+    "showing": "Showing {{count}} of {{total}}",
+    "more_one": "Show {{count}} more",
+    "more_other": "Show {{count}} more"
   }
 }

@@ -13,9 +13,11 @@
     "stageChanged": "{{name}} புதிய நிலைக்கு நகர்ந்தது",
     "booking": "முன்பதிவு: {{name}} {{property}} க்கு டோக்கன் செலுத்தினார்",
     "propertyUnavailable": "{{property}} இனி கிடைக்காது: மாற்று வழிகளைப் பாருங்கள்",
-    "leaveReassign": "{{name}} விடுப்பில் உள்ளார்: {{count}} லீட்களை மறு ஒதுக்கீடு செய்யவா?",
+    "leaveReassign_one": "{{name}} விடுப்பில் உள்ளார்: {{count}} லீடை மறு ஒதுக்கீடு செய்யவா?",
+    "leaveReassign_other": "{{name}} விடுப்பில் உள்ளார்: {{count}} லீட்களை மறு ஒதுக்கீடு செய்யவா?",
     "stalledDeal": "{{name}} {{days}} நாட்களாக நகரவில்லை",
-    "deactivatedOwner": "{{name}} செயலிழக்கப்பட்டார்; இன்னும் {{count}} லீட்(கள்) அவரிடம் உள்ளன",
+    "deactivatedOwner_one": "{{name}} செயலிழக்கப்பட்டார்; இன்னும் {{count}} லீட் அவரிடம் உள்ளது",
+    "deactivatedOwner_other": "{{name}} செயலிழக்கப்பட்டார்; இன்னும் {{count}} லீட்கள் அவரிடம் உள்ளன",
     "duplicateFound": "நகலாக இருக்கலாம்: {{name}} மற்றும் {{other}}",
     "system": "கணினிச் செய்தி"
   },
@@ -26,10 +28,134 @@
     "rescheduled": "{{name}} இன் சந்திப்பு {{time}} க்கு மாற்றப்பட்டது",
     "reassignRequest": "{{name}} ஐ மாற்றி ஒதுக்க {{owner}} கேட்கிறார்"
   },
-  "stub": {
-    "index": {
-      "title": "அறிவிப்பு மையம்",
-      "body": "உங்கள் எல்லா எச்சரிக்கைகளும் வடிகட்டிகள், படித்த நிலை, பதிவுக்கான இணைப்புகளுடன்."
+  "text": {
+    "slaQueue": "ஒதுக்கப்படாத {{count}} லீட்கள் {{mins}} நிமிடங்களுக்கு மேல் காத்திருக்கின்றன",
+    "slaNamed": "{{name}} அவர்களை {{mins}} நிமிடங்களுக்குள் அழைக்கவில்லை",
+    "stageChanged": "{{name}} {{stageLabel}} நிலைக்கு நகர்ந்தது",
+    "propertyUnavailable": "{{property}} இப்போது {{statusLabel}}: {{name}} அவர்களுக்கு மாற்று வழிகளைப் பாருங்கள்",
+    "booking": "முன்பதிவு: {{name}} {{property}} க்கு {{amount}} செலுத்தினார் ({{owner}})",
+    "importFinished": "இறக்குமதி முடிந்தது: {{fileName}} · {{imported}} சேர்க்கப்பட்டன",
+    "reassignedAway": "{{name}} உங்களிடமிருந்து {{to}} அவர்களுக்கு மாற்றப்பட்டது"
+  },
+  "select": "தேர்ந்தெடு: {{text}}",
+  "selectAll": "அனைத்தையும் தேர்ந்தெடு",
+  "priorityHigh": "அவசரம்",
+  "openRecord": "திற",
+  "markRead": "படித்ததாகக் குறி",
+  "markUnread": "படிக்காததாகக் குறி",
+  "markAllRead": "அனைத்தையும் படித்ததாகக் குறி",
+  "delete": "நீக்கு",
+  "unreadLabel": "படிக்காதது",
+  "allReadDone_one": "{{count}} அறிவிப்பு படித்ததாகக் குறிக்கப்பட்டது",
+  "allReadDone_other": "{{count}} அறிவிப்புகள் படித்ததாகக் குறிக்கப்பட்டன",
+  "markedRead_one": "{{count}} படித்ததாகக் குறிக்கப்பட்டது",
+  "markedRead_other": "{{count}} படித்ததாகக் குறிக்கப்பட்டன",
+  "markedUnread_one": "{{count}} படிக்காததாகக் குறிக்கப்பட்டது",
+  "markedUnread_other": "{{count}} படிக்காததாகக் குறிக்கப்பட்டன",
+  "deleted_one": "{{count}} அறிவிப்பு நீக்கப்பட்டது",
+  "deleted_other": "{{count}} அறிவிப்புகள் நீக்கப்பட்டன",
+  "listLabel": "உங்கள் அறிவிப்புகள்",
+  "bell": {
+    "label": "அறிவிப்புகள்",
+    "unread_one": "{{count}} படிக்காதது",
+    "unread_other": "{{count}} படிக்காதவை",
+    "tabs": "காட்டு",
+    "empty": "எல்லாம் பார்த்துவிட்டீர்கள்",
+    "noneUnread": "படிக்காதது எதுவும் இல்லை",
+    "emptyBody": "புதிய ஒதுக்கீடுகள், நினைவூட்டல்கள், எச்சரிக்கைகள் இங்கே தோன்றும்.",
+    "showing": "{{total}} இல் {{count}}",
+    "viewAll": "அனைத்தையும் பார்"
+  },
+  "tabs": {
+    "label": "படித்த நிலை",
+    "all": "அனைத்தும்",
+    "unread": "படிக்காதவை",
+    "read": "படித்தவை"
+  },
+  "filter": {
+    "category": "வகை",
+    "when": "எப்போது",
+    "priority": "முன்னுரிமை",
+    "highOnly": "அவசரம் மட்டும்"
+  },
+  "category": {
+    "assignments": "ஒதுக்கீடுகள்",
+    "schedule": "வருகைகள், பின்தொடர்வுகள்",
+    "alerts": "எச்சரிக்கைகள்",
+    "deals": "ஒப்பந்தங்கள்",
+    "system": "இறக்குமதி, கணினி"
+  },
+  "when": {
+    "today": "இன்று",
+    "7d": "கடந்த 7 நாட்கள்"
+  },
+  "kpi": {
+    "unread": "படிக்காதவை",
+    "ofTotal_one": "மொத்தம் {{count}} அறிவிப்பில்",
+    "ofTotal_other": "மொத்தம் {{count}} அறிவிப்புகளில்",
+    "urgent": "அவசரம்",
+    "urgentHint": "படிக்காத, அவசரமானவை",
+    "assignments": "புதிய ஒதுக்கீடுகள்",
+    "unreadHint": "படிக்காதவை",
+    "schedule": "வருகைகள், பின்தொடர்வுகள்",
+    "today_one": "இன்று {{count}} அறிவிப்பு",
+    "today_other": "இன்று {{count}} அறிவிப்புகள்"
+  },
+  "digest": {
+    "button": "சுருக்கம் தா",
+    "title": "சுருக்கம்",
+    "none": "படிக்காதது எதுவும் இல்லை. நீங்கள் புதுப்பித்த நிலையில் உள்ளீர்கள்.",
+    "summary_one": "உங்களுக்கு {{count}} படிக்காத அறிவிப்பு உள்ளது.",
+    "summary_other": "உங்களுக்கு {{count}} படிக்காத அறிவிப்புகள் உள்ளன.",
+    "urgent_one": "அவற்றில் {{count}} அவசரம்.",
+    "urgent_other": "அவற்றில் {{count}} அவசரம்.",
+    "first": "முதலில் இதைப் பாருங்கள்:",
+    "kind": {
+      "assignment_one": "{{count}} புதிய லீட்",
+      "assignment_other": "{{count}} புதிய லீட்கள்",
+      "reassignment_one": "{{count}} மறு ஒதுக்கீடு",
+      "reassignment_other": "{{count}} மறு ஒதுக்கீடுகள்",
+      "appointmentCreated_one": "{{count}} புதிய சந்திப்பு",
+      "appointmentCreated_other": "{{count}} புதிய சந்திப்புகள்",
+      "appointmentReminder_one": "{{count}} வருகை நினைவூட்டல்",
+      "appointmentReminder_other": "{{count}} வருகை நினைவூட்டல்கள்",
+      "taskOverdue_one": "{{count}} தாமதமான பின்தொடர்வு",
+      "taskOverdue_other": "{{count}} தாமதமான பின்தொடர்வுகள்",
+      "slaBreach_one": "{{count}} பதில் நேர மீறல்",
+      "slaBreach_other": "{{count}} பதில் நேர மீறல்கள்",
+      "escalation_one": "{{count}} மேல்முறையீடு",
+      "escalation_other": "{{count}} மேல்முறையீடுகள்",
+      "importFinished_one": "{{count}} இறக்குமதி முடிந்தது",
+      "importFinished_other": "{{count}} இறக்குமதிகள் முடிந்தன",
+      "stageChanged_one": "{{count}} நிலை மாற்றம்",
+      "stageChanged_other": "{{count}} நிலை மாற்றங்கள்",
+      "booking_one": "{{count}} முன்பதிவு",
+      "booking_other": "{{count}} முன்பதிவுகள்",
+      "propertyUnavailable_one": "{{count}} சொத்து இனி கிடைக்காது",
+      "propertyUnavailable_other": "{{count}} சொத்துகள் இனி கிடைக்காது",
+      "leaveReassign_one": "{{count}} விடுப்பு ஒப்படைப்பு",
+      "leaveReassign_other": "{{count}} விடுப்பு ஒப்படைப்புகள்",
+      "stalledDeal_one": "{{count}} நின்றுபோன ஒப்பந்தம்",
+      "stalledDeal_other": "{{count}} நின்றுபோன ஒப்பந்தங்கள்",
+      "deactivatedOwner_one": "{{count}} செயலிழந்த உரிமையாளர்",
+      "deactivatedOwner_other": "{{count}} செயலிழந்த உரிமையாளர்கள்",
+      "duplicateFound_one": "{{count}} நகலாக இருக்கலாம்",
+      "duplicateFound_other": "{{count}} நகல்களாக இருக்கலாம்",
+      "system_one": "{{count}} கணினிச் செய்தி",
+      "system_other": "{{count}} கணினிச் செய்திகள்"
     }
+  },
+  "empty": {
+    "title": "இன்னும் அறிவிப்புகள் இல்லை",
+    "body": "உங்களுக்கான ஒதுக்கீடுகள், வருகை நினைவூட்டல்கள், தாமதப் பின்தொடர்வுகள், எச்சரிக்கைகள் இங்கே தோன்றும்.",
+    "filteredTitle": "இந்த வடிகட்டிகளுக்குப் பொருந்தும் அறிவிப்புகள் இல்லை",
+    "filteredBody": "வேறு வகை அல்லது நேரத்தை முயற்சிக்கவும், அல்லது வடிகட்டிகளை அழிக்கவும்."
+  },
+  "confirmDelete": {
+    "title_one": "இந்த அறிவிப்பை நீக்கவா?",
+    "title_other": "{{count}} அறிவிப்புகளை நீக்கவா?",
+    "body": "அவை உங்கள் பட்டியலிலிருந்து மறையும். சில விநாடிகளுக்குள் செயல்தவிர்க்கலாம்.",
+    "confirm_one": "நீக்கு",
+    "confirm_other": "{{count}} ஐ நீக்கு"
   }
 }

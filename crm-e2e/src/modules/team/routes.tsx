@@ -7,5 +7,5 @@ import type { AppRoute } from '@/app/route-types'
 
 export const routes: AppRoute[] = [
   { path: '/team', permission: 'team.view', Component: lazy(() => import('./pages/team-page')), titleKey: 'team:title' },
-  { path: '/team/:id', permission: 'team.view', Component: lazy(() => import('./pages/team-member-page')), titleKey: 'team:stub.member.title', parent: '/team' },
+  { path: '/team/:id', permission: 'team.view', Component: lazy(() => import('./pages/team-member-page')), titleKey: 'team:member.title', parent: '/team' },
 ]

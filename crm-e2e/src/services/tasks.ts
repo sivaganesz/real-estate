@@ -79,3 +79,18 @@ export function deleteTask(id: ID) {
     tx.db.tasks = tx.db.tasks.filter((x) => x.id !== id)
   }, { undoable: true })
 }
+
+/** M4: moves several tasks at once (bulk reschedule, assistant "apply"), one Undo. `dueAt` may depend on the task. */
+export function rescheduleTasks(ids: ID[], dueAt: string | ((t: Task) => string), opts: { via?: Origin } = {}) {
+  return commit('task.reschedule', (tx) => {
+    let n = 0
+    for (const id of ids) {
+      const t = must(tx.db.tasks, id, 'task')
+      assertActorCan(tx.actor, 'task.manage', t, tx.db)
+      if (t.status !== 'open') continue
+      t.dueAt = typeof dueAt === 'function' ? dueAt(t) : dueAt
+      n++
+    }
+    return n
+  }, { via: opts.via, undoable: true })
+}

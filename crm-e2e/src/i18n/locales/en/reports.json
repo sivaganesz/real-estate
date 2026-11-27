@@ -1,6 +1,9 @@
 {
   "title": "Reports",
+  "myTitle": "My performance",
   "subtitle": "Performance, funnel, sources and inventory.",
+  "subtitleScoped": "{{scope}} · {{period}}",
+  "tabCrumb": "Report",
   "stub": {
     "index": {
       "title": "Reports",
@@ -10,5 +13,202 @@
       "title": "Report",
       "body": "A detailed report view."
     }
+  },
+  "noScopeTitle": "No reports for this profile",
+  "noScopeBody": "Reports are available to sales executives, managers and admins.",
+  "tabs": {
+    "label": "Report sections",
+    "overview": "Overview",
+    "pipeline": "Pipeline",
+    "sources": "Sources",
+    "team": "Team",
+    "activity": "Activity",
+    "inventory": "Inventory"
+  },
+  "scope": {
+    "label": "Whose numbers",
+    "all": "Everyone",
+    "team": "Team: {{name}}",
+    "me": "Me",
+    "person": "{{name}}",
+    "inactive": "inactive"
+  },
+  "period": {
+    "label": "Period",
+    "week": "This week",
+    "month": "This month",
+    "quarter": "This quarter",
+    "half": "Last 6 months",
+    "short": {
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "half": "6 months"
+    }
+  },
+  "export": "Export CSV",
+  "exported": "CSV downloaded",
+  "updated": "Numbers updated {{when}}",
+  "vsPrev": "vs previous period",
+  "clickHint": "Click a point to see those leads.",
+  "emptyPeriod": "No data for this period",
+  "mins_one": "{{count}} min",
+  "mins_other": "{{count}} min",
+  "hours": "{{h}} h {{m}} min",
+  "kpis": "Headline numbers",
+  "kpi": {
+    "leads": "New leads",
+    "visits": "Site visits done",
+    "bookings": "Bookings",
+    "revenue": "Booked value",
+    "conversion": "Conversion",
+    "conversionHint": "Booked of closed leads",
+    "tat": "First response",
+    "tatHint": "Average time to first contact"
+  },
+  "trend": {
+    "title": "Leads and bookings trend",
+    "by": {
+      "day": "Per day",
+      "week": "Per week",
+      "month": "Per month"
+    },
+    "leads": "New leads",
+    "visits": "Site visits",
+    "bookings": "Bookings"
+  },
+  "funnel": {
+    "title": "Conversion funnel",
+    "subtitle": "Leads of the period that reached each stage · enquiry to booking {{pct}}%"
+  },
+  "sources": {
+    "title": "Leads by source",
+    "subtitle": "Where this period's leads came from",
+    "center": "leads",
+    "conversionTitle": "Source → visit → booking",
+    "conversionSubtitle": "Which sources turn into site visits and bookings",
+    "tableTitle": "Source conversion",
+    "source": "Source",
+    "leads": "Leads",
+    "visited": "Visited",
+    "visitPct": "Visit rate",
+    "booked": "Booked",
+    "bookPct": "Booking rate"
+  },
+  "value": {
+    "title": "Pipeline value by stage",
+    "subtitle": "{{value}} open now",
+    "series": "Value"
+  },
+  "aging": {
+    "title": "Where deals wait",
+    "subtitle": "Open leads per stage, average days in the stage against its target, and stalled deals (over twice the target)",
+    "stage": "Stage",
+    "open": "Open",
+    "value": "Value",
+    "avgDays": "Avg days",
+    "target": "Target days",
+    "stalled": "Stalled"
+  },
+  "lost": {
+    "title": "Lost reasons",
+    "subtitle": "Why leads were lost in this period",
+    "series": "Leads lost"
+  },
+  "team": {
+    "chartTitle": "Executive performance",
+    "chartSubtitle": "Visits, bookings and new leads in the period · click a bar for that person's leads",
+    "tableTitle": "Executives",
+    "exec": "Executive",
+    "newLeads": "New leads",
+    "calls": "Calls",
+    "visits": "Visits",
+    "bookings": "Bookings",
+    "revenue": "Booked value",
+    "conversion": "Conversion",
+    "tat": "First response",
+    "overdue": "Overdue now",
+    "empty": "No executives in this scope"
+  },
+  "activity": {
+    "heatTitle": "When the work happens",
+    "heatSubtitle": "Calls, messages and visits by weekday and hour",
+    "cell_one": "{{day}} {{hour}}: {{count}} activity",
+    "cell_other": "{{day}} {{hour}}: {{count}} activities",
+    "trendTitle": "Calls and messages",
+    "trendSubtitle": "{{count}} logged in the period",
+    "calls": "Calls",
+    "whatsapp": "WhatsApp",
+    "notes": "Notes"
+  },
+  "inventory": {
+    "statusTitle": "Inventory by status",
+    "statusSubtitle": "{{value}} available to sell",
+    "center": "listings",
+    "typeTitle": "Inventory by type",
+    "typeSubtitle": "Available against held, booked and sold",
+    "available": "Available",
+    "other": "Held, booked or sold"
+  },
+  "summary": {
+    "title": "AI summary",
+    "empty": "Not enough data in this period for a summary.",
+    "ask": "Ask the assistant",
+    "leadsNew": "{{count}} new leads came in this period.",
+    "leadsUp": "{{count}} new leads, up {{pct}}% on the previous period.",
+    "leadsDown": "{{count}} new leads, down {{pct}}% on the previous period.",
+    "bookings": "{{count}} bookings worth {{value}}.",
+    "dropOff": "The biggest drop is {{from}} → {{to}}: {{pct}}% do not move on.",
+    "source": "{{source}} turns {{pct}}% of its leads into site visits, the best of any source.",
+    "lost": "Top lost reason: {{reason}} ({{count}}).",
+    "stalled": "{{count}} open deals are stalled in their stage.",
+    "bestExec": "{{name}} leads with {{bookings}} bookings and {{visits}} visits."
+  },
+  "drill": {
+    "count_one": "{{count}} record",
+    "count_other": "{{count}} records",
+    "stageReached": "Reached {{stage}}",
+    "stageOpen": "Open in {{stage}}",
+    "source": "Leads from {{source}}",
+    "lost": "Lost: {{reason}}",
+    "owner": "Leads of {{name}}",
+    "bucketLeads": "Leads created in {{when}}",
+    "bucketBookings": "Bookings in {{when}}",
+    "stalled": "Stalled deals",
+    "cohort": "New leads in the period",
+    "booked": "Bookings in the period",
+    "propertyStatus": "Listings: {{status}}",
+    "propertyType": "Listings: {{type}}",
+    "openLeads": "Open Leads",
+    "openPipeline": "Open Pipeline",
+    "openProperties": "Open Properties",
+    "emptyTitle": "Nothing here",
+    "emptyBody": "No records match this number any more.",
+    "col": {
+      "id": "ID",
+      "name": "Name",
+      "stage": "Stage",
+      "source": "Source",
+      "owner": "Owner",
+      "value": "Value (₹)",
+      "created": "Created",
+      "title": "Title",
+      "status": "Status",
+      "price": "Price (₹)",
+      "locality": "Locality"
+    }
+  },
+  "csv": {
+    "metric": "Metric",
+    "value": "Value",
+    "change": "Change %",
+    "period": "Period",
+    "revenue": "Booked value (₹)",
+    "reached": "Reached",
+    "dropOff": "Drop-off to this stage %",
+    "reason": "Reason",
+    "status": "Status",
+    "type": "Type",
+    "count": "Count"
   }
 }

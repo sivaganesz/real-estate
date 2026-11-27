@@ -8,8 +8,10 @@
  * 4. Lowest workload wins. A tie goes round-robin: tied users by id, the first after settings.rrCursor, wrapping.
  * 5. An empty pool → userId null, reason `unassigned`: the lead waits in the manager's queue.
  */
-import type { Assignment, AssignmentRule, ID, Lead, Settings, User } from '@/domain/types'
+import type { Appointment, Assignment, AssignmentRule, ID, Lead, Property, Settings, Task, Temperature, User } from '@/domain/types'
 import { OPEN_STAGES } from '@/domain/catalogue'
+import { localDay } from './dates'
+import { leadScore } from './scoring'
 
 export type AssigneePick = { userId: ID | null; reason: Assignment['reason']; workload: Record<ID, number>; candidates: ID[] }
 
@@ -110,4 +112,104 @@ export function previewAssignments(
     }
   }
   return out
+}
+
+/* ---------- M8: the numbers the assign dialog, Team and the redistribute dialog show ---------- */
+
+/** One executive's load and record, as the assign dialog and the Team page show it. */
+export type AssigneeStats = {
+  userId: ID
+  /** Open leads (the engine's workload). */
+  active: number
+  hot: number
+  warm: number
+  cold: number
+  /** Open tasks (follow-ups) and how many of them are overdue. */
+  pendingFollowUps: number
+  overdue: number
+  /** Appointments today that are still on (not cancelled / completed / no-show). */
+  todayAppointments: number
+  /** Booked or converted, out of closed leads (booked + converted + lost) they owned; null with nothing closed yet. */
+  conversionPct: number | null
+}
+
+type StatsDb = { leads: Lead[]; tasks: Task[]; appointments: Appointment[] }
+
+/**
+ * Per-user stats from plain data. `temperatureOf` is passed in (lib/scoring needs properties and settings), so this
+ * stays cheap to test; `localDayOf` turns an ISO time into the local 'YYYY-MM-DD' (lib/dates.localDay).
+ */
+export function assigneeStats(
+  db: StatsDb, userIds: ID[], now: Date,
+  deps: { temperatureOf: (lead: Lead) => Temperature; localDayOf: (iso: string | Date) => string },
+): Record<ID, AssigneeStats> {
+  const nowIso = now.toISOString()
+  const today = deps.localDayOf(now)
+  const out: Record<ID, AssigneeStats> = {}
+  for (const id of userIds) out[id] = { userId: id, active: 0, hot: 0, warm: 0, cold: 0, pendingFollowUps: 0, overdue: 0, todayAppointments: 0, conversionPct: null }
+  const won: Record<ID, number> = {}
+  const closed: Record<ID, number> = {}
+  for (const l of db.leads) {
+    const s = l.ownerId ? out[l.ownerId] : undefined
+    if (s && OPEN_STAGES.includes(l.stage)) {
+      s.active++
+      s[deps.temperatureOf(l)]++
+    }
+    // attribution: the person who closed it (owner), else the first owner
+    const credit = l.ownerId ?? l.firstOwnerId
+    if (credit && credit in out && (l.stage === 'booked' || l.stage === 'converted' || l.stage === 'lost')) {
+      closed[credit] = (closed[credit] ?? 0) + 1
+      if (l.stage !== 'lost') won[credit] = (won[credit] ?? 0) + 1
+    }
+  }
+  for (const t of db.tasks) {
+    const s = out[t.ownerId]
+    if (!s || t.status !== 'open') continue
+    s.pendingFollowUps++
+    if (t.dueAt < nowIso) s.overdue++
+  }
+  for (const a of db.appointments) {
+    const s = out[a.ownerId]
+    if (!s || a.status === 'cancelled' || a.status === 'completed' || a.status === 'noShow') continue
+    if (deps.localDayOf(a.start) === today) s.todayAppointments++
+  }
+  for (const id of userIds) if (closed[id]) out[id].conversionPct = Math.round(((won[id] ?? 0) / closed[id]) * 100)
+  return out
+}
+
+/** Open leads a user owns, oldest first (what a deactivation or leave hands over). */
+export const openLeadsOf = (leads: Lead[], userId: ID): Lead[] =>
+  leads.filter((l) => l.ownerId === userId && OPEN_STAGES.includes(l.stage)).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+
+export type RedistributeChoice = 'auto' | 'unassign' | { toUserId: ID }
+
+/**
+ * "Who gets what" when a user is deactivated, before confirming: mirrors effects.onUserDeactivated — the user is out
+ * of the pool, auto picks run in order within their manager's team (workloads and the cursor move between picks).
+ */
+export function previewRedistribution(
+  db: { leads: Lead[]; users: User[]; settings: Pick<Settings, 'assignment'> }, userId: ID, choice: RedistributeChoice,
+): { leadId: ID; to: ID | null; reasonKey: Assignment['reason']['key'] }[] {
+  const leaving = db.users.find((u) => u.id === userId)
+  const mine = openLeadsOf(db.leads, userId)
+  if (choice === 'unassign') return mine.map((l) => ({ leadId: l.id, to: null, reasonKey: 'unassigned' }))
+  if (typeof choice === 'object') return mine.map((l) => ({ leadId: l.id, to: choice.toUserId, reasonKey: 'manual' }))
+  const users = db.users.map((u) => (u.id === userId ? { ...u, status: 'deactivated' as const } : u))
+  return previewAssignments({ ...db, users }, mine.map((l) => l.id), leaving?.managerId)
+}
+
+/** Counts per receiver in a preview, biggest first (the summary line "Sneha 3 · Vikram 2 · unassigned 1"). */
+export function previewTotals(preview: { to: ID | null }[]): { to: ID | null; count: number }[] {
+  const m = new Map<ID | null, number>()
+  for (const p of preview) m.set(p.to, (m.get(p.to) ?? 0) + 1)
+  return [...m.entries()].map(([to, count]) => ({ to, count })).sort((a, b) => b.count - a.count || String(a.to).localeCompare(String(b.to)))
+}
+
+/** assigneeStats over the whole database, with temperatures from the lead score (lib/scoring) and local days. */
+export function assigneeStatsFromDb(db: StatsDb & { properties: Property[]; settings: Settings }, userIds: ID[], now: Date): Record<ID, AssigneeStats> {
+  const ctx = { properties: db.properties, settings: db.settings, now }
+  return assigneeStats(db, userIds, now, {
+    temperatureOf: (l) => l.temperatureOverride ?? leadScore(l, ctx).temperature,
+    localDayOf: (d) => localDay(d),
+  })
 }

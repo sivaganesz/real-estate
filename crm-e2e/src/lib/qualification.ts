@@ -96,3 +96,59 @@ export function qualificationCard(lead: Pick<Lead, 'requirement' | 'qualificatio
   const missing = QUAL_CHECKS.filter((k) => !state[k])
   return { known, missing, checks: QUAL_CHECKS.map((key) => ({ key, known: state[key] })), questions: missing.map((k) => QUESTIONS[k]) }
 }
+
+/* ---------- Indian-context follow-up questions (optional, never block) ---------- */
+
+/** Helpful questions beyond the four checks: home loan, self-use or investment, preferred possession. */
+export function extraQuestions(lead: Pick<Lead, 'requirement' | 'qualification'>): QualQuestion[] {
+  const q = lead.qualification
+  const out: QualQuestion[] = []
+  if (q.loan === 'unknown' && !q.fundingReady) {
+    out.push({
+      field: 'qualification.loan', prompt: 'leads:qualify.question.loan', essential: false,
+      chips: (['needed', 'preApproved', 'notNeeded'] as const).map((v) => ({ label: `catalogue:loan.${v}`, value: v })),
+    })
+  }
+  if (!q.buyerPurpose) {
+    out.push({
+      field: 'qualification.buyerPurpose', prompt: 'leads:qualify.question.purpose', essential: false,
+      chips: (['selfUse', 'investment', 'rental'] as const).map((v) => ({ label: `catalogue:buyerPurpose.${v}`, value: v })),
+    })
+  }
+  if (lead.requirement.possession === 'any' && lead.requirement.propertyTypes.every((t) => PROPERTY_TYPES[t].family !== 'plot' && PROPERTY_TYPES[t].family !== 'land')) {
+    out.push({
+      field: 'requirement.possession', prompt: 'leads:qualify.question.possession', essential: false,
+      chips: (['ready', 'underConstruction'] as const).map((v) => ({ label: `catalogue:possession.${v}`, value: v })),
+    })
+  }
+  return out
+}
+
+/** The change to save when a question chip is picked. Values may come as a scalar or a one-item list (AI chips). */
+export type QualPatch = { requirement?: Partial<Lead['requirement']>; qualification?: Partial<Lead['qualification']> }
+
+export function answerPatch(lead: Pick<Lead, 'requirement' | 'qualification'>, field: string, raw: unknown): QualPatch | null {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (value === undefined || value === null || value === '') return null
+  const q = lead.qualification
+  switch (field) {
+    case 'requirement.budgetMax': {
+      const n = Number(value)
+      if (!Number.isFinite(n) || n <= 0) return null
+      const min = lead.requirement.budgetMin
+      return { requirement: { budgetMax: n, ...(min && min > n ? { budgetMin: undefined } : {}) } }
+    }
+    case 'qualification.decisionMakers': {
+      const v = value as Lead['qualification']['decisionMakers'][number]
+      const makers = q.decisionMakers.includes(v) ? q.decisionMakers : [...q.decisionMakers, v]
+      const authority: Authority = makers.length === 1 && makers[0] === 'self' ? 'sole' : makers.includes('company') ? 'needsApproval' : 'joint'
+      return { qualification: { decisionMakers: makers, authority: q.authority ?? authority } }
+    }
+    case 'qualification.need': return { qualification: { need: value as Need } }
+    case 'qualification.timeline': return { qualification: { timeline: value as Timeline } }
+    case 'qualification.loan': return { qualification: { loan: value as Lead['qualification']['loan'] } }
+    case 'qualification.buyerPurpose': return { qualification: { buyerPurpose: value as Lead['qualification']['buyerPurpose'] } }
+    case 'requirement.possession': return { requirement: { possession: value as Lead['requirement']['possession'] } }
+    default: return null
+  }
+}

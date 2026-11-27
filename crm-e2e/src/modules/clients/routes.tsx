@@ -7,5 +7,5 @@ import type { AppRoute } from '@/app/route-types'
 
 export const routes: AppRoute[] = [
   { path: '/clients', permission: 'client.view', Component: lazy(() => import('./pages/clients-page')), titleKey: 'clients:title' },
-  { path: '/clients/:id', permission: 'client.view', Component: lazy(() => import('./pages/client-page')), titleKey: 'clients:stub.detail.title', parent: '/clients' },
+  { path: '/clients/:id', permission: 'client.view', Component: lazy(() => import('./pages/client-page')), titleKey: 'clients:route.detail', parent: '/clients' },
 ]

@@ -1,14 +1,170 @@
 {
   "title": "Clients",
   "subtitle": "Booked and converted buyers: agreement, loan and registration.",
-  "stub": {
-    "index": {
-      "title": "Client list",
-      "body": "Track every booking through agreement, loan and registration."
-    },
-    "detail": {
-      "title": "Client profile",
-      "body": "Documents, loan status and the deal for one client."
-    }
+  "route": {
+    "detail": "Client"
+  },
+  "status": {
+    "booked": "Booked",
+    "agreement": "Agreement",
+    "loanProcessing": "Loan processing",
+    "registered": "Registered",
+    "converted": "Converted",
+    "cancelled": "Cancelled"
+  },
+  "journey": {
+    "title": "Journey after booking",
+    "aria": "Step {{step}} of {{total}}: {{status}}",
+    "moveTo": "Move to {{status}}",
+    "moved": "Moved to {{status}}",
+    "cancel": "Cancel booking",
+    "cancelTitle": "Cancel the booking for {{name}}?",
+    "cancelBody": "The client is marked Cancelled. The lead and the property are not changed; update them separately if needed. You can undo for a few seconds.",
+    "cancelConfirm": "Cancel booking",
+    "cancelled": "This booking was cancelled."
+  },
+  "todo": {
+    "title": "To do:",
+    "kyc": "Finish KYC",
+    "documents": "Collect pending documents",
+    "loan": "Follow up with the bank",
+    "agreement": "Sign the sale agreement",
+    "registration": "Plan the registration",
+    "handover": "Plan the handover"
+  },
+  "kpi": {
+    "active": "Active clients",
+    "total_one": "{{count}} client in all",
+    "total_other": "{{count}} clients in all",
+    "value": "Booking value",
+    "valueHint": "Deals booked, last 6 months trend",
+    "loans": "Loans in progress",
+    "loansHint": "Applied or sanctioned, not yet disbursed",
+    "docs": "Pending paperwork",
+    "docsHint": "KYC or documents still pending"
+  },
+  "tabs": {
+    "label": "Client status",
+    "all": "All"
+  },
+  "search": "Search clients",
+  "searchPlaceholder": "Name, phone, property or city",
+  "sort": {
+    "label": "Sort",
+    "recent": "Booked most recently",
+    "value": "Highest value",
+    "name": "Name A–Z"
+  },
+  "col": {
+    "client": "Client",
+    "property": "Property",
+    "value": "Deal value",
+    "status": "Status",
+    "loan": "Home loan",
+    "docs": "Documents",
+    "owner": "Executive",
+    "booked": "Booked on"
+  },
+  "loan": {
+    "title": "Home loan",
+    "status": "Loan status",
+    "notApplied": "Not applied",
+    "applied": "Applied",
+    "sanctioned": "Sanctioned",
+    "disbursed": "Disbursed",
+    "bank": "Bank",
+    "chooseBank": "Choose a bank",
+    "amount": "Loan amount",
+    "saved": "Loan details saved"
+  },
+  "kyc": {
+    "title": "KYC",
+    "done": "KYC complete",
+    "pending": "KYC pending",
+    "toggle": "KYC complete",
+    "markedDone": "KYC marked complete",
+    "markedPending": "KYC marked pending"
+  },
+  "docs": {
+    "title": "Documents",
+    "summary": "{{verified}} verified · {{received}} received · {{pending}} pending",
+    "count": "{{done}} of {{total}} verified",
+    "none": "No documents listed yet.",
+    "statusFor": "Status of {{name}}",
+    "set": "{{name}}: {{status}}",
+    "remove": "Remove {{name}}",
+    "removed": "{{name}} removed",
+    "addStandard_one": "Add the standard checklist ({{count}} missing)",
+    "addStandard_other": "Add the standard checklist ({{count}} missing)",
+    "addedStandard_one": "{{count}} document added",
+    "addedStandard_other": "{{count}} documents added",
+    "custom": "Add a document",
+    "customPlaceholder": "e.g. Allotment letter",
+    "add": "Add"
+  },
+  "docStatus": {
+    "pending": "Pending",
+    "received": "Received",
+    "verified": "Verified"
+  },
+  "doc": {
+    "pan": "PAN card",
+    "aadhaar": "Aadhaar",
+    "bookingForm": "Booking form",
+    "tokenReceipt": "Token receipt",
+    "saleAgreement": "Sale agreement",
+    "loanSanction": "Loan sanction letter",
+    "bankStatements": "Bank statements (6 months)"
+  },
+  "booking": {
+    "title": "Booking",
+    "property": "Property",
+    "value": "Deal value",
+    "token": "Booking amount",
+    "date": "Booked on",
+    "owner": "Executive",
+    "contact": "Contact"
+  },
+  "notes": {
+    "title": "Notes",
+    "placeholder": "Agreement date, bank contact, anything the team should know",
+    "saved": "Notes saved",
+    "none": "No notes."
+  },
+  "ai": {
+    "title": "AI summary",
+    "reminder": "Reminder to send",
+    "pendingDocs": "Pending documents: {{docs}}",
+    "send": "Open WhatsApp"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "add": "Schedule",
+    "none": "No appointments"
+  },
+  "timeline": {
+    "title": "Timeline",
+    "body": "Everything that happened with {{name}}, from enquiry to booking.",
+    "noLead": "The original lead was deleted."
+  },
+  "empty": {
+    "title": "No clients yet",
+    "body": "A client is created automatically when a lead is marked Booked.",
+    "cta": "Open the pipeline",
+    "filtered": "No clients match these filters"
+  },
+  "detail": {
+    "subtitle": "{{id}} · booked {{date}}",
+    "side": "Loan, KYC and notes",
+    "openLead": "Open lead",
+    "delete": "Delete client record",
+    "deleteTitle": "Delete the client record for {{name}}?",
+    "deleteBody": "The lead stays. You can undo for a few seconds.",
+    "deleted": "Client record for {{name}} deleted",
+    "notFound": "Client not found",
+    "notFoundBody": "{{id}} may have been deleted.",
+    "notYours": "This client isn't on your list",
+    "notYoursBody": "A {{role}} sees only their own clients.",
+    "back": "Back to clients"
   }
 }

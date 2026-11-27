@@ -6,6 +6,9 @@
  */
 import type { Configuration, Facing, Furnishing, Property, PropertyStatus, PropertyType } from '@/domain/types'
 import { AMENITIES, CITIES, PROPERTY_TYPES, categoryOf } from '@/domain/catalogue'
+import type { TFunction } from 'i18next'
+import { inrShort, num } from './format'
+import { configLabel } from './matching'
 import { primaryAreaSqft } from './property'
 
 export type PropertySort = '' | 'oldest' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc'
@@ -240,3 +243,34 @@ export const typesOfCategory = (category: Property['category']): PropertyType[] 
   (Object.keys(PROPERTY_TYPES) as PropertyType[]).filter((t) => categoryOf(t) === category)
 
 export const KNOWN_AMENITIES: readonly string[] = AMENITIES
+
+/* ---------- chip labels ---------- */
+
+/** A parsed criterion as a short chip label ("3 BHK", "Whitefield", "Under ₹1.2 Cr"), through i18n; used by the Properties search and the matching assistant. */
+type T = TFunction | ((key: string, opts?: Record<string, unknown>) => string)
+
+export function criterionLabel(key: string, f: PropertyFilters, t: T): string {
+  const tr = (k: string, o?: Record<string, unknown>) => String((t as (k: string, o?: Record<string, unknown>) => string)(k, o))
+  if (key.startsWith('amenity:')) return tr(`catalogue:amenity.${key.slice(8)}`)
+  switch (key) {
+    case 'type': return f.types.map((x) => tr(`catalogue:propertyType.${x}`)).join(', ')
+    case 'purpose': return f.purpose ? tr(`catalogue:purpose.${f.purpose}`) : ''
+    case 'city': return f.cities.join(', ')
+    case 'locality': return f.localities.join(', ')
+    case 'price':
+      if (f.minPrice && f.maxPrice) return tr('properties:criterion.priceBetween', { min: inrShort(f.minPrice), max: inrShort(f.maxPrice) })
+      return f.maxPrice ? tr('properties:criterion.priceUnder', { max: inrShort(f.maxPrice) }) : tr('properties:criterion.priceOver', { min: inrShort(f.minPrice) })
+    case 'area':
+      if (f.minArea && f.maxArea) return tr('properties:criterion.areaBetween', { min: num(f.minArea), max: num(f.maxArea) })
+      return f.maxArea ? tr('properties:criterion.areaUnder', { max: num(f.maxArea) }) : tr('properties:criterion.areaOver', { min: num(f.minArea) })
+    case 'configuration': return f.configurations.map(configLabel).join(', ')
+    case 'facing': return tr('properties:criterion.facing', { facing: f.facing.map((x) => tr(`catalogue:facing.${x}`)).join(', ') })
+    case 'possession': return f.possession ? tr(`catalogue:possession.${f.possession}`) : ''
+    case 'furnishing': return f.furnishing ? tr(`catalogue:furnishing.${f.furnishing}`) : ''
+    case 'status': return f.statuses.map((x) => tr(`catalogue:propertyStatus.${x}`)).join(', ')
+    case 'corner': return tr('properties:criterion.corner')
+    case 'vastu': return tr('properties:criterion.vastu')
+    case 'text': return tr('properties:criterion.text', { text: f.text })
+    default: return key
+  }
+}

@@ -1,12 +1,6 @@
 {
   "title": "Matching",
-  "subtitle": "Find the right homes for a buyer, or the right buyers for a home.",
-  "stub": {
-    "index": {
-      "title": "Property matching",
-      "body": "Ranked matches with a percentage and a plain reason for every match."
-    }
-  },
+  "subtitle": "Find the right homes for a buyer, or the right buyers for a home, with a reason for every match.",
   "label": {
     "strong": "Strong match",
     "good": "Good match",
@@ -81,5 +75,114 @@
     "sharedYesterday": "Already shared yesterday",
     "sharedDaysAgo": "Already shared {{days}} days ago",
     "shortlisted": "On their shortlist"
+  },
+  "mode": {
+    "label": "Match from",
+    "lead": "A buyer",
+    "property": "A property"
+  },
+  "pick": {
+    "lead": "Buyer",
+    "property": "Property",
+    "leadPlaceholder": "Choose a buyer",
+    "propertyPlaceholder": "Choose a property",
+    "openLeads_one": "{{count}} open lead",
+    "openLeads_other": "{{count}} open leads",
+    "available_one": "{{count}} on offer",
+    "available_other": "{{count}} on offer",
+    "leadHint": "Ranked by budget, location, size, amenities and preferences. Booked and sold homes never appear.",
+    "propertyHint": "Open leads you can see, ranked by how well this property fits them."
+  },
+  "assistant": {
+    "title": "Matching assistant",
+    "placeholder": "e.g. properties within Priya's budget in Whitefield",
+    "ask": "Ask",
+    "reading": "How I read it",
+    "unknown": "I could not find a buyer, a property or a filter in that. Try a name, a project or words like \"3 BHK under 1 Cr\".",
+    "example1": "Properties within {{name}}'s budget in {{locality}}",
+    "example2": "3 BHK ready to move under 1.5 Cr",
+    "example3": "Which leads fit {{id}}?"
+  },
+  "fresh": {
+    "title": "Fresh matches to send",
+    "body": "One strong unshared match per qualified buyer. Pick one to see the full list."
+  },
+  "results": {
+    "forLead_one": "{{count}} match for {{name}}",
+    "forLead_other": "{{count}} matches for {{name}}",
+    "forProperty_one": "{{count}} buyer for {{title}}",
+    "forProperty_other": "{{count}} buyers for {{title}}",
+    "layout": "Layout",
+    "cards": "Cards",
+    "list": "List",
+    "shareSelected_one": "Share {{count}} on WhatsApp",
+    "shareSelected_other": "Share {{count}} on WhatsApp",
+    "showAll": "Show all {{count}}"
+  },
+  "search": {
+    "title_one": "{{count}} property fits these words",
+    "title_other": "{{count}} properties fit these words",
+    "body": "No buyer was named, so this is a plain search. Pick a buyer to rank them with reasons.",
+    "clear": "Clear",
+    "none": "Nothing on offer fits these words."
+  },
+  "empty": {
+    "leadTitle": "Choose a buyer to see matches",
+    "leadBody": "Pick a lead on the left, start from a fresh match, or ask the assistant in plain words.",
+    "propertyTitle": "Choose a property to find buyers",
+    "propertyBody": "Pick a property on the left or ask the assistant, e.g. \"which leads fit PRP-1001\".",
+    "noLeadAccess": "This lead is not in your list",
+    "noLeadAccessBody": "You can match only leads you can see.",
+    "thinTitle": "Not enough to match on yet",
+    "thinBody": "Add a budget, a city or a property type to this lead's requirement to rank properties.",
+    "completeRequirement": "Complete the requirement",
+    "noneTitle": "No property fits well enough",
+    "noneBody": "See \"close on budget\" and \"not shown, and why\" below for what is just outside.",
+    "notOnOffer": "{{status}}: not on offer",
+    "notOnOfferBody": "Booked, sold, draft and archived properties are never matched.",
+    "noBuyersTitle": "No open lead fits this property",
+    "noBuyersBody": "As new leads arrive they show up here, ranked."
+  },
+  "close": {
+    "title_one": "Close on budget: {{count}} worth a call",
+    "title_other": "Close on budget: {{count}} worth a call",
+    "body": "Buyers for whom everything fits except the price, within 15% of what they will pay.",
+    "bodyLead": "Everything fits except the price: within 15% over the budget plus flexibility. Worth a call about the gap.",
+    "upTo": "pays up to {{max}}"
+  },
+  "notShown": {
+    "title_one": "Not shown, and why ({{count}})",
+    "title_other": "Not shown, and why ({{count}})",
+    "body": "Live listings left out for this buyer, with the main reason."
+  },
+  "summaryCard": {
+    "upTo": "up to",
+    "from": "from",
+    "noBudget": "Budget not known",
+    "area": "{{area}}+ sq ft"
+  },
+  "actions": {
+    "shortlisted": "{{title}} shortlisted for {{name}}",
+    "viewLead": "View lead",
+    "notInterested": "{{title}} won't be suggested to {{name}} again"
+  },
+  "share": {
+    "title": "Share on WhatsApp",
+    "subtitle_one": "{{count}} property for {{name}} ({{phone}})",
+    "subtitle_other": "{{count}} properties for {{name}} ({{phone}})",
+    "tone": "Language",
+    "english": "English",
+    "hinglish": "Hinglish",
+    "writeWithAI": "Write with AI",
+    "message": "Message",
+    "hint": "Opening WhatsApp logs the share on the lead's timeline and marks these properties as shared.",
+    "noPhone": "{{name}} has no valid mobile number, so WhatsApp cannot open.",
+    "unavailable": "No longer on offer: {{titles}}",
+    "copy": "Copy text",
+    "copied": "Message copied",
+    "copyFailed": "Could not copy. Select the text and copy it instead.",
+    "open": "Open WhatsApp",
+    "sent_one": "Shared with {{name}} · logged on the timeline",
+    "sent_other": "{{count}} properties shared with {{name}} · logged on the timeline"
   }
 }

@@ -29,7 +29,18 @@
     "leads_one": "{{count}} lead auto-assigned today",
     "leads_other": "{{count}} leads auto-assigned today",
     "tasks_one": "{{count}} follow-up created for you",
-    "tasks_other": "{{count}} follow-ups created for you"
+    "tasks_other": "{{count}} follow-ups created for you",
+    "title": "AI help today",
+    "minutes_one": "about {{count}} min saved",
+    "minutes_other": "about {{count}} min saved",
+    "tile": {
+      "actions_one": "change through the assistant",
+      "actions_other": "changes through the assistant",
+      "fields_one": "field filled by AI",
+      "fields_other": "fields filled by AI",
+      "automated_one": "auto-assignment or follow-up",
+      "automated_other": "auto-assignments and follow-ups"
+    }
   },
   "paste": {
     "title": "Paste and fill",
@@ -118,24 +129,64 @@
   "panel": {
     "title": "Assistant",
     "context": "On: {{where}}",
-    "hello": "Hi! I can add leads, book visits, find matches and answer questions about your work.",
+    "hello": "Hi {{name}}! I can add leads, book visits, find matches and answer questions about your work.",
     "intro": "I never change anything without your confirmation. Every change shows up first as a card you can confirm, edit or cancel.",
-    "try": "Try",
+    "try": {
+      "executive": "Try, as a sales executive",
+      "manager": "Try, as a sales manager",
+      "admin": "Try, as a sales admin"
+    },
     "placeholder": "Ask or tell me what to do…",
     "inputLabel": "Message to the assistant",
     "send": "Send",
     "clear": "Clear conversation",
-    "footnote": "Demo AI reads your text with rules and fuzzy matching on your data."
+    "footnote": "Demo AI reads your text with rules and fuzzy matching on your data.",
+    "chat": "Chat",
+    "tools": "Assistants",
+    "tabs": "Assistant views",
+    "contextTip": "The assistant uses your role, this page and the open record.",
+    "hinglishHint": "English or Hinglish both work: \"Priya ka visit kal 11 baje fix karo\".",
+    "readAs": "Read as: “{{text}}”",
+    "toolsIntro": "Assistants for this page. Each one shows what it found and changes nothing until you confirm.",
+    "tryChips": "Try one of the suggestions, or ask about leads, visits, tasks, matches or your numbers."
   },
   "prompt": {
-    "todayTasks": "Show today's pending tasks",
-    "priorityLeads": "My highest-priority leads",
-    "visit": "Schedule a site visit with {{name}} tomorrow 11am",
-    "matches": "Find matching properties for {{name}}",
-    "assign": "Assign {{name}} to {{exec}}",
-    "followUps": "Leads needing follow-up",
-    "team": "Summarise my team's performance",
-    "addLead": "Add a lead from a message"
+    "exec": {
+      "nextCall": "Who should I call next?",
+      "addLead": "Add lead from a WhatsApp message",
+      "confirm": "Draft visit confirmation for my {{time}}",
+      "match": "Match properties for {{name}} under {{budget}}",
+      "reschedule": "Reschedule {{name}}'s follow-up to tomorrow 5 PM",
+      "summary": "Summarise {{name}} before my call",
+      "target": "What's left for my target this month?"
+    },
+    "mgr": {
+      "assign": "Assign new leads",
+      "overloaded": "Who is overloaded today?",
+      "stalled": "Show stalled deals over 10 days",
+      "leave": "Reassign {{name}}'s leads, on leave",
+      "team": "Summarise team performance this week",
+      "source": "Which source converts best to visits?",
+      "noContact": "Leads with no contact in 5 days"
+    },
+    "admin": {
+      "import": "Import a CSV from 99acres",
+      "lost": "Leads lost to budget mismatch this month?",
+      "redistribute": "Redistribute {{name}}'s leads",
+      "inventory": "Which project has most unsold inventory?",
+      "business": "Business summary for today",
+      "duplicates": "Find duplicate leads"
+    },
+    "record": {
+      "summary": "Summarise this lead before my call",
+      "matches": "Matches for {{name}}",
+      "draft": "Draft a follow-up for {{name}}",
+      "visit": "Book a site visit tomorrow 11 AM",
+      "log": "Log a call outcome",
+      "buyers": "Which buyers match this property?",
+      "confirm": "Draft the visit confirmation",
+      "prep": "Brief me before the visit"
+    }
   },
   "entity": {
     "lead": "Lead",
@@ -168,7 +219,10 @@
       "shareProperties": "Share properties",
       "logActivity": "Log activity",
       "createProperty": "Add property",
-      "updateProperty": "Update property"
+      "updateProperty": "Update property",
+      "assignLeads": "Assign leads",
+      "requestReassign": "Request reassignment",
+      "rescheduleTask": "Reschedule follow-up"
     },
     "toast": {
       "createLead": "Lead created by the assistant",
@@ -183,8 +237,16 @@
       "shareProperties": "Properties shared",
       "logActivity": "Activity logged",
       "createProperty": "Property added",
-      "updateProperty": "Property updated"
-    }
+      "updateProperty": "Property updated",
+      "assignLeads_one": "{{count}} lead assigned",
+      "assignLeads_other": "{{count}} leads assigned",
+      "requestReassign": "Reassignment requested from your manager",
+      "rescheduleTask": "Follow-up rescheduled"
+    },
+    "applyEdit": "Apply",
+    "rephrase": "Rephrase",
+    "undone": "Undone. Nothing from this change remains.",
+    "toastHint": "Made by the assistant · Undo within 10 seconds"
   },
   "field": {
     "tip": "Filled by AI from your message · edit freely",
@@ -204,12 +266,34 @@
     "due": "Due",
     "from": "From",
     "to": "To",
-    "reason": "Reason"
+    "reason": "Reason",
+    "channel": "Channel",
+    "leads": "Leads",
+    "note": "Note",
+    "properties": "Properties",
+    "result": "Result",
+    "which": "Which"
   },
   "value": {
     "missing": "Not given yet",
     "unassigned": "Unassigned",
-    "auto": "Auto (lowest workload)"
+    "auto": "Auto (lowest workload)",
+    "autoWho": "Auto: {{name}} (lowest workload)",
+    "leadCount_one": "{{count}} lead",
+    "leadCount_other": "{{count}} leads",
+    "leadsOf": "Open leads of {{name}}",
+    "no": "No",
+    "yes": "Yes",
+    "none": "—",
+    "onLeave": "on leave",
+    "parking": "{{covered}} covered, {{open}} open",
+    "unassignedLeads": "New, unassigned leads",
+    "area": {
+      "carpet": "{{n}} carpet",
+      "builtUp": "{{n}} built-up",
+      "superBuiltUp": "{{n}} super built-up",
+      "plot": "{{n}} plot"
+    }
   },
   "taskTitle": {
     "call": "Call {{name}}",
@@ -218,7 +302,7 @@
     "followUp": "Follow up with {{name}}"
   },
   "reply": {
-    "help": "You can ask me to add a lead, book a site visit, create a follow-up, assign a lead, move a stage, find matching properties, or show today's tasks, appointments and priority leads.",
+    "help": "You can ask me to add or update a lead, log a call, book a site visit, create or reschedule a follow-up, assign leads, move a stage, share or find matching properties, draft a WhatsApp, or show today's tasks, appointments, priority leads, targets and team numbers.",
     "unknown": "I didn't understand that yet. Try \"Show today's pending tasks\", \"Find matching properties for Priya\" or paste a client's message to add a lead.",
     "failed": "Something went wrong while reading that. Please try again.",
     "refused": "I can't do that for you: {{reason}}",
@@ -251,7 +335,130 @@
     "followUpLeads_other": "{{count}} leads have had no contact for {{days}}+ days:",
     "lastContact": "{{name}} · last contact {{days}} days ago",
     "propertySearch_one": "{{count}} property fits that search:",
-    "propertySearch_other": "{{count}} properties fit that search:"
+    "propertySearch_other": "{{count}} properties fit that search:",
+    "alreadyInStage": "{{name}} is already at {{stage}}.",
+    "alreadyOwner": "{{name}} is already with {{owner}}.",
+    "assumedTaskDate": "No day was given, so I picked tomorrow 10:00 AM. Edit if needed.",
+    "balanced": "No one is overloaded right now. Here is everyone's open load:",
+    "bestBookingSource": "Most bookings per lead: {{source}} ({{pct}}%).",
+    "bestSource": "{{source}} converts best to visits: {{pct}}% of its {{count}} leads visited a site.",
+    "bizMonth": "This month: bookings {{bookings}}, conversion {{conv}}%.",
+    "bizStalled_one": "{{count}} deal is stalled.",
+    "bizStalled_other": "{{count}} deals are stalled.",
+    "bizToday": "Today: new leads {{leads}} · site visits {{visits}}.",
+    "bizUnassigned_one": "{{count}} lead is waiting to be assigned.",
+    "bizUnassigned_other": "{{count}} leads are waiting to be assigned.",
+    "bulkAssign_one": "{{count}} new lead is unassigned. Here is who would get it:",
+    "bulkAssign_other": "{{count}} new leads are unassigned. Here is who would get them:",
+    "buyersFor_one": "{{count}} buyer fits {{name}}:",
+    "buyersFor_other": "{{count}} buyers fit {{name}}:",
+    "clash": "Heads-up: there is already an appointment at {{when}}.",
+    "completeTask": "Here is the task to close for {{name}}. Confirm to mark it done.",
+    "conversionRow": "{{name}} · {{stage}} · {{pct}}% likely",
+    "draft": "Here is a {{purpose}} message for {{name}}. Edit it, then copy it or open it in WhatsApp.",
+    "dupRow": "{{a}} and {{b}}",
+    "duplicates_one": "{{count}} possible duplicate pair (same phone or e-mail):",
+    "duplicates_other": "{{count}} possible duplicate pairs (same phone or e-mail):",
+    "fromOnLeave": "{{name}} is on leave, so their open leads should move.",
+    "importDocumentOnly": "Bulk import isn't available for your role, but you can add a single record from a PDF, image or pasted text in Import.",
+    "importLeads": "Bulk lead import runs in the Import wizard: upload the 99acres / MagicBricks CSV or Excel, check the mapped columns and duplicates, then import.",
+    "importProperties": "Property import runs in the Import wizard: upload the sheet or brochure, check the mapping, then import.",
+    "importSteps": "Upload → map columns (AI suggests) → review duplicates and errors → import. Low-confidence rows become drafts.",
+    "lightest": "Lightest load: {{name}} ({{open}} open leads).",
+    "loadRow": "{{name}}: {{open}} open leads, {{overdue}} overdue, {{visits}} visits today",
+    "lostTo": "{{count}} leads were lost to {{reason}} {{period}} (of {{total}} lost in all).",
+    "lostTotal_one": "{{count}} lead was lost {{period}}.",
+    "lostTotal_other": "{{count}} leads were lost {{period}}.",
+    "markLostInstead": "You can mark it as Lost instead, with a reason.",
+    "matchesUnder_one": "{{count}} property for {{name}} under {{cap}}:",
+    "matchesUnder_other": "Top {{count}} properties for {{name}} under {{cap}}:",
+    "nameMissing": "No name was found in the message. Add it with Edit before confirming.",
+    "nextAppointment": "Next: {{time}} · {{type}} with {{name}}",
+    "nextCall": "Call {{name}} next. {{reason}}.",
+    "nextStep": "Then: {{next}}",
+    "noAppointments": "No appointments today.",
+    "noBuyers": "No open buyer fits {{name}} right now.",
+    "noChange": "I didn't find a change for {{name}} in that. Try \"budget is now 1.5 Cr\" or \"called, no answer\".",
+    "noDuplicates": "No duplicate leads found.",
+    "noFollowUps": "Every lead was contacted in the last {{days}} days.",
+    "noInventory": "There is no unsold inventory right now.",
+    "noLeads": "No leads to show yet.",
+    "noLeadsOwned": "{{name}} has no open leads to move.",
+    "noMatchesUnder": "No live property matches {{name}} under {{cap}}.",
+    "noOpenTask": "{{name}} has no open follow-up.",
+    "noProperties": "No live property fits that search.",
+    "noPropertyChange": "I didn't find a change for {{name}} in that. Try \"price reduced to 1.15 Cr\" or \"now on hold\".",
+    "noPropertyYet": "No property was named and nothing is shortlisted. Add one with the lead before the visit.",
+    "noStalled": "No deal is stalled right now.",
+    "noTasks": "Nothing is due today. Nice work!",
+    "noTeam": "No team members to show.",
+    "noUnassigned": "Every open lead already has an owner.",
+    "noUpcomingVisit": "{{name}} has no upcoming appointment to move.",
+    "notInTeam": "{{name}} is not in your team.",
+    "overloaded_one": "{{names}} looks overloaded:",
+    "overloaded_other": "{{count}} people look overloaded: {{names}}.",
+    "ownInstead": "You can see your own numbers instead.",
+    "perfLeads": "{{open}} open leads · conversion {{conv}}%",
+    "perfRevenue": "Bookings worth {{value}}",
+    "performance": "Your numbers {{period}}:",
+    "previewRow_one": "{{name}}: {{count}} lead",
+    "previewRow_other": "{{name}}: {{count}} leads",
+    "priorityRow": "{{name}} · {{stage}} · score {{score}}",
+    "propertyNotAvailable": "{{name}} is not available to share (booked, sold or not live).",
+    "reassignFrom_one": "{{name}} has {{count}} open lead. Here is who would get it:",
+    "reassignFrom_other": "{{name}} has {{count}} open leads. Here is who would get them:",
+    "requestInstead": "You can ask your manager to reassign it.",
+    "requestReassign": "Here is the reassignment request for {{name}}. Your manager gets a notification.",
+    "rescheduleAppointment": "Here is the new time for {{name}}'s appointment. Confirm to move it.",
+    "rescheduleTask": "Here is the new time for the follow-up. Confirm to move it.",
+    "retryAuto": "A retry call task is added automatically for a missed call.",
+    "share_one": "Here is the property to share with {{name}}. Confirm to log it and open WhatsApp.",
+    "share_other": "Here are {{count}} properties to share with {{name}}. Confirm to log them and open WhatsApp.",
+    "shareOpensWhatsApp": "Confirming opens WhatsApp with the message ready; you press Send.",
+    "shortlist_one": "Shortlist this property for {{name}}?",
+    "shortlist_other": "Shortlist these {{count}} properties for {{name}}?",
+    "sourceAssumed": "The source wasn't in the message, so it is set to Manual. Change it on the lead if you know it.",
+    "stalled_one": "{{count}} deal is stalled ({{value}} in the pipeline):",
+    "stalled_other": "{{count}} deals are stalled ({{value}} in the pipeline):",
+    "stalledRow": "{{name}} · {{stage}} for {{days}} days → {{next}}",
+    "targetLeft": "{{days}} days left this month:",
+    "left": {
+      "calls_one": "{{count}} call to go (about {{perDay}} a day)",
+      "calls_other": "{{count}} calls to go (about {{perDay}} a day)",
+      "visits_one": "{{count}} site visit to go (about {{perDay}} a day)",
+      "visits_other": "{{count}} site visits to go (about {{perDay}} a day)",
+      "bookings_one": "{{count}} booking to go",
+      "bookings_other": "{{count}} bookings to go"
+    },
+    "met": {
+      "calls": "Calls target met!",
+      "visits": "Site-visit target met!",
+      "bookings": "Bookings target met!"
+    },
+    "targetOnLeave": "{{name}} is on leave right now.",
+    "taskNeedsTitle": "What should the follow-up be about? Name the lead or the task.",
+    "teamPerformance": "Your team {{period}}: calls {{calls}} · site visits {{visits}} · bookings {{bookings}}.",
+    "teamRow": "{{name}}: calls {{calls}} · visits {{visits}} · bookings {{bookings}}",
+    "thenCall": "Then {{name}}: {{reason}}",
+    "todayAppointments_one": "{{count}} appointment today (site visits: {{visits}}).",
+    "todayAppointments_other": "{{count}} appointments today (site visits: {{visits}}).",
+    "topLostReason": "The top reason is {{reason}} ({{count}}).",
+    "unsold_one": "{{name}} has the most unsold inventory: {{count}} unit worth {{value}}.",
+    "unsold_other": "{{name}} has the most unsold inventory: {{count}} units worth {{value}}.",
+    "unsoldTotal_one": "In all: {{count}} unsold unit worth {{value}}.",
+    "unsoldTotal_other": "In all: {{count}} unsold units worth {{value}}.",
+    "updateLead_one": "Here is the update for {{name}}. Confirm to apply it.",
+    "updateLead_other": "Here are {{count}} updates for {{name}}. Confirm each one.",
+    "updateProperty_one": "Here is {{count}} change for {{name}}. Confirm to apply it.",
+    "updateProperty_other": "Here are {{count}} changes for {{name}}. Confirm to apply them.",
+    "userInactive": "{{name}} is not active and can't take leads.",
+    "wants": "Wants {{config}} in {{places}}, budget {{budget}}.",
+    "weakSource": "Weakest to visits: {{source}} ({{pct}}%).",
+    "whichExecutiveFrom": "Whose leads should move? Name the executive.",
+    "whichTime": "When should it move to? Give a day or a time.",
+    "createProperty_one": "I read {{count}} detail from the listing. Check the property below and confirm to save it.",
+    "createProperty_other": "I read {{count}} details from the listing. Check the property below and confirm to save it.",
+    "propertyNeedsDetails": "To add the property I still need the {{fields}}. Add it to your message, or open the property form."
   },
   "match": {
     "summary_one": "{{count}} match for {{name}}. Best: {{best}} ({{score}}%, {{price}}).",
@@ -290,5 +497,300 @@
   },
   "next": {
     "none": "No next step needed right now."
+  },
+  "assist": {
+    "retry": "Try again",
+    "refresh": "Check again",
+    "fromFile": "From .txt / .csv file",
+    "readChanges": "Read the changes",
+    "missingRecord": {
+      "lead": "Open a lead to use this assistant.",
+      "property": "Open a property to use this assistant."
+    },
+    "leadCreate": {
+      "title": "Lead creation assistant",
+      "body": "Paste a WhatsApp message, portal enquiry or call note, or speak it. I fill the lead and you confirm it."
+    },
+    "leadEdit": {
+      "title": "Lead editing assistant",
+      "body": "Tell me what changed for {{name}}: a new budget, a call that happened, a follow-up date…",
+      "placeholder": "e.g. Called her, budget now 1.5 Cr, wants 4BHK, call again Friday 5pm"
+    },
+    "leadQualify": {
+      "title": "Lead qualification assistant",
+      "body": "What we know about {{name}}'s budget, decision maker, need and timeline, and what to ask next.",
+      "ring": "Qualification",
+      "inferred": "Found in the notes and messages:",
+      "complete": "Budget, decision maker, need and timeline are all known."
+    },
+    "propertyCreate": {
+      "title": "Property creation assistant",
+      "body": "Paste the owner's or builder's listing message. I read the facts and ask only for what is missing.",
+      "missing": "Still needed: {{fields}}.",
+      "openForm": "Open the full form"
+    },
+    "propertyEdit": {
+      "title": "Property editing assistant",
+      "body": "Tell me what changed for {{name}}: price, status, possession, furnishing…",
+      "placeholder": "e.g. Price reduced to 1.15 Cr, now on hold, semi-furnished"
+    },
+    "propertyMatch": {
+      "title": "Property matching assistant",
+      "bodyLead": "The best live properties for {{name}}, with the reasons.",
+      "bodyProperty": "The buyers who fit {{name}}.",
+      "pick": "Select {{name}}",
+      "share_one": "Share {{count}} on WhatsApp",
+      "share_other": "Share {{count}} on WhatsApp",
+      "shortlist_one": "Shortlist {{count}}",
+      "shortlist_other": "Shortlist {{count}}"
+    },
+    "appointmentCreate": {
+      "title": "Appointment creation assistant",
+      "body": "Say who, what and when. A site visit picks the shortlisted property if you don't name one.",
+      "submit": "Prepare appointment"
+    },
+    "followUp": {
+      "title": "Follow-up assistant",
+      "body": "The next step for {{name}}, the best time to follow up and a ready message.",
+      "plan": "Add follow-up",
+      "tone": "Message language",
+      "english": "English",
+      "hinglish": "Hinglish",
+      "purpose": "Message purpose"
+    },
+    "import": {
+      "title": "Import and extraction assistant",
+      "body": "Paste rows from a sheet, or one enquiry or listing. I map the columns or read the record.",
+      "placeholder": "Paste CSV rows (with a header row), a buyer's enquiry or an owner's listing…",
+      "submit": "Read it",
+      "table": "A sheet of {{rows}} rows and {{columns}} columns ({{kind}}). Suggested mapping:",
+      "skip": "Not imported",
+      "confidence": "{{pct}}% sure",
+      "useMapping": "Use this mapping",
+      "openImport": "Open the import wizard",
+      "noBulk": "Bulk import is not available for your role. You can still add records one at a time.",
+      "documents": "PDFs, images and Excel files are read in",
+      "readAs": {
+        "lead": "This looks like a buyer's enquiry.",
+        "property": "This looks like an owner's listing.",
+        "appointment": "This looks like an appointment."
+      }
+    },
+    "insights": {
+      "title": "Dashboard insights assistant",
+      "ask": "Ask",
+      "body": {
+        "personal": "Your month so far, in numbers.",
+        "team": "Your team this week, in numbers.",
+        "business": "The business today, in numbers."
+      }
+    }
+  },
+  "changeField": {
+    "budgetMax": "Budget (max)",
+    "budgetMin": "Budget (min)",
+    "budgetPreferred": "Preferred budget",
+    "configurations": "Configuration",
+    "configuration": "Configuration",
+    "propertyTypes": "Property type",
+    "localities": "Localities",
+    "cities": "Cities",
+    "possession": "Possession",
+    "facing": "Facing",
+    "timeline": "Timeline",
+    "decisionMakers": "Decision makers",
+    "loan": "Home loan",
+    "buyerPurpose": "Purpose",
+    "authority": "Decision",
+    "need": "Need",
+    "phone": "Phone",
+    "altPhone": "Other phone",
+    "email": "E-mail",
+    "source": "Source",
+    "price": "Price",
+    "priceNegotiable": "Negotiable",
+    "status": "Status",
+    "floor": "Floor",
+    "totalFloors": "Total floors",
+    "furnishing": "Furnishing",
+    "parking": "Parking",
+    "area": "Area (sq ft)",
+    "amenities": "Amenities",
+    "rera": "RERA",
+    "vastuCompliant": "Vastu",
+    "corner": "Corner"
+  },
+  "missingField": {
+    "type": "property type",
+    "configuration": "configuration",
+    "title": "title",
+    "location": "location",
+    "price": "price",
+    "area": "area"
+  },
+  "channel": {
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "email": "E-mail",
+    "sms": "SMS",
+    "note": "Note"
+  },
+  "callResult": {
+    "connected": "Connected",
+    "notReachable": "No answer",
+    "busy": "Busy",
+    "wrongNumber": "Wrong number"
+  },
+  "draft": {
+    "title": {
+      "whatsapp": "WhatsApp to {{name}}",
+      "sms": "SMS to {{name}}",
+      "email": "E-mail to {{name}}"
+    },
+    "send": {
+      "whatsapp": "Open in WhatsApp",
+      "sms": "Open in WhatsApp",
+      "email": "Open in e-mail"
+    },
+    "hinglish": "Hinglish",
+    "edit": "Edit the message",
+    "copy": "Copy",
+    "copied": "Copied",
+    "logged": "Logged on the lead's timeline."
+  },
+  "followUp": {
+    "assignNew": "Assign the new leads",
+    "business": "Business summary for today",
+    "draftConfirm": "Draft {{name}}'s visit confirmation",
+    "draftFollowUp": "Draft a follow-up for {{name}}",
+    "english": "Same message in English",
+    "hinglish": "Same message in Hinglish",
+    "logNoAnswer": "Log: called {{name}}, no answer",
+    "markLost": "Mark it as lost instead",
+    "matches": "Matches for {{name}}",
+    "myPerformance": "How am I doing?",
+    "nextCall": "Who should I call next?",
+    "overloaded": "Who is overloaded?",
+    "prep": "Brief me on {{name}}",
+    "rebalance": "Move {{from}}'s leads to {{to}}",
+    "requestReassign": "Ask my manager to reassign {{name}}",
+    "shareTop": "Share the top {{count}} with {{name}}",
+    "sources": "Which source converts best?",
+    "stalled": "Show stalled deals",
+    "summarise": "Summarise {{name}}",
+    "targetLeft": "What's left for my target?",
+    "todayTasks": "Today's pending tasks"
+  },
+  "followUpTime": {
+    "newLead": "New enquiry: call within the first-response time",
+    "hot": "Hot lead: follow up within two hours",
+    "warm": "Warm lead: tomorrow morning",
+    "cold": "Cold lead: in three days, so it doesn't feel pushy",
+    "postVisit": "Just after the visit: the same evening"
+  },
+  "nav": {
+    "import": "Open Import",
+    "importHistory": "Import history",
+    "leads": "Open Leads",
+    "matching": "Open Matching",
+    "newLead": "Add the lead by hand",
+    "pipeline": "Open Pipeline",
+    "properties": "Open Properties",
+    "reports": "Open Reports",
+    "team": "Open Team",
+    "newProperty": "Add the property by hand"
+  },
+  "qualCheck": {
+    "budget": "Budget",
+    "authority": "Decision maker",
+    "need": "Requirement",
+    "timeline": "Timeline",
+    "known": "known",
+    "missing": "not known yet"
+  },
+  "importKind": {
+    "leads": "buyer leads",
+    "apartments": "apartments",
+    "villas": "villas",
+    "plots": "plots",
+    "commercial": "commercial",
+    "document": "document"
+  },
+  "importField": {
+    "name": "Name",
+    "phone": "Phone",
+    "email": "E-mail",
+    "source": "Source",
+    "requirement_cities": "City",
+    "requirement_localities": "Locality",
+    "requirement_configurations": "Configuration",
+    "requirement_propertyTypes": "Property type",
+    "requirement_budgetMin": "Budget (min)",
+    "requirement_budgetMax": "Budget (max)",
+    "qualification_timeline": "Timeline",
+    "notes": "Notes",
+    "title": "Title",
+    "projectName": "Project",
+    "type": "Property type",
+    "configuration": "Configuration",
+    "location_city": "City",
+    "location_locality": "Locality",
+    "price": "Price",
+    "area_carpet": "Carpet area",
+    "area_builtUp": "Built-up area",
+    "area_superBuiltUp": "Super built-up area",
+    "area_plot": "Plot area",
+    "facing": "Facing",
+    "floor": "Floor",
+    "possession_status": "Possession",
+    "rera_number": "RERA number",
+    "owner_name": "Owner",
+    "owner_phone": "Owner phone"
+  },
+  "memory": {
+    "suggested": "Suggested",
+    "shortlisted": "Shortlisted",
+    "shared": "Shared",
+    "visited": "Visited",
+    "liked": "Liked",
+    "notInterested": "Not interested"
+  },
+  "period": {
+    "today": "today",
+    "week": "this week",
+    "month": "this month",
+    "quarter": "this quarter",
+    "half": "the last six months"
+  },
+  "result": {
+    "less": "Show fewer",
+    "more_one": "Show {{count}} more",
+    "more_other": "Show {{count}} more",
+    "match": "Match",
+    "overdue": "Overdue",
+    "score": "Lead score",
+    "availability": {
+      "available": "Available",
+      "inVisit": "In a visit",
+      "onLeave": "On leave"
+    }
+  },
+  "stat": {
+    "bookings": "Bookings",
+    "calls": "Calls",
+    "callsVisits": "Calls {{calls}} · visits {{visits}}",
+    "conversion": "Conversion",
+    "dueToday": "Due today",
+    "newLeads": "New leads today",
+    "ofTarget": "{{done}} of {{target}}",
+    "openOverdue": "{{open}} open · {{overdue}} overdue",
+    "overdue": "Overdue",
+    "pipeline": "Pipeline value",
+    "unitsValue_one": "{{count}} unit · {{value}}",
+    "unitsValue_other": "{{count}} units · {{value}}",
+    "visitRate": "{{pct}}% of {{count}} leads visited",
+    "visits": "Site visits",
+    "visitsToday": "Visits today",
+    "whatsapp": "WhatsApp messages"
   }
 }

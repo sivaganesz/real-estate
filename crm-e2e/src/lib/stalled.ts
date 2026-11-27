@@ -33,3 +33,42 @@ export const STALL_WATCH: PipelineStageKey[] = ['qualified', 'siteVisitDone', 'n
 
 export const isStalled = (lead: Pick<Lead, 'stage' | 'stageSince'>, settings: Pick<Settings, 'pipeline'>, now: Date) =>
   agingOf(lead, settings, now).tone === 'danger'
+
+/* ---------- stalled deals and the recommended next step (M6 Pipeline, master prompt §11 "AI: stalled deals") ---------- */
+
+/** How far over its stage target a deal is: days / targetDays (0 when the stage has no target). */
+export const stallRatio = (days: number, targetDays: number) => (targetDays > 0 ? days / targetDays : 0)
+
+export type StallAdviceKey = 'firstCall' | 'qualify' | 'bookVisit' | 'confirmVisit' | 'postVisitCall' | 'closeGap' | 'collectDocs'
+/** The recommended action for a deal stuck in a stage: an i18n key (`pipeline:advice.<key>`), the task it becomes, and when. */
+export type StallAdvice = { key: StallAdviceKey; taskType: 'call' | 'whatsapp' | 'followUp' | 'meeting' | 'document'; dueInHours: number }
+
+const ADVICE: Partial<Record<PipelineStageKey, StallAdvice>> = {
+  new: { key: 'firstCall', taskType: 'call', dueInHours: 1 },
+  contacted: { key: 'qualify', taskType: 'call', dueInHours: 4 },
+  qualified: { key: 'bookVisit', taskType: 'call', dueInHours: 4 },
+  siteVisitScheduled: { key: 'confirmVisit', taskType: 'whatsapp', dueInHours: 2 },
+  siteVisitDone: { key: 'postVisitCall', taskType: 'call', dueInHours: 4 },
+  negotiation: { key: 'closeGap', taskType: 'meeting', dueInHours: 24 },
+  booked: { key: 'collectDocs', taskType: 'document', dueInHours: 24 },
+}
+
+/** The next step for a stuck deal, or undefined for closed stages. */
+export const stallAdvice = (stage: PipelineStageKey): StallAdvice | undefined => ADVICE[stage]
+
+export type StalledDeal = { lead: Lead; days: number; target: number; ratio: number; advice: StallAdvice }
+
+/**
+ * Open deals past 2× their stage target, worst first (the ratio, then value). The manager's "stalled deals" list and the
+ * ✦ marker on pipeline cards both come from here, so they always agree.
+ */
+export function stalledDeals(leads: Lead[], settings: Pick<Settings, 'pipeline'>, now: Date, value: (l: Lead) => number = () => 0): StalledDeal[] {
+  const out: StalledDeal[] = []
+  for (const lead of leads) {
+    const a = agingOf(lead, settings, now)
+    const advice = stallAdvice(lead.stage)
+    if (a.tone !== 'danger' || !advice) continue
+    out.push({ lead, days: a.days, target: a.target, ratio: stallRatio(a.days, a.target), advice })
+  }
+  return out.sort((x, y) => y.ratio - x.ratio || value(y.lead) - value(x.lead))
+}

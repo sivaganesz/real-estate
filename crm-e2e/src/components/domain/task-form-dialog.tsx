@@ -17,23 +17,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { PRIORITIES, TASK_TYPES } from '@/domain/catalogue'
 import type { ID, Priority, TaskType } from '@/domain/types'
-import { useCurrentUser } from '@/hooks/use-current-user'
 import { useDb } from '@/hooks/use-db'
+import { usePermission } from '@/hooks/use-permission'
 import { priorityTone } from '@/lib/tones'
 import { ValidationError, type FieldError } from '@/lib/validation'
 import { createTask } from '@/services/tasks'
 import { LeadSelect } from './lead-select'
 
-export function TaskFormDialog({ open, onOpenChange, leadId: initialLead, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; leadId?: ID; onSaved?: (id: ID) => void }) {
+type TaskFormProps = { open: boolean; onOpenChange: (o: boolean) => void; leadId?: ID; title?: string; dueAt?: string; onSaved?: (id: ID) => void }
+
+/** Remounts the form each time it opens, so it always starts fresh. */
+export function TaskFormDialog(props: TaskFormProps) {
+  return <TaskForm key={props.open ? 'open' : 'closed'} {...props} />
+}
+
+function TaskForm({ open, onOpenChange, leadId: initialLead, title: initialTitle, dueAt: initialDue, onSaved }: TaskFormProps) {
   const { t } = useTranslation(['domain', 'common', 'catalogue'])
-  const user = useCurrentUser()
+  const { user, can, scope } = usePermission()
+  const mayPickOwner = scope('task.manage') !== 'own'
   const leads = useDb((db) => db.leads)
-  const executives = useDb((db) => db.users.filter((u) => u.role === 'executive' && u.status === 'active'))
+  const users = useDb((db) => db.users)
+  const owners = users.filter((u) => u.status === 'active' && can('task.manage', { ownerId: u.id }))
   const [leadId, setLeadId] = useState<ID | undefined>(initialLead)
   const [type, setType] = useState<TaskType>('call')
-  const [title, setTitle] = useState('')
-  const [touched, setTouched] = useState(false)
-  const [dueAt, setDueAt] = useState<string | undefined>()
+  const [title, setTitle] = useState(initialTitle ?? '')
+  const [touched, setTouched] = useState(!!initialTitle)
+  const [dueAt, setDueAt] = useState<string | undefined>(initialDue)
   const [priority, setPriority] = useState<Priority>('medium')
   const [ownerId, setOwnerId] = useState<ID | undefined>()
   const [notes, setNotes] = useState('')
@@ -41,7 +50,7 @@ export function TaskFormDialog({ open, onOpenChange, leadId: initialLead, onSave
   const lead = leads.find((l) => l.id === leadId)
   const suggested = lead ? t(`domain:task.suggest.${type}`, { name: lead.name }) : ''
   const shownTitle = touched ? title : title || suggested
-  const owner = ownerId ?? (user.role === 'executive' ? user.id : lead?.ownerId ?? user.id)
+  const owner = ownerId ?? (mayPickOwner ? lead?.ownerId ?? user.id : user.id)
   const err = (f: string) => {
     const e = errors.find((x) => x.field === f)
     return e ? t(`common:validation.${e.key}`) : undefined
@@ -96,12 +105,12 @@ export function TaskFormDialog({ open, onOpenChange, leadId: initialLead, onSave
                 </Select>
               )}
             </FormField>
-            {user.role !== 'executive' && (
+            {mayPickOwner && (
               <FormField label={t('domain:form.owner')}>
                 {({ id }) => (
                   <Select value={owner} onValueChange={setOwnerId}>
                     <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>{[user, ...executives.filter((u) => u.id !== user.id)].map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>{owners.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
                   </Select>
                 )}
               </FormField>

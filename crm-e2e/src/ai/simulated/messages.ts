@@ -8,11 +8,21 @@ import { firstName, fmtDateTime, inrShort } from '@/lib/format'
 import { fillTemplate, mapsLink, propertyAddress, shareMessage } from '@/lib/whatsapp'
 import type { AIText, MessageRequest } from '../types'
 
+/** Visit messages need a visit: the next scheduled one (confirmation, reminder) or the last completed one (after the visit). */
+function visitFor(db: DB, leadId: string, purpose: MessageRequest['purpose']) {
+  const mine = db.appointments.filter((a) => a.leadId === leadId)
+  if (purpose === 'postVisit') return mine.filter((a) => a.status === 'completed').sort((a, b) => b.start.localeCompare(a.start))[0]
+  return mine.filter((a) => a.status === 'scheduled' || a.status === 'confirmed').sort((a, b) => a.start.localeCompare(b.start))[0]
+}
+
 export function generateMessageSim(req: MessageRequest, db: DB, actor: Pick<User, 'name'>): AIText {
   const lead = db.leads.find((l) => l.id === req.leadId)
   if (!lead) return { mode: 'simulated', text: '' }
   const properties = (req.propertyIds ?? []).map((id) => db.properties.find((p) => p.id === id)).filter((p) => !!p)
-  const appointment = req.appointmentId ? db.appointments.find((a) => a.id === req.appointmentId) : undefined
+  const needsVisit = req.purpose === 'visitConfirm' || req.purpose === 'reminder' || req.purpose === 'postVisit'
+  const appointment = req.appointmentId ? db.appointments.find((a) => a.id === req.appointmentId) : needsVisit ? visitFor(db, lead.id, req.purpose) : undefined
+  // no visit to confirm or follow up on: a plain follow-up reads better than "your visit to at ."
+  if (needsVisit && !appointment) return generateMessageSim({ ...req, purpose: 'followUp' }, db, actor)
   const property = properties[0] ?? (appointment ? db.properties.find((p) => p.id === appointment.propertyIds[0]) : undefined)
     ?? (lead.deal?.propertyId ? db.properties.find((p) => p.id === lead.deal?.propertyId) : undefined)
   const agent = firstName(actor.name)

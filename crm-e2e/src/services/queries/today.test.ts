@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { buildSeed } from '@/data/seed'
-import { adminToday, executiveToday, managerToday } from './today'
+import { useDbStore } from '@/store/db-store'
+import { logContact } from '../activities'
+import { assignLeads } from '../assignments'
+import { clock, runAs } from '../core/actor'
+import { getDb } from '../core/commit'
+import { undo } from '../core/undo'
+import { completeTask, createTask, rescheduleTask } from '../tasks'
+import { adminToday, businessInsights, executiveBriefFacts, executiveToday, managerToday, priorityItems } from './today'
 import { activityCounts, funnel, monthlyTrend, summaryKpis } from './stats'
 
 const now = new Date(2026, 10, 27, 10, 30)
@@ -46,5 +53,79 @@ describe('Today (first version)', () => {
     expect(trend.reduce((n, m) => n + m.bookings, 0)).toBeGreaterThan(0)
     expect(activityCounts(db, ['u-sneha'], 'today', now).calls).toBeGreaterThanOrEqual(5)
     expect(summaryKpis(db, user('u-arjun'), now).openLeads).toBe(6)
+  })
+})
+
+describe('Today reacts to one-click actions (M1)', () => {
+  // the actions run through the real services on a live store, so the ranking is recomputed from the new data
+  const fresh = () => {
+    clock.now = () => now
+    useDbStore.setState({ db: buildSeed(now) })
+  }
+  const arjun = () => getDb().users.find((u) => u.id === 'u-arjun')!
+
+  it('logging a call on an uncalled new lead removes it from the top, and a no-answer plans the retry', () => {
+    fresh()
+    const before = priorityItems(getDb(), arjun(), now)
+    expect(before[0]).toMatchObject({ kind: 'uncalledNew', leadId: 'LEAD-1005' })
+    runAs(arjun(), () => logContact('LEAD-1005', { channel: 'call', result: 'notReachable' }))
+    const after = priorityItems(getDb(), arjun(), now)
+    expect(after.some((i) => i.kind === 'uncalledNew' && i.leadId === 'LEAD-1005')).toBe(false)
+    expect(getDb().tasks.some((t) => t.leadId === 'LEAD-1005' && t.autoReason === 'noAnswerRetry' && t.status === 'open')).toBe(true)
+  })
+
+  it('Done on an overdue task removes it; Undo brings it back', () => {
+    fresh()
+    const overdue = priorityItems(getDb(), arjun(), now).find((i) => i.kind === 'overdueTask')!
+    const { undoToken } = runAs(arjun(), () => completeTask(overdue.ref.id))
+    expect(priorityItems(getDb(), arjun(), now).some((i) => i.ref.id === overdue.ref.id)).toBe(false)
+    undo(undoToken)
+    expect(priorityItems(getDb(), arjun(), now).some((i) => i.ref.id === overdue.ref.id)).toBe(true)
+  })
+
+  it('rescheduling an overdue task to tomorrow takes it off today; planning a follow-up handles a stale lead', () => {
+    fresh()
+    const items = priorityItems(getDb(), arjun(), now)
+    const overdue = items.find((i) => i.kind === 'overdueTask')!
+    runAs(arjun(), () => rescheduleTask(overdue.ref.id, new Date(now.getTime() + 86_400_000).toISOString()))
+    expect(priorityItems(getDb(), arjun(), now).some((i) => i.ref.id === overdue.ref.id)).toBe(false)
+    const idle = priorityItems(getDb(), arjun(), now).find((i) => i.kind === 'hotNoContact' || i.kind === 'stale')
+    if (idle) {
+      runAs(arjun(), () => createTask({ title: 'Follow up', type: 'followUp', leadId: idle.leadId, ownerId: 'u-arjun', dueAt: new Date(now.getTime() + 86_400_000).toISOString() }))
+      expect(priorityItems(getDb(), arjun(), now).some((i) => i.kind === idle.kind && i.leadId === idle.leadId)).toBe(false)
+    }
+  })
+
+  it('auto-assigning the manager queue empties it and the executive gets the first-call item', () => {
+    fresh()
+    const rohit = getDb().users.find((u) => u.id === 'u-rohit')!
+    const ids = managerToday(getDb(), rohit, now).unassigned.map((u) => u.lead.id)
+    const { result } = runAs(rohit, () => assignLeads(ids, 'auto'))
+    expect(managerToday(getDb(), rohit, now).unassigned).toHaveLength(result.filter((r) => !r.to).length)
+    const to = result.find((r) => r.to)!
+    const owner = getDb().users.find((u) => u.id === to.to)!
+    expect(priorityItems(getDb(), owner, now).some((i) => i.leadId === to.leadId)).toBe(true)
+  })
+
+  it('executive extras: brief facts, visited-not-booked within 14 days, rank and streak', () => {
+    fresh()
+    const t = executiveToday(getDb(), arjun(), now)
+    const f = executiveBriefFacts(t, now)
+    expect(f.first).toBe(t.items[0])
+    expect(f.followUps).toBe(t.overdue.length + t.dueToday.length)
+    expect(t.visitedNotBooked.every((v) => v.days <= 14)).toBe(true)
+    expect(t.rank?.of).toBeGreaterThanOrEqual(3)
+    expect(t.streak).toBeGreaterThanOrEqual(1)
+  })
+
+  it('admin: KPI series and 3–5 insights with drill-down links', () => {
+    fresh()
+    const t = adminToday(getDb(), getDb().users.find((u) => u.id === 'u-admin')!, now)
+    expect(t.series.newLeads).toHaveLength(14)
+    expect(t.series.pipeline).toHaveLength(8)
+    expect(t.insights.length).toBeGreaterThanOrEqual(3)
+    expect(t.insights.length).toBeLessThanOrEqual(5)
+    expect(t.insights.every((i) => i.link.to)).toBe(true)
+    expect(businessInsights(getDb(), now).map((i) => i.key)).toContain('unassigned')
   })
 })

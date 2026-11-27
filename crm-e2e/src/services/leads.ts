@@ -186,3 +186,17 @@ export function flagDuplicate(leadId: ID, otherId: ID) {
     for (const a of adminIds(tx)) notify(tx, a, 'duplicateFound', { name: lead.name, other: other.name }, { ref: { kind: 'lead', id: lead.id }, dedupeKey: `duplicate:${lead.id}` })
   })
 }
+
+/**
+ * A patch whose requirement / qualification hold only the keys that change; they are merged into the lead's
+ * (mergePatch assigns key by key). Used by inline edits, qualification chips and the Lead Editing Assistant.
+ */
+export type LeadFieldPatch = Omit<LeadPatch, 'requirement' | 'qualification'> & {
+  requirement?: Partial<Requirement>
+  qualification?: Partial<Qualification>
+}
+
+export function updateLeadFields(id: ID, patch: LeadFieldPatch, opts: { via?: Origin; fieldMeta?: FieldMetaMap; undoable?: boolean } = {}) {
+  // updateLead validates against the merged requirement and mergePatch merges these keys into the stored ones
+  return updateLead(id, patch as LeadPatch, opts)
+}

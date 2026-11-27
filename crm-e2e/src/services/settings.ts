@@ -2,8 +2,8 @@
  * Business settings and saved views. Each section has its own permission (foundation-plan §3.1); every change is
  * an audit activity (E18).
  */
-import type { AssignmentRule, ID, SavedView, Settings } from '@/domain/types'
-import type { Action } from '@/lib/permissions'
+import type { AssignmentRule, ID, MessageTemplate, SavedView, Settings } from '@/domain/types'
+import { PermissionError, explainDenied, type Action } from '@/lib/permissions'
 import { assertActorCan, isSystem } from './core/actor'
 import { commit, must } from './core/commit'
 
@@ -77,5 +77,49 @@ export function deleteView(id: ID) {
     const v = must(tx.db.savedViews, id, 'savedView')
     if (v.userId !== tx.actor.id) return
     tx.db.savedViews = tx.db.savedViews.filter((x) => x.id !== id)
+  })
+}
+
+/** Adds or edits a message template (admin). A new one gets the next free `tpl-custom-N` id. */
+export function saveTemplate(tpl: Omit<MessageTemplate, 'id'> & { id?: ID }): { id: ID } {
+  if (!tpl.body.trim()) throw new Error('A template needs a message')
+  const { result: id } = commit('settings.template', (tx) => {
+    assertActorCan(tx.actor, 'settings.templates')
+    const list = tx.db.settings.templates
+    const existing = tpl.id ? list.find((x) => x.id === tpl.id) : undefined
+    if (existing) {
+      Object.assign(existing, { ...tpl, body: tpl.body.trim() })
+      tx.emit({ type: 'settings.changed', section: 'templates' })
+      return existing.id
+    }
+    let n = list.length + 1
+    while (list.some((x) => x.id === `tpl-custom-${n}`)) n++
+    const id = `tpl-custom-${n}`
+    list.push({ ...tpl, id, body: tpl.body.trim() })
+    tx.emit({ type: 'settings.changed', section: 'templates' })
+    return id
+  })
+  return { id }
+}
+
+export function deleteTemplate(id: ID) {
+  return commit('settings.templateDelete', (tx) => {
+    assertActorCan(tx.actor, 'settings.templates')
+    tx.db.settings.templates = tx.db.settings.templates.filter((x) => x.id !== id)
+    tx.emit({ type: 'settings.changed', section: 'templates' })
+  }, { undoable: true })
+}
+
+/** Turns one assignment rule on or off. */
+export function setRuleEnabled(id: ID, enabled: boolean) {
+  return commit('settings.ruleToggle', (tx) => {
+    assertActorCan(tx.actor, 'rules.configure')
+    const rule = must(tx.db.settings.assignment.rules, id, 'rule')
+    // a manager only changes their own team's rules
+    if (!isSystem(tx.actor) && tx.actor.role === 'manager' && (rule.scope === 'global' || rule.scope.managerId !== tx.actor.id)) {
+      throw new PermissionError('rules.configure', explainDenied(tx.actor, 'rules.configure'))
+    }
+    rule.enabled = enabled
+    tx.emit({ type: 'settings.changed', section: 'assignment' })
   })
 }

@@ -152,7 +152,9 @@ export function extractPropertyFields(text: string, ctx: { now: Date }): Extract
     fields.builderName = project[2]; ai('builderName', 0.6)
   }
 
-  const owner = nameIn(t)
+  // "owner Ramesh 98450 12345", "contact: Suresh Iyer", "call Mahesh" (M3 request R2), else the general name reader
+  const labelled = /\b(?:[Oo]wner|[Cc]ontact|[Cc]all|[Ss]eller|[Ll]andlord)\s*:?\s*(?:[Mm]r\.?\s+|[Mm]rs\.?\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/.exec(t)
+  const owner = labelled && !/^(Me|Now|Us|Today|Tomorrow)$/.test(labelled[1]) ? { value: labelled[1], confidence: 0.8 } : nameIn(t)
   const phones = phonesIn(t)
   if (owner || phones[0]) {
     const kind = /\b(builder|developer|promoter)\b/i.test(t) ? 'builder' : /\b(channel partner|broker|agent)\b/i.test(t) ? 'channelPartner' : 'owner'

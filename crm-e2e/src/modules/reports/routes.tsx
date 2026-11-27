@@ -7,5 +7,5 @@ import type { AppRoute } from '@/app/route-types'
 
 export const routes: AppRoute[] = [
   { path: '/reports', permission: 'report.view', Component: lazy(() => import('./pages/reports-page')), titleKey: 'reports:title' },
-  { path: '/reports/:tab', permission: 'report.view', Component: lazy(() => import('./pages/report-tab-page')), titleKey: 'reports:stub.tab.title', parent: '/reports' },
+  { path: '/reports/:tab', permission: 'report.view', Component: lazy(() => import('./pages/report-tab-page')), titleKey: 'reports:tabCrumb', parent: '/reports' },
 ]

@@ -4,9 +4,9 @@
  * Ported from wireframe-rebuild/src/features/leads/lead-list.ts and adapted to the new model: the next follow-up is
  * derived from the lead's earliest open task, readiness became the score + temperature, stages are the new keys.
  */
-import type { Appointment, Classification, ID, Lead, LeadSource, PipelineStageKey, PropertyType, Task, Temperature } from '@/domain/types'
+import type { Appointment, Classification, ID, Lead, LeadSource, PipelineStageKey, Priority, PropertyType, SavedView, Settings, Task, Temperature } from '@/domain/types'
 import { CITIES, OPEN_STAGES } from '@/domain/catalogue'
-import { localDay } from './dates'
+import { daysSince, localDay, minutesBetween } from './dates'
 
 /** One row of the list: the lead and what is worked out about it (scores come from lib/scoring, memoised by the caller). */
 export type LeadItem = {
@@ -18,6 +18,8 @@ export type LeadItem = {
   nextFollowUpAt?: string
   /** A future (or today's) scheduled site visit or a completed one exists. */
   hasVisit: boolean
+  /** Derived priority, when the caller supplies `facts.priority`. */
+  priority?: Priority
 }
 
 export type LeadFacts = {
@@ -25,6 +27,8 @@ export type LeadFacts = {
   cls: (l: Lead) => Classification
   tasks: Pick<Task, 'leadId' | 'status' | 'dueAt'>[]
   appointments: Pick<Appointment, 'leadId' | 'type' | 'status'>[]
+  /** Optional: the lead's priority from its temperature (lib/scoring priorityFor). */
+  priority?: (l: Lead, temperature: Temperature) => Priority
 }
 
 export function leadItems(leads: Lead[], facts: LeadFacts): LeadItem[] {
@@ -39,7 +43,11 @@ export function leadItems(leads: Lead[], facts: LeadFacts): LeadItem[] {
     .map((a) => a.leadId))
   return leads.map((lead) => {
     const s = facts.score(lead)
-    return { lead, score: s.score, temperature: lead.temperatureOverride ?? s.temperature, cls: facts.cls(lead), nextFollowUpAt: next.get(lead.id), hasVisit: visited.has(lead.id) }
+    const temperature = lead.temperatureOverride ?? s.temperature
+    return {
+      lead, score: s.score, temperature, cls: facts.cls(lead), nextFollowUpAt: next.get(lead.id), hasVisit: visited.has(lead.id),
+      priority: facts.priority?.(lead, temperature),
+    }
   })
 }
 
@@ -97,6 +105,10 @@ export type LeadFilters = {
   maxBudget?: number
   minBudget?: number
   attn?: LeadAttention
+  priorities?: Priority[]
+  localities?: string[]
+  /** Created within the last N days (1 = today). */
+  createdWithin?: number
   sort?: LeadSort
 }
 
@@ -118,6 +130,9 @@ export function matchesLead(x: LeadItem, f: LeadFilters, now: Date): boolean {
   if (f.maxBudget && (r.budgetMax ?? 0) > f.maxBudget) return false
   if (f.minBudget && (r.budgetMax ?? 0) < f.minBudget) return false
   if (f.attn && !attentionOf(x, now).includes(f.attn)) return false
+  if (f.priorities?.length && (!x.priority || !f.priorities.includes(x.priority))) return false
+  if (f.localities?.length && !r.localities.some((loc) => f.localities!.includes(loc))) return false
+  if (f.createdWithin && daysSince(l.createdAt, now) >= f.createdWithin) return false
   return true
 }
 
@@ -131,8 +146,8 @@ export function sortLeads(list: LeadItem[], by: LeadSort = 'score'): LeadItem[] 
 
 /** Filters that are set (for "Clear all"); the sort does not count. */
 export const filterCount = (f: LeadFilters) =>
-  (['q', 'cls', 'nri', 'maxBudget', 'minBudget', 'attn'] as const).filter((k) => f[k] !== undefined && f[k] !== '').length +
-  (['stages', 'owners', 'sources', 'types', 'cities', 'temperatures'] as const).filter((k) => f[k]?.length).length
+  (['q', 'cls', 'nri', 'maxBudget', 'minBudget', 'attn', 'createdWithin'] as const).filter((k) => f[k] !== undefined && f[k] !== '').length +
+  (['stages', 'owners', 'sources', 'types', 'cities', 'temperatures', 'priorities', 'localities'] as const).filter((k) => f[k]?.length).length
 
 /** Counts per tab, with the same rules everywhere. */
 export const tabCounts = (items: LeadItem[], now: Date): Record<LeadTab, number> =>
@@ -179,4 +194,80 @@ export function parseLeadSentence(text: string): LeadFilters {
   else if (/\b(uncalled|not contacted|uncontacted)\b/.test(q)) f.attn = 'uncontacted'
   if (/\bunassigned\b/.test(q)) f.owners = ['__none']
   return f
+}
+
+/* ---------- lead aging (days since contact, SLA breach) ---------- */
+
+export type ContactAging = { days: number | null; breached: boolean; tone: 'muted' | 'warning' | 'danger' }
+
+/**
+ * Days since the last contact and whether the first-response SLA is breached (a new lead never contacted after
+ * `sla.firstResponseMins`). Tone: muted under 3 days, warning 3–6, danger from 7 or on a breach (DESIGN_SYSTEM §11.3).
+ * A lead never contacted ages from its creation. Closed leads never warn.
+ */
+export function contactAging(
+  lead: Pick<Lead, 'lastContactAt' | 'firstContactAt' | 'stage' | 'createdAt'>,
+  sla: Pick<Settings['sla'], 'firstResponseMins'>,
+  now: Date,
+): ContactAging {
+  const days = lead.lastContactAt ? daysSince(lead.lastContactAt, now) : null
+  const open = isActive(lead)
+  const breached = open && lead.stage === 'new' && !lead.firstContactAt && minutesBetween(lead.createdAt, now) > sla.firstResponseMins
+  const age = days ?? daysSince(lead.createdAt, now)
+  const tone = !open ? 'muted' : breached || age >= 7 ? 'danger' : age >= 3 ? 'warning' : 'muted'
+  return { days, breached, tone }
+}
+
+/* ---------- saved views: filters <-> stored record ---------- */
+
+const LIST_KEYS = ['stages', 'owners', 'sources', 'types', 'cities', 'temperatures', 'priorities', 'localities'] as const
+
+/** Turns a stored SavedView's filters into LeadFilters. Accepts the seed's short forms ({ temperature: ['hot'] }, { owner: 'unassigned' }). */
+export function filtersFromView(v: Pick<SavedView, 'filters' | 'sort'>): LeadFilters {
+  const raw = v.filters ?? {}
+  const f: Record<string, unknown> = {}
+  for (const k of LIST_KEYS) {
+    const val = raw[k]
+    if (Array.isArray(val) && val.length) f[k] = val.map(String)
+  }
+  if (Array.isArray(raw.temperature) && raw.temperature.length) f.temperatures = raw.temperature.map(String)
+  if (raw.owner === 'unassigned') f.owners = ['__none']
+  else if (typeof raw.owner === 'string') f.owners = [raw.owner]
+  for (const k of ['q', 'cls', 'attn'] as const) if (typeof raw[k] === 'string' && raw[k]) f[k] = raw[k]
+  for (const k of ['maxBudget', 'minBudget', 'createdWithin'] as const) if (typeof raw[k] === 'number') f[k] = raw[k]
+  if (typeof raw.nri === 'boolean') f.nri = raw.nri
+  const key = v.sort?.key
+  f.sort = key === 'createdAt' || key === 'newest' ? 'newest' : key === 'name' ? 'name' : key === 'followUp' ? 'followUp' : 'score'
+  return f as LeadFilters
+}
+
+/** The part of LeadFilters worth storing (empty lists and blanks dropped) and the sort. */
+export function viewFromFilters(f: LeadFilters): Pick<SavedView, 'filters' | 'sort'> {
+  const filters: Record<string, unknown> = {}
+  for (const [k, val] of Object.entries(f)) {
+    if (k === 'sort' || val === undefined || val === '' || (Array.isArray(val) && !val.length)) continue
+    filters[k] = val
+  }
+  const sort = f.sort ?? 'score'
+  return { filters, sort: { key: sort, dir: sort === 'name' || sort === 'followUp' ? 'asc' : 'desc' } }
+}
+
+/** Same filters and sort (list order does not matter): the saved-views menu ticks the view that is on. */
+export function sameFilters(a: LeadFilters, b: LeadFilters): boolean {
+  const norm = (f: LeadFilters) => JSON.stringify(Object.entries(viewFromFilters(f).filters)
+    .map(([k, v]) => [k, Array.isArray(v) ? [...v].map(String).sort() : v]).sort((x, y) => String(x[0]).localeCompare(String(y[0]))))
+  return norm(a) === norm(b) && (a.sort ?? 'score') === (b.sort ?? 'score')
+}
+
+/* ---------- CSV export ---------- */
+
+/** RFC 4180 quoting; a leading = + - @ is prefixed with ' so spreadsheet apps do not run it as a formula. */
+export function csvCell(v: string | number | undefined | null): string {
+  let s = v === undefined || v === null ? '' : String(v)
+  if (/^[=+\-@]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = `'${s}`
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+export function toCsv(header: string[], rows: (string | number | undefined | null)[][]): string {
+  return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')
 }

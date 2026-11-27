@@ -37,7 +37,7 @@ export function AIField({ meta, children, className }: { meta?: FieldMeta; child
       data-ai-filled={ai || undefined}
       className={cn(
         'rounded-md transition-colors duration-(--dur-base)',
-        ai && 'ai-filled -mx-2 px-2 py-1.5',
+        ai && 'ai-filled px-2 py-1.5',
         low && '[&_input]:underline [&_input]:decoration-warning [&_input]:decoration-dotted [&_input]:underline-offset-4',
         className,
       )}

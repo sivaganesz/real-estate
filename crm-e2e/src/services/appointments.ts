@@ -3,12 +3,13 @@
  * A conflict (same executive, overlapping time) is returned as a warning and never blocks (foundation-plan E6).
  * Site visits move the lead's stage and shortlist (E6); completing one creates the post-visit call (E7).
  */
-import type { Appointment, AppointmentInput, DB, ID, Origin, VisitOutcome } from '@/domain/types'
-import { DEFAULT_DURATION_MIN, UPCOMING_APPOINTMENT_STATUSES } from '@/domain/catalogue'
+import type { Appointment, AppointmentInput, DB, ID, Origin, PipelineStageKey, VisitOutcome } from '@/domain/types'
+import { DEFAULT_DURATION_MIN, STAGE_RANK, UPCOMING_APPOINTMENT_STATUSES } from '@/domain/catalogue'
 import { assertValid, validateAppointment } from '@/lib/validation'
 import { mapsLink, propertyAddress } from '@/lib/whatsapp'
 import { assertActorCan } from './core/actor'
 import { commit, getDb, must } from './core/commit'
+import { moveStage } from './core/effects'
 
 const endOf = (a: Pick<Appointment, 'start' | 'durationMin'>) => new Date(a.start).getTime() + a.durationMin * 60_000
 
@@ -123,4 +124,24 @@ export function deleteAppointment(id: ID) {
     assertActorCan(tx.actor, 'appointment.manage', a, tx.db)
     tx.db.appointments = tx.db.appointments.filter((x) => x.id !== id)
   }, { undoable: true })
+}
+
+/**
+ * M4: completes with the outcome and, in the same commit (one Undo), applies the stage the user accepted from the AI
+ * suggestion. Only forward moves to open, detail-free stages; Booked / Lost go through the stage dialog instead.
+ */
+export function completeAppointmentWithStage(id: ID, outcome: Omit<VisitOutcome, 'at' | 'by'>, stage?: PipelineStageKey, opts: { via?: Origin } = {}) {
+  return commit('appointment.complete', (tx) => {
+    const a = must(tx.db.appointments, id, 'appointment')
+    assertActorCan(tx.actor, 'appointment.manage', a, tx.db)
+    a.status = 'completed'
+    a.outcome = { ...outcome, likedPropertyIds: outcome.likedPropertyIds ?? [], at: tx.now, by: tx.actor.id }
+    a.updatedAt = tx.now
+    tx.emit({ type: 'appointment.completed', id })
+    const lead = a.leadId ? tx.db.leads.find((l) => l.id === a.leadId) : undefined
+    if (lead && stage && !['booked', 'converted', 'lost'].includes(stage) && STAGE_RANK[stage] > STAGE_RANK[lead.stage] && lead.stage !== 'lost' && lead.stage !== 'converted') {
+      assertActorCan(tx.actor, 'lead.moveStage', lead, tx.db)
+      moveStage(tx, lead, stage)
+    }
+  }, { via: opts.via, undoable: true })
 }

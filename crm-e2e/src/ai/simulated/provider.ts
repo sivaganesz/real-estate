@@ -11,11 +11,12 @@ import { inrShort } from '@/lib/format'
 import i18next from 'i18next'
 import type { AIContext, AIService } from '../types'
 import { mapColumnsSim } from './columns'
-import { parseCommandSim } from './commands'
+import { parseCommandSim, readUpdateSim } from './commands'
 import { extractAppointmentFields } from './extract-appointment'
 import { extractLeadFields } from './extract-lead'
 import { extractPropertyFields } from './extract-property'
 import { generateMessageSim } from './messages'
+import { hinglishWords } from './hinglish'
 import { qualifyLeadSim } from './qualify'
 import { insightsSim, summarizeSim } from './summarize'
 import { visible } from '@/services/queries/visibility'
@@ -38,11 +39,11 @@ export function createSimulatedProvider(opts: { delayMs?: number } = {}): AIServ
   const wait = <T>(fn: () => T) => later(fn, opts.delayMs ?? THINK_MS)
   return {
     mode: 'simulated',
-    extractLead: (text, ctx) => wait(() => extractLeadFields(text, { now: ctx.now, db: ctx.db() })),
+    extractLead: (text, ctx) => wait(() => extractLeadFields(hinglishWords(text), { now: ctx.now, db: ctx.db() })),
     extractProperty: (text, ctx) => wait(() => extractPropertyFields(text, { now: ctx.now })),
     extractAppointment: (text, ctx) => wait(() => {
       const db = ctx.db()
-      const x = extractAppointmentFields(text, {
+      const x = extractAppointmentFields(hinglishWords(text), {
         now: ctx.now, leads: visible.leads(db, ctx.actor), properties: db.properties.filter((p) => p.listing === 'live'),
         selectedLeadId: ctx.selection?.kind === 'lead' ? ctx.selection.id : undefined,
       })
@@ -84,5 +85,6 @@ export function createSimulatedProvider(opts: { delayMs?: number } = {}): AIServ
     insights: (scope, ctx) => wait(() => insightsSim(scope, ctx.db(), ctx.actor, ctx.now)),
     mapColumns: (headers, sample, kind) => wait(() => mapColumnsSim(headers, sample, kind)),
     parseCommand: (text, ctx) => wait(() => parseCommandSim(text, ctx)),
+    readUpdate: (target, text, ctx) => wait(() => readUpdateSim(target, text, ctx)),
   }
 }

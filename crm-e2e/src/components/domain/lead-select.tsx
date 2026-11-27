@@ -24,7 +24,7 @@ export function LeadSelect({ value, onChange, id, invalid, describedBy, disabled
     return [all.filter((l) => OPEN_STAGES.includes(l.stage)), all.filter((l) => !OPEN_STAGES.includes(l.stage))]
   }, [db, user])
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger id={id} aria-invalid={invalid || undefined} aria-describedby={describedBy} className="w-full">
         <SelectValue placeholder={t('form.chooseLead')} />
       </SelectTrigger>
